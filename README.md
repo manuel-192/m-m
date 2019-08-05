@@ -3,7 +3,8 @@
 This repo includes packages created by Manuel.
 <br><br>
 
-How to use this repo? Check these [instructions](../../../antergos-common-repo-info/blob/master/README.md)
+How to use this repo? Check these [instructions](../../../antergos-common-repo-info/blob/master/README.md).<br>
+Note that the <b>Releases</b> button above shows the packages.
 
 ## NEWS
 - 2019-08-04: the old server address works no more. I has been replaced with another, see [instructions](../../../antergos-common-repo-info/blob/master/README.md).
