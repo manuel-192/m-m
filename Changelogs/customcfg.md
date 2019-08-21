@@ -1,23 +1,31 @@
-# antergos-customcfg
-Generates grub boot menu entries into file <b>/boot/grub/custom.cfg</b> in Antergos and other supported operating systems.
-Recognizes also other operating system installations, such as Arch, Antergos, Manjaro, LinuxMint and Windows.
-Generated custom.cfg is very similar to <i>/boot/grub/grub.cfg</i>, but may be helpful if an entry in current grub.cfg is unable to boot, so it can be seen also as a helpful addition to grub.cfg.
+# customcfg
+Generates grub boot menu entries into file <b>/boot/grub/custom.cfg</b>
+in Arch based and other supported operating systems.
+Recognizes also other operating system installations,
+such as Arch, Antergos, EndeavourOS, Manjaro, LinuxMint and Windows.
+Generated custom.cfg is very similar to <i>/boot/grub/grub.cfg</i>,
+but may be helpful if an entry in current grub.cfg is unable to boot,
+so it can be seen also as a helpful addition to grub.cfg.
 
-Note that this project has just started and is not extensively tested, so there may be bugs lying around.
+Prevously this tool was named 'antergos-customcfg'.
 
-Try command 'antergos-customcfg --help' for more info about options and usage.
+Note that this tool is not extensively tested,
+so there may be bugs lying around.
+
+Try command 'customcfg --help' for more info about options and usage.
 
 ## Caveats
 
 - Tested only with the following filesystems: ext4, ext2, vfat, ntfs. Currently other filesystems are simply ignored.
-- Tested only with Arch, Antergos, Manjaro, and LinuxMint. May still work (partially) on other systems.
-- Generation basically works with the latest Windows systems, but they are not extensively tested.
+- Tested only with Arch, Antergos, EndeavourOS, Manjaro, and LinuxMint. May still work (partially) on other systems.
+- The tool recognizes the latest Windows systems, but this is not extensively tested and may generate false results.
 
 ## Changes
 
 0.1.71: 2019-Jul-18
 - added support for EndeavourOS (experimental, not yet tested)
 - added support for amd-ucode
+- option --extras-isofile supports ISOs from Arch, Antergos, EndeavourOS and Manjaro.
 
 0.1.68: 2019-Jun-27
 - minor bug fixes: no more trying to delete a mounted folder, better cleanup
