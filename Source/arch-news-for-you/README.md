@@ -9,4 +9,4 @@ where<br>
 
 param | description 
 ------ | -----------
-days | Number of days how old news are checked. If 'days' is not given, it shows only the latest headline.
+days | Number of days before now to consider as news. If 'days' is not given, it shows only the latest headline.
