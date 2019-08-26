@@ -38,7 +38,7 @@ More: https://github.com/manuel-192/arch-cl
 
 ### arch-news-for-you
 Shows Arch latest news only if they affect your machine.<br>
-More: N/A
+More: https://github.com/manuel-192/m-m/tree/master/Source/arch-news-for-you
 
 ### cp-completion
 Replacement for the official bash completion for the 'cp' command.
@@ -59,7 +59,7 @@ Entends <b>makepkg</b> with a new option --url=<url-to-pkgbuild>.
 The URL supports protocols: https, http, and file.<br>
 Example: makepkg2 --url=https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=yay
 <br>
-More: N/A
+More: https://github.com/manuel-192/m-m/tree/master/Source/makepkg2
 
 ### pkexec2
 Wrapper for pkexec, retaining the current working directory instead of changing it to /root.<br>
