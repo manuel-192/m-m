@@ -63,6 +63,10 @@ Rank mirrors on Arch (used to do so also on Antergos).<br>
 [Changelog](Changelogs/remirror.md)<br>
 More: https://github.com/manuel-192/remirror
 
+### remirror-arch
+Rank Arch mirrors. Like remirror above, but with a new implementation.<br>
+More: https://github.com/manuel-192/m-m/tree/master/Source/remirror-arch
+
 ### syu
 A very simple pacman wrapper.<br>
 More: https://github.com/manuel-192/syu
