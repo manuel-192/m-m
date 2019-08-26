@@ -13,3 +13,5 @@ remirror-arch --help
 - Configuration file <b>/etc/remirror-arch.conf</b> may contain remirror-arch options.
 - Option -c supports both country codes (like DE) and country names (like Germany).
 - Option -l lists supported country codes and names.
+- Specific mirrors can be excluded with option -x.
+
