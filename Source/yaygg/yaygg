@@ -1,0 +1,625 @@
+#!/bin/bash
+# $Id: yaygg,v 1.19 2019/01/07 00:02:48 manuel Exp $
+#
+# A simple GUI generator for launching your favourite programs.
+#
+
+_message()  # show a message with yad
+{
+    # User may give extra options (e.g. --geometry=AxB+C+D)
+    # before the actual message.
+    local opts xx
+    for xx in "$@"
+    do
+        case "$xx" in
+            --*) opts+="$xx " ; shift ;;
+            *) break ;;
+        esac
+    done
+    yad --form --title="Message" \
+        --geometry=500x200       \
+        --button=gtk-quit:1      \
+        --field="":TXT "$*"          $opts
+}
+
+_WARNINGS=()
+
+_warnings() {
+    _message "Warnings:\n" "${_WARNINGS[@]}"
+}
+_warning() {
+    _WARNINGS+=("$*\n")
+}
+_error() {
+    _message "Error: $*"
+    exit 1
+}
+_echo2() {
+    echo "$@" >&2
+}
+_debug() {
+    test "$_DEBUG" = "1" && _echo2 "Debug: " "$@"
+}
+
+
+_get_icon_name()
+{
+    # Get icon file name from the .desktop file, but cut the possible file name extension.
+    local desktop="$1"
+    echo "$(cat "$desktop" | grep "^Icon=" | sed -e 's|^Icon=||' -e 's|\.png$||' -e 's|\.svg$||' | head -n 1)"
+}
+
+_icon_search()
+{
+    local item="$1"       # the command to search for (including possible parameters)
+    local desktop         # .desktop file in /usr/share/applications
+    local count           # nr of possible icons/desktops found
+    local item2
+    local desktoproot=/usr/share/applications
+
+    if [ "$item" = "" ] ; then
+        _warning "item missing."
+        return 1
+    fi
+
+    # try to transform $item via a .desktop name to an icon file name
+
+    case "$item" in
+        "libreoffice --"*)
+            item="libreoffice-${item:14}"
+            ;;
+        "exo-open --launch "*)
+            item2="$(echo "$item" | awk '{print $3}')"
+            item2="$(echo "$item2" | tr [:upper:] [:lower:])"
+            case "$item2" in
+                mailreader)        item=exo-mail-reader ;;
+                webbrowser)        item=exo-web-browser ;;
+                filemanager)       item=exo-file-manager ;;
+                terminalemulator)  item=exo-terminal-emulator ;;
+                *)
+                    _warning "invalid item '$item'" ; return 1 ;;
+            esac
+            ;;
+        "xfce4-settings-manager")
+            item=xfce-settings-manager
+            ;;
+    esac
+
+    item=$(echo "$item" | awk '{print $1}')      # remove optional parameters
+    desktop="$desktoproot/$item".desktop
+
+    # find .desktop file and there should be the icon definition
+    if [ -f "$desktop" ] ; then
+        item=$(_get_icon_name "$desktop")
+    else
+        count="$(find $desktoproot -name \*"$item".desktop | wc -l)"
+        case "$count" in
+            0) _warning "'$item': desktop file not found." ;;
+            1) desktop="$(find $desktoproot -name \*"$item".desktop)"
+               item=$(_get_icon_name "$desktop")
+               ;;
+            *) _debug "'$item': desktop file is ambiguous."
+               # select first match of many
+               desktop="$(find $desktoproot -name \*"$item".desktop | head -n 1)"
+               item=$(_get_icon_name "$desktop")
+               ;;
+        esac
+    fi
+
+    local ext
+    local icontype
+    local size
+    local iconroot=/usr/share/icons
+
+    # png, svg, icon?
+    for ext in png svg
+    do
+        count="$(find $iconroot -name "$item".$ext | wc -l)"
+        case "$count" in
+            0)  ;; # get next ext
+            1)
+                echo "$(find $iconroot -name "$item".$ext)"
+                return
+                ;;
+            *)
+                # many matches; one of these are ok
+                for icontype in Numix-Square hicolor gnome
+                do
+                    for size in scalable 48 64 96 128 256 24
+                    do
+                        count="$(find $iconroot/$icontype -name "$item".$ext | grep $size | wc -l)"
+                        case "$count" in
+                            0) ;;
+                            1)
+                                echo "$(find $iconroot/$icontype -name "$item".$ext | grep $size)"
+                                return
+                                ;;
+                            *)
+                                echo "$(find $iconroot/$icontype -name "$item".$ext | grep $size | head -n 1)"
+                                return
+                                ;;
+                        esac
+                    done
+                done
+                ;;
+        esac
+    done
+    _warning "$item: unique icon not found."
+}
+
+_out() {
+    echo "$@" >> "$_OUTFILE"
+}
+
+_exists() {
+    test "$(which "$1" 2>/dev/null)" != "" && echo yes || echo no
+}
+
+_line_is_comment()
+{
+    local line="$1"
+
+    # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
+
+    case "${line#"${line%%[![:space:]]*}"}" in
+        '#'*) echo yes ;;
+        *)    echo no ;;
+    esac
+}
+
+_trim_spaces() {
+    local name="$1"
+    if [ -n "$name" ] ; then
+        name="$(echo $name)"
+        name="$(printf "%s" "$name" | tr [:space:] '_')"
+    fi
+    echo "$name"
+}
+_trim_variables()
+{
+    # remove empty definitions from the _VARIABLES array
+    local vars
+    local xx
+
+    for xx in "${_VARIABLES[@]}"
+    do
+        if [ "$(_line_is_comment "$xx")" = "yes" ] ; then
+            continue
+        fi
+        case "$xx" in
+            "") ;;                  # skip empty line
+            *) vars+=("$xx") ;;
+        esac
+    done
+    _VARIABLES=("${vars[@]}")
+}
+_trim_functions()
+{
+    # remove empty definitions from the _FUNCTIONS array
+    local vars
+    local xx
+
+    for xx in "${_FUNCTIONS[@]}"
+    do
+        if [ "$(_line_is_comment "$xx")" = "yes" ] ; then
+            continue
+        fi
+        case "$xx" in
+            "") ;;                  # skip empty line
+            *) vars+=("$xx") ;;
+        esac
+    done
+    _FUNCTIONS=("${vars[@]}")
+}
+_substitute_vars_in_value()
+{
+    local value="$1"
+    local ix
+    local name val
+
+    for ((ix=0; ix < ${#_VARIABLES[@]}; ix++))
+    do
+        name="${_VARNAMES[$ix]}"
+        val="${_VARVALUES[$ix]}"
+        value="$(echo "$value" | sed 's|'"$name"'|'"$val"'|g')"
+    done
+    echo "$value" | sed 's|^[ \t]*||'
+}
+
+_GenerateGUI() {
+    local infile="$1"      # ini file
+    local title            # main window title
+    local sections         # tab: names, names cannot include spaces
+    local columns          # tab: nr of columns for each subpage (tab)
+    local sectionlinenrs   # linenr where tab section starts in $infile
+    local cmds             # button commands
+    local labels           # button labels
+    local tmpfile=/tmp/mas-$$.tmp
+    local xx xx2 yy ix iy
+    local from lines
+    local cmd cmd2
+    local sections_orig
+    local icon
+    local on_top
+    local title_line
+    local variables functions
+    local startvar starttitle startfuncs
+    local varname varvalue
+
+    _VARNAMES=()
+    _VARVALUES=()
+
+    if [ "$_USE_ICONS" = "yes" ] ; then
+        # generating with icons is slow
+        _echo2 "Generating..."
+    fi
+
+    startvar=$(  grep -n "^(Variables)" $infile | cut -d ':' -f 1) # $startvar = line nr of (Variables) line
+    startfuncs=$(grep -n "^(Functions)" $infile | cut -d ':' -f 1)
+    starttitle=$(grep -n "^{{" $infile | cut -d ':' -f 1)
+    if [ $startvar -ge $startfuncs ] ; then
+        _error "Variables must be defined before use!"
+    fi
+    if [ $startvar -ge $starttitle ] ; then
+        _error "Variables must be defined before use!"
+    fi
+
+    # get variables
+    from=$((startvar+1))
+    lines=$((startfuncs-from))
+    tail -n +$from $infile | head -n $lines | grep -v '^[ \t]*#' > $tmpfile
+    readarray -t variables < $tmpfile
+    printf "" > $tmpfile
+    _VARIABLES+=("${variables[@]}")
+
+    # get functions
+    from=$((startfuncs+1))
+    lines=$((starttitle-from))
+    tail -n +$from $infile | head -n $lines | grep -v '^[ \t]*#' > $tmpfile
+    readarray -t functions < $tmpfile
+    printf "" > $tmpfile
+    _FUNCTIONS+=("${functions[@]}")
+
+    _trim_variables
+    _trim_functions
+
+    for xx in "${_VARIABLES[@]}"
+    do
+        _VARNAMES+=($(echo "$xx" | cut -d ':' -f 1))
+        _VARVALUES+=("$(echo "$xx" | cut -d ':' -f 2)")
+    done
+
+    # substitute all variables in all '_VARVALUES'
+    for ((iy=0; iy < ${#_VARIABLES[@]}; iy++))
+    do
+        _debug "before: ${_VARVALUES[$iy]}"
+        _VARVALUES[$iy]="$(_substitute_vars_in_value "${_VARVALUES[$iy]}")"
+        _debug "after: ${_VARVALUES[$iy]}"
+    done
+
+    # main window title is within double brackets {{ }} and may contain options after ':'
+    title_line="$(grep "^{{" $infile | sed -e 's|^[ \t]*{{||' -e 's|}}[ \t]*$||')"
+
+    title=$(echo "$title_line" | cut -d ':' -f 1 | sed 's|^[ \t\n]*||') ; test -z "$title" && title="Title"  # fallback for the main window title
+    title=$(_substitute_vars_in_value "$title")
+
+    on_top="$(test "$(echo "$title_line" | sed 's|^'"$title"'||' | grep ":on-top")" != "" && echo "1" || echo "0")"
+    if [ "$_USE_ICONS" = "0" ] ; then
+        # this option is not set on command line, so get possible value from infile
+        _USE_ICONS="$(test "$(echo "$title_line" | sed 's|^'"$title"'||' | grep ":use-icons")" != "" && echo "yes" || echo "0")"
+    fi
+
+    # get values from section headers
+
+    # get section names
+    grep "^\[" $infile | cut -d ':' -f 1 | sed 's|\[||' > $tmpfile
+    readarray -t sections < $tmpfile
+    printf "" > $tmpfile
+
+    sections_orig=("${sections[@]}")  # remember original section names, used for 'yad --notebook'
+
+    # convert spaces in section names into underscores
+    for ((ix=0; ix < ${#sections[@]}; ix++))
+    do
+        sections[$ix]="$(_trim_spaces "${sections[$ix]}")"
+    done
+
+    # get number of columns for each section
+    grep "^\[" $infile | cut -d ':' -f 2 | sed 's|\]||' > $tmpfile
+    readarray -t columns < $tmpfile
+    printf "" > $tmpfile
+
+    # get the starting line number of each section
+    grep -n "^\[" $infile | cut -d ':' -f 1 > $tmpfile
+    readarray -t sectionlinenrs < $tmpfile
+    printf "" > $tmpfile
+
+    sectionlinenrs+=($((2+$(wc -l $infile | awk '{print $1}'))))  # added 1 extra ??
+
+    _out '#!/bin/bash'
+    _out '#'
+    _out "# Generated by $_PROGNAME at [$(date +%Y-%m-%d\ %H:%M)]."
+    _out '#'
+    _out ''
+
+    local funcname funcnames=() funcname_cmd
+    local cmdprefix
+    for xx in "${_FUNCTIONS[@]}"
+    do
+        xx="$(_substitute_vars_in_value "$xx")"
+        funcname="$(echo "$xx" | sed 's|^[ \t]*\([a-zA-Z0-9_-]*\).*$|\1|')"
+        if [ "$funcname" != "" ] ; then
+            funcnames+=($funcname)
+            _out "$xx"
+            _out "export -f $funcname"
+        fi
+    done
+    _out ''
+
+    ix=0
+    for xx in "${sections[@]}"
+    do
+        xx2="${sections_orig[$ix]}"
+        _out "$(echo $xx)() {"
+        _out '  local handle="$1"'
+        _out '  local tabnum="$2"'
+        _out '  yad --plug="$handle" --tabnum="$tabnum" --form \'
+        _out '      --title="$FUNCNAME" \'
+        _out "      --columns=$(echo ${columns[$ix]}) \\"
+
+        from=${sectionlinenrs[$ix]}
+        ((from++))
+        lines=${sectionlinenrs[$((ix+1))]}
+        ((lines-=from))
+
+        # tail -n +linenr: from this line forward
+        # head -n linenr:  this nr of lines
+
+        tail -n +$from $infile | head -n $lines | grep -v '^[ \t]*#' | cut -d ':' -f 1 > $tmpfile
+        readarray -t cmds < $tmpfile
+        printf "" > $tmpfile
+
+        tail -n +$from $infile | head -n $lines | grep -v '^[ \t]*#' | cut -d ':' -f 2 > $tmpfile
+        readarray -t labels < $tmpfile
+        printf "" > $tmpfile
+
+        iy=0
+        for yy in "${cmds[@]}"
+        do
+            cmd=$(echo $yy)
+            if [ "$cmd" != "" ] ; then
+                cmd="$(_substitute_vars_in_value "$cmd")"
+                cmd2=$(echo "$cmd" | awk '{print $1}')     # the actual program of the command string
+                funcname_cmd=0
+                for funcname in "${funcnames[@]}"
+                do
+                    if [ "$funcname" = "$cmd2" ] ; then
+                        funcname_cmd=1
+                        break
+                    fi
+                done
+                if [ "$(_exists "$cmd2")" = "yes" ] || [ $funcname_cmd -eq 1 ] ; then
+                    if [ "$_USE_ICONS" = "yes" ] ; then
+                        _echo2 "  ${labels[$iy]}"
+                        icon="$(_icon_search "$cmd")"
+                    else
+                        icon=""
+                    fi
+                    if [ $funcname_cmd -eq 1 ] ; then
+                        cmdprefix="bash -c "
+                    else
+                        cmdprefix=""
+                    fi
+                    if [ "$icon" != "" ] ; then
+                        _out "      --field='$(echo ${labels[$iy]})!'\"$icon\"'!'\"$cmd\":fbtn    '$cmdprefix$cmd' \\"
+                    else
+                        _out "      --field='$(echo ${labels[$iy]})!!'\"$cmd\":fbtn    '$cmdprefix$cmd' \\"
+                    fi
+                else
+                    _warning "command '$cmd2' in section '$xx2' not found."
+                fi
+            else
+                : # _debug "empty command, section='$xx' index=$iy."
+            fi
+            ((iy++))
+        done
+
+        _out '      &> /dev/null &'
+        _out '}'
+        ((ix++))
+    done
+
+    rm -f $tmpfile
+    test "$on_top" = "1" && on_top="--on-top" || on_top=""
+
+    _out ''
+    _out 'PrepareTabs() {'
+    _out '  local handle="$1"'
+    _out '  local xx ix'
+    _out '  ix=1'
+    _out "  for xx in ${sections[@]} ; do"
+    _out '    $xx "$handle" "$((ix++))"'
+    _out '  done'
+    _out '}'
+
+    _out ''
+    _out 'StartHere() {'
+    _out '  local handle="987$$"'
+    _out '  PrepareTabs "$handle" || return $?'
+    _out '  yad --notebook --key=$handle --posx=40 --posy=40 '"$on_top"' \'
+    _out "      --title=\"$title\" \\"
+    for xx in "${sections_orig[@]}" ; do
+        _out "      --tab=\"$xx\" \\"
+    done
+    _out '      --button=gtk-quit:0'
+    _out '}'
+    _out ''
+    _out 'StartHere'
+}
+
+_Usage() {
+    _echo2 "Usage: $_PROGNAME [options] infile"
+    _echo2 "where"
+    _echo2 "  infile           Input definitions for generation."
+    _echo2 "  options"
+    _echo2 "    --out=X        X=output file name. Default: standard output."
+    _echo2 "    --icons=X      X=1: have button icons, X=0: no button icons (default)."
+    _echo2 "    -h | --help    This help."
+}
+
+_Main() {
+    local infile
+    local xx
+
+    _VARIABLES=(\$HOME:$HOME)    # array of "name:value" pairs
+    _FUNCTIONS=()                # function definitions
+    _USE_ICONS=0                 # 0 = not used AND not set by command line (yet)
+
+    _OUTFILE=/dev/stdout
+    _PROGNAME=yaygg
+    _DEBUG=0
+
+    for xx in "$@"
+    do
+        case "$xx" in
+            -h|--help)
+                _Usage
+                return 0
+                ;;
+            --icons=*)
+                case "${xx:8}" in
+                    1|y|Y|yes|true|on) _USE_ICONS=yes ;;  # word means set by an command line option
+                    *)                 _USE_ICONS=no ;;
+                esac
+                ;;
+            --out=*)
+                _OUTFILE="${xx:6}"
+                ;;
+            -*)
+                _warning "unsupported option '$xx'"
+                ;;
+            *)
+                infile="$xx"
+                ;;
+        esac
+    done
+
+    if [ "$infile" = "" ] ; then
+        _Usage
+        return 1
+    fi
+
+    if [ -n "$_OUTFILE" ] ; then
+        case "$_OUTFILE" in
+            /dev/*) ;;
+            *) rm -f "$_OUTFILE" ;;  # make sure it is empty
+        esac
+    else
+        _OUTFILE=/dev/stdout
+        _warning "outfile not given, using $OUTFILE."
+    fi
+
+    #_Usage
+    _GenerateGUI "$infile"
+
+    if [ "${_WARNINGS}" != "" ] ; then
+        _warnings
+    fi
+
+    case "$_OUTFILE" in
+        /dev/*) ;;
+        *)
+            if [ -f "$_OUTFILE" ] ; then
+                chmod +x "$_OUTFILE"
+                _echo2 "File '$_OUTFILE' generated."
+            fi
+            ;;
+    esac
+}
+
+_Main "$@"    # master.in [master.yad]
+
+exit $?
+
+###################################################################
+# Example input file below.
+#
+# Legend:
+#
+# (Variables)
+#  $var1 : value1
+#  $var2 : value2          # etc.
+#
+# (Functions)
+# Zero or more one-liner bash functions, see the example 'two_games()' below.
+# Note: this section must be right after (Variables), if that exists.
+#
+# {{window-title[:options]}}
+# [name : nr-of-columns]
+#   command [parameters] : button-label
+#
+# where:
+#   window-title            Title of the main window.
+#   options                 Options (optional) for the main window, separated by colons.
+#                           Currently supported main-options:
+#                             on-top     Window stays on top of other windows.
+#                             use-icons  Use icons on buttons.
+#   name                    Name of a tab on the main window.
+#   nr-of-columns           Number of columns on one tab page.
+#   command [parameters]    The command (including command's parameters)
+#                           to execute when the corresponding button is pressed.
+#   button-label            The label (name) on a button.
+#
+# Variables ($varname) can be used with functions, commands+parameters and the window-title.
+# Predefined variables:
+#   $HOME
+
+(Variables)
+  $title                             : My personal launcher
+  $exo                               : exo-open --launch
+  $terminal                          : $exo TerminalEmulator
+
+(Functions)
+two_games() { sol & iagno & }
+
+{{$title:on-top:use-icons}}
+
+[Software management:2]
+  pamac-manager                      : Add/Remove programs
+  pamac-updater                      : Update system
+  $terminal sudo pacman -Syyuu       : Update system (CLI)
+
+[Basic apps:3]
+  firefox                            : Firefox
+  firefox -private                   : Firefox (incognito mode)
+  chromium                           : Chromium
+  chromium --incognito               : Chromium (incognito mode)
+  $exo WebBrowser                    : Browse web
+  $exo MailReader                    : E-mail
+  libreoffice --writer               : LibreOffice Writer
+  libreoffice --calc                 : LibreOffice Calc
+  mate-calc                          : Calculator
+  $exo FileManager                   : File manager
+  $terminal                          : Terminal
+  kaffeine                           : Watch TV
+  simple-scan                        : Scan to PDF
+  xfburn                             : Burn CD/DVD
+
+[System and settings:2]
+  xfce4-settings-manager             : Xfce settings
+  qt5ct                              : Qt settings
+  $terminal htop                     : Info about system and processes
+  virtualbox                         : VirtualBox
+  gufw                               : Firewall
+
+[Games : 3]
+  sol                                : Freecell
+  quadrapassel                       : Quadrapassel (Tetris)
+  gnome-hearts                       : Hearts
+  gnome-chess                        : Chess
+  iagno                              : Iagno (Reversi)
+  kapman                             : Kapman (Pacman)
+  supertux2                          : Supertux
+  two_games                          : Two games
+
+  

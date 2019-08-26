@@ -1,0 +1,12 @@
+# bash completion for syu        -*- shell-script -*-
+
+_syu() 
+{
+    local cur prev words cword
+    _init_completion -s || return
+
+    local subcommands="install remove stable newest owner files find foreign unofficial help usage"
+
+    COMPREPLY=( $(compgen -W "${subcommands}" -- ${cur}) )
+} &&
+complete -F _syu syu

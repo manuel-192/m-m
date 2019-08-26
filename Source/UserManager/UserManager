@@ -1,0 +1,284 @@
+#!/bin/bash
+#
+# Simple User Manager for Arch based operating systems.
+#
+
+Error()
+{
+    local msg="$1"
+    local w=$((${#msg} * 10))
+    echo "$msg" | yad --text-info --title="Error!" --width=$w
+}
+
+GetIdFirstFree()
+{
+    local file="$1"
+    local min_id="$2"
+    local id_firstfree="$(grep "[1-9][0-9][0-9][0-9]" $file | tr ':' ' ' | awk '{print $3}' | tail -n 1)"
+    ((id_firstfree++))
+    if [ $id_firstfree -lt $min_id ] ; then
+        Error "$FUNCNAME: too small id $id_firstfree."
+        id_firstfree=0  # internal error!
+    fi
+    echo "$id_firstfree"
+}
+IdExists()
+{
+    local file="$1"
+    local id="$2"
+
+    if [ "$(cat $file | cut -d ':' -f 3 | grep "$id")" != "" ] ; then
+        echo "yes"
+    else
+        echo "no"
+    fi
+}
+GetNames()
+{
+    local opt="$1"
+    local file="$2"
+    local names
+    case "$opt" in
+        --all) names="$(echo $(cat $file | tr ':' ' ' | awk '{print $1}' | sort))" ;;
+        --nosys) names="$(echo $(grep "[1-9][0-9][0-9][0-9]" $file | tr ':' ' ' | awk '{print $1}' | sort))" ;;
+        --sys) names="$(echo $(grep -v "[1-9][0-9][0-9][0-9]" $file | tr ':' ' ' | awk '{print $1}' | sort))" ;;
+    esac
+    echo "$names"
+}
+NameExists()
+{
+    local file="$1"
+    local name="$2"
+    local names=$(GetNames --all "$file")
+    local xx
+    for xx in $names
+    do
+        if [ "$name" = "$xx" ] ; then
+            echo "yes"
+            return
+        fi
+    done
+    echo "no"
+}
+
+Execute()
+{
+    local cmd="$1"
+    local extra="$2"
+    local result ret
+    local pw name
+
+    case "$extra" in
+        -p=*)
+            name=${extra:3}
+            result=$(yad --form --width=600 --title="Execute?" \
+                         --field="Command":TXT "$cmd" \
+                         --field="Password for $name":H "")
+            ;;
+        *)
+            result=$(yad --form --width=600 --title="Execute?" \
+                         --field="Command":TXT "$cmd")
+            ;;
+    esac
+    if [ "$result" = "" ] ; then
+        return 1  # canceled
+    fi
+
+    $cmd
+    ret=$?
+
+    if [ $ret -eq 0 ] ; then
+        if [ "$name" != "" ] ; then
+            pw=$(echo "$result" | cut -d '|' -f 2)
+            echo "$name:$pw" | chpasswd
+            if [ -d "/home/$name" ] ; then
+                echo "New user $name created." | yad --text-info --title="Info"
+            fi
+        fi
+    else
+        if [ "which err2str 2>/dev/null" = "" ] ; then
+            Error "Command '$cmd' failed, error code $ret."
+        else
+            Error "Command '$cmd' failed, error code $ret ($(err2str $ret))."
+        fi
+    fi
+
+    result="000000000000000000000000000000000000000000000000000000000000000000"
+    result+="$result"
+    pw="$result"
+}
+
+CommonAdd()
+{
+    local file="$1"
+    local id_firstfree="$2"
+    local label="$3"
+    local Label="$4"
+    local cmd="$5"
+    local idopt="$6"
+
+    if [ $id_firstfree -eq 0 ] ; then
+        return 1
+    fi
+    local unames="$(GetNames --nosys $file)"
+    local snames="$(GetNames --sys $file)"
+
+    local tmp newname newid
+    local result
+    local geometry="--width=400"
+
+    while true
+    do
+        tmp=$(yad --form $geometry --title="Add $label" \
+                  --field="$Label name" "$label""-name-with-lowercase-letters" \
+                  --field="$Label id":NUM "$id_firstfree" \
+                  --field="<i>Existing $label names:</i>\n$unames":LBL "" \
+                  --field="<i>Existing system $label names:</i>\n$snames":LBL "" \
+           )
+        if [ "$tmp" = "" ] ; then
+            return 1
+        fi
+        newname=$(echo $tmp | tr '|' ' ' | awk '{print $1}')
+        newid=$(  echo $tmp | tr '|' ' ' | awk '{print $2}')
+        if [ "$newname" != "" ] ; then
+            if [ "$(echo "$newname" | sed 's/[a-z0-9-]*//')" = "" ] ; then  # name has only a-z0-9- chars
+                if [ "$(NameExists $file "$newname")" = "no" ] ; then
+                    if [ "$(IdExists $file $newid)" = "no" ] ; then
+                        break
+                    fi
+                fi
+            fi
+        fi
+    done
+
+    if [ "$newid" != "" ] ; then
+        cmd+=" $idopt $newid"
+    fi
+    cmd+=" $newname"
+
+    if [ "$label" = "user" ] ; then
+        Execute "$cmd" -p=$newname
+    else
+        Execute "$cmd"
+    fi
+}
+
+CommonDel()
+{
+    local file="$1"
+    local label="$2"
+    local Label="$3"
+    local cmd="$4"
+    local geometry=""
+    local names="$(GetNames --nosys $file)"
+    names=$(echo "$names" | tr ' ' '!')
+    local name=$(yad --form $geometry --title="Delete $label" \
+                     --field="\t$Label name":CB "$names")
+    if [ "$name" = "" ] ; then
+        return
+    fi
+    name=${name:: -1}
+    cmd+=" $name"
+
+    Execute "$cmd"
+}
+
+GroupAdd()
+{
+    local file=/etc/group
+    local min_id=1000
+    CommonAdd "$file" "$(GetIdFirstFree $file $min_id)" "group" "Group" "groupadd" "--gid"
+}
+
+UserAdd()
+{
+    local file=/etc/passwd
+    local min_id=1000
+    CommonAdd "$file" "$(GetIdFirstFree $file $min_id)" "user" "User" "useradd --create-home" "--uid"
+}
+
+UserDel()
+{
+    CommonDel /etc/passwd user User "userdel --remove"
+}
+
+GroupDel()
+{
+    CommonDel /etc/group group Group "groupdel"
+}
+
+UserMod()
+{
+    local file=/etc/passwd
+    local label="user"
+    local Label="User"
+    local cmd="usermod"
+    local names="$(GetNames --nosys $file)"
+    names=$(echo "$names" | tr ' ' '!')
+    local groups="$(GetNames --all /etc/group)"
+    groups=$(echo "$groups" | tr ' ' '!')
+
+    # get first non-system group name
+    local nosysgroup="$(GetNames --nosys /etc/group | awk '{print $1}')"
+
+    # set focus on first non-system group name
+    groups=$(echo "$groups" | sed 's/'$nosysgroup'/\^'$nosysgroup'/')
+
+    local op_add_to_group="Add to group"
+    local op_change_primary_group="Change primary group"
+    local op_change_uid="Change user ID"
+    local ops="$op_add_to_group!$op_change_primary_group!$op_change_uid"
+
+    local min_id=1000
+    local uid=$(GetIdFirstFree $file $min_id)
+    local geometry=""
+
+    local info=$(yad --form $geometry --title="Modify $label" \
+                     --field="$Label name":CB          "$names" \
+                     --field="Operation":CB            "$ops" \
+                     --field="Group (conditional)":CB  "$groups" \
+                     --field="Uid (conditional)":NUM   "$uid")
+    if [ "$info" = "" ] ; then
+        return 
+    fi
+    local name=$(echo "$info" | cut -d '|' -f 1)
+    local op=$(  echo "$info" | cut -d '|' -f 2)
+    local grp=$( echo "$info" | cut -d '|' -f 3)
+          uid=$( echo "$info" | cut -d '|' -f 4)
+
+    case "$op" in
+        $op_add_to_group)          cmd+=" -aG $grp" ;;
+        $op_change_primary_group)  cmd+=" -g $grp" ;;
+        $op_change_uid)            cmd+=" -u $uid" ;;
+    esac
+
+    cmd+=" $name"
+
+    Execute "$cmd"
+}
+
+export -f GetNames GetIdFirstFree Execute IdExists NameExists Error
+export -f CommonAdd UserAdd GroupAdd
+export -f CommonDel UserDel GroupDel
+export -f UserMod
+
+StartHere()
+{
+    local geometry="--width=250"
+    local help
+    #help="<big>Simple user manager.</big>\n"
+    if [ $(id -u) -ne 0 ] ; then
+        help+="\n<i>NOTE: root permissions required!</i>\n"
+    fi
+
+    yad --form --title="Simple User Manager" $geometry \
+        --field="$help":LBL "" \
+        --field="User add":fbtn     "bash -c UserAdd" \
+        --field="User Delete":fbtn  "bash -c UserDel" \
+        --field="User modify":fbtn  "bash -c UserMod" \
+        --field="Group add":fbtn    "bash -c GroupAdd" \
+        --field="Group delete":fbtn "bash -c GroupDel" \
+        --button=yad-quit:1
+}
+
+StartHere

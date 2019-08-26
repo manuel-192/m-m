@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+# Yet another simple pacman wrapper.
+#
+# $Id: syu,v 1.7 2018/03/01 21:55:04 me Exp $
+#
+
+_syu_newlines2() { printf "%*s" "$1" | tr ' ' '\n' >&2 ; }
+
+_syu_echo2b() {
+    local msg="$1"
+    local before="$2"  # nr of empty lines to print before $msg
+    local after="$3"   # nr of empty lines to print after $msg
+
+    test -n "$before" && _syu_newlines2 "$before"
+    echo "$msg" >&2
+    test -n "$after"  && _syu_newlines2 "$after"
+}
+
+_syu_echo2() { echo "$@" >&2 ; }
+
+
+_syu_get_unique()
+{
+    local command="$1"
+    local xx
+    local count=0
+    local result
+
+    for xx in files find foreign help install newest owner remove stable unofficial usage
+    do
+        if [ "${xx::${#command}}" = "$command" ] ; then
+            ((count++))
+            result="$xx"
+        fi
+    done
+    
+    case "$count" in
+        0) echo "[not-found]" ;;
+        1) echo "$result" ;;
+        *) echo "[ambiguous]" ;;
+    esac
+}
+
+_syu_main()
+{
+    local command="stable"  # default command!
+    local userarg
+    local thisfunc="${FUNCNAME[0]}"
+
+    if [ -n "$1" ] ; then
+        command="$1"
+        userarg="$command"
+        shift
+    else
+        $thisfunc usage
+    fi
+
+    command="$(_syu_get_unique "$command")"
+
+    case "$command" in
+        # help system
+        usage)
+            local progname="$(basename "$0")"
+            _syu_echo2b "Usage: $progname [command [parameters]]" 1
+            _syu_echo2b "Commands:" 1
+            _syu_echo2 "  install          Install given package(s)."
+            _syu_echo2 "  remove           Remove given package(s)."
+            _syu_echo2 "  stable           Upgrade (and possibly downgrade!) all packages."
+            _syu_echo2 "  newest           Upgrade all packages."
+            _syu_echo2 "  owner            Find package of given file(s)."
+            _syu_echo2 "  files            Find files of given package(s)."
+            _syu_echo2 "  find             Find installed package(s), can use regexp."
+            _syu_echo2 "  foreign          Show foreign packages installed in your system."
+            _syu_echo2 "  unofficial       Same as 'foreign'."
+            _syu_echo2 "  help             This help."
+            _syu_echo2 "  usage            This help."
+            _syu_echo2b "Parameters:" 1
+            _syu_echo2 "  package(s) or file(s)"
+            _syu_echo2b "Tips:" 1
+            _syu_echo2 "  - Commands may be shortened as long as they are unique."
+            _syu_echo2b "  - Default $progname command is: stable" 0 1
+
+            if [ -n "$1" ] ; then
+                exit "$1"
+            fi
+            ;;
+        help)
+            $thisfunc usage 0
+            ;;
+
+        # system modifiers
+        install)  sudo pacman -S --needed "$@" ;;
+        remove)   sudo pacman -Rsn "$@" ;;
+        stable)   sudo pacman -Syyuu ;;              # update+upgrade+downgrade !!
+        newest)   sudo pacman -Syyu ;;               # update+upgrade
+
+        # info about installed packages
+        owner)       pacman -Qo "$@" ;;
+        files)       pacman -Ql "$@" ;;
+        find)        pacman -Qs "$@" ;;
+        foreign)     pacman -Qm "$@" ;;
+        unofficial)  $thisfunc foreign "$@" ;;
+
+        # catch command failures
+
+        "[ambiguous]")
+            _syu_echo2b "Command '$userarg' is ambiguous." 1
+            $thisfunc usage 1
+            ;;
+        *)
+            _syu_echo2b "Command '$userarg' is not supported." 1
+            $thisfunc usage 1
+            ;;
+    esac
+}
+
+_syu_main "$@"

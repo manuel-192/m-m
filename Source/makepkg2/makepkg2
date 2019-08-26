@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# makepkg wrapper.
+# Adds new option --url=* that essentially extends option -p to URLs.
+#
+
+Main()
+{
+    local arg args
+    local workdir=$PWD   # makepkg default
+    local pkgbuild=$(mktemp $workdir/zz-PKGBUILD.XXXXXXXX)
+    local logs=$(mktemp $workdir/zz-logs.XXXXXXXX)
+    local url
+    local result=0
+
+    pushd $workdir >/dev/null
+
+    for arg in "$@"
+    do
+        case "$arg" in
+            --url=*)  # like option -p but support an URL (https://* http://* file://*)
+                url="${arg:6}"
+                case "${url}" in
+                    https://* | http://*)
+                        wget -q -O $pkgbuild "$url"
+                        result=$?
+                        ;;
+                    file://*)
+                        cp -f "${arg:7}" $pkgbuild 2>/dev/null
+                        result=$?
+                        ;;
+                    *)
+                        result=1
+                        ;;
+                esac
+                if [ $result -ne 0 ] ; then
+                    echo "Error: fetching URL '$url' failed." >&2
+                    exit 1
+                fi
+                args+=("-p" "$pkgbuild")
+                ;;
+            *)
+                args+=("$arg")
+                ;;
+        esac
+    done
+
+    makepkg "${args[@]}" >& $logs
+    result=$?
+
+    popd >/dev/null
+
+    cat $logs
+
+    if [ $result -eq 0 ] ; then
+        rm -f $pkgbuild $logs
+    fi
+}
+
+Main "$@"

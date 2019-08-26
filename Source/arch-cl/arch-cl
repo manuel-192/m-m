@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# Arch change log for a package.
+#
+# Uses the BROWSER environment variable, exo-open, xdg-open (in this order)
+# and various browser names.
+#
+
+_find_url()
+{
+    local pkg="$1"
+    local url="https://www.archlinux.org/packages/?sort=&q=$pkg"
+    local infofile=/tmp/$pkg-$$.html
+    local path repo arch pkg2
+
+    wget -q -O $infofile "$url"
+    path=$(grep 'View package details for' $infofile | head -n 1 | sed -e 's|^.*a href="||' -e 's|/" title.*$||')
+
+    # path = /packages/<repo>/<arch>/<pkg>
+    repo=$(echo $path | cut -d '/' -f 3)
+    arch=$(echo $path | cut -d '/' -f 4)
+    pkg2=$(echo $path | cut -d '/' -f 5)
+
+    if [ "$pkg2" != "$pkg" ] ; then
+        if [ -n "$pkg2" ] ; then
+            echo "Only these packages match, possibly select one of them:" >&2
+            grep 'View package details for' $infofile | sed -e 's|^.*a href="||' -e 's|/" title.*$||' | cut -d '/' -f 5 | sed 's|^|    |' >&2
+        else
+            echo "No match." >&2
+        fi
+        echo "[not found]"
+        rm -f $infofile
+        return 1
+    fi
+
+    printf "" > $infofile
+    wget -q -O $infofile "https://www.archlinux.org/packages/$repo/$arch/$pkg"
+    url="$(grep "View changes for " $infofile | sed -e 's|^.*href="||' -e 's|" title=.*$||')&showmsg=1"
+    rm -f $infofile
+
+    echo "$url"
+}
+
+_arch_pkg_changelog()
+{
+    local pkg="$1"
+
+    if [ -z "$pkg" ] ; then
+        echo "Warning: no package given."
+        return 1
+    fi
+
+    local url="$(_find_url "$pkg")"
+    local exo="exo-open --launch WebBrowser"
+    local xdg=xdg-open
+    local browser
+    local br
+
+    if [ "$url" = "[not found]" ] ; then
+        return 1
+    fi
+
+    for browser in "$BROWSER_ARCH_CL" "$BROWSER" "$exo" "$xdg" chromium firefox vivaldi-stable opera falkon
+    do
+        if [ -z "$browser" ] ; then
+            continue
+        fi
+        br=$(basename "$(echo "$browser" | awk '{print $1}')") # find plain program name
+        if [ -x /usr/bin/$br ] ; then
+            $browser "$url" >/dev/null 2>&1 &
+            break
+        fi
+    done
+}
+
+_arch_pkg_changelog "$@"

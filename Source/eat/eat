@@ -1,0 +1,116 @@
+#!/bin/bash
+#
+# eat - collect outputs and send them to the internet.
+#
+# Example1:
+#     A typical chain of commands:
+#         journalctl -b -0 | eat
+#         lspci -vnn | eat
+#         cat /var/log/Xorg.0.log | eat -send "my results"
+# Example2:
+#     If some previous eat has failed, run this first (note: no piping!):
+#         eat -clean
+# Example3:
+#     To show an intermediate result, run (again, no piping):
+#         eat -show
+# Example4:
+#     To hide (overwrite) some user specific info from the intermediate result, run (again, no piping):
+#         eat -hide
+#     Note that hiding is automatically done before sending anything to the internet.
+#
+
+_eat_hide_info()
+{
+    local tmpfile="$1"
+
+    sed -i \
+        -e 's|'"$LOGNAME"'|_logname_|g' \
+        -e 's|'"$USER"'|_user_|g' \
+        -e 's|'"$HOSTNAME"'|_hostname_|g' \
+        "$tmpfile"
+}
+
+_eat_file_to_net()
+{
+    # Paste output from pipe to net, and store info about this event.
+
+    local tmpfile="$1"
+    local description="$2"
+    local url
+
+    if [ "$description" = "" ] ; then
+        description="(no description available)"
+    fi
+
+    # Hide some user specific info.
+    _eat_hide_info "$tmpfile"
+
+    # Send the results to the internet (pastebin).
+    url=$(cat "$tmpfile" | curl -F c=@- https://ptpb.pw/?u=1)
+
+    # Info (date|url|description) about all sent results is stored to your $_EAT_STORE_FILE.
+    echo "$(date "+%Y%m%d-%H:%M")|$url|$description" >> $_EAT_STORE_FILE
+
+    echo -n "Logs are here: " >&2
+    echo "$url"
+}
+
+_EAT_STORE_FILE="$HOME/.eat_antergos_logs.txt"
+
+_eat_usage()
+{
+    echo "Usage: $0 [-send ['description'] | -send2 ['description'] | -clean | -show | -hide | -help ]"
+    echo "where"
+    echo "  -send     Reads standard input, adds the input to the saved file, and sends"
+    echo "            the file contents to pastebin (after hiding some user specific info)."
+    echo "            You may optionally give a description (surrounded with quotes!) that will"
+    echo "            be saved to '$_EAT_STORE_FILE' about each send."
+    echo "  -send2    Like -send, but reads the input only from the saved file."
+    echo "  -clean    Cleans up possible old collected results."
+    echo "  -show     Shows intermediate results (before sending)."
+    echo "  -hide     Hides user specific info from the intermediate results."
+    echo "  -help     This help."
+    echo "Without options, the results are just collected and stored (but not sent)."
+}
+
+_eat()
+{
+    local tmpfile="$HOME/.eat-tmp.txt"
+    local arg="$1"
+    shift
+
+    case "$arg" in
+        -send)                  # send to the internet (reads pipe first)
+            _eat
+            #sleep 2             # give some time to the latest 'cat' operation to finish ...
+            _eat_file_to_net "$tmpfile" "$*"
+            _eat -clean
+            ;;
+        -send2)                 # send a saved result, not reading pipe anymore
+            _eat_file_to_net "$tmpfile" "$*"
+            _eat -clean
+            ;;
+        -clean)                 # cleanup (may be good as the first command)
+            rm -f "$tmpfile"
+            ;;
+        -show)                  # for showing intermediate results
+            less "$tmpfile"
+            ;;
+        -hide)                  # hide user info from intermediate results
+            _eat_hide_info "$tmpfile"
+            ;;
+        -help|-h|--help)
+            _eat_usage
+            ;;
+        -*)
+            echo "Error: unsupported option '$arg'."
+            _eat_usage
+            ;;
+        *)
+            cat - >> "$tmpfile"
+            sync
+            ;;
+    esac
+}
+
+_eat "$@"

@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Show only the latest Arch news headline.
+# Useful e.g. for 'kalu' news.conf.
+#
+# Usage: $0 [days]
+# where
+#     days    Show headlines that are no more that 'days' old AND
+#             the related package in the headline is currently installed.
+# Without 'days' show only the latest available headline.
+
+DIE() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+LatestHeadlines() {
+    local infofile="$1"
+    grep 'title="View full article:' $infofile | sed -e 's|&gt;|>|g' -e 's|^.*">[ ]*||' -e 's|</a>$||'
+}
+
+LatestDates() {
+    local infofile="$1"
+    local tmp=$(mktemp)
+    grep "timestamp" $infofile | sed -e 's|^.*">||' -e 's|</p>$||'    >> $tmp
+    grep "</dt>"     $infofile | sed -e 's|^.*<dt>||' -e 's|</dt>$||' >> $tmp
+    cat $tmp
+    rm -f $tmp
+}
+
+LessThanDays() {
+    local latestdate="$1"        # 2020-01-01
+    local days="$2"              # nr of days
+
+    local cury=$(date +%Y)
+    local curm=$(date +%m)
+    local curd=$(date +%d)
+    local laty="${latestdate::4}"
+    local latm="${latestdate:5:2}"
+    local latd="${latestdate:8:2}"
+
+    # remove leading zero
+    curm=${curm#0*}
+    curd=${curd#0*}
+    latm=${latm#0*}
+    latd=${latd#0*}
+
+    # not accurate nr of days, but good enough for most cases
+    local ddiff=$(( 365*(cury-laty) + 28*(curm-latm) + (curd-latd) ))
+    test $ddiff -le $days && return 0 || return 1
+}
+
+CheckHeadlines()  # show a headline only if the related package is installed and it is less than given days old
+{
+    local original="$1"
+    local days="$2"
+    local headlines headline
+    local dates     date latestdate
+    local pkgname ix matches
+    local hlinfo=$(mktemp)
+
+    wget -q -T 10 -O $hlinfo https://www.archlinux.org || DIE "fetching Arch news headlines failed"
+    readarray -t headlines <<< "$(LatestHeadlines $hlinfo)"
+    test "$original" = "yes" && {
+        echo "${headlines[0]}" ; rm -f $hlinfo
+        return
+    }
+    readarray -t dates     <<< "$(LatestDates     $hlinfo)"
+    test ${#headlines[@]} -eq ${#dates[@]} || DIE "sorry, headlines do not match with their dates!!"
+    rm -rf $hlinfo
+
+    if [ -n "$headlines" ] ; then
+        ix=0
+        matches=0
+        for headline in "${headlines[$ix]}" ; do
+            date="${dates[$ix]}"
+            LessThanDays "$date" $days && {
+                pkgname="$(echo "$headline" | awk '{print $1}')"       # ASSUME: the first word is the package name!
+                pkgname="${pkgname%%>*}"                               # remove possible trailing ">=..."
+                pacman -Q "$pkgname" >& /dev/null && {
+                    echo "    $date : $headline"
+                    ((matches++))
+                }
+            }
+            ((ix++))
+        done
+        if [ $matches -ne 0 ] ; then
+            echo "https://www.archlinux.org contains more info about the issues." >&2
+            xdg-open https://www.archlinux.org
+        else
+            echo "No Arch news within $days days that match currently installed packages." >&2
+        fi
+    fi
+}
+
+Main()
+{
+    local days="$1"
+    local original=no
+
+    test -z "$days" && original=yes
+
+    CheckHeadlines "$original" "$days"
+}
+
+Main "$@"

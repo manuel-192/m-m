@@ -1,0 +1,72 @@
+# bash completion for cp        -*- shell-script -*-
+
+_mylistselector()
+{
+    local cur="$1"
+    local list_elems_all="$2"
+
+    local realcur="${cur##*,}"
+    local prefix="${cur%$realcur}"
+    local elems word
+
+    for word in $list_elems_all
+    do
+        if ! [[ $prefix == *"$word"* ]]; then
+            elems="$word $elems"
+        fi
+    done
+    COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -S ',' -- $realcur) )
+    compopt -o nospace
+}
+
+_my_cp_completion() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    case "$prev" in
+        --backup)
+            _mylistselector "$cur" "none off numbered t existing nil simple never"
+            return
+            ;;
+        --preserve|--no-preserve)
+            _mylistselector "$cur" "mode ownership timestamps links context xattr all"
+            return
+            ;;
+        --reflink|--sparse)
+            _mylistselector "$cur" "always auto never"
+            return
+            ;;
+        --suffix|--context) # alternatives unknown...
+            return
+            ;;
+        --target-directory)
+            _filedir -d
+            return
+            ;;
+    esac
+
+    local opts=""
+    opts+=" -a --archive --attributes-only -b --copy-contents -d"
+    opts+=" -f --force -i --interactive -H -l --link -L --dereference"
+    opts+=" -n --no-clobber -P --no-dereference -p --parents"
+    opts+=" -R -r --recursive --remove-destination --strip-trailing-slashes"
+    opts+=" -s --symbolic-link -T --no-target-directory -u --update"
+    opts+=" -v --verbose -x --one-file-system -Z --help --version"
+    opts+=" --backup --backup= --preserve --preserve= --no-preserve="
+    opts+=" --reflink --reflink= --sparse="
+    opts+=" -S --suffix= -t --target-directory= --context --context="
+
+    case "$cur" in
+        -*|"")
+            COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+            compopt -o nospace
+            return
+            ;;
+        *)
+            _filedir
+            ;;
+    esac
+
+} &&
+complete -F _my_cp_completion cp

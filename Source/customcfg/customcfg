@@ -1,0 +1,1346 @@
+#!/bin/bash
+#
+# antergos-customcfg, generate grub menu entries
+# for writing them to file /boot/grub/custom.cfg.
+#
+# Tested operating systems:
+# - Antergos (assumed system)
+# - Arch
+# - Manjaro
+# - LinuxMint (and probably other Debian/Ubuntu based systems)
+# - Windows 10 (UEFI and BIOS legacy boot)
+# - Windows 7 (actually not tested...)
+#
+# $Id: antergos-customcfg,v 1.71 2019/07/18 07:55:20 manuel Exp $
+
+#set -u
+
+# echo to stderr, for errors, for warnings, for infos, for debugs (all go to stderr):
+
+echo2()   { echo "$@" >/dev/stderr ; }
+
+echo2prefix()
+{
+    # Put options to 'echo' in front of the prefix.
+    # Typical echo option is '-n'.
+
+    local prefix="$1"
+    shift
+    local opts="" xx
+    for xx in "$@"
+    do
+        case "$xx" in
+            -*)
+                test "$opts" = "" && opts+="$xx" || opts+=" $xx"
+                shift
+                ;;
+            *)
+                break      # no more options on the cmdline args
+                ;;
+        esac
+    done
+    if [ "$opts" != "" ] ; then
+        echo2 $opts "$prefix" "$@"
+    else
+        echo2 "$prefix" "$@"
+    fi
+}
+error()     { echo2prefix "Error: ${FUNCNAME[1]}:"   "$@" ; }
+error2()    { echo2prefix "Error: ${FUNCNAME[2]}:"   "$@" ; }
+warning()   { echo2prefix "Warning: ${FUNCNAME[1]}:" "$@" ; }
+warning2()  { echo2prefix "Warning: ${FUNCNAME[2]}:" "$@" ; }
+info()      { echo2prefix "Info: ${FUNCNAME[1]}:"    "$@" ; }
+debug()     { test "$DEBUG" = "1" && echo2prefix "Debug: ${FUNCNAME[1]}:" "$@" ; }
+verbose()   { test "$VERBOSE" = "1" && echo2prefix "  " "$@" ; }
+
+debug_exit() {
+    if [ "$DEBUG" = "1" ] ; then
+        debug "DebugExit now."
+        exit
+    fi
+}
+
+
+_n_marks()
+{
+    # return a string of n mark:s
+
+    local mark="$1"  # only the first character is used!
+    local n="$2"     # length of returned string
+
+    if [ "$mark" = "" ] ; then
+        mark="="
+    fi
+
+    local string="" xx
+    for ((xx=0; xx<n; xx++))
+    do
+        string+="${mark::1}"
+    done
+    echo "$string"
+}
+
+_verboseosline()
+{
+    local name="$1"
+    local dev="$2"
+    local kernel="$3"
+
+    local formatted=$(printf "%-20s %-15s %s\n" "$name" "$dev" "$kernel")
+    verbose "$formatted"
+}
+
+verboseos() {
+    local name="$1"
+    local dev="$2"
+    local kernel="$3"     # may be empty!
+    local underlinemark="$4"  # for headers, otherwise empty
+
+    _verboseosline "$name" "$dev" "$kernel"
+
+    if [ "$underlinemark" != "" ] ; then
+        # write an underline to the previous line
+        name=$(_n_marks   "$underlinemark" "${#name}")
+        dev=$(_n_marks    "$underlinemark" "${#dev}")
+        kernel=$(_n_marks "$underlinemark" "${#kernel}")
+
+        _verboseosline "$name" "$dev" "$kernel"
+    fi
+}
+
+_runerr() {
+    "$@"
+    local code=$?
+    if [ $code -ne 0 ] ; then
+        error2 "(code $code): '$*' failed."
+        exit 1
+    fi
+}
+
+_runwarn() {   # currently not used
+    "$@"
+    local code=$?
+    if [ $code -ne 0 ] ; then
+        warning2 "(code $code): '$*' failed."
+        return $code
+    fi
+}
+
+_pushd() { _runerr pushd "$@" >/dev/null ; }
+_popd()  { _runerr popd       >/dev/null ; }  # removed unused args ("$@")
+
+
+_strip_quotes()
+{
+    # strip surrounding quotes, either single (') or double (")
+    local word="$1"
+    local dostrip=0
+
+    if [ "${word::1}" = "\"" ] ; then       # leading
+        if [ "${word: -1}" = "\"" ] ; then  # trailing
+            dostrip=1
+        else
+            error "trailing double quote missing from ($word)."
+        fi
+    elif [ "${word::1}" = "'" ] ; then      # leading
+        if [ "${word: -1}" = "'" ] ; then   # trailing
+            dostrip=1
+        else
+            error "trailing single quote missing from ($word)."
+        fi
+    fi
+    if [ $dostrip -eq 1 ] ; then
+        word=${word:1}
+        word=${word:: -1}
+    fi
+    echo "$word"
+}
+
+_root2boot2()
+{
+    # Parse the line from /etc/fstab that contains "/boot".
+    # The first matching line is the one.
+    # Note that some lines may be comments.
+    
+    local line2 line linearr uuid label dev xx ch
+
+    while read line2
+    do
+        line="$(echo $line2)"  # remove unnecessary spaces
+        if [ "$line" = "" ] ; then
+            break
+        fi
+        if [ "${line::1}" != "#" ] ; then
+            # now this line should contain info about /boot partition
+            case "$line" in
+                LABEL=*)
+                    # label may be in quotes
+                    line="${line:6}"
+                    if [ "${line::1}" = "\"" ] ; then
+                        # parse until second quote
+                        for ((xx=1; xx < ${#line}; xx++))
+                        do
+                            ch=${line:$xx:1}
+                            if [ "$ch" != "\"" ] ; then
+                                label+="$ch"
+                            else
+                                break
+                            fi
+                        done
+                    else
+                        linearr=($line)
+                        label=${linearr[0]}
+                    fi
+                    uuid=$(label2uuid "$label")
+                    case "$uuid" in
+                        ""|$UNKNOWN)
+                            error "cannot find uuid for label '$label' on line '$line2'"
+                            uuid="$ERROR"
+                            ;;
+                    esac
+                    echo "$uuid"
+                    return
+                    ;;
+                UUID=*)
+                    line=${line:5}
+                    linearr=($line)
+                    uuid="${linearr[0]}"
+                    case "$(uuid2dev "$uuid")" in  # test if we know this uuid
+                        ""|$UNKNOWN)
+                            error "unknown uuid '$uuid' from line '$line2'"
+                            uuid="$ERROR"
+                            ;;
+                    esac
+                    echo "$uuid"
+                    return
+                    ;;
+                /dev/*)
+                    linearr=($line)
+                    dev="${linearr[0]}"
+                    uuid=$(dev2uuid "$dev")
+                    case "$uuid" in
+                        ""|$UNKNOWN)
+                            error "cannot find device '$dev' from line '$line2'"
+                            uuid="$ERROR"
+                            ;;
+                    esac
+                    echo "$uuid"
+                    return
+                    ;;
+            esac
+            # not found, so no separate /boot partition exists
+            break
+        else
+            debug "found /boot in a comment ($line2)."
+        fi
+    done
+    echo "$UNKNOWN"
+}
+
+isrootpartition()
+{
+    local mountpoint="$1"
+    test -f "$mountpoint"/etc/fstab && echo yes || echo no
+}
+isbootpartition()
+{
+    local mountpoint="$1"
+    test -d "$mountpoint"/grub && echo yes || echo no
+}
+
+root2boot()
+{
+    # find /boot partition spec from /etc/fstab
+    # return boot uuid, or root uuid if boot uuid not found
+
+    local mountpoint="$1"     # should point to a root partition. "" means current host!
+    local rootuuid="$2"
+    local bootuuid
+
+    if [ "$(isrootpartition "$mountpoint")" = "yes" ] ; then
+        bootuuid=$(grep "[[:space:]]/boot[[:space:]]" "$mountpoint"/etc/fstab | _root2boot2)
+        case "$bootuuid" in
+            "$UNKNOWN") bootuuid=$rootuuid ;;   # /boot must be on the root partition
+            "$ERROR") ;;
+        esac
+    else
+        error "$mountpoint ($rootuuid) is not a root partition."
+        bootuuid="$UNKNOWN"  # does not have a /boot partition
+    fi
+    echo "$bootuuid"
+}
+
+GetOsNameFromMountPoint()
+{
+    local mountpoint="$1"
+    local xx
+    local name
+
+    if [ -d "$mountpoint/etc" ] ; then
+
+        # Search name from file(s) of $mountpoint/etc/*-release:
+
+        if [ -f "$mountpoint"/etc/os-release ] ; then
+            # use NAME in os-release
+            name=$(grep "^NAME=" "$mountpoint"/etc/os-release | sed -e 's|^NAME=||' -e 's| ||g' -e 's|"||g')
+        elif [ -f "$mountpoint"/etc/lsb-release ] ; then
+            # use DISTRIB_ID in lsb-release
+            name=$(grep "^DISTRIB_ID=" "$mountpoint"/etc/lsb-release | sed 's|^DISTRIB_ID=||')
+        else
+            # use head part of file name of <something>-release, if such exists
+            for xx in $(ls -1 "$mountpoint"/etc/*-release | grep -v "os-release" | grep -v "lsb-release")
+            do
+                if [ "$name" = "" ] ; then
+                    name=$(echo "$xx" | sed 's|^.*/etc/\([a-zA-Z0-9]*\)\-release|\1|')
+                else
+                    warning "OS name already assigned to '$name'."
+                fi
+            done
+        fi
+
+        # Adjust name in some special cases (note: the order is important):
+
+        case "$name" in
+            "")
+                warning "cannot find the name of the OS."
+                name="$UNKNOWN"  # could not recognize name!
+                ;;
+            Linux* | *Linux)
+                ;;               # checks existence of prefix/suffix "Linux"
+            *)
+                name+="Linux"
+                ;;               # add suffix Linux to name since prefix/suffix is missing
+        esac
+
+        # Now $name cannot be empty.
+
+        # Capitalize the first letter.
+        name=$(echo -n ${name::1} | tr "[:lower:]" "[:upper:]")${name:1}
+
+        # Check if Arch actually means Antergos.
+        case "$name" in
+            ArchLinux) test -e "$mountpoint"/etc/pacman.d/antergos-mirrorlist && name=AntergosLinux ;;
+        esac
+    else
+        warning "mount point '$mountpoint' does not contain /etc"
+        name=$UNKNOWN
+    fi
+
+    # Now $name should be: (unknown), AntergosLinux, ArchLinux, EndeavourOSLinux, ManjaroLinux, LinuxMint, etc.
+
+    echo "$name"
+}
+
+GetKernelsFromMountPoint()
+{
+    # kernels can be in / or /boot, and mountpoint partition can be root or boot!
+
+    local mountpoint="$1"  # for $rootuuid !
+    local rootuuid="$2"
+    local bootuuid="$3"
+    local osname="$4"
+
+    local kernels
+    local mntboot=$HOME/mntboot-$$
+
+    if [ -d "$mountpoint" ] ; then
+        _pushd "$mountpoint"
+        kernels=$(ls -1 vmlinuz* 2>/dev/null)
+        case "$osname" in
+            LinuxMint) # use only the kernel symlink in the root dir!
+                ;;
+            ArchLinux|AntergosLinux|ManjaroLinux|EndeavourOSLinux|*)
+                test "$kernels" != "" && kernels+=" "
+                if [ "$rootuuid" = "$bootuuid" ] ; then
+                    # /boot is in the root partition
+                    kernels+=$(ls -1 boot/vmlinuz* 2>/dev/null)
+                else
+                    # separate /boot partition, get them from it
+                    mkdir -p "$mntboot"
+                    _runerr mount "UUID=$bootuuid" "$mntboot"
+                    _pushd "$mntboot"
+                    kernels+="$(ls -1 vmlinuz* 2>/dev/null | sed 's|^|boot/|')"
+                    _popd
+                    _runerr umount "$mntboot"
+                    rmdir "$mntboot"
+                fi
+                ;;
+        esac
+        _popd
+    fi
+
+    case "$kernels" in
+        "") warning "cannot reach kernels via mount point '$mountpoint'."
+            kernels=$UNKNOWN
+            ;;
+    esac
+    # kernels: (unknown), vmlinuz*, boot/vmlinuz*
+    # if any kernel has string "boot/", then mountpoint is a root partition!
+    # caller should check if kernels are symlinks
+    echo "$kernels"
+}
+
+
+
+blkid_partlabel()
+{
+    local uuid="$1"
+    echo "$BLKID" | grep "PARTLABEL=\"" | grep "UUID=\"$uuid\"" | sed 's|^.* PARTLABEL="\([^"]*\)".*$|\1|'
+}
+
+GetUuids()
+{
+    echo "$LSBLK" | grep -v UUID=\"\" | sed 's|^.* UUID="\([^"]*\)".*|\1|'
+}
+
+GetFstype()
+{
+    local uuid="$1"
+    echo "$LSBLK" | grep "UUID=\"$uuid\"" | sed 's|^.* FSTYPE="\([^"]*\)".*$|\1|'
+}
+
+GetMountpoint()
+{
+    local uuid="$1"
+    echo "$LSBLK" | grep "UUID=\"$uuid\"" | sed 's|^.* MOUNTPOINT="\([^"]*\)".*$|\1|'
+}
+
+touuid()
+{
+    local item="$1"  # label, device
+    local ix="$2"    # $ix_label, $ix_device
+    local linearr
+
+    if [ "$item" = "" ] ; then
+        error "'item' missing."
+        echo ""
+        return
+    fi
+
+    case "$ix" in
+        $ix_device) linearr=($(echo "$LSBLK" | grep "NAME=\"$item\"")) ;;
+        $ix_label)  linearr=($(echo "$LSBLK" | grep "LABEL=\"$item\"")) ;;
+        ""|*)
+            error "ix '$ix' is missing or wrong."
+            echo ""
+            return 1
+            ;;
+    esac
+    echo "${linearr[$ix_uuid]}" | sed 's|UUID="\([^"]*\)"|\1|'
+}
+fromuuid()
+{
+    local uuid="$1"
+    local ix="$2"   # $ix_label, $ix_device
+
+    if [ "$uuid" = "" ] ; then
+        error "'uuid' missing."
+        echo ""
+        return
+    fi
+    case "$ix" in
+        $ix_label | $ix_device) ;;
+        ""|*) error "'ix' missing or wrong."
+              echo ""
+              return ;;
+    esac
+
+    local lsblkline=$(echo "$LSBLK" | grep "UUID=\"$uuid\"")
+
+    local result
+    case "$ix" in
+        $ix_device) result="$(echo "$lsblkline" | sed 's|^.*NAME="\([^"]*\)".*$|\1|')" ;;
+        $ix_label)  result="$(echo "$lsblkline" | sed 's|^.*LABEL="\([^"]*\)".*$|\1|')" ;;
+    esac
+    echo "${result}"
+}
+label2uuid() { touuid "$1" "$ix_label" ; }
+dev2uuid()   { touuid "$1" "$ix_device" ; }
+uuid2dev()   { fromuuid "$1" "$ix_device" ; }
+uuid2label() { fromuuid "$1" "$ix_label" ; }
+
+ismounted()
+{
+    local dev="$1"
+    test "$(df | grep "$dev")" != "" && echo yes || echo no
+}
+
+has_fuseblks()
+{
+    case "$HAS_FUSEBLKS" in
+       yes|no) ;;
+       *)
+           test "$(df -T | grep " fuseblk ")" = "" && HAS_FUSEBLKS=no || HAS_FUSEBLKS=yes
+           ;;
+    esac
+    echo "$HAS_FUSEBLKS"
+}
+
+is_fuseblk()
+{
+    local dev="$1"
+
+    if [ "$(has_fuseblks)" = "yes" ] ; then
+        if [ "$(df --type=fuseblk | grep "$dev")" != "" ] ; then
+            echo yes
+            return
+        fi
+    fi
+    echo no
+}
+
+
+isefipartition()
+{
+    local mountpoint="$1"
+    test -f "${mountpoint}$MSBOOTFILE" && echo yes || echo no
+}
+isrecoverypartition()
+{
+    local mountpoint="$1"
+    local wim="$(ls -1 "${mountpoint}/Recovery/WindowsRE/" 2>/dev/null | tr [:upper:] [:lower:] | grep "winre.wim")"
+    test -n "$wim" && echo yes || echo no
+}
+islegacypartition()
+{
+    local mountpoint="$1"
+    local rootlabel="$2"
+
+    if [ "$rootlabel" = "Recovery" ] ; then
+        echo no
+        return
+    fi
+
+    local boot="$(ls -1 "${mountpoint}/" | tr [:upper:] [:lower:] | grep -w "boot")"
+    
+    if [ -f "${mountpoint}$MSLEGACYFILE" ] ; then
+        if [ "$boot" != "" ] || [ "$(isrecoverypartition "$mountpoint")" = "no" ] ; then
+            echo yes
+            return
+        fi
+    fi
+    echo no
+}
+
+TODO()
+{
+    debug "= Change lsblk to blkid for more info?"
+    debug "= Testing for other filesystems like btrfs and zfs"
+    debug "= More Windows testing"
+}
+
+_preparations()
+{
+    TODO
+    if [ "$(id -u)" != "0" ] ; then
+        error "Need to run as root."
+        exit 1
+    fi
+
+    verbose -n "Info: output is going to "
+    case "$OUT" in
+        /dev/*) ;;
+        *)
+            rm -f "$OUT"
+            verbose -n "file "
+            ;;
+    esac
+    verbose "$OUT"
+
+    local id='$Id: antergos-customcfg,v 1.71 2019/07/18 07:55:20 manuel Exp $'
+    local ID="$(echo "$id" | cut -d ' ' -f 3)"
+    out "# Generated by $0 $ID at $(date)."
+    out "#"
+
+    out "menuentry '=================================== custom.cfg ===================================' {"
+    out "  set _thisisadummy=placeholder"
+    out "}"
+}
+
+dev2hd()   # NOTE: only /dev/sdXY supported!
+{
+    local dev="$1"
+
+    local drive="${dev:7:1}"
+    local nr="$(echo "$drive" | tr abcdefghij 0123456789)"
+
+    if [ $nr -ge 0 ] && [ $nr -le "9" ] ; then
+        echo "hd$nr"
+    else
+        error2 "failed to extract drive info hdX from $dev (got 'hd$nr')"
+    fi
+}
+
+dev2part()   # NOTE: only /dev/sdXY supported!
+{
+    local dev="$1"
+
+    local nr="${dev:8}"
+    if [ $nr -ge 1 ] && [ $nr -lt $MAX_PARTITIONS ] ; then
+        echo "$nr"
+    else
+        error2 "failed to extract partition number from $dev (got '$nr')"
+    fi
+}
+
+LatestAntergosIsoVersion()
+{
+    local version
+    local info="$HOME/info-antergos-iso-version-$$.html"
+
+    wget -q -O "$info" https://antergos.com/try-it/
+
+    if [ $? -eq 0 ] ; then
+        version=$(grep Version "$info" | grep minimal | grep x86_64 | \
+                      sed 's/^.*-minimal-\([0-9.]*\)-x86_64.*$/\1/')
+    fi
+    rm -f "$info"
+    echo "$version"
+}
+
+_get_grub_default_value()
+{
+    # Return the value of the given variable-name in file /etc/default/grub.
+    local varname="$1"
+    source /etc/default/grub
+    echo "${!varname}"
+}
+
+_extras_generate()
+{
+    #local iso=$(LatestAntergosIsoVersion)  # just the ISO version number, e.g. 18.3
+    local bootpath="$1"
+    local chainfile="$bootpath"grub/custom01.cfg
+    local grb=/etc/default/grub
+    local tmpfile="$grb"-$$.tmp
+    local isofilexx
+    local grub_default="$(_get_grub_default_value GRUB_DEFAULT)"
+    local grub_savedefault="$(_get_grub_default_value GRUB_SAVEDEFAULT)"
+
+    if [ "$EXTRAS_SAVEDEFAULT" = "1" ] ; then
+        if [ "$grub_default" != "saved" ] && [ "$grub_savedefault" != "true" ] ; then
+            echo "GRUB_DEFAULT=saved"    >> $grb
+            echo "GRUB_SAVEDEFAULT=true" >> $grb
+            echo2 "Extra: supporting 'savedefault' in $grb"
+            grub-mkconfig -o ${bootpath}grub/grub.cfg
+        else
+            echo "No changes to $grb."
+        fi
+    fi
+
+    out ""
+    out "# Bonus definitions:"
+
+    echo2 "Extra: adding Shutdown"
+    out "#"
+    out "menuentry 'Shutdown' {"
+    out "    halt"
+    out "}"
+
+    echo2 "Extra: adding Reboot"
+    out "menuentry 'Restart' {"
+    out "    reboot"
+    out "}"
+    out "#"
+
+    if [ "$EXTRAS_ISOFILE" != "" ] ; then
+        # Download from:
+        #   https://antergos.com/download/antergos-live-iso/
+        #   https://antergos.com/download/antergos-minimal-iso/
+        out "#"
+        out "#"
+        out "# Enties to boot from the given (Antergos) ISO file(s)."
+        out "# You need to download the appropriate ISO file from https://antergos.com"
+        out "# and store it to $EXTRAS_ISOFILE."
+        out "# Note that if you install from the ISO file, the ISO file can't be"
+        out "# on the same disk as the installation target."
+        out "#"
+        for isofilexx in "${EXTRAS_ISOFILE[@]}"
+        do
+            case "$isofilexx" in
+                *antergos*)
+                    out "menuentry 'Boot $(basename $isofilexx)' {"
+                    out "    set isofile=$isofilexx"
+                    out '    search --no-floppy --set=root --file $isofile'
+                    out '    probe -u $root --set=uuid'
+                    out '    loopback loop $isofile'
+                    out '    linux (loop)/arch/boot/vmlinuz img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
+                    out '    initrd (loop)/arch/boot/intel_ucode.img (loop)/arch/boot/archiso.img'
+                    out '}'
+                    ;;
+                *archlinux* | *endeavouros*)
+                    out "menuentry 'Boot $(basename $isofilexx)' {"
+                    out "    set isofile=$isofilexx"
+                    out '    search --no-floppy --set=root --file $isofile'
+                    out '    probe -u $root --set=uuid'
+                    out '    loopback loop $isofile'
+                    out '    linux (loop)/arch/boot/x86_64/vmlinuz img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
+                    out '    initrd  (loop)/arch/boot/intel_ucode.img (loop)/arch/boot/x86_64/archiso.img'
+                    out '}'
+                    ;;
+                *manjaro*)
+                    out "menuentry 'Boot $(basename $isofilexx)' {"
+                    out "    set isofile=$isofilexx"
+                    out '    set grdriver="$2"  # free or nonfree graphics driver'
+                    out '    if [ "$grdriver" = "" ] ; then'
+                    out '        set grdriver=free'
+                    out '    fi'
+                    out '    search --no-floppy --set=root --file $isofile'
+                    out '    probe -u $root --set=uuid'
+                    out '    loopback loop $isofile'
+                    out '    linux  (loop)/boot/vmlinuz-x86_64  img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile driver=$grdriver'
+                    out '    initrd  (loop)/boot/intel_ucode.img (loop)/boot/initramfs-x86_64.img'
+                    out '}'
+                    ;;
+                *)
+                    echo2 "Warning: unsupported ISO file '$isofilexx', ignored."
+                    continue
+                    ;;
+            esac
+            echo2 "Extra: $isofilexx"
+        done
+    fi
+    out "#"
+
+    out "#"
+    out "# Chain to $(basename $chainfile)."
+    out "#"
+    out "if [ -f $chainfile ] ; then"
+    out "    source $chainfile"
+    out "fi"
+    echo2 "Extra: chaining $chainfile"
+}
+
+meline()
+{
+    local osname="$(test -n "$1" && printf "%-20s"         "$1")"
+    local     kv="$(test -n "$2" && printf "kernel=%-10s " "$2")"
+    local    dev="$(test -n "$3" && printf "dev=%-10s "    "$3")"
+    local  label="$(test -n "$4" && printf "label=%-10s"   "$4")"
+    local  extra="$(test -n "$5" && printf " %s"           "$5")"
+
+    echo "menuentry '$osname $kv$dev$label$extra' {"
+}
+
+StartHere2()
+{
+    _preparations
+
+    case "$OUT" in
+        /dev/*) ;;
+        *) echo2 "Generating custom.cfg ... " ;;
+    esac
+
+    local mntdefault=$HOME/mnt-$$
+    local mnt="$mntdefault"
+    local mntpre
+
+    mkdir -p "$mnt"
+
+    local rootuuid="" rootlabel=""
+    local osname rootdev bootdev kernels kernel kern bootuuid="" bootlabel="" rwo ucode initrd kv kv2 boot hd part
+    local swapuuid resume
+    local fstype
+    local partlabel                 # windows
+    local legacyout="" efiout="" saveout  # windows
+    local legacystr efistr          # windows
+    local winlegroots winefiroots
+    local winlegs=0 winefis=0
+    local xx yy ix
+    local kparams="$(_get_grub_default_value GRUB_CMDLINE_LINUX_DEFAULT)"
+    local menuentryline
+
+    #kparams+=" splash"
+
+    verboseos "osname" "device" "kernel (if known)" "="
+
+    # is there a swap partition?
+    for rootuuid in $(GetUuids)
+    do
+        fstype="$(GetFstype "$rootuuid")"
+        case "$fstype" in
+            swap) swapuuid=$rootuuid ; break ;;  # assume only one swap partition
+        esac
+    done
+    test "$swapuuid" != "" && resume="resume=UUID=$swapuuid"
+
+    for rootuuid in $(GetUuids)
+    do
+        fstype="$(GetFstype "$rootuuid")"
+
+        case "$fstype" in
+            ext2|ext4) ;; # supported
+            vfat|ntfs) ;; # supported
+            swap|iso9660) continue ;;  # nothing to see here...
+            *)
+                # e.g. btrfs, zfs not tested!
+                warning "unsupported file system '$fstype' on uuid $rootuuid, ignored."
+                continue
+                ;;
+        esac
+
+        mnt=$mntdefault
+
+        rootdev=$(uuid2dev "$rootuuid")
+
+#        if [ "$(is_fuseblk "$rootdev")" = "yes" ] ; then
+
+        if [ "$fstype" = "ntfs" ] && [ "$(ismounted "$rootdev")" = "yes" ] ; then
+            mntpre=1
+            mnt=$(GetMountpoint "$rootuuid")
+            if [ "$mnt" = "" ] ; then
+                echo2 "skipping fuseblk dev $rootdev ..."
+                continue
+            fi
+        else
+            mntpre=0
+            _runerr mount "UUID=$rootuuid" "$mnt"   # mount that we'll see what's inside
+        fi
+
+        rootlabel="$(uuid2label "$rootuuid")"
+        #debug "rootlabel '$rootlabel' rootuuid $rootuuid"
+
+        case "$fstype" in
+
+            ext2|ext4)
+
+                # Linux stuff here.
+                # handle linux root partitions
+
+                if [ "$(isrootpartition "$mnt")" = "yes" ] ; then
+
+                    osname=$(GetOsNameFromMountPoint "$mnt")
+
+                    bootuuid=$(root2boot "$mnt" "$rootuuid")
+                    case "$bootuuid" in
+                        "$ERROR")
+                            test $mntpre -eq 0 && _runerr umount "$mnt"
+                            break
+                            ;;
+                    esac
+                    
+                    kernels=$(GetKernelsFromMountPoint "$mnt" "$rootuuid" "$bootuuid" "$osname")
+                    bootlabel=$(uuid2label "$bootuuid")
+
+                    if [ "$rootuuid" = "$bootuuid" ] ; then
+                        boot="/boot/"  # boot and root are in the same partition
+                    else
+                        boot="/"       # boot and root are in different partitions
+                    fi
+
+                    case "$osname" in
+                        ArchLinux|AntergosLinux|EndeavourOSLinux|ManjaroLinux)
+                            rwo=rw
+                            if [ -f "$mnt"${boot}intel-ucode.img ] ; then
+                                ucode="${boot}intel-ucode.img"
+                            elif [ -f "$mnt"${boot}amd-ucode.img ] ; then
+                                ucode="${boot}amd-ucode.img"
+                            else
+                                ucode=""
+                            fi
+                            #initrd="initramfs-??.img"  # set later
+                            ;;
+                        *)
+                            case "$osname" in
+                                LinuxMint) ;;
+                                *) warning "OS $osname not supported, generation may fail!" ;;
+                            esac
+                            rwo=ro
+                            ucode=""
+                            initrd="initrd.img"
+                            ;;
+                    esac
+
+                    # generate linux menu entries here
+                    for kernel in $kernels
+                    do
+                        case "$osname" in
+                            ArchLinux|AntergosLinux|EndeavourOSLinux|ManjaroLinux)
+                                kern=$(basename "$kernel")
+                                kv=$(echo "$kern" | sed -e 's|vmlinuz-||' -e 's|-x86_64||')
+                                kv2=$(echo "$kern" | sed -e 's|vmlinuz-||')
+                                initrd=initramfs-"$kv2".img
+                                if [ "$rootlabel" != "" ] ; then
+				    menuentryline="$(meline "$osname" "$kv" "$rootdev" "$rootlabel")"
+				    out "$menuentryline"
+                                else
+				    menuentryline="$(meline "$osname" "$kv" "$rootdev")"
+				    out "$menuentryline"
+                                    #out "menuentry '$osname (kernel=$kv dev=$rootdev)' {"
+                                fi
+                                verboseos "$osname" "$rootdev" "$kv" ""
+                                ;;
+                            *)
+                                case "$kernel" in
+                                    *vmlinuz.old) continue ;;  # skip old kernels
+                                esac
+                                kern=$kernel
+                                verboseos "$osname" "$rootdev" "" ""
+                                out "menuentry '$osname at $rootdev' {"
+                                ;;
+                        esac
+
+                        # comments section
+                        if [ "$rootuuid" = "$bootuuid" ] ; then
+                            bootdev="$rootdev"
+                            out "  # UUID=$rootuuid"
+                            if [ "$rootlabel" != "" ] ; then
+                                out "  # LABEL=$rootlabel"
+                            fi
+                            out "  # root partition $rootdev"
+                        else
+                            bootdev=$(uuid2dev "$bootuuid")
+                            out "  # root UUID=$rootuuid"
+                            out "  # boot UUID=$bootuuid"
+                            if [ "$rootlabel" != "" ] ; then
+                                out "  # root LABEL=$rootlabel"
+                            fi
+                            if [ "$bootlabel" != "" ] ; then
+                                out "  # boot LABEL=$bootlabel"
+                            fi
+                            out "  # root partition $rootdev"
+                            out "  # boot partition $bootdev"
+                        fi
+
+                        echo2 "Found $osname (kernel: $(echo $kern | sed 's|vmlinuz-||')) on $bootdev"
+
+                        # contents section
+                        out "  savedefault"
+
+                        if [ 0 -eq 1 ] ; then
+                            if [ "$KP_UUID" = "" ] ; then
+                                kparams="${KP_PARAMS[0]}"
+                                #echo "kparams = '$kparams'" >&2
+                            else
+                                for ((ix=0; ix < ${#KP_PARAMS[@]}; ix++))
+                                do
+                                    if [ "${KP_UUID[$ix]}" = "$rootuuid" ] ; then
+                                        kparams="${KP_PARAMS[$ix]}"
+                                    else
+                                        kparams=""
+                                    fi
+                                done
+                            fi
+                        fi
+
+                        case "$GENPREFER" in
+                            uuid|file)
+                                out "  search --set --fs-uuid $bootuuid  # boot partition id"
+                                out "  linux $boot$kern root=UUID=$rootuuid $rwo $resume $kparams"
+                                ;;
+                            device)
+                                case "$bootdev" in
+                                    /dev/sd*)
+                                        hd=$(dev2hd "$bootdev")
+                                        part=$(dev2part "$bootdev")
+                                        out "  set root=($hd,$part)"
+                                        out "  linux $boot$kern root=$rootdev $rwo $resume $kparams"
+                                        ;;
+                                    *)
+                                        # other devices not supported
+                                        out "  search --set --fs-uuid $bootuuid  # boot partition id"
+                                        out "  linux $boot$kern root=UUID=$rootuuid $rwo $resume $kparams"
+                                        ;;
+                                esac
+                                ;;
+                            label)
+                                if [ "$bootlabel" != "" ] ; then
+                                    out "  search --set --label $bootlabel  # boot partition id"
+                                else
+                                    out "  search --set --fs-uuid $bootuuid  # boot partition id"   # fallback
+                                fi
+                                if [ "$rootlabel" != "" ] ; then
+                                    out "  linux $boot$kern root=LABEL=$rootlabel $rwo $resume $kparams"
+                                else
+                                    out "  linux $boot$kern root=UUID=$rootuuid $rwo $resume $kparams"   # fallback
+                                fi
+                                ;;
+                        esac
+                        out "  initrd $ucode $boot$initrd"
+                        out "}"
+
+			if [ "$EXTRAS_NOGUI" = "1" ] ; then
+                            # menuentry without graphical desktop
+                            case "$osname" in
+				AntergosLinux|EndeavourOSLinux)  # better support for these!
+				    menuentryline="$(meline "$osname" "$kv" "$rootdev" "" "GUI=no")"
+				    out "$menuentryline"
+                                    out "  savedefault"
+                                    out "  search --set --fs-uuid $bootuuid"
+                                    out "  linux  $boot$kern root=UUID=$rootuuid $rwo $resume $kparams systemd.unit=multi-user.target"
+                                    out "  initrd $ucode $boot$initrd"
+                                    out "}"
+                                    ;;
+                            esac
+			fi
+                    done
+                fi
+                ;;
+
+            ntfs)
+                # handle Windows legacy partition (may not work in all cases)
+
+                if [ "$(islegacypartition "$mnt" "$rootlabel")" = "yes" ] ; then
+
+                    saveout="$OUT"
+                    if [ "$legacyout" = "" ] ; then
+                        legacyout=$HOME/legacyout-$$
+                    fi
+                    OUT=$legacyout
+
+                    legacystr+="$rootdev "
+                    partlabel=$(blkid_partlabel "$rootuuid")
+
+                    winlegroots[$((winlegs++))]=$(echo "Found Windows (legacy) on $rootdev")
+
+                    out "menuentry 'Windows (legacy at $rootdev)' {"
+                    out "  # UUID=$rootuuid"
+                    if [ "$partlabel" != "" ] ; then
+                        out "  # PARTLABEL=$partlabel"
+                    fi
+                    if [ "$rootlabel" != "" ] ; then
+                        out "  # LABEL=$rootlabel"
+                    fi
+                    out "  # partition $rootdev"
+
+                    out "  savedefault"
+                    case "$GENPREFER" in
+                        uuid)
+                            out "  search --set --fs-uuid $rootuuid  # root partition id"
+                            ;;
+                        device)
+                            hd=$(dev2hd "$rootdev")
+                            part=$(dev2part "$rootdev")
+                            out "  set root=($hd,$part)"
+                            ;;
+                        label)
+                            if [ "$rootlabel" != "" ] ; then
+                                out "  search --set --label $rootlabel  # root partition id"
+                            else
+                                out "  search --set --fs-uuid $rootuuid  # root partition id"
+                            fi
+                            ;;
+                        file)
+                            out "  search --set --file $MSLEGACYFILE"
+                            ;;
+                    esac
+                    out "  chainloader +1"
+                    out "  # ntldr $MSLEGACYFILE  # possible alternative to 'chainloader +1'"
+                    out "}"
+                    out ""
+
+                    OUT="$saveout"
+                fi
+                ;;
+
+            vfat)
+                # handle Windows EFI partition
+
+                partlabel=$(blkid_partlabel "$rootuuid")
+
+                if [ "$(isefipartition "$mnt")" = "yes" ] ; then
+
+                    winefiroots[$((winefis++))]=$(echo "Found Windows (efi) on $rootdev@$MSBOOTFILE")
+
+                    saveout="$OUT"
+                    if [ "$efiout" = "" ] ; then
+                        efiout=$HOME/efiout-$$
+                    fi
+                    OUT=$efiout
+
+                    efistr+="$rootdev "
+                    
+                    out "menuentry 'Windows (EFI ar $rootdev)' {"
+                    out "  # UUID=$rootuuid"
+                    if [ "$partlabel" != "" ] ; then
+                        out "  # PARTLABEL=$partlabel"
+                    fi
+                    if [ "$rootlabel" != "" ] ; then
+                        out "  # LABEL=$rootlabel"
+                    fi
+                    out "  # partition $rootdev"
+
+                    out "  savedefault"
+                    case "$GENPREFER" in
+                        uuid)
+                            out "  search --set --fs-uuid $rootuuid  # EFI partition id"
+                            ;;
+                        device)
+                            hd=$(dev2hd "$rootdev")
+                            part=$(dev2part "$rootdev")
+                            out "  set root=($hd,$part)"
+                            ;;
+                        label)
+                            if [ "$rootlabel" != "" ] ; then
+                                out "  search --set --label $rootlabel  # EFI partition id"
+                            else
+                                out "  search --set --fs-uuid $rootuuid  # EFI partition id"
+                            fi
+                            ;;
+                        file)
+                            out "  search --set --file $MSBOOTFILE"
+                            ;;
+                    esac
+                    out "  chainloader $MSBOOTFILE"
+                    out "}"
+                    out ""
+
+                    OUT="$saveout"
+                fi
+                ;;
+        esac
+
+        test $mntpre -eq 0 && _runerr umount "$mnt"
+    done
+
+    # Windows efi and legacy menuentries may have beed saved, write them out now.
+
+    if [ $winefis -gt 0 ] || [ $winlegs -gt 0 ] ; then
+        #
+        # Windows installations were found.
+        #
+        # Idea: if EFI installations are found, no legacy installations are shown even if found!
+        # So EFI stuff prevails over legacy stuff.
+        #
+        verbose ""
+        verboseos "osname" "device(s)" "" "="
+
+        if [ "$efiout" != "" ] ; then
+            for ((xx=0; xx < winefis; xx++))
+            do
+                echo "${winefiroots[$xx]}"
+            done
+            verboseos "Windows" "$efistr" "" ""
+            cat "$efiout" >> "$OUT"
+            rm -f "$efiout"
+        fi
+        if [ "$legacyout" != "" ] ; then
+            for ((xx=0; xx < winlegs; xx++))
+            do
+                echo "${winlegroots[$xx]}"
+            done
+            verboseos "Windows" "$legacystr" "" ""
+            cat "$legacyout" >> "$OUT"  # use this only if efi boot does not exist
+            rm -f "$legacyout"
+        fi
+    fi
+    if [ "$legacyout" != "" ] ; then
+        rm -f "$legacyout"
+        debug "deleted $legacyout"
+    fi
+
+    test "$(ismounted "$mnt")" = "no" && rmdir "$mnt"
+    test -d "$mntdefault" && rmdir "$mntdefault"
+
+    _extras_generate $boot
+    
+    chmod go-rwx "$OUT"
+
+    echo2 "done."
+}
+
+Constructor()
+{
+    DEBUG=0                  # 0|1 = {disable debugging output} | {enable debugging output}
+    VERBOSE=0                # 0|1 = {disable extra generation output} | {enable extra generation output}
+
+    GENPREFER=uuid           # uuid,label,device: prefer this kind of value in generated menuentry
+
+    EXTRAS_ISOFILE=()
+    EXTRAS_SAVEDEFAULT=0     # 1=modify /etc/default/grub to support "savedefault", 0=don't do it
+    EXTRAS_NOGUI=0           # 1=generate also non-GUI entries, 0=don't
+
+    MAX_PARTITIONS=100
+
+    UNKNOWN="(unknown)"      # returned value in most failures
+    ERROR="(error)"
+
+    HAS_FUSEBLKS=""
+
+    DEFAULT_OUT="/boot/grub/custom.cfg"  # default output file
+    OUT="$DEFAULT_OUT"
+
+    # indexes based on the variable LSBLK assignment
+    ix_device=0
+    ix_uuid=1
+    ix_label=2
+    ix_mountpoint=4
+
+    LSBLK="$(lsblk --pairs --output NAME,UUID,LABEL,FSTYPE,MOUNTPOINT | grep -v FSTYPE=\"swap\" | sed 's|^NAME="|NAME="/dev/|')"
+    BLKID="$(blkid)"
+
+    MSBOOTFILE=/EFI/Microsoft/Boot/bootmgfw.efi
+    MSLEGACYFILE=/bootmgr
+
+    # read (using the source command) a config file, if it exists
+    local configfile=/boot/grub/custom.conf
+    if [ -f "$configfile" ] ; then
+        source "$configfile"
+    fi
+}
+
+out()
+{
+    if [ -z "$2" ] ; then
+	echo "$1" >> "$OUT"
+    else
+	echo "$2" >> "$1"
+    fi
+}
+
+
+Usage()
+{
+    local exitval="$1"
+    case "$exitval" in
+        0|1) ;;
+        *)
+            error "value $exitval not supported, changed to 1."
+            exitval=1
+            ;;
+    esac
+
+    echo2 ""
+    echo2 "Usage: $0 [options]"
+    echo2 "Options:"
+    echo2 "  --out=FILENAME"
+    echo2 "                   Changes the output filename. Default filename is $DEFAULT_OUT."
+    echo2 "                   Note that the reserved filenames '1' and 'stdout' mean standard output."
+    echo2 "                   Be aware that the given file will be deleted in the beginning."
+    echo2 "  --extras-isofile=FILENAME"
+    echo2 "                   Generate an entry to boot from the given full path to an Antergos ISO file."
+    echo2 "                   Example: --extras-isofile=/ISO/antergos-18.3-x86_64.iso"
+    if [ 0 -eq 1 ] ; then
+    # not working yet
+    echo2 "  --kernelparams=UUID|PARAMS"
+    echo2 "                   Kernel boot parameter list for a kernel on the given UUID."
+    echo2 "                   Note that this option can be used several times."
+    echo2 "                   Note also that if UUID is empty, then all linux entries get this param set."
+    echo2 "                   Example:"
+    echo2 "                   --kernelparams='56cff846-b6f3-4260-cc30-51d2836236ca|modprobe.blacklist=nouveau i8042.dumbkbd=1'"
+    fi
+    echo2 "  --extras-savedefault"
+    echo2 "                   Modify /etc/default/grub to support 'savedefault'."
+    echo2 "  --extras-nogui"
+    echo2 "                   Generate also non-GUI entries."
+    echo2 "  --verbose=NR"
+    echo2 "                   Amount of info while generating. NR: 0=less(default) 1=more."
+    echo2 "  --debug=NR"
+    echo2 "                   Configure debug output. NR: 0=disable(default) 1=enable."
+    echo2 "  --genprefer=MODE"
+    echo2 "                   How partitions are shown in menuentries."
+    echo2 "                   MODE: uuid(default), label, device, file(in Windows)."
+    echo2 "                   The label is used only if it exists."
+    echo2 "  --help | -h"
+    echo2 "                   This help."
+    echo2 ""
+
+    exit "$exitval"
+}
+
+HandleOptions()
+{
+    local arg
+    local uuid params
+    local count_uuid count_params
+
+    for arg in "$@"
+    do
+        case "$arg" in
+            --out=*)
+                OUT=${arg:6}
+                case "$OUT" in
+                    stdout|1) OUT=/dev/stdout ;; # convert 'reserved word' stdout
+                esac
+                ;;
+            --help|-h)
+                Usage 0
+                ;;
+            --verbose=*)
+                VERBOSE=${arg:10}
+                case "$VERBOSE" in
+                    0|1) ;;
+                    *) error "unsupported value in option '$arg'" ; Usage 1 ;;
+                esac
+                ;;
+            --debug=*)
+                DEBUG=${arg:8}
+                case "$DEBUG" in
+                    0|1) ;;
+                    *)  error "unsupported value in option '$arg'" ; Usage 1 ;;
+                esac
+                ;;
+            --genprefer=*)  # label,uuid,device
+                GENPREFER=${arg:12}
+                case "$GENPREFER" in
+                    label|uuid|device|file) ;;
+                    *) error "unsupported value in option '$arg'" ; Usage 1 ;;
+                esac
+                ;;
+            --max-partitions=*)  # this may be needed only with large number of partitions
+                MAX_PARTITIONS=${arg:17}
+                if [ $MAX_PARTITIONS -lt 5 ] || [ $MAX_PARTITIONS -gt 1000 ] ; then
+                    error "value of $MAX_PARTITIONS must be within 5..1000"
+                    Usage 1
+                fi
+                ;;
+            --extras-isofile=*)
+                EXTRAS_ISOFILE="${arg:17}" # comma separated list
+                EXTRAS_ISOFILE=($(echo "$EXTRAS_ISOFILE" | tr ',' '\n'))
+                ;;
+            --extras-savedefault)
+                EXTRAS_SAVEDEFAULT=1
+                ;;
+	    --extras-nogui)
+		EXTRAS_NOGUI=1
+		;;
+            --kernelparams=*)   # NOTE: not yet implemented!
+                uuid=$(   echo "${arg:15}" | sed 's/^\([0-9a-fA-F\-]*\)|.*$/\1/' )
+                params=$( echo "${arg:15}" | sed 's/^[0-9a-fA-F\-]*|\(.*\)$/\1/' )
+
+                if [ -n "$uuid" ] ; then
+                    KP_UUID+=("$uuid")
+                fi
+                KP_PARAMS+=("$params")
+
+                count_uuid=${#KP_UUID[@]}
+                count_params=${#KP_PARAMS[@]}
+
+                if [ $count_uuid -ne 0 ] && [ $count_uuid -ne $count_params ] ; then
+                    # uuid not empty => every param set must have a uuid
+                    error "Misuse of option --kernelparams!"
+                    error "Found with '$arg'"
+                    Usage 1
+                fi
+                if [ $count_uuid -eq 0 ] && [ $count_params -ne 1 ] ; then
+                    # uuid empty => only one kernel param set allowed
+                    error "Misuse of option --kernelparams!"
+                    error "Found with '$arg'"
+                    Usage 1
+                fi
+                ;;
+            -*)
+                error "unsupported option '$arg'."
+                Usage 1
+                ;;
+            *)
+                error "unsupported command line arg '$arg'."
+                Usage 1
+                ;;
+        esac
+    done
+    if [ "$OUT" = "$DEFAULT_OUT" ] ; then
+        if [ -f "$OUT" ] ; then
+            mv -f "$OUT" "$OUT"-$(date +%Y%m%d-%H%M)
+        fi
+    fi
+}
+
+StartHere()
+{
+    Constructor
+    HandleOptions "$@"
+    StartHere2
+}
+
+StartHere "$@"
