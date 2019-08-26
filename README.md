@@ -7,7 +7,7 @@ How to use this repo? Check these [instructions](../../../antergos-common-repo-i
 Note that the <b>Releases</b> button above shows the packages.
 
 ## NEWS
-- 2019-08-26: added 'arch-news-for-you'
+- 2019-08-26: added 'arch-news-for-you' and 'remirror-arch'.
 - 2019-08-04: the old server address works no more. I has been replaced with another, see [instructions](../../../antergos-common-repo-info/blob/master/README.md).
 - 2019-07-30: now you can use also
 <pre>
