@@ -7,6 +7,7 @@ How to use this repo? Check these [instructions](../../../antergos-common-repo-i
 Note that the <b>Releases</b> button above shows the packages.
 
 ## NEWS
+- 2019-08-26: added 'arch-news-for-you'
 - 2019-08-04: the old server address works no more. I has been replaced with another, see [instructions](../../../antergos-common-repo-info/blob/master/README.md).
 - 2019-07-30: now you can use also
 <pre>
@@ -34,6 +35,10 @@ More: https://github.com/manuel-192/antergos-customcfg
 ### arch-cl
 Shows the changelog of an Arch package.<br>
 More: https://github.com/manuel-192/arch-cl
+
+### arch-news-for-you
+Shows Arch latest news only if they affect your machine.<br>
+More: N/A
 
 ### cp-completion
 Replacement for the official bash completion for the 'cp' command.
