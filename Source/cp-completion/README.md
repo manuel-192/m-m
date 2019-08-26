@@ -1,4 +1,4 @@
-# cp.completion
+# cp-completion
 The cp.completion file provides a bash completion for the 'cp' command.<br>
 It handles more options and their values than the 'official' cp completion.<br>
 Copy this file into <b>/usr/share/bash-completion/completions/cp</b>.<br><br>
