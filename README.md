@@ -54,13 +54,6 @@ More: https://github.com/manuel-192/Antergos/tree/master/misc-stuff (slightly ou
 An easy to use pastebin helper. "Eat" file contents or command outputs and send them to pastebin.<br>
 More: https://github.com/manuel-192/eat
 
-### makepkg2
-Entends <b>makepkg</b> with a new option --url=<url-to-pkgbuild>.
-The URL supports protocols: https, http, and file.<br>
-Example: makepkg2 --url=https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=yay
-<br>
-More: https://github.com/manuel-192/m-m/tree/master/Source/makepkg2
-
 ### pkexec2
 Wrapper for pkexec, retaining the current working directory instead of changing it to /root.<br>
 More: https://github.com/manuel-192/Antergos/tree/master/pkexec2
