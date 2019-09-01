@@ -61,7 +61,7 @@ More: https://github.com/manuel-192/Antergos/tree/master/pkexec2
 ### remirror
 Rank mirrors on Arch (used to do so also on Antergos).<br>
 [Changelog](Changelogs/remirror.md)<br>
-More: https://github.com/manuel-192/remirror
+More: See changelog.
 
 ### remirror-arch
 Rank Arch mirrors. Like remirror above, but with a new implementation.<br>
