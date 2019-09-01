@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eat
+pkgdesc="Helper for sending e.g. log files to the Internet (like pastebin)."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1.8
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash' 'curl')
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=(
+    f20fe927780a6d9f30b9c5aeaa432445008460df8acf838901838291a83e2bd67c3b9942c2cdf198fb2b0456f54b219a125979166a71c23d58f17dd073e5aa72
+)
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname $pkgdir/usr/bin/$pkgname
+}

@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=remirror-arch
+pkgdesc="Ranks Arch mirrors, resembles 'reflector', has different UI."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1.15
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(bash pacman-mirrorlist wget)
+
+source=(
+    "$url/${pkgname}"
+)
+sha512sums=(
+    2ba72c23b7dec42a8d4fd2801992fae0d2722c2f7cd032046ffe03340d47944dee999cea006d1398c37f078ded246fcda38123f0f01c693a4107596d12274611
+)
+
+package() {
+  cd $srcdir
+  install -Dm755 ${pkgname}                 $pkgdir/usr/bin/$pkgname
+}

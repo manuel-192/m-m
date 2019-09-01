@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=customcfg
+pkgdesc="Create /boot/grub/custom.cfg for grub. Renamed from antergos-customcfg."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1.71
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=(
+    8638d5155d6d1c9adf0b117c47c91e5f22e126c539ca194d814c1426a1068b60520d2e0fd83d65db793df9287045d67062c73b760c4f4720c2738def3dbc0d40
+)
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname $pkgdir/usr/bin/$pkgname
+}

@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=arch-news-for-you
+pkgdesc="Show latest Arch news only if they affect your machine."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1.3
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(bash xdg-utils)
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=(
+    96710568ce3dd7185a5eb0fc3fe0ed28330c7f45c5d9f60b8aa167a51fe58441047a76540f2c90979656758e0daf190babdbf47bbda1024d03a34c07d8fc58df
+)
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname $pkgdir/usr/bin/$pkgname
+}

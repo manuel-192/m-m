@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=yaygg
+pkgdesc="Yet another yad-based gui launcher generator."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1.19
+pkgrel=9
+
+arch=('any')
+license=('GPL')
+depends=('bash' 'yad')
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=(
+    0ffeb5306f3a4b02ec8bb7ebe538b3edd37f9f90c6fac86134a2f183d3e5ec27f154a953074bc179ad97e427c805c6c6d5f3c227a6856af3dabc9b17fc58f388
+)
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+}

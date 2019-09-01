@@ -1,0 +1,27 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=syu
+pkgdesc="Simple pacman wrapper"
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1.7
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash' 'pacman')
+
+source=(
+    "$url/$pkgname"
+    "$url/$pkgname.completion"
+)
+sha512sums=(
+    eabd1367963fc039fdb26be14af2275a3e117b6224c57af48b81aeba8044d3ab4173560f15ab39238949e44acff88aa7ec4b930f219bfd356de9535016974255
+    a00c491d2b3934e9fa134953e3db3f93663f91ecec807eaa732da99df6b221124d8d23fed5bca0383f36248bd83ac8d124116d74c659508c2b9bda8572bf6bf9
+)
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname            $pkgdir/usr/bin/$pkgname
+  install -Dm644 $pkgname.completion $pkgdir/usr/share/bash-completion/completions/$pkgname
+}

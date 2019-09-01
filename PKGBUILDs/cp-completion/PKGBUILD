@@ -1,0 +1,35 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=cp-completion
+pkgdesc="Bash completion for the 'cp' command."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+source=(
+    "$url/$pkgname"
+)
+sha512sums=(
+    0836ccafd5449432158462dae89cc8b175e63a1b9b0defd628bf6f4d053442bb8d72bf491a0ef2b4d104a7d66cd16d167075856683d1bc154e9c1db6ae8bd2e1
+)
+
+package() {
+  cd $srcdir
+
+  local comps=/usr/share/bash-completion/bash_completion
+  local fixer=remove_cp_command_from_common_completions
+
+  echo "#!/bin/bash" >> $fixer
+  echo "cp -a $comps $comps.bak-\$(date +%Y%m%d-%H%M)" >> $fixer
+  echo "sed -i 's|^\(complete -F _longopt .*\) cp \(.*\)\$|\1 \2|' $comps" >> $fixer
+
+  # install the new cp completion file
+  install -Dm644 $pkgname $pkgdir/usr/share/bash-completion/completions/cp
+
+  # Install a command that removes the 'cp' command from the common completion definitions.
+  # This command needs to be run only once (until package bash-completion is upgraded).
+  install -Dm755 $fixer $pkgdir/usr/bin/$fixer
+}

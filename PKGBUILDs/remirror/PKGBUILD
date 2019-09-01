@@ -1,0 +1,34 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=remirror
+pkgdesc="Ranks Arch mirrors, somewhat resembles 'reflector'."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1.56
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash' 'curl' 'pacman')
+
+source=(
+    "$url/${pkgname}"
+    "$url/${pkgname}-bash-completion"
+    "$url/${pkgname}.service"
+    "$url/${pkgname}.timer"
+)
+sha512sums=(
+    6751303e83a7ad08da2c163e895faff16dc39f3abca14d0885c0ee4e9546d1622a80b8ab8e8bb4cb26dd2936de518deb6d0418d6e47ce0f761e477894b37e6ed
+    29894ab77d49221782f1357f9204890dd824d2f21fad66045024b6f8c615fcaf5db44726c2d29367767c9671d5baa33fb82a345bf3a905831421e79e7251976e
+    73c10c7de62b776c711034765303757dd4c03797caecd2f4bab7691f146477f87dfe9fd1fbb5b1203e334ecee0b8454a96e26954d6aaff9b59cc9ce7c448dbbe
+    f90e757080ac298c1bb5c00d061e0a7019f1a74b28befa6967be6d284c311b4ffe5fc37fd4f4c530262c8cd918b3e1848e5eca145f496f48ef659a4ac6ec99db
+
+)
+
+package() {
+  cd $srcdir
+  install -Dm755 ${pkgname}                 $pkgdir/usr/bin/$pkgname
+  install -Dm644 ${pkgname}-bash-completion $pkgdir/usr/share/bash-completion/completions/$pkgname
+  install -Dm644 ${pkgname}.timer           $pkgdir/usr/lib/systemd/system/${pkgname}.timer
+  install -Dm644 ${pkgname}.service         $pkgdir/usr/lib/systemd/system/${pkgname}.service
+}
