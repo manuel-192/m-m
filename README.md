@@ -60,8 +60,7 @@ Rank Arch mirrors. Like remirror above, but with a new implementation.<br>
 More: https://github.com/manuel-192/m-m/tree/master/Source/remirror-arch
 
 ### syu
-A very simple pacman wrapper.<br>
-More: https://github.com/manuel-192/syu
+A very simple pacman wrapper.
 
 ### yaygg
 A simple GUI based launcher generator, based on the yad framework.<br>
