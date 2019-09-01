@@ -60,8 +60,7 @@ More: https://github.com/manuel-192/Antergos/tree/master/pkexec2
 
 ### remirror
 Rank mirrors on Arch (used to do so also on Antergos).<br>
-[Changelog](Changelogs/remirror.md)<br>
-More: See changelog.
+See [changelog](Changelogs/remirror.md)<br>
 
 ### remirror-arch
 Rank Arch mirrors. Like remirror above, but with a new implementation.<br>
@@ -73,5 +72,4 @@ More: https://github.com/manuel-192/syu
 
 ### yaygg
 A simple GUI based launcher generator, based on the yad framework.<br>
-[Changelog](Changelogs/yaygg.md)<br>
-More: https://github.com/manuel-192/yaygg
+See [changelog](Changelogs/yaygg.md)
