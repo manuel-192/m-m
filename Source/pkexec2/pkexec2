@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# 'pkexec' wrapper.
+# Executes the command retaining the $PWD instead of changing to /root.
+#
+# Helper script '$cmdindir' changes directory
+# back to $PWD first and then executes the command.
+#
+
+_pkexec2_main()
+{
+    local progname="pkexec2"
+    local cmdindir="$(mktemp "$HOME/.cmdindir.XXXXXXX")"
+    local xx
+
+    echo "#!/bin/bash"   >> "$cmdindir"
+    echo "cd \"$PWD\""   >> "$cmdindir"
+    for xx in "$@" ; do
+        if [ "$xx" = "$1" ] ; then
+            printf '"%s"' "$xx" >> "$cmdindir"
+        else
+            printf ' "%s"' "$xx" >> "$cmdindir"
+        fi
+    done
+    echo "" >> "$cmdindir"
+    chmod +x "$cmdindir"
+
+    /usr/bin/pkexec "$cmdindir"
+    rm -f "$cmdindir"
+}
+
+_pkexec2_main "$@"
