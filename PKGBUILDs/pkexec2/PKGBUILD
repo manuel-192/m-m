@@ -4,23 +4,21 @@
 pkgname=pkexec2
 pkgdesc='pkexec wrapper, retaining the current working directory instead of changing it to /root'
 url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
-pkgver=0.1.15
+pkgver=1.1.10
 pkgrel=1
+
 arch=('any')
 license=('GPL')
 depends=('bash' 'polkit')
 
+source=(
+    "$url/$pkgname"
+)
+sha512sums=(
+    5771821fbad322b4a2d543fe17542bee2d5584e941ad4d5c7fb96944e48c4d64a087090f9e89c7be4c2b2253aab011a77e9777664080eb6d6b83f9e2c9d2eb3c
+)
+
 package() {
-    local helper=cmdindir
-
     cd $srcdir
-
-    echo "#!/bin/bash"                    >  $pkgname
-    echo 'pkexec '"$helper"' "$PWD" "$@"' >> $pkgname
-
-    echo "#!/bin/bash"                    >  $helper
-    echo 'cd "$1" ; shift ; "$@"'         >> $helper
-
     install -Dm755 $pkgname    $pkgdir/usr/bin/$pkgname
-    install -Dm755 $helper     $pkgdir/usr/bin/$helper
 }
