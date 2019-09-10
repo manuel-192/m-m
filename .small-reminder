@@ -1,0 +1,13 @@
+#!/bin/bash
+
+_Main()
+{
+    local diffs="$(git diff --compact-summary | cat -)"
+
+    if [ -n "$diffs" ] ; then
+        echo "Github differences:" >&2
+        echo "$diffs" | sed 's|^|        |' >&2
+    fi
+}
+
+_Main "$@"
