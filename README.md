@@ -13,7 +13,7 @@ How to use this repo? Check these [instructions](../../../m-repo-info/blob/maste
 <pre>
 <strike>Server = https://github.com/manuel-192/antergos-m/releases/download/assets</strike>
 </pre>
-The old server address may be removed in near future.
+The old server address has been removed.
 
 ## Packages
 
