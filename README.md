@@ -1,6 +1,6 @@
 # Collection of Manuel's packages.
 
-This repo includes packages created by Manuel.
+This repo includes packages created by Manuel (repository [m-m]).
 <br><br>
 
 How to use this repo? Check these [instructions](../../../m-repo-info/blob/master/README.md).<br>
