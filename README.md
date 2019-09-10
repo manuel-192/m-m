@@ -11,7 +11,7 @@ How to use this repo? Check these [instructions](../../../m-repo-info/blob/maste
 - 2019-08-04: the old server address works no more. I has been replaced with another, see [instructions](../../../m-repo-info/blob/master/README.md).
 - 2019-07-30: now you can use also
 <pre>
-Server = https://github.com/manuel-192/antergos-m/releases/download/assets
+<strike>Server = https://github.com/manuel-192/antergos-m/releases/download/assets</strike>
 </pre>
 The old server address may be removed in near future.
 
