@@ -4,7 +4,7 @@ This repo includes packages created by Manuel.
 <br><br>
 
 How to use this repo? Check these [instructions](../../../m-repo-info/blob/master/README.md).<br>
-Note that the <b>Releases</b> button above shows the packages.
+[List of packages](../../../m-m/releases) (same as the <b>Releases</b> button above).
 
 ## NEWS
 - 2019-08-26: added 'arch-news-for-you' and 'remirror-arch'.
