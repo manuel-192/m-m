@@ -1,0 +1,23 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=dev-bash
+pkgdesc="Bash dev stuff meta."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=(any)
+license=(GPL)
+
+depends=(
+    bash
+    bashdb
+    code    emacs
+    diffuse meld
+    git
+    yad
+)
+
+package() {
+  echo Done.
+}
