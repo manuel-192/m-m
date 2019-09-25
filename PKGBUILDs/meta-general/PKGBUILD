@@ -1,0 +1,43 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=meta-general
+pkgdesc="Nice stuff meta."
+url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=(any)
+license=(GPL)
+
+depends=(
+    colordiff
+    gufw
+    most
+    meld
+    thunderbird
+    libreoffice-fresh
+    chromium
+    terminator tilix
+    simple-scan
+    rcs
+    orage
+    kaffeine
+    ccrypt
+    avidemux-qt
+    android-tools
+    youtube-dl
+
+    gparted
+    linux-lts-headers linux-lts
+    exo xdg-utils
+    # clamav evolution solaar
+
+    hub
+    jq
+    sddm
+    xz
+)
+
+package() {
+  echo Done.
+}
