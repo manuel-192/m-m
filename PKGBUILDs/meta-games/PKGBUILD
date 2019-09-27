@@ -5,14 +5,14 @@ pkgname=meta-games
 pkgdesc="Nice games meta."
 url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
 pkgver=0.1
-pkgrel=1
+pkgrel=2
 arch=(any)
 license=(GPL)
 
 depends=(
     aisleriot
     gnome-chess gnuchess
-    gnome-robots
+    # gnome-robots
     iagno
     kapman
     kmines
