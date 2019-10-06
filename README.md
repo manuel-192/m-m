@@ -32,10 +32,6 @@ See [changelog](Changelogs/customcfg.md)
 ### arch-cl
 Shows the changelog of an Arch package.
 
-### arch-news-for-you
-Shows Arch latest news only if they affect your machine.<br>
-More: https://github.com/manuel-192/m-m/tree/master/Source/arch-news-for-you
-
 ### cp-completion
 Replacement for the official bash completion for the 'cp' command.
 Supports many more options of the 'cp' command than the official version.
