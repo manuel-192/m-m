@@ -3,7 +3,7 @@
 
 pkgname=UserManager
 pkgdesc="A simple graphical user manager for Arch based systems with Xfce."
-url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1.8
 pkgrel=1
 

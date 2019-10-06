@@ -3,7 +3,7 @@
 
 pkgname=remirror-arch
 pkgdesc="Ranks Arch mirrors, resembles 'reflector', has different UI."
-url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1.16
 pkgrel=1
 

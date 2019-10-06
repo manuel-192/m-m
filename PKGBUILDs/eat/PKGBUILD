@@ -3,7 +3,7 @@
 
 pkgname=eat
 pkgdesc="Helper for sending e.g. log files to the Internet (like pastebin)."
-url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1.8
 pkgrel=1
 

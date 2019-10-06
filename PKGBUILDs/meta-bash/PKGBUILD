@@ -3,7 +3,7 @@
 
 pkgname=meta-bash
 pkgdesc="Bash dev stuff meta."
-url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
 pkgrel=1
 arch=(any)

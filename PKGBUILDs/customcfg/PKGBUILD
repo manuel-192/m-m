@@ -3,7 +3,7 @@
 
 pkgname=customcfg
 pkgdesc="Create /boot/grub/custom.cfg for grub. Renamed from antergos-customcfg."
-url="https://github.com/manuel-192/m-m/raw/master/Source/$pkgname"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1.71
 pkgrel=1
 
