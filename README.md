@@ -56,8 +56,8 @@ Rank Arch mirrors. Like remirror above, but with a new implementation.<br>
 More: https://github.com/manuel-192/m-m/tree/master/Source/remirror-arch
 
 ### suc
-A simple wrapper for command 'su -c'.<br>
-It undestands spaces in the command parameters.
+A simple wrapper for command 'su -c'. Useful especially in bash scripts because it
+understands spaces in the command parameters.
 
 ### syu
 A very simple pacman wrapper.
