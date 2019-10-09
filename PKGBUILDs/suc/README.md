@@ -8,7 +8,7 @@ Example: assume
 - you are a non-privileged user, no root and not even a sudoer
 - you have files containing spaces in their names, like "foo bar" and "foo baz"
 
-and you wish to list files starting with 'foo'. As a non-privilegeed user you can run e.g.
+and you wish to list files starting with 'foo'. As a non-privileged user you can run e.g.
 <pre>
     ls -l foo*
 </pre>
