@@ -27,7 +27,7 @@ works. And so does
 <pre>
     suc ls -l foo*
 </pre>
-Then you wish to write a bash script that does the same thing. Like
+Then, inspired with the success with the 'su -c' command you wish to write a bash script that uses the idea. Like
 <pre>
     # Contents of script1:
     su -c "$@"
@@ -36,9 +36,9 @@ and run:
 <pre>
     bash script1 ls -l foo*
 </pre>
-but it fails!
+but it fails! And changing "$@" to "$\*" does not help either (although parameters without spaces are OK).
 
-With the 'suc' command you can write the script like this:
+With the **suc** command you can write the script like this:
 <pre>
     # Contents of script2:
     suc "$@"
