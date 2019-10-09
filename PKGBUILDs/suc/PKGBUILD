@@ -1,0 +1,22 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=suc
+pkgdesc="Simple 'su -c' wrapper (understands spaces in command parameters)."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('6236841f75a652a3e6fb9d722349a06a259cb435f9b51da66851bc3374f4cbe5bfbbb62c3afe2b24186cfde3eb5c88c477d6b24bfbce342853f427d5eefa6df7')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
+}
