@@ -1,7 +1,7 @@
 # suc
 Command 'suc' is about the same as command 'su -c'.
 
-The main difference is that 'suc' understands spaces in command parameters
+The main difference is that 'suc' supports spaces in command parameters
 in bash scripts.
 
 Example: assume
