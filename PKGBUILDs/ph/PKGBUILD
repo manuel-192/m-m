@@ -5,7 +5,7 @@ pkgname=ph
 pkgdesc="Show pacman history."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=2
+pkgrel=3
 
 arch=('any')
 license=('GPL')
@@ -13,10 +13,13 @@ depends=('bash' 'pacman')
 
 source=(
     "$url/$pkgname"
+    "$url/$pkgname.completion"
 )
-sha512sums=('061a69dfc29ee6f76447b4a3798ea87553bd97a823fbbb7d67f61396164d04a6f6574de42c8855b31472c31bf3c17e21c9ecc5bfe0d19f35578a95868680c17a')
+sha512sums=('4ff45ab65ec4b516a80487e3867789896f029f7a5d1e061906b0ef7cd36283ff7f66abbe7f4e416fb1f1bfa6aab05d22c2bbb822f1dcecabd4e97b7c0fbb15ac'
+            'e15f7bef30813c64fc426cc48529c46abcf08311f338e476fbc89b655c9994076f17da9173d01cdda16b15ef843e0d7199cb2e50ed3f1ffabd043387e764d3c1')
 
 package() {
   cd $srcdir
-  install -Dm755 $pkgname  $pkgdir/usr/bin/$pkgname
+  install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
+  install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
 }

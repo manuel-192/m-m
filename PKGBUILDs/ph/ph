@@ -3,48 +3,59 @@
 # Show info about pacman history.
 #
 
-DIE() { echo "Error: $@" >&2 ; exit 1 ; }
+DIE() {
+    echo "Error: $@" >&2
+    Usage
+    exit 1
+}
 
 Usage() {
     local progname="$(basename $0)"
     cat <<EOF >&2
-$progname: Show info about pacman history.
+
+$progname: shows history information about package operations.
 
 Usage: $progname operation [package]
-    operation      One of: up(grade) do(wngrade) in(stall) un(install) re(install).
-    package        Zero or one package name. No package means show all packages under "op".
+
+    operation      One of: upgraded downgraded installed removed reinstalled.
+                   Tip: press the Tab key to complete the word!
+
+    package        Package name (optional). If no package name is given,
+                   show all packages using the given operation.
+
+Note: bash command completion is available.
+
+Examples:
+    ph upgraded firefox
+    ph installed
 
 EOF
 }
 
 Main()
 {
-    local op
+    local op="$1"
     local pkg="$2"
-    local out
+    local output
 
-    case "$1" in
-        up*) op=upgraded ;;
-        do*) op=downgraded ;;
-        in*) op=installed ;;
-        un*) op=removed ;;
-        re*) op=reinstalled ;;
-        *) Usage ; return 1 ;;
+    case "$op" in
+        upgraded | downgraded | installed | removed | reinstalled) ;;
+        *) DIE "unsupported operation '$op'" ;;
     esac
 
     test -n "$pkg" && {
         pacman -Si "$pkg" >& /dev/null || DIE "package '$pkg' does not exist."
     }
 
-    out="$(grep -w "\[ALPM\] $op" /var/log/pacman.log)"
-    test -n "$pkg" && out="$(echo "$out" | grep " $pkg ")"
-    test -n "$out" && {
-        echo "$out" | tac | less
+    output="$(grep -w "\[ALPM\] $op" /var/log/pacman.log)"
+    test -n "$pkg" && output="$(echo "$output" | grep " $pkg ")"
+    test -n "$output" && {
+        echo "$output" | tac | less
     } || {
         echo "Requested info is not available."
         echo "Probable reasons:"
-        echo "  - package was never installed"
-        echo "  - package was installed while installing the system"
+        echo "  - '$pkg' was never installed"
+        echo "  - '$pkg' was installed while installing the system"
     }
 }
 
