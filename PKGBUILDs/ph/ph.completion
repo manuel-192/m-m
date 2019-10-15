@@ -8,13 +8,14 @@ __ph_() {
     local cur prev words cword
     _init_completion -s || return
 
-    local operations="upgraded downgraded installed removed reinstalled"
+    local progname=ph
+    local operations="$($progname --operations)"
 
     case "$prev" in
         upgraded | downgraded | installed | removed | reinstalled)
             COMPREPLY=( $(compgen -W "$(__ph_pkgsInPacmanLog)" -- "$cur"))
             ;;
-        ph)      # command itself
+        $progname)
             COMPREPLY=( $(compgen -W "$operations" -- ${cur}) )
             ;;
         *)

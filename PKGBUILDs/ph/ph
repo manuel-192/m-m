@@ -17,11 +17,11 @@ $progname: shows history information about package operations.
 
 Usage: $progname operation [package]
 
-    operation      One of: upgraded downgraded installed removed reinstalled.
+    operation      One of: $(Main --operations).
                    Tip: press the Tab key to complete the word!
 
     package        Package name (optional). If no package name is given,
-                   show all packages using the given operation.
+                   show all packages experienced the given operation.
 
 Note: bash command completion is available.
 
@@ -39,8 +39,15 @@ Main()
     local output
 
     case "$op" in
-        upgraded | downgraded | installed | removed | reinstalled) ;;
-        *) DIE "unsupported operation '$op'" ;;
+        --operations)   # mostly for bash command completion
+            echo "upgraded downgraded installed removed reinstalled"
+            return
+            ;;
+        upgraded | downgraded | installed | removed | reinstalled)
+            ;;
+        *)
+            DIE "unsupported operation '$op'"
+            ;;
     esac
 
     test -n "$pkg" && {
