@@ -1,0 +1,22 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=ph
+pkgdesc="Show pacman history."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash' 'pacman')
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('ce353fc4afed9ff5882f8450c719ab9914dd3c19ff1c6979c300f390958017a28545214e734a7d4c5c54322bacbe4ffc834c7099e8b1b89de170bc5a26274985')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname  $pkgdir/usr/bin/$pkgname
+}

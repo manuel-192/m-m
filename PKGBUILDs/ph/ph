@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# Show info about pacman history.
+#
+
+Usage() {
+    local progname="$(basename $0)"
+    cat <<EOF >&2
+$progname: Show info about pacman history.
+
+Usage: $progname operation [package]
+    operation      One of: up(grade) do(wngrade) in(stall) un(install) re(install).
+    package        Zero or one package name. No package means show all packages under "op".
+
+EOF
+}
+
+Main()
+{
+    local op
+    local pkg="$2"
+    local out
+
+    case "$1" in
+        up*) op=upgraded ;;
+        do*) op=downgraded ;;
+        in*) op=installed ;;
+        un*) op=removed ;;
+        re*) op=reinstalled ;;
+        *) Usage ; return 1 ;;
+    esac
+
+    out="$(grep -w "\[ALPM\] $op" /var/log/pacman.log)"
+    test -n "$pkg" && out="$(echo "$out" | grep -w "$pkg")"
+    echo "$out" | tac | less
+}
+
+Main "$@"
