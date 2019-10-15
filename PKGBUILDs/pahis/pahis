@@ -15,7 +15,7 @@ Usage() {
 
 $progname: shows history information about package operations.
 
-Usage: $progname operation [package]
+Usage: $progname [operation] [package]
 
     operation      One of: $(Main --operations).
                    Tip: press the Tab key to complete the word!
@@ -26,8 +26,9 @@ Usage: $progname operation [package]
 Note: bash command completion is available.
 
 Examples:
-    ph upgraded firefox
-    ph installed
+    pahis --upgraded firefox
+    pahis --installed
+    pahis geany
 
 EOF
 }
@@ -37,16 +38,32 @@ Main()
     local op="$1"
     local pkg="$2"
     local output
+    local pacmanlog=/var/log/pacman.log
 
     case "$op" in
-        --operations)   # mostly for bash command completion
-            echo "upgraded downgraded installed removed reinstalled"
+        --operations)   # supports bash command completion
+            echo "--upgraded --downgraded --installed --removed --reinstalled"
             return
             ;;
-        upgraded | downgraded | installed | removed | reinstalled)
+        --upgraded | --downgraded | --installed | --removed | --reinstalled)
+            op=${op:2}
+            ;;
+        "" | -h | --help)
+            Usage
+            return
+            ;;
+        -*)
+            DIE "unsupported operation '$op'"
             ;;
         *)
-            DIE "unsupported operation '$op'"
+            # $op must be a pkg or an unknown operation
+            if [ -z "$pkg" ] ; then
+                # Maybe pkg should be in $1? Then show all operations for the package.
+                pkg="$op"   # $op is not empty
+                op=""
+            else
+                DIE "unsupported operation '$op'"
+            fi
             ;;
     esac
 
@@ -54,8 +71,16 @@ Main()
         pacman -Si "$pkg" >& /dev/null || DIE "package '$pkg' does not exist."
     }
 
-    output="$(grep -w "\[ALPM\] $op" /var/log/pacman.log)"
-    test -n "$pkg" && output="$(echo "$output" | grep " $pkg ")"
+    if [ -z "$pkg" ] ; then
+        output="$(grep " \[ALPM\] $op " $pacmanlog)"
+    else
+        if [ -z "$op" ] ; then
+            output="$(grep " \[ALPM\] [a-z]*ed $pkg " $pacmanlog)"
+        else
+            output="$(grep " \[ALPM\] $op $pkg " $pacmanlog)"
+        fi
+    fi
+
     test -n "$output" && {
         echo "$output" | tac | less
     } || {

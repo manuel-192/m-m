@@ -8,15 +8,15 @@ __pahis_() {
     local cur prev words cword
     _init_completion -s || return
 
-    local progname=pahis
-    local operations="$($progname --operations)"
+    local progname="pahis"
 
     case "$prev" in
-        upgraded | downgraded | installed | removed | reinstalled)
+        --upgraded | --downgraded | --installed | --removed | --reinstalled)
             COMPREPLY=( $(compgen -W "$(__pahis_pkgsInPacmanLog)" -- "$cur"))
             ;;
-        "$progname"|pahis)
-            COMPREPLY=( $(compgen -W "$operations" -- ${cur}) )
+        "$progname")
+            local ops_pkgs="$($progname --operations) $(__pahis_pkgsInPacmanLog)"
+            COMPREPLY=( $(compgen -W "$ops_pkgs" -- ${cur}) )
             ;;
         *)
             return 1
