@@ -3,6 +3,8 @@
 # Show info about pacman history.
 #
 
+DIE() { echo "Error: $@" >&2 ; exit 1 ; }
+
 Usage() {
     local progname="$(basename $0)"
     cat <<EOF >&2
@@ -30,9 +32,20 @@ Main()
         *) Usage ; return 1 ;;
     esac
 
+    test -n "$pkg" && {
+        pacman -Si "$pkg" >& /dev/null || DIE "package '$pkg' does not exist."
+    }
+
     out="$(grep -w "\[ALPM\] $op" /var/log/pacman.log)"
-    test -n "$pkg" && out="$(echo "$out" | grep -w "$pkg")"
-    echo "$out" | tac | less
+    test -n "$pkg" && out="$(echo "$out" | grep " $pkg ")"
+    test -n "$out" && {
+        echo "$out" | tac | less
+    } || {
+        echo "Requested info is not available."
+        echo "Probable reasons:"
+        echo "  - package was never installed"
+        echo "  - package was installed while installing the system"
+    }
 }
 
 Main "$@"
