@@ -5,7 +5,7 @@ pkgname=ph
 pkgdesc="Show pacman history."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=4
+pkgrel=5
 
 arch=('any')
 license=('GPL')
@@ -15,7 +15,7 @@ source=(
     "$url/$pkgname"
     "$url/$pkgname.completion"
 )
-sha512sums=('a5354444489bb5a1e566564b199a8a56eae9936d9675b762aa93c1a51a03d96afb9a48ca8772c7b61f85611c2965da6a6cfb248f87fb4bbef093ffd4c0ceb5a8'
+sha512sums=('d71211848b87c16c735226f8dc1c408ab23753d1022e302cd25ac8fe7ae2faf3cb79ccd268ba84c8dc647895373b3a52b95e0e3e2d8cccd4f18faace5a066868'
             '79bd62fe8596f21a466eb6012c1f2e991c545ac94387e10b17fca42ce4135e6d37efac355ec235fb2b3fa6e80be94f5982febe90340501982f3297fb8a29b1f1')
 
 package() {
