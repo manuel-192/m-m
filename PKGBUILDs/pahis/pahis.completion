@@ -1,10 +1,10 @@
 # bash completion for ph        -*- shell-script -*-
 
-__ph_pkgsInPacmanLog() {
+__pahis_pkgsInPacmanLog() {
     grep "\] \[ALPM\] [a-z]*ed " /var/log/pacman.log | awk '{print $5}'| sort | uniq
 }
 
-__ph_() {
+__pahis_() {
     local cur prev words cword
     _init_completion -s || return
 
@@ -13,9 +13,9 @@ __ph_() {
 
     case "$prev" in
         upgraded | downgraded | installed | removed | reinstalled)
-            COMPREPLY=( $(compgen -W "$(__ph_pkgsInPacmanLog)" -- "$cur"))
+            COMPREPLY=( $(compgen -W "$(__pahis_pkgsInPacmanLog)" -- "$cur"))
             ;;
-        $progname)
+        "$progname"|pahis)
             COMPREPLY=( $(compgen -W "$operations" -- ${cur}) )
             ;;
         *)
@@ -23,4 +23,4 @@ __ph_() {
             ;;
     esac
 } &&
-complete -F __ph_ ph
+complete -F __pahis_   pahis
