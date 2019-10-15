@@ -8,7 +8,7 @@ __ph_() {
     local cur prev words cword
     _init_completion -s || return
 
-    local progname=ph
+    local progname=pahis
     local operations="$($progname --operations)"
 
     case "$prev" in
