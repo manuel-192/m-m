@@ -1,0 +1,22 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=paccache-service-manager
+pkgdesc="Simple manager for the paccache systemd service."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(bash pacman-contrib polkit)
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('52b41c6e45975cd03eed0ec398841b4d3326bb52dab75cfb167ec26599b33960e6f5d5563da09ed6b904ae34f930b0940a7b73e638c3ba8d79d0b4417d7f698b')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
+}

@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# Simple service manager for pacman cache cleaner.
+#
+# Requires packages:
+#   pacman-contrib   (for paccache)
+#   yad              (for yad)
+#   polkit           (for pkexec)
+#
+
+DIE() {
+    local msg="$1"
+    shift
+    echo "Error: $msg" | yad --text-info --image=error --title="$progname error" \
+                             --wrap --width=500 --height=300 --button=yad-quit:1 "$@"
+    exit 1
+}
+
+_paccache_cleaner_manager()
+{
+    local progname=paccache-service-manager
+    local dir=/usr/lib/systemd/system
+    local service=$dir/paccache.service
+    local timer=$dir/paccache.timer
+    local current_period="$(grep "^OnCalendar=" $timer | cut -d '=' -f 2)"        # current value
+    local current_keepcount="$(grep "^ExecStart=" $service | awk '{print $NF}')"  # current value
+    local period keepcount
+    local pt="paccache.timer"
+    local cmds xx
+    local period_vals
+
+    # possible period values, and set the default
+    for xx in daily weekly monthly ; do
+        test -n "$period_vals" && period_vals+="!"           # separator
+        test "$xx" = "$current_period" && period_vals+="^"   # default
+        period_vals+="$xx"
+    done
+
+    # ad hoc check for the 'keepcount' value
+    case "$current_keepcount" in
+        -r)   current_keepcount=3 ;;                  # original value
+        -rk*) current_keepcount="${current_keepcount:3}" ;;   # value after using this app
+        *) DIE "sorry, variable 'keepcount' got value '$current_keepcount' from file '$service' but didn't understand it." --width=800 ;;
+    esac
+
+    local result=$(yad --form --width=400 \
+                       --title='Pacman cache cleaner service manager' \
+                       --text="<b>Modifies the service that cleans up pacman cache periodically. Below you'll see features and their current values.</b>" \
+                       --field="":LBL "" \
+                       --field='Cleaning period':CB "$period_vals" \
+                       --field='Number of unique packages to keep:':NUM  "$current_keepcount"
+          )
+
+    if [ -n "$result" ] ; then
+        period="$(   echo "$result" | cut -d '|' -f 2)"
+        keepcount="$(echo "$result" | cut -d '|' -f 3)"
+
+        if [ "$keepcount" != "$current_keepcount" ] || [ "$period" != "$current_period" ] ; then
+           cmds="systemctl status $pt >/dev/null && { systemctl stop $pt ; systemctl disable $pt ; }"
+           cmds+=" ; sed -i $service -e 's|^ExecStart=/usr/bin/paccache .*$|ExecStart=/usr/bin/paccache -rk$keepcount|'"
+           cmds+=" ; sed -i $timer -e 's|^OnCalendar=.*$|OnCalendar=$period|'"
+           cmds+=" ; systemctl enable $pt"
+           cmds+=" ; systemctl start $pt"
+           pkexec bash -c "$cmds"
+        else
+            echo "Nothing changed." >&2               
+        fi
+    fi
+}
+
+_paccache_cleaner_manager
