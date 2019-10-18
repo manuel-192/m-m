@@ -5,18 +5,22 @@ pkgname=pahis
 pkgdesc="Show pacman history."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=4
+pkgrel=5
 
 arch=('any')
 license=('GPL')
 depends=('bash' 'pacman')
 
+install=pahis.install
+
 source=(
     "$url/$pkgname"
     "$url/$pkgname.completion"
+    "$url/$pkgname.install"
 )
-sha512sums=('838a9e02291f64b9b1fba78adbf439bbf3914b73fdecb6d2c4b2f1a4336684be116a563436865a0871759b9f29089176430d7071b72adcecaa6cc0cac0b40ccc'
-            '109cd66ffff4d1f6a96edfa3a6d7b803f6c7cbe2ec8bf9224823b55e46b6ea68b0d4eb668dc2e54ada9761c27ec0cce1c857adc466447d892e61d1cf854b2970')
+sha512sums=('5cfd42b4accf8430b6842fc082d90552f73c757a425410eebd2b4a614e5b608e9e4e2e792482c55f0d8975cc8b4593ce0b6f714dfdad803571f9e8e9144dd67a'
+            '01ee459e2c15704f405b10622ce1d420328e62293487cc11fa2375d40a44f60d786529629832d8d7fc0302cb832df401be7e24eede1f6a829c904b56d276a6f6'
+            '9b3864ccbc82528e3c31b177acdb480fac4a88c0e9834460243c0c37b875492c89dbbd6f2dc6ac80bd46c0c166e3df5e0df39e457d5134957ceeb9c14b946a60')
 
 package() {
   cd $srcdir
