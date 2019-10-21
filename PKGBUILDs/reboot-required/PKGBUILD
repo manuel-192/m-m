@@ -1,0 +1,26 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=reboot-required
+pkgdesc="Notifies about the need to reboot after upgrading certain packages."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(bash pacman yad)
+
+source=(
+    "$url/$pkgname"
+    "$url/$pkgname.hook"
+)
+sha512sums=('f32051f9d57bde2896adbf4b735bb46d12b350a38edb43d2bebdffe3f9b14dcd2743ee0959f4759cf8f06eded658dbdfb8acdd67a513a1faa9e4e75ac838a813'
+            '0ad6334dbace79d0104860c537bf935a897ce06d78abc0fa465b6b58771528ae3feda3516eb069598aee3c4e39786a2b6157b112374bbaa703c60c7ea1339c5e')
+
+package() {
+  cd $srcdir
+  install -d $pkgdir/etc/pacman.d/hooks
+  install -Dm644 $pkgname.hook  $pkgdir/etc/pacman.d/hooks/$pkgname.hook
+  install -Dm755 $pkgname       $pkgdir/usr/bin/$pkgname
+}
