@@ -30,7 +30,7 @@ pahis | Pacman package history viewer.
 pkexec2 | Wrapper for pkexec, retaining the current working directory instead of changing it to /root.
 reboot-required | A hook to recommend a reboot when certain system packages have been upgraded.
 remirror | Rank mirrors on Arch (used to do so also on Antergos).<br>See [changelog](PKGBUILDs/remirror)<br>
-remirror-arch | Rank Arch mirrors. Like remirror above, but with a new implementation.<br>More: PKGBUILDs/remirror-arch
+remirror-arch | Rank Arch mirrors. Like remirror above, but with a new implementation.<br>[More](PKGBUILDs/remirror-arch)
 suc | A simple wrapper for command 'su -c'.<br>Useful especially in bash scripts because it supports spaces in the command parameters.
 syu | A very simple pacman wrapper.
 UserManager | Simple graphical user manager.<br>Mainly for Xfce users in systems where there is no graphical user manager.
