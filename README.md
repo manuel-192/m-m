@@ -29,9 +29,9 @@ paccache-service-manager | Manages the systemd service that limits the number of
 pahis | Pacman package history viewer.
 pkexec2 | Wrapper for pkexec, retaining the current working directory instead of changing it to /root.
 reboot-required | A hook to recommend a reboot when certain system packages have been upgraded.
-remirror | Rank mirrors on Arch (used to do so also on Antergos).<br>See [changelog](PKGBUILDs/README.md)<br>
+remirror | Rank mirrors on Arch (used to do so also on Antergos).<br>See [changelog](https://github.com/manuel-192/m-m/tree/master/PKGBUILDs/remirror)<br>
 remirror-arch | Rank Arch mirrors. Like remirror above, but with a new implementation.<br>More: https://github.com/manuel-192/m-m/tree/master/Source/remirror-arch
 suc | A simple wrapper for command 'su -c'.<br>Useful especially in bash scripts because it supports spaces in the command parameters.
 syu | A very simple pacman wrapper.
 UserManager | Simple graphical user manager.<br>Mainly for Xfce users in systems where there is no graphical user manager.
-yaygg | A simple GUI based launcher generator, based on the yad framework.<br>See [changelog](PKGBUILDs/README.md)
+yaygg | A simple GUI based launcher generator, based on the yad framework.<br>See [changelog](PKGBUILDs/yaygg)
