@@ -2,16 +2,29 @@
 #
 # Arch change log for a package.
 #
-# Uses the BROWSER environment variable, exo-open, xdg-open (in this order)
-# and various browser names.
+# Uses the BROWSER_ARCH_CL and BROWSER environment variables, exo-open, xdg-open (in this order)
+# and various common browser names.
 #
+
+_DIE() {
+    echo "Error: $1" >&2
+    test -n "$infofile" && rm -f "$infofile"
+    exit 1
+}
+
+_DIE2() {
+    echo "Error:" >&2
+    echo "$1" >&2
+    test -n "$infofile" && rm -f "$infofile"
+    exit 1
+}
 
 _find_url()
 {
     local pkg="$1"
     local url="https://www.archlinux.org/packages/?sort=&q=$pkg"
-    local infofile=/tmp/$pkg-$$.html
     local path repo arch pkg2
+    local infofile=$(mktemp)
 
     wget -q -O $infofile "$url"
     path=$(grep 'View package details for' $infofile | head -n 1 | sed -e 's|^.*a href="||' -e 's|/" title.*$||')
@@ -23,19 +36,21 @@ _find_url()
 
     if [ "$pkg2" != "$pkg" ] ; then
         if [ -n "$pkg2" ] ; then
-            echo "Only these packages match, possibly select one of them:" >&2
-            grep 'View package details for' $infofile | sed -e 's|^.*a href="||' -e 's|/" title.*$||' | cut -d '/' -f 5 | sed 's|^|    |' >&2
+            _DIE2 "$(while true ; do
+                  echo "Only these packages match, possibly select one of them:"
+                  grep 'View package details for' $infofile | sed -e 's|^.*a href="||' -e 's|/" title.*$||' | cut -d '/' -f 5 | sed 's|^|    |'
+                  break
+                  done
+                  )"
         else
-            echo "No match." >&2
+            _DIE "No match."
         fi
-        echo "[not found]"
-        rm -f $infofile
-        return 1
     fi
 
     printf "" > $infofile
     wget -q -O $infofile "https://www.archlinux.org/packages/$repo/$arch/$pkg"
     url="$(grep "View changes for " $infofile | sed -e 's|^.*href="||' -e 's|" title=.*$||')&showmsg=1"
+
     rm -f $infofile
 
     echo "$url"
@@ -44,33 +59,37 @@ _find_url()
 _arch_pkg_changelog()
 {
     local pkg="$1"
+    local browser_ok=0
 
-    if [ -z "$pkg" ] ; then
-        echo "Warning: no package given."
-        return 1
-    fi
+    test -n "$pkg" || _DIE "no package given."
+    pacman -Si "$pkg" >& /dev/null || _DIE "Package '$pkg' does not exist."
 
+    local browser br
+    local browsers=(              # order is significant
+        "$BROWSER_ARCH_CL"
+        "$BROWSER"
+        "exo-open --launch WebBrowser"
+        xdg-open
+        chromium
+        firefox
+        vivaldi-stable
+        opera
+        falkon
+    )
     local url="$(_find_url "$pkg")"
-    local exo="exo-open --launch WebBrowser"
-    local xdg=xdg-open
-    local browser
-    local br
-
-    if [ "$url" = "[not found]" ] ; then
-        return 1
-    fi
+    test -n "$url" || return 1
 
     for browser in "$BROWSER_ARCH_CL" "$BROWSER" "$exo" "$xdg" chromium firefox vivaldi-stable opera falkon
     do
-        if [ -z "$browser" ] ; then
-            continue
-        fi
-        br=$(basename "$(echo "$browser" | awk '{print $1}')") # find plain program name
+        test -n "$browser" || continue
+        br=$(basename "$(echo "$browser" | awk '{print $1}')")      # find plain program name
         if [ -x /usr/bin/$br ] ; then
-            $browser "$url" >/dev/null 2>&1 &
+            $browser "$url" >& /dev/null &
+            browser_ok=1
             break
         fi
     done
+    test $browser_ok -eq 0 && _DIE "no web browser available!"
 }
 
 _arch_pkg_changelog "$@"
