@@ -1,6 +1,6 @@
 # paccache-service-manager
 Simple manager for the paccache systemd service.
-The service controls how many unique packages are kept in the package cache.
+The service controls how many versions of each package are kept in the package cache.
 
 ## Usage:
 Simply run command
