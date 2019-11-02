@@ -43,12 +43,15 @@ _paccache_cleaner_manager()
         *) DIE "sorry, variable 'keepcount' got value '$current_keepcount' from file '$service' but didn't understand it." --width=800 ;;
     esac
 
+    local du="$(/usr/bin/du -hd 1 /var/cache/pacman/pkg | /usr/bin/awk '{print $1}')"
+    local df="$(/usr/bin/df -h | /usr/bin/grep -w / | /usr/bin/awk '{print $4}')"
+
     local result=$(yad --form --width=400 \
                        --title='Pacman cache cleaner service manager' \
-                       --text="<b>Modifies the service that cleans up pacman cache periodically. Below you'll see features and their current values.</b>" \
+                       --text="<b>Modifies the service that cleans up pacman cache periodically.\nBelow you'll see features and their current values.\n\nPackage cache usage: $du.    Free space on disk: $df.</b>" \
                        --field="":LBL "" \
                        --field='Cleaning period':CB "$period_vals" \
-                       --field='Number of unique packages to keep:':NUM  "$current_keepcount"
+                       --field='Number of package versions to keep':NUM  "$current_keepcount"
           )
 
     if [ -n "$result" ] ; then

@@ -5,7 +5,7 @@ pkgname=paccache-service-manager
 pkgdesc="Simple manager for the paccache systemd service."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ depends=(bash pacman-contrib polkit)
 source=(
     "$url/$pkgname"
 )
-sha512sums=('52b41c6e45975cd03eed0ec398841b4d3326bb52dab75cfb167ec26599b33960e6f5d5563da09ed6b904ae34f930b0940a7b73e638c3ba8d79d0b4417d7f698b')
+sha512sums=('df4c176ffe59e3c8157c8053b32564a262af8c812c447d536ac87abb4bd61abcf65960fbfd34104fa39ae81246f6758e48cd0b7dd044cdc11d8c09f943224d24')
 
 package() {
   cd $srcdir
