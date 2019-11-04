@@ -1,332 +1,244 @@
 #!/bin/bash
 #
-# AKM = Antergos/Arch Kernel Manager with a GUI.
+# AKM = Arch Kernel Manager with a GUI.
 
-_akm_is_installed()
-{
-    local pkg="$1"
-    if [ "$(pacman -Qq "$pkg" 2>/dev/null)" != "" ] ; then
-        echo true
-    else
-        echo false
-    fi
-}
-_akm_get_version()
-{
-    local kernel="$1"
-    local result
-
-    if [ "$(_akm_is_installed "$kernel")" = "true" ] ; then
-        result=$(pacman -Q "$kernel" | awk '{print $NF}')
-    else
-        result="-"
-    fi
-
-    result+="|"
-
-    if [ "$(_akm_is_installed "$kernel"-headers)" = "true" ] ; then
-        result+="$(pacman -Q "$kernel"-headers | awk '{print $NF}')"
-    else
-        result+="-"
-    fi
-
-    echo "$result"
+echo2() { echo "$@" >&2 ; }
+debug() {
+    test $DEBUGGING -eq 1 && echo2 "$@"
 }
 
-_akm_get_version_show()
-{
-    local kernel="$1"
-    local result="$(_akm_get_version "$kernel" | sed 's|\|| / |g')"
-    echo "$result"
+
+eos_yad() {
+    GDK_BACKEND=x11 /usr/bin/yad "$@"
 }
-
-# called from yad => export
-export -f _akm_is_installed _akm_get_version _akm_get_version_show
-
-_akm_message()  # usage: _akm_message [options] message-string
-{
-    local opts="--width=400"   # default size
+eos_yad_terminal() {
+    # Show a terminal that is capable of supporting option -e properly. Empty if not found.
+    # Requires: yad
+    #
+    # These terminal programs are known not to work with this program:
+    #     qterminal
+    #     kitty
+    # The following terminals are known to work:
+    local suitable_terminals="xfce4-terminal konsole gnome-terminal mate-terminal lxterminal terminator tilix termite xterm"
+    local eos_terminal_prog=""
     local xx
 
-    for xx in "$@"
-    do
-        case "$xx" in
-            -*) opts+=" $xx" ; shift ;;
-            *) break ;;
-        esac
+    for xx in $suitable_terminals ; do
+        if [ -x "/usr/bin/$xx" ] ; then
+            eos_terminal_prog="/usr/bin/$xx"
+            echo "$eos_terminal_prog"
+            return 0
+        fi
     done
 
-    echo "$*" >&2
-    echo "$*" | \
-        yad --title="akm message" \
-            --button=gtk-quit:1 --wrap --on-top $opts \
-            --text-info
+    printf "%s\n    %s\n%s" \
+           "Sorry, none of the terminal programs:" \
+           "$suitable_terminals" \
+           "is installed. Some features may not work as expected." \
+        | eos_yad --text-info \
+                  --title="Warning" --height=200 --width=700 --wrap --button=yad-ok:0
+    return 1
 }
-
-_akm_boot_generate()
-{
-    # Boot menu generation command to be used after the kernel manager command.
-
-    local generate
-
-    if [ -x /usr/bin/grub-mkconfig ] && [ -f /boot/grub/grub.cfg ] ; then
-        generate="/usr/bin/grub-mkconfig -o /boot/grub/grub.cfg"
-    elif [ -x /usr/bin/bootctl ] && [ "$(/usr/bin/bootctl list 2>/dev/null)" != "" ] ; then
-        generate="/usr/bin/bootctl update"
-    fi
-    # If you use another boot system, add other possible boot menu generators here, like above.
-
-    echo "$generate"
-}
-
-_akm_execute()
-{
-    # Avoid running GUI apps with elevated permissions.
-    # See this:
-    # https://wiki.archlinux.org/index.php/Running_GUI_applications_as_root
-
+eos_yad_RunCmdTermBash() {
     local cmd="$1"
-    local xx
+    local prompt="$2"
 
-    local bootgenerator="$(_akm_boot_generate)"
-    local sudo=pkexec            # consider alternatives: sudo, gksu, 'su -c'
-    local errors12=/tmp/errors-akm-tmp-12.txt
-    local errcode=/tmp/errors-akm-tmp-c.txt
-    local cmdfile=/tmp/akm-cmds-$$.bash
-    local done="*** Done! ***"
+    local term="$(eos_yad_terminal)"
+    test -n "$term" || return 1
 
-    echo '0' > $errcode
+    local tmpfile=$(mktemp)
 
-    echo "#!/bin/bash"                                > $cmdfile
-    echo "printf '====> %s:\n' '$cmd'"               >> $cmdfile
-    echo "printf '====> Please wait until line \"%s\" appears!\n\n' '$done'"   >> $cmdfile
-    echo "rm -f $errors12 $errcode"                  >> $cmdfile
-    echo "touch $errocode $errors12"                 >> $cmdfile
-    echo "set -o pipefail"                           >> $cmdfile
-    echo "$cmd |& tee -a $errors12"                  >> $cmdfile
-    echo "echo \$? > $errcode"                       >> $cmdfile
-    echo "set +o pipefail"                           >> $cmdfile
-    echo "if [ \$(cat $errcode) -eq 0 ] ; then"      >> $cmdfile
-    echo "    $bootgenerator"                        >> $cmdfile
-    echo "fi"                                        >> $cmdfile
-    echo "chown $LOGNAME $errcode $errors12"         >> $cmdfile
-    echo "chmod go-rwx $errcode $errors12"           >> $cmdfile
-    echo "printf '\n\n%s\n' '$done'"                 >> $cmdfile
+    echo "#!/bin/bash"                                   >> $tmpfile
+    echo "$cmd"                                          >> $tmpfile
+    echo "read -p 'Press ENTER to close this window: '"  >> $tmpfile
 
-    for xx in $cmdfile $errcode $errors12
-    do
-        if [ -f "$xx" ] ; then
-            chmod u-w,go-rwx $xx
-        fi
-    done
-
-    echo "Executing: $cmd" >&2
-
-    $sudo bash $cmdfile |& \
-        yad --text-info --title="akm operation output" \
-            --geometry=800x400 --button=gtk-quit:0 \
-            --tail
-
-    if [ $(cat $errcode) -ne 0 ] ; then
-        cat $errors12 >&2
-        cat $errors12 | \
-            yad --title="Error: $cmd" --geometry=600x300 \
-                --no-buttons --on-top --wrap \
-                --fore=red --text-info
+    chmod +x $tmpfile
+    if [ -n "$prompt" ] ; then
+        $term -e "bash -c \"echo $prompt ; $tmpfile ; rm -f $tmpfile\""
+    else
+        $term -e "bash -c \"$tmpfile ; rm -f $tmpfile\""
     fi
-    rm -f $cmdfile $errors12 $errcode
 }
 
-_akm_graphics()
-{
-    local kernel="$1"
-    local xx
-    local nvidia
 
-    case "$kernel" in
-        linux)
-            for xx in nvidia nvidia-390xx nvidia-340xx
-            do
-                if [ "$(pacman -Qq $xx 2>/dev/null)" != "" ] ; then
-                    nvidia+="$xx "
+
+IsInstalled()   { pacman -Q "$1" >& /dev/null && echo true || echo false ; }
+PkgVersion()    { pacman -Q "$1" 2>/dev/null | awk '{print $2}' ; }
+
+NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
+
+Main() {
+    local DEBUGGING=0
+    local install=() remove=()
+    declare -A Downgrade OldVersion OldKernel OldHeader NewKernel NewHeader
+    local pkg
+    local pkgs="linux linux-lts linux-zen linux-hardened"
+    local dkms=$(test -n "$(PkgVersion dkms)" && echo true || echo false)
+    local cmd result
+    local xx ix
+    local missing_headers=()
+    local columns=4                                 # 4 = all features included. TODO: check value!!
+    local downgrade_supported=0
+
+    for pkg in $pkgs ; do
+        xx="$(PkgVersion "$pkg")"
+        OldVersion["$pkg"]="$xx"
+        OldKernel["$pkg"]=$(test -n "$xx" && echo true || echo false)
+        xx="$(PkgVersion "$pkg"-headers)"
+        OldHeader["$pkg"]=$(test -n "$xx" && echo true || echo false)
+    done
+
+    cmd=(yad --form --title="Simple kernel manager")
+
+    if [ $downgrade_supported -eq 0 ] ; then
+        ((columns--))
+    fi
+    cmd+=(--columns=$columns)
+
+    ### SHOW OLD VALUES
+
+    # Kernels
+    cmd+=(--field="<b>Kernel</b>:LBL" "")
+    for pkg in $pkgs ; do
+        cmd+=(--field="$pkg":chk ${OldKernel["$pkg"]})
+    done
+
+    # Headers
+    cmd+=(--field="<b>Headers</b>:LBL" "")
+    for pkg in $pkgs ; do
+        cmd+=(--field="${pkg}-headers":chk ${OldHeader["$pkg"]})
+    done
+
+    # Versions
+    cmd+=(--field="<b>Current version</b>:LBL" "")
+    for pkg in $pkgs ; do
+        xx="${OldVersion[$pkg]}"
+        test -n "$xx" || xx="--"
+        cmd+=(--field="$xx":LBL "")
+    done
+
+    if [ $downgrade_supported -eq 1 ] ; then
+        # Downgrades
+        cmd+=(--field="<b>Downgrade</b>:LBL" "")
+        for pkg in $pkgs ; do
+            cmd+=(--field="":chk false)
+        done
+    fi
+
+    ### GET NEW VALUES
+
+    result=$("${cmd[@]}")
+    test -n "$result" || return 1
+
+    debug "$result"
+
+    # Kernels
+    ix=1                    # skip column header
+    for pkg in $pkgs ; do
+        ((ix++))
+        xx="$(NewValue)"
+        #debug "$pkg : $xx"
+        NewKernel["$pkg"]="$xx"
+    done
+
+    # Headers
+    ((ix++))                # skip column header
+    for pkg in $pkgs ; do
+        ((ix++))
+        xx="$(NewValue)"
+        #debug "${pkg}-headers : $xx"
+        NewHeader["$pkg"]="$xx"
+    done
+
+    # Versions (read-only values)
+    ((ix++))
+    for pkg in $pkgs ; do
+        ((ix++))
+    done
+
+    if [ $downgrade_supported -eq 1 ] ; then
+        # Downgrades
+        ((ix++))                # skip column header
+        for pkg in $pkgs ; do
+            ((ix++))
+            xx="$(NewValue)"
+            #debug "downgrade $pkg : $xx"
+            Downgrade["$pkg"]="$xx"
+        done
+    fi
+
+    ### CHECK IF "FIXING" VARIABLES IS NEEDED
+
+    for pkg in $pkgs ; do
+        if [ "$dkms" = "true" ] ; then
+            if [ "${NewKernel[$pkg]}" = "true" ] ; then
+                if [ "${NewHeader[$pkg]}" = "false" ] ; then
+                    missing_headers+=("$pkg"-headers)
                 fi
+            fi
+        fi
+    done
+    if [ -n "$missing_headers" ] ; then
+        yad --form --title="Kernel headers recommended for dkms" \
+            --width=400 --height=100 --button=yad-no:1 --button=yad-yes:0 \
+            --field="Dkms is installed, so having kernel headers is recommended.\nInstall/keep <b>${missing_headers[*]}</b>?":LBL "" \
+            && {
+            for pkg in "${missing_headers[@]}" ; do
+                xx="${pkg%-headers}"
+                NewHeader["$xx"]=true                 # headers probably are needed with dkms
             done
-            ;;
-        linux-lts)
-            for xx in nvidia-lts nvidia-390xx-lts nvidia-340xx-lts
-            do
-                if [ "$(pacman -Qq $xx 2>/dev/null)" != "" ] ; then
-                    nvidia+="$xx "
-                fi
-            done
-            ;;
-    esac
-    echo "$nvidia"
-}
+        }
+    fi
 
-_akm_install()
-{
-    local kernel="$1"
-    local ticked="$2"
+    ### SHOW "NEW" VALUES AFTER ASKING THEM
 
-    if [ "$ticked" = "true" ] ; then
-        local is_kernel="$( _akm_is_installed "$kernel")"
-        local is_headers="$(_akm_is_installed "$kernel"-headers)"
-        local pkgs="$kernel"
-        local op
+    if [ $DEBUGGING -eq 1 ] ; then
+        echo -n "kernels     :" ; for pkg in $pkgs ; do echo -n " ${NewKernel[$pkg]}" ; done ; echo ""
+        echo -n "headers     :" ; for pkg in $pkgs ; do echo -n " ${NewHeader[$pkg]}" ; done ; echo ""
+        echo -n "versions    :" ; for pkg in $pkgs ; do echo -n " ${OldVersion[$pkg]}" ; done ; echo ""
+        if [ $downgrade_supported -eq 1 ] ; then
+            echo -n "downgrades  :" ; for pkg in $pkgs ; do echo -n " ${Downgrade[$pkg]}" ; done ; echo ""
+        fi
+    fi
 
-        pkgs+=" $(_akm_graphics $kernel)"
+    # Now we have arrays: OldKernel OldHeader NewKernel NewHeader.
+    # Build install and remove commands.
 
-        if [ "$is_kernel" = "true" ] ; then
-            op="-R"
-            if [ "$is_headers" = "true" ] ; then
-                pkgs+=" ${kernel}-headers"
-            fi
+    for pkg in $pkgs ; do
+        if [ "${NewKernel[$pkg]}" = "true" ] ; then
+            test "${OldKernel[$pkg]}" = "false" && install+=("$pkg")
         else
-            op="-S"
-            if [ "$is_headers" = "false" ] ; then
-                pkgs+=" ${kernel}-headers"
-            fi
+            test "${OldKernel[$pkg]}" = "true" && remove+=("$pkg")
         fi
-        _akm_execute "pacman $op --noconfirm $pkgs"
-    fi
-}
-
-_akm_downgrade()
-{
-    local kernel="$1"
-    local ticked="$2"
-
-    if [ "$ticked" = "true" ] ; then
-        if [ "$(_akm_is_installed "$kernel")" = "true" ] ; then
-            _akm_execute "downgrade $kernel ${kernel}-headers"
+        if [ "${NewHeader[$pkg]}" = "true" ] ; then
+            test "${OldHeader[$pkg]}" = "false" && install+=("$pkg"-headers)
         else
-            _akm_message "$(basename $0): $kernel: nothing to downgrade!"
-        fi
-    fi
-}
-
-_akm_check_requirements()
-{
-    local ok=1
-    local xx
-
-    for xx in yad downgrade
-    do
-        if [ ! -x /usr/bin/$xx ] ; then
-            _akm_message "Package '$xx' is required but not installed."
-            ok=0
+            test "${OldHeader[$pkg]}" = "true" && remove+=("$pkg"-headers)
         fi
     done
 
-    if [ $ok -eq 0 ] ; then
-        exit 1
+    debug "remove:  ${remove[*]}"
+    debug "install: ${install[*]}"
+
+    cmd=()
+    if [ -n "$install" ] ; then
+        cmd+=(pacman -S)
+        for pkg in "${install[@]}" ; do
+            cmd+=("$pkg")
+        done
+        test -n "$remove" && cmd+=(";")
+    fi
+    if [ -n "$remove" ] ; then
+        cmd+=(pacman -Rsn)
+        for pkg in "${remove[@]}" ; do
+            cmd+=("$pkg")
+        done
+    fi
+
+    if [ -n "$cmd" ] ; then
+        echo "${cmd[@]}"
+        eos_yad_RunCmdTermBash "echo ${cmd[*]} ; su -c \"${cmd[*]}\""
     fi
 }
 
-_akm_install_missing_headers()
-{
-    local kernel
-    local result
-    local f1 f2
-    local missing
-
-    for kernel in linux linux-lts linux-zen linux-hardened
-    do
-        result="$(_akm_get_version $kernel)"
-        f1=$(echo $result | cut -d '|' -f 1)
-        f2=$(echo $result | cut -d '|' -f 2)
-        if [ "$f1" != "-" ] ; then
-            if [ "$f2" = "-" ] ; then
-                missing+="${kernel}-headers "
-            fi
-        fi
-    done
-    if [ "$missing" != "" ] ; then
-        yad --form --title="Install missing kernel headers?" \
-            --width=400 --height=100 --button=gtk-quit:1 --button=gtk-apply:0 \
-            --field="\n<b>Currently not installed:</b> $missing":LBL ""
-        if [ $? -eq 0 ] ; then
-            _akm_execute "pacman -S --noconfirm $missing"
-        fi
-    fi
-}
-
-_akm_main2()
-{
-    local id='$Id: akm,v 1.13 2018/12/22 09:36:30 manuel Exp $'
-    local version="0.$(echo "$id" | awk '{print $3}')"
-    local columns=4
-
-    local result=$(yad --form --title="Antergos Kernel Manager $version" \
-                       --width=500  --columns=$columns \
-                       --button=gtk-quit:1 --button=gtk-apply:0 \
-                       --field='<b>Kernel name</b>':LBL "" \
-                       --field='linux':LBL "" \
-                       --field='linux-lts':LBL "" \
-                       --field='linux-zen':LBL "" \
-                       --field='linux-hardened':LBL "" \
-                       --field='<b>Installed kernel / headers version</b>':LBL "" \
-                       --field="$(_akm_get_version_show linux)":LBL "" \
-                       --field="$(_akm_get_version_show linux-lts)":LBL "" \
-                       --field="$(_akm_get_version_show linux-zen)":LBL "" \
-                       --field="$(_akm_get_version_show linux-hardened)":LBL "" \
-                       --field='<b>Install/Uninstall</b>':LBL "" \
-                       --field=:CHK false \
-                       --field=:CHK false \
-                       --field=:CHK false \
-                       --field=:CHK false \
-                       --field='<b>Downgrade</b>':LBL "" \
-                       --field=:CHK false \
-                       --field=:CHK false \
-                       --field=:CHK false \
-                       --field=:CHK false \
-          )
-
-    if [ "$result" = "" ] ; then
-        exit 0
-    fi
-
-    result="$(echo "$result" | tr "[:upper:]" "[:lower:]")"
-
-    #echo "result = $result" >&2
-
-    # ordinals of the --field fields above
-    local id_inst_linux=12                           # first install field
-    local id_dn_linux=$((id_inst_linux+columns+1))   # first downgrade field, check this too
-
-    local inst_linux="$(         echo "$result" | cut -d '|' -f $((id_inst_linux+0)))"
-    local inst_linux_lts="$(     echo "$result" | cut -d '|' -f $((id_inst_linux+1)))"
-    local inst_linux_zen="$(     echo "$result" | cut -d '|' -f $((id_inst_linux+2)))"
-    local inst_linux_hardened="$(echo "$result" | cut -d '|' -f $((id_inst_linux+3)))"
-
-    local dn_linux="$(         echo "$result" | cut -d '|' -f $((id_dn_linux+0)))"
-    local dn_linux_lts="$(     echo "$result" | cut -d '|' -f $((id_dn_linux+1)))"
-    local dn_linux_zen="$(     echo "$result" | cut -d '|' -f $((id_dn_linux+2)))"
-    local dn_linux_hardened="$(echo "$result" | cut -d '|' -f $((id_dn_linux+3)))"
-
-    _akm_install linux          "$inst_linux"
-    _akm_install linux-lts      "$inst_linux_lts"
-    _akm_install linux-zen      "$inst_linux_zen"
-    _akm_install linux-hardened "$inst_linux_hardened"
-
-    _akm_downgrade linux          "$dn_linux"
-    _akm_downgrade linux-lts      "$dn_linux_lts"
-    _akm_downgrade linux-zen      "$dn_linux_zen"
-    _akm_downgrade linux-hardened "$dn_linux_hardened"
-
-    echo "Done."
-}
-
-_akm_main()
-{
-    _akm_check_requirements
-    _akm_install_missing_headers
-
-    while true
-    do
-        _akm_main2
-    done
-}
-
-_akm_main
+Main

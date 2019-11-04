@@ -4,19 +4,17 @@
 pkgname=akm
 pkgdesc="Arch kernel manager."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1.13
+pkgver=0.2
 pkgrel=1
 arch=('any')
 license=('GPL')
-depends=('bash' 'yad' 'polkit' 'downgrade')
+depends=('bash' 'yad' 'polkit')
 source=(
     "$url/$pkgname"
     "$url/$pkgname.desktop"
 )
-sha512sums=(
-    e6531f915b9ef535a29941da2b68b16a92dd5962a2e7cc60dd639c1fbbae9f13357aff806c9fa8df15b405f143778cd31f65065244e16633e4814242aff8dbba
-    1eb13fe6e3edefbd1022d108832a2b295f8939d684abdba674a45453c5fbb8752a5a82743009144f7136a1f5b3cdc788c195cf56c02a8e6b59d437cef4b6fb82
-)
+sha512sums=('9048f0979796ec8ef3204a02578ff7268081eac063b9fc9ae80ccaaac160d3fa9615fbbc0bbca6c667e0bc34a625e0da36b64dc579407c4537773d61aa4f5e6d'
+            '1eb13fe6e3edefbd1022d108832a2b295f8939d684abdba674a45453c5fbb8752a5a82743009144f7136a1f5b3cdc788c195cf56c02a8e6b59d437cef4b6fb82')
 
 package() {
   cd $srcdir
