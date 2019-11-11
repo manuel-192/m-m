@@ -67,18 +67,29 @@ PkgVersion()    { pacman -Q "$1" 2>/dev/null | awk '{print $2}' ; }
 
 NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
 
+KernelOrgVersion() {
+    case "$1" in
+        linux)     echo $(grep -A2 stable:   $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g') ;;
+        linux-lts) echo $(grep -A2 longterm: $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g') ;;
+        *) echo "N/A" ;;
+    esac
+}
+
 Main() {
     local DEBUGGING=0
     local install=() remove=()
-    declare -A Downgrade OldVersion OldKernel OldHeader NewKernel NewHeader
+    declare -A Downgrade OldVersion NewVersion OldKernel OldHeader NewKernel NewHeader
     local pkg
     local pkgs="linux linux-lts linux-zen linux-hardened"
     local dkms=$(test -n "$(PkgVersion dkms)" && echo true || echo false)
     local cmd result
     local xx ix
     local missing_headers=()
-    local columns=4                                 # 4 = all features included. TODO: check value!!
+    local columns=5                                 # 4 = all features included. TODO: check value!!
     local downgrade_supported=0
+
+    local tmpfile=$(mktemp)
+    wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
 
     for pkg in $pkgs ; do
         xx="$(PkgVersion "$pkg")"
@@ -86,7 +97,10 @@ Main() {
         OldKernel["$pkg"]=$(test -n "$xx" && echo true || echo false)
         xx="$(PkgVersion "$pkg"-headers)"
         OldHeader["$pkg"]=$(test -n "$xx" && echo true || echo false)
+        xx="$(KernelOrgVersion "$pkg")"
+        NewVersion["$pkg"]="$xx"
     done
+    rm -f $tmpfile
 
     cmd=(yad --form --title="Simple kernel manager")
 
@@ -109,10 +123,18 @@ Main() {
         cmd+=(--field="${pkg}-headers":chk ${OldHeader["$pkg"]})
     done
 
-    # Versions
-    cmd+=(--field="<b>Current version</b>:LBL" "")
+    # Current versions
+    cmd+=(--field="<b>Installed version</b>:LBL" "")
     for pkg in $pkgs ; do
         xx="${OldVersion[$pkg]}"
+        test -n "$xx" || xx="--"
+        cmd+=(--field="$xx":LBL "")
+    done
+
+    # Latest available versions
+    cmd+=(--field="<b>At kernel.org</b>:LBL" "")
+    for pkg in $pkgs ; do
+        xx="${NewVersion[$pkg]}"
         test -n "$xx" || xx="--"
         cmd+=(--field="$xx":LBL "")
     done
@@ -150,7 +172,13 @@ Main() {
         NewHeader["$pkg"]="$xx"
     done
 
-    # Versions (read-only values)
+    # Current versions (read-only values)
+    ((ix++))
+    for pkg in $pkgs ; do
+        ((ix++))
+    done
+
+    # Latest versions (read-only values)
     ((ix++))
     for pkg in $pkgs ; do
         ((ix++))
@@ -179,9 +207,9 @@ Main() {
         fi
     done
     if [ -n "$missing_headers" ] ; then
-        yad --form --title="Kernel headers recommended for dkms" \
-            --width=400 --height=100 --button=yad-no:1 --button=yad-yes:0 \
-            --field="Dkms is installed, so having kernel headers is recommended.\nInstall/keep <b>${missing_headers[*]}</b>?":LBL "" \
+        echo "${missing_headers[*]}" | \
+            yad --text-info --width=400 --wrap --title="Kernel headers recommended with dkms" \
+                --button=yad-no:1 --button=yad-yes:0 \
             && {
             for pkg in "${missing_headers[@]}" ; do
                 xx="${pkg%-headers}"
@@ -237,7 +265,7 @@ Main() {
 
     if [ -n "$cmd" ] ; then
         echo "${cmd[@]}"
-        eos_yad_RunCmdTermBash "echo ${cmd[*]} ; su -c \"${cmd[*]}\""
+        eos_yad_RunCmdTermBash "echo '${cmd[*]}' ; su -c \"${cmd[*]}\""
     fi
 }
 
