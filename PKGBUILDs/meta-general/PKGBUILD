@@ -5,39 +5,53 @@ pkgname=meta-general
 pkgdesc="Nice stuff meta."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=1
+pkgrel=2
 arch=(any)
 license=(GPL)
 
 depends=(
-    colordiff
-    gufw
-    most
-    meld
-    thunderbird
-    libreoffice-fresh
-    chromium
-    terminator tilix
-    simple-scan
-    rcs
-    orage
-    kaffeine
-    ccrypt
-    avidemux-qt
+    # upstream
     android-tools
-    youtube-dl
-
-    gparted
-    linux-lts-headers linux-lts
+    avidemux-qt
+    ccrypt
+    chromium
+    colordiff
     exo xdg-utils
-    # clamav evolution solaar
-
+    gparted
+    gufw
     hub
     jq
+    kaffeine
+    libreoffice-fresh
+    linux linux-headers linux-lts linux-lts-headers
+    meld
+    most
+    orage
+    rcs
     sddm
+    simple-scan
+    terminator
+    thunderbird
     xz
+    youtube-dl
+    # clamav evolution solaar
+
+    # m-m
+    customcfg
+    meta-bash
+    meta-cpp
+    meta-games
+    pahis
+    pkexec2
+    suc
+    syu
+    UserManager
+    yaygg
+
+    # m-more
+    code-fix
 )
 
 package() {
-  echo Done.
+    echo Done.
 }
