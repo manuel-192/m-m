@@ -10,7 +10,7 @@ How to use this repo? Check these [instructions](../../../m-repo-info/blob/maste
 - 2019-11-17: reorganized packages again
 - 2019-10-21: added pahis, paccache-service-manager, <strike>reboot-required</strike>, suc.
 - 2019-08-26: added 'arch-news-for-you' and 'remirror-arch'.
-- 2019-08-04: the old server address works no more. I has been replaced with another, see [instructions](../../../m-repo-info/blob/master/README.md).
+- 2019-08-04: the old server address works no more. It has been replaced with another, see [instructions](../../../m-repo-info/blob/master/README.md).
 - 2019-07-30: now you can use also
 <pre>
 <strike>Server = https://github.com/manuel-192/antergos-m/releases/download/assets</strike>
