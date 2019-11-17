@@ -18,8 +18,8 @@ The old server address has been removed.
 
 ## Packages
 
-Name | Description
----- | ----
+Name | Description | UI
+---- | ---- | ----
 akm | Simple kernel manager for Arch based systems.
 arch-cl | Shows the changelog of an Arch package.
 cp-completion | Replacement for the official bash completion for the 'cp' command.<br> Supports many more options of the 'cp' command than the official version.<br>Note: this package also installs a program <b>remove_cp_command_from_common_completions</b> that can be used for removing the 'cp' command from the official bash completion.<br>It needs to be run only once, and after every upgrade of package <b>bash-completion</b>.
