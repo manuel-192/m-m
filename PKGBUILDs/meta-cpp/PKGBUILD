@@ -5,7 +5,7 @@ pkgname=meta-cpp
 pkgdesc="C/C++ dev stuff meta."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=1
+pkgrel=2
 arch=(any)
 license=(GPL)
 
