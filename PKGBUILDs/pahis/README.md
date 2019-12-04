@@ -1,15 +1,15 @@
-# ph
+# pahis
 Show pacman history.
 
 ## Usage:
 Run command
 <pre>
-ph
+pahis
 </pre>
 about how to use it.
 
 Examples:
 <pre>
-ph up firefox
-ph in
+pahis up firefox
+pahis in
 </pre>
