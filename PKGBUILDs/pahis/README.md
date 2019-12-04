@@ -10,6 +10,5 @@ about how to use it.
 
 Examples:
 <pre>
-pahis up firefox
-pahis in
+pahis --upgraded
 </pre>
