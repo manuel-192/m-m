@@ -17,3 +17,11 @@ pahis geany                # shows all operations on geany
 pahis --removed            # shows removals of packages
 pahis --installed          # shows installs of packages
 </pre>
+
+## Screenshots
+pahis
+![](pahis1.png)
+pahis --upgraded
+![](pahis2.png)
+pahis --upgraded firefox
+![](pahis3.png)
