@@ -22,7 +22,7 @@ pahis --installed          # shows installs of packages
 <pre>
 pahis
 </pre>
-![](pahis1.png)
+![pahis](pahis1.png)
 <pre>
 pahis --upgraded
 </pre>
