@@ -18,7 +18,7 @@ pahis --removed            # shows removals of packages
 pahis --installed          # shows installs of packages
 </pre>
 
-## Screenshots
+## Screenshots after commands
 <pre>
 pahis
 </pre>
