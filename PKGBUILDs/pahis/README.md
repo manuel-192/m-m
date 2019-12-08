@@ -19,9 +19,15 @@ pahis --installed          # shows installs of packages
 </pre>
 
 ## Screenshots
+<pre>
 pahis
+</pre>
 ![](pahis1.png)
+<pre>
 pahis --upgraded
+</pre>
 ![](pahis2.png)
+<pre>
 pahis --upgraded firefox
+</pre>
 ![](pahis3.png)
