@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Wrapper for pacman. Knows when to have root permissions.
+# Usage: pacmanwrapper [pacman-parameters]
+
+Main()
+{
+    local rooterrorstring="error: you cannot perform this operation unless you are root."
+    local log=$(mktemp)
+    local pacman=/usr/bin/pacman
+    local retpacman
+
+    LANG=C $pacman "$@" >& $log
+    retpacman=$?
+
+    case "$retpacman" in
+        0) cat $log ;;
+        1) test "$(cat $log)" = "$rooterrorstring" && sudo $pacman "$@" || cat $log ;;
+        *) cat $log ; echo "Warning: pacman returned error code $retpacman." >&2 ;;
+    esac
+    rm -f $log
+}
+
+Main "$@"

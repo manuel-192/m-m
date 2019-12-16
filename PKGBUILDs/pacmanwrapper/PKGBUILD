@@ -1,0 +1,22 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=pacmanwrapper
+pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('286dad6e2fdb660012f5b222b28157f4949329404366952b3a0fc3024b8e8a0d01fd6f145c9df860b8c9dc4c3c7086363ccd3ab13be945f4354e9bf33b1a86c2')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
+}
