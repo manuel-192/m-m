@@ -5,10 +5,12 @@ pkgname=akm
 pkgdesc="Arch kernel manager."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.2
-pkgrel=4
+pkgrel=4.1
 arch=('any')
 license=('GPL')
-depends=(bash yad)
+depends=(bash yad
+         geany         # TESTING, REMOVE THIS!!
+        )
 source=(
     "$url/$pkgname"
     "$url/$pkgname.desktop"
