@@ -8,9 +8,8 @@ pkgver=0.2
 pkgrel=4.1
 arch=('any')
 license=('GPL')
-depends=(bash yad
-         geany         # TESTING, REMOVE THIS!!
-        )
+depends=(bash yad)
+optdepends=(geany)         # TESTING, REMOVE THIS!!
 source=(
     "$url/$pkgname"
     "$url/$pkgname.desktop"
