@@ -4,7 +4,7 @@
 pkgname=pacmanwrapper
 pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
+pkgver=1.1
 pkgrel=1
 
 arch=('any')
@@ -13,10 +13,13 @@ depends=('bash')
 
 source=(
     "$url/$pkgname"
+    "$url/pac"
 )
-sha512sums=('286dad6e2fdb660012f5b222b28157f4949329404366952b3a0fc3024b8e8a0d01fd6f145c9df860b8c9dc4c3c7086363ccd3ab13be945f4354e9bf33b1a86c2')
+sha512sums=('286dad6e2fdb660012f5b222b28157f4949329404366952b3a0fc3024b8e8a0d01fd6f145c9df860b8c9dc4c3c7086363ccd3ab13be945f4354e9bf33b1a86c2'
+            'c70cae9b0f875934702950a1f46e5488d59c908a3fc5a72a394acf3c32e38a61416f2628c6f02a7b2ba799fef5ef047dc802e7c0050766c610b6a2033abb763b')
 
 package() {
-  cd $srcdir
+  #cd $srcdir
   install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
+  install -Dm644 pac        $pkgdir/usr/share/bash-completion/completions/pac
 }
