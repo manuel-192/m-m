@@ -4,8 +4,8 @@
 pkgname=suc
 pkgdesc="Simple 'su -c' wrapper (understands spaces in command parameters)."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1
-pkgrel=2
+pkgver=0.2
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ depends=('bash')
 source=(
     "$url/$pkgname"
 )
-sha512sums=('6236841f75a652a3e6fb9d722349a06a259cb435f9b51da66851bc3374f4cbe5bfbbb62c3afe2b24186cfde3eb5c88c477d6b24bfbce342853f427d5eefa6df7')
+sha512sums=('75d0afc4dee8738691b3d1bc51d2c3362c17cbbc500dec72c1655c6057e18cd1355f87cee14c4c3b0e18f68c249a5d8d30ddfe23631acbacd38c6b0ef553f7c9')
 
 package() {
   cd $srcdir

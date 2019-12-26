@@ -22,7 +22,7 @@ Main() {
     for xx in "$@" ; do
         command+=("'$xx'")
     done
-    /usr/bin/su -c "${command[*]}" || DIE "invalid command"
+    /usr/bin/su -c "${command[*]}" # || DIE "invalid command"
 }
 
 Main "$@"
