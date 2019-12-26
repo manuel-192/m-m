@@ -15,7 +15,13 @@ Main()
 
     case "$retpacman" in
         0) cat $log ;;
-        1) test "$(cat $log)" = "$rooterrorstring" && sudo $pacman "$@" || cat $log ;;
+        1)
+            if [ "$(cat $log)" = "$rooterrorstring" ] ; then
+                sudo $pacman "$@"
+            else
+                cat $log
+            fi
+            ;;
         *) cat $log ; echo "Warning: pacman returned error code $retpacman." >&2 ;;
     esac
     rm -f $log
