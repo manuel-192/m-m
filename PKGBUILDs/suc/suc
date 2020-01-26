@@ -14,15 +14,20 @@ DIE() {
 }
 
 Main() {
-    local xx
     local command=()
+    local xx
 
     test -z "$1" && DIE "command missing"
 
+    # command and parameters containing spaces: surround each with single quotes
     for xx in "$@" ; do
         command+=("'$xx'")
     done
-    /usr/bin/su -c "${command[*]}" # || DIE "invalid command"
+
+    # run max 3 times
+    for xx in 1 2 3 ; do
+        /usr/bin/su -c "${command[*]}" && break
+    done
 }
 
 Main "$@"
