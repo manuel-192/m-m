@@ -9,6 +9,14 @@ Main()
     local log=$(mktemp)
     local pacman=/usr/bin/pacman
     local retpacman
+    local xx sudo
+
+    for xx in su-c_wrapper sudo ; do     # su-c_wrapper from EndeavourOS, the welcome app!
+        if [ -x /usr/bin/$xx ] ; then
+            sudo=$xx
+            break
+        fi
+    done
 
     LANG=C $pacman "$@" >& $log
     retpacman=$?
@@ -17,7 +25,7 @@ Main()
         0) cat $log ;;
         1)
             if [ "$(cat $log)" = "$rooterrorstring" ] ; then
-                sudo $pacman "$@"
+                $sudo $pacman "$@"
             else
                 cat $log
             fi
