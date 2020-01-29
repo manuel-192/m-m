@@ -14,9 +14,7 @@ depends=('bash' 'polkit')
 source=(
     "$url/$pkgname"
 )
-sha512sums=(
-    5771821fbad322b4a2d543fe17542bee2d5584e941ad4d5c7fb96944e48c4d64a087090f9e89c7be4c2b2253aab011a77e9777664080eb6d6b83f9e2c9d2eb3c
-)
+sha512sums=('dd82fba8b5dd1becc7745b0594ef92455d1ad2909878cd8f27c884625aae9b3d094cf825c2c7453980628dad4b6e0ea6c5d5e68af735e41dc362b88c0434e480')
 
 package() {
     cd $srcdir
