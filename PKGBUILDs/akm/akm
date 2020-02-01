@@ -60,10 +60,10 @@ eos_yad_RunCmdTermBash() {
     fi
 }
 
-
-
 IsInstalled()   { pacman -Q "$1" >& /dev/null && echo true || echo false ; }
+
 PkgVersion()    { pacman -Q "$1" 2>/dev/null | awk '{print $2}' ; }
+ArchVersion()   { LANG=C pacman -Si "$1" | grep ^Version | awk '{print $3}' ; }
 
 NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
 
@@ -71,22 +71,24 @@ KernelOrgVersion() {
     case "$1" in
         linux)     echo $(grep -A2 stable:   $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g') ;;
         linux-lts) echo $(grep -A2 longterm: $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g') ;;
-        *) echo "N/A" ;;
+        *) echo "$na" ;;
     esac
 }
 
 Main() {
     local DEBUGGING=0
     local install=() remove=()
-    declare -A Downgrade OldVersion NewVersion OldKernel OldHeader NewKernel NewHeader
+    declare -A Downgrade OldVersion NewVersion OldKernel OldHeader NewKernel NewHeader ArchVersion
     local pkg
     local pkgs="linux linux-lts linux-zen linux-hardened"
     local dkms=$(test -n "$(PkgVersion dkms)" && echo true || echo false)
     local cmd result
     local xx ix
     local missing_headers=()
-    local columns=5                                 # 4 = all features included. TODO: check value!!
+    local columns=6                                 # 4 = all features included. TODO: check value!!
     local downgrade_supported=0
+    local na="--"
+    local same="="
 
     local tmpfile=$(mktemp)
     wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
@@ -99,6 +101,8 @@ Main() {
         OldHeader["$pkg"]=$(test -n "$xx" && echo true || echo false)
         xx="$(KernelOrgVersion "$pkg")"
         NewVersion["$pkg"]="$xx"
+        xx="$(ArchVersion "$pkg")"
+        ArchVersion["$pkg"]="$xx"
     done
     rm -f $tmpfile
 
@@ -124,18 +128,29 @@ Main() {
     done
 
     # Current versions
-    cmd+=(--field="<b>Installed version</b>:LBL" "")
+    cmd+=(--field="<b>Installed</b>:LBL" "")
     for pkg in $pkgs ; do
         xx="${OldVersion[$pkg]}"
-        test -n "$xx" || xx="--"
+        test -n "$xx" || xx="$na"
         cmd+=(--field="$xx":LBL "")
     done
 
-    # Latest available versions
-    cmd+=(--field="<b>At kernel.org</b>:LBL" "")
+    # Latest available versions at repos
+    cmd+=(--field="<b>Arch</b>:LBL" "")
+    for pkg in $pkgs ; do
+        xx="${ArchVersion[$pkg]}"
+        case "$xx" in
+            "${OldVersion[$pkg]}") xx="$same" ;;
+            "") xx="$na" ;;
+        esac
+        cmd+=(--field="$xx":LBL "")
+    done
+
+    # Latest available versions at kernel.org
+    cmd+=(--field="<b>Kernel.org</b>:LBL" "")
     for pkg in $pkgs ; do
         xx="${NewVersion[$pkg]}"
-        test -n "$xx" || xx="--"
+        test -n "$xx" || xx="$na"
         cmd+=(--field="$xx":LBL "")
     done
 
