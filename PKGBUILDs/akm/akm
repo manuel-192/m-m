@@ -63,7 +63,21 @@ eos_yad_RunCmdTermBash() {
 IsInstalled()   { pacman -Q "$1" >& /dev/null && echo true || echo false ; }
 
 PkgVersion()    { pacman -Q "$1" 2>/dev/null | awk '{print $2}' ; }
-ArchVersion()   { LANG=C pacman -Si "$1" | grep ^Version | awk '{print $3}' ; }
+ArchVersion() {
+    local pkg="$1"
+    local repo
+
+    case "$pkg" in
+        linux | linux-headers | linux-lts*) repo=core ;;
+        linux-zen* | linux-hardened*)       repo=extra ;;
+    esac
+    if [ "$uses_testing_repo" = "yes" ] ; then
+        if [ -n "$(pacman -Si testing/"$pkg" 2>/dev/null)" ] ; then
+            repo=testing
+        fi
+    fi
+    LANG=C pacman -Si $repo/"$pkg" | grep ^Version | awk '{print $3}'
+}
 
 NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
 
@@ -89,6 +103,7 @@ Main() {
     local downgrade_supported=0
     local na="--"
     local same="="
+    local uses_testing_repo=$(test -n "$(grep "^\[testing\]" /etc/pacman.conf)" && echo yes || echo no)
 
     local tmpfile=$(mktemp)
     wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
