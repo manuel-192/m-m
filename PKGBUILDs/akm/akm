@@ -113,6 +113,8 @@ Main() {
     local same="="
     local uses_testing_repo=$(test -n "$(grep "^\[testing\]" /etc/pacman.conf)" && echo yes || echo no)
 
+    echo2 "Fetching information..."
+
     local tmpfile=$(mktemp)
     wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
 
