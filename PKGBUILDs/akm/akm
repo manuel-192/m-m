@@ -83,7 +83,15 @@ NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
 
 KernelOrgVersion() {
     case "$1" in
-        linux)     echo $(grep -A2 stable:   $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g') ;;
+        linux)
+            local stable="$(echo $(  grep -A2 stable:   $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g'))"
+            local mainline="$(echo $(grep -A2 mainline: $tmpfile | head -n 2 | grep strong | sed -e 's|^.*<strong>||' -e 's|</strong>.*$||' | grep -v rc))"
+            if [ -n "$mainline" ] ; then
+                echo "$mainline"
+            else
+                echo "$stable"
+            fi
+            ;;
         linux-lts) echo $(grep -A2 longterm: $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g') ;;
         *) echo "$na" ;;
     esac
