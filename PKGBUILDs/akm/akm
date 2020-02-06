@@ -180,7 +180,11 @@ Main() {
     done
 
     # Latest available versions at repos
-    cmd+=(--field="<b>Arch-stable</b>:LBL" "")
+    if [ "$uses_testing_repo" = "yes" ] ; then
+        cmd+=(--field="<b>Arch-testing</b>:LBL" "")
+    else
+        cmd+=(--field="<b>Arch-stable</b>:LBL" "")
+    fi
     for pkg in $pkgs ; do
         xx="${ArchVersion[$pkg]}"
         case "$xx" in
