@@ -78,6 +78,10 @@ ArchVersion() {
     fi
     LANG=C pacman -Si $repo/"$pkg" | grep ^Version | awk '{print $3}'
 }
+TestingVersion() {
+    wget -q --timeout=5 -O- "https://www.archlinux.org/packages/?sort=&repo=Testing" | \
+        grep -A2 /packages/testing/x86_64/$pkg/ | tail -n 1 | sed 's|^[ ]*<td>\([0-9a-z\.\-]*\)<.*$|\1|'
+}
 
 NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
 
@@ -97,7 +101,7 @@ KernelOrgVersion() {
             echo $(grep -A2 longterm: $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g')
             ;;
         *)
-            echo "$na"
+            echo "$na2"
             ;;
     esac
 }
@@ -105,16 +109,16 @@ KernelOrgVersion() {
 Main() {
     local DEBUGGING=0
     local install=() remove=()
-    declare -A Downgrade OldVersion NewVersion OldKernel OldHeader NewKernel NewHeader ArchVersion
+    declare -A Downgrade OldVersion NewVersion TestingVersion OldKernel OldHeader NewKernel NewHeader ArchVersion
     local pkg
     local pkgs="linux linux-lts linux-zen linux-hardened"
     local dkms=$(test -n "$(PkgVersion dkms)" && echo true || echo false)
     local cmd result
     local xx ix
     local missing_headers=()
-    local columns=6                                 # 4 = all features included. TODO: check value!!
+    local columns=7                                 # 4 = all features included. TODO: check value!!
     local downgrade_supported=0
-    local na="--"
+    local na="--" na2="N/A"
     local same="="
     local uses_testing_repo=$(test -n "$(grep "^\[testing\]" /etc/pacman.conf)" && echo yes || echo no)
 
@@ -133,6 +137,8 @@ Main() {
         NewVersion["$pkg"]="$xx"
         xx="$(ArchVersion "$pkg")"
         ArchVersion["$pkg"]="$xx"
+        xx="$(TestingVersion "$pkg")"
+        TestingVersion["$pkg"]="$xx"
     done
     rm -f $tmpfile
 
@@ -162,18 +168,28 @@ Main() {
     for pkg in $pkgs ; do
         xx="${OldVersion[$pkg]}"
         test -n "$xx" || xx="$na"
-        cmd+=(--field="$xx":LBL "")
+        cmd+=(--field=" $xx ":LBL "")
     done
 
     # Latest available versions at repos
-    cmd+=(--field="<b>Arch</b>:LBL" "")
+    cmd+=(--field="<b>Arch-stable</b>:LBL" "")
     for pkg in $pkgs ; do
         xx="${ArchVersion[$pkg]}"
         case "$xx" in
             "${OldVersion[$pkg]}") xx="$same" ;;
             "") xx="$na" ;;
         esac
-        cmd+=(--field="$xx":LBL "")
+        cmd+=(--field=" $xx ":LBL "")
+    done
+
+    # Latest testing version
+    cmd+=(--field="<b>Arch-testing</b>:LBL" "")
+    for pkg in $pkgs ; do
+        xx="${TestingVersion[$pkg]}"
+        case "$xx" in
+            "") xx="$na" ;;
+        esac
+        cmd+=(--field=" $xx ":LBL "")
     done
 
     # Latest available versions at kernel.org
@@ -181,7 +197,7 @@ Main() {
     for pkg in $pkgs ; do
         xx="${NewVersion[$pkg]}"
         test -n "$xx" || xx="$na"
-        cmd+=(--field="$xx":LBL "")
+        cmd+=(--field=" $xx ":LBL "")
     done
 
     if [ $downgrade_supported -eq 1 ] ; then
