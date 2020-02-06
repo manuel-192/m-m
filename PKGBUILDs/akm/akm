@@ -7,7 +7,6 @@ debug() {
     test $DEBUGGING -eq 1 && echo2 "$@"
 }
 
-
 eos_yad() {
     GDK_BACKEND=x11 /usr/bin/yad "$@"
 }
@@ -80,8 +79,7 @@ ArchVersion() {
 }
 TestingVersion() {
     echo2 "    Arch-testing: $pkg ..."
-    wget -q --timeout=5 -O- "https://www.archlinux.org/packages/?sort=&repo=Testing" | \
-        grep -A2 /packages/testing/x86_64/$pkg/ | tail -n 1 | sed 's|^[ ]*<td>\([0-9a-z\.\-]*\)<.*$|\1|'
+    grep -A2 /packages/testing/x86_64/$pkg/ "$testinginfo" | tail -n 1 | sed 's|^[ ]*<td>\([0-9a-z\.\-]*\)<.*$|\1|'
 }
 
 NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
@@ -122,15 +120,19 @@ Main() {
     local na="--" na2="N/A"
     local same="="
     local uses_testing_repo=$(test -n "$(grep "^\[testing\]" /etc/pacman.conf)" && echo yes || echo no)
-
-    if [ "$uses_testing_repo" = "yes" ] ; then
-        ((columns--))
-    fi
+    local tmpfile=$(mktemp)
+    local testinginfo=""
 
     echo2 "Fetching information:"
 
+    if [ "$uses_testing_repo" = "yes" ] ; then
+        ((columns--))
+    else
+        testinginfo=$(mktemp)
+        wget -q --timeout=5 -O $testinginfo "https://www.archlinux.org/packages/?sort=&repo=Testing"
+    fi
+
     echo2 "    kernel.org ..."
-    local tmpfile=$(mktemp)
     wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
 
     for pkg in $pkgs ; do
@@ -149,6 +151,7 @@ Main() {
         fi
     done
     rm -f $tmpfile
+    rm -f $testinginfo
 
     cmd=(yad --form --title="Simple kernel manager")
 

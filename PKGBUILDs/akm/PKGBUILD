@@ -4,7 +4,7 @@
 pkgname=akm
 pkgdesc="Arch kernel manager."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.6.2
+pkgver=0.6.3
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ source=(
     "$url/$pkgname"
     "$url/$pkgname.desktop"
 )
-sha512sums=('daf3418d699582426aa06ebf3138e37092bc7f4674fa750b121b8096d69a9bb2da9643b8b88ffe5a70e1f3b708ba4e7deaadf683e23a76a69e50edc4915f2f79'
+sha512sums=('760dae0d3b6fbf4cee46008d4ce7b2b1328496c4057ffe95d74533d33093eade258c4f824676d5533107d79d00e3e8cb055bdc6a040fde789c63ae86b3ea61a2'
             '1eb13fe6e3edefbd1022d108832a2b295f8939d684abdba674a45453c5fbb8752a5a82743009144f7136a1f5b3cdc788c195cf56c02a8e6b59d437cef4b6fb82')
 
 package() {
