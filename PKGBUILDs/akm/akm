@@ -79,6 +79,7 @@ ArchVersion() {
     LANG=C pacman -Si $repo/"$pkg" | grep ^Version | awk '{print $3}'
 }
 TestingVersion() {
+    echo2 "    Arch-testing: $pkg ..."
     wget -q --timeout=5 -O- "https://www.archlinux.org/packages/?sort=&repo=Testing" | \
         grep -A2 /packages/testing/x86_64/$pkg/ | tail -n 1 | sed 's|^[ ]*<td>\([0-9a-z\.\-]*\)<.*$|\1|'
 }
@@ -122,8 +123,13 @@ Main() {
     local same="="
     local uses_testing_repo=$(test -n "$(grep "^\[testing\]" /etc/pacman.conf)" && echo yes || echo no)
 
-    echo2 "Fetching information..."
+    if [ "$uses_testing_repo" = "yes" ] ; then
+        ((columns--))
+    fi
 
+    echo2 "Fetching information:"
+
+    echo2 "    kernel.org ..."
     local tmpfile=$(mktemp)
     wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
 
@@ -137,8 +143,10 @@ Main() {
         NewVersion["$pkg"]="$xx"
         xx="$(ArchVersion "$pkg")"
         ArchVersion["$pkg"]="$xx"
-        xx="$(TestingVersion "$pkg")"
-        TestingVersion["$pkg"]="$xx"
+        if [ "$uses_testing_repo" = "no" ] ; then
+            xx="$(TestingVersion "$pkg")"
+            TestingVersion["$pkg"]="$xx"
+        fi
     done
     rm -f $tmpfile
 
@@ -182,15 +190,17 @@ Main() {
         cmd+=(--field=" $xx ":LBL "")
     done
 
-    # Latest testing version
-    cmd+=(--field="<b>Arch-testing</b>:LBL" "")
-    for pkg in $pkgs ; do
-        xx="${TestingVersion[$pkg]}"
-        case "$xx" in
-            "") xx="$na" ;;
-        esac
-        cmd+=(--field=" $xx ":LBL "")
-    done
+    if [ "$uses_testing_repo" = "no" ] ; then
+        # Latest testing version
+        cmd+=(--field="<b>Arch-testing</b>:LBL" "")
+        for pkg in $pkgs ; do
+            xx="${TestingVersion[$pkg]}"
+            case "$xx" in
+                "") xx="$na" ;;
+            esac
+            cmd+=(--field=" $xx ":LBL "")
+        done
+    fi
 
     # Latest available versions at kernel.org
     cmd+=(--field="<b>Kernel.org</b>:LBL" "")
