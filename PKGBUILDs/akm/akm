@@ -70,11 +70,6 @@ ArchVersion() {
         linux | linux-headers | linux-lts*) repo=core ;;
         linux-zen* | linux-hardened*)       repo=extra ;;
     esac
-    if [ "$uses_testing_repo" = "yes" ] ; then
-        if [ -n "$(pacman -Si testing/"$pkg" 2>/dev/null)" ] ; then
-            repo=testing
-        fi
-    fi
     LANG=C pacman -Si $repo/"$pkg" | grep ^Version | awk '{print $3}'
 }
 TestingVersion() {
@@ -125,12 +120,8 @@ Main() {
 
     echo2 "Fetching information:"
 
-    if [ "$uses_testing_repo" = "yes" ] ; then
-        ((columns--))
-    else
-        testinginfo=$(mktemp)
-        wget -q --timeout=5 -O $testinginfo "https://www.archlinux.org/packages/?sort=&repo=Testing"
-    fi
+    testinginfo=$(mktemp)
+    wget -q --timeout=5 -O $testinginfo "https://www.archlinux.org/packages/?sort=&repo=Testing"
 
     echo2 "    kernel.org ..."
     wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
@@ -145,15 +136,13 @@ Main() {
         NewVersion["$pkg"]="$xx"
         xx="$(ArchVersion "$pkg")"
         ArchVersion["$pkg"]="$xx"
-        if [ "$uses_testing_repo" = "no" ] ; then
-            xx="$(TestingVersion "$pkg")"
-            TestingVersion["$pkg"]="$xx"
-        fi
+        xx="$(TestingVersion "$pkg")"
+        TestingVersion["$pkg"]="$xx"
     done
     rm -f $tmpfile
     rm -f $testinginfo
 
-    cmd=(yad --form --title="Simple kernel manager")
+    cmd=(yad --form --title="Simple kernel manager" --window-icon=applications-system)
 
     if [ $downgrade_supported -eq 0 ] ; then
         ((columns--))
@@ -175,7 +164,11 @@ Main() {
     done
 
     # Current versions
-    cmd+=(--field="<b>Installed</b>:LBL" "")
+    if [ "$uses_testing_repo" = "no" ] ; then
+        cmd+=(--field="<b>Installed\n(stable)</b>:LBL" "")
+    else
+        cmd+=(--field="<b>Installed\n(testing)</b>:LBL" "")
+    fi
     for pkg in $pkgs ; do
         xx="${OldVersion[$pkg]}"
         test -n "$xx" || xx="$na"
@@ -183,11 +176,7 @@ Main() {
     done
 
     # Latest available versions at repos
-    if [ "$uses_testing_repo" = "yes" ] ; then
-        cmd+=(--field="<b>Arch-testing</b>:LBL" "")
-    else
-        cmd+=(--field="<b>Arch-stable</b>:LBL" "")
-    fi
+    cmd+=(--field="<b>Available\n(stable)</b>:LBL" "")
     for pkg in $pkgs ; do
         xx="${ArchVersion[$pkg]}"
         case "$xx" in
@@ -197,17 +186,15 @@ Main() {
         cmd+=(--field=" $xx ":LBL "")
     done
 
-    if [ "$uses_testing_repo" = "no" ] ; then
-        # Latest testing version
-        cmd+=(--field="<b>Arch-testing</b>:LBL" "")
-        for pkg in $pkgs ; do
-            xx="${TestingVersion[$pkg]}"
-            case "$xx" in
-                "") xx="$na" ;;
-            esac
-            cmd+=(--field=" $xx ":LBL "")
-        done
-    fi
+    # Latest testing version
+    cmd+=(--field="<b>Available\n(testing)</b>:LBL" "")
+    for pkg in $pkgs ; do
+        xx="${TestingVersion[$pkg]}"
+        case "$xx" in
+            "") xx="$na" ;;
+        esac
+        cmd+=(--field=" $xx ":LBL "")
+    done
 
     # Latest available versions at kernel.org
     cmd+=(--field="<b>Kernel.org</b>:LBL" "")
