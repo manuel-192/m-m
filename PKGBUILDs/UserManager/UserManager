@@ -278,7 +278,7 @@ StartHere()
         --field="User modify":fbtn  "bash -c UserMod" \
         --field="Group add":fbtn    "bash -c GroupAdd" \
         --field="Group delete":fbtn "bash -c GroupDel" \
-        --button=yad-quit:1
+        --button=yad-quit:0 >& /dev/null
 }
 
 StartHere

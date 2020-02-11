@@ -4,8 +4,8 @@
 pkgname=UserManager
 pkgdesc="A simple graphical user manager for Arch based systems with Xfce."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.8
-pkgrel=2
+pkgver=1.8.1
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -15,10 +15,8 @@ source=(
     "$url/$pkgname"
     "$url/$pkgname.desktop"
 )
-sha512sums=(
-    02bbf05f23ba6dc366400ffcf67b2ad68d4291bb76942cd9e835fc8b7a9415ee561175b2adf5396cf187bcec885fac8964e356877f0d224c8c5935c30b2b1523
-    fd86129ae044f2e66b38394af7623b3d996589a7484d3f39e0c45acc5fec4d5ae2e5d12390a634d5e8167674530b69164aa2dcd9505c0d17fd0865a64f642bf4
-)
+sha512sums=('8f2e9b80fd65ff5c49ff9a425bd703f47619e582accff3de58c6670f74d86ab1527891c43efcf1f85a33a8ec7b1eff4d7e587038acc6e4772d9862bbbc09064e'
+            'fd86129ae044f2e66b38394af7623b3d996589a7484d3f39e0c45acc5fec4d5ae2e5d12390a634d5e8167674530b69164aa2dcd9505c0d17fd0865a64f642bf4')
 
 package() {
   cd $srcdir
