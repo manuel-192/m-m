@@ -5,7 +5,7 @@ pkgname=meta-bash
 pkgdesc="Bash dev stuff meta."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=1.13
+pkgrel=1.14
 arch=(any)
 license=(GPL)
 
