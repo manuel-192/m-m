@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Quickly find it there are any Arch updates by comparing local and remote package databases.
+#
+
+echo2() { echo "$@" >&2 ; }
+
+DIE() {
+    echo2 "Error: $1"
+    exit 1
+}
+
+Main()
+{
+    local checkdir=$HOME/.config/arch-has-updates
+    local db
+    local url
+    local updates=0
+    local localdbdir=/var/lib/pacman/sync
+    local DATABASES="$(grep "^\[[a-z\-]*\]$" /etc/pacman.conf | 
+                            grep -v "\[options\]" | sed 's|\[\(.*\)\]|\1.db|' | grep -P 'core|community|extra|multilib')"
+    local MIRROR_URL="$(grep "^Server = " /etc/pacman.d/mirrorlist | head -n 1 | awk '{print $3}')"
+    MIRROR_URL="$(echo "$MIRROR_URL" | sed 's|/\$repo.*$||')"
+
+    test -n "$MIRROR_URL" || DIE "cannot find mirror URL from /etc/pacman.d/mirrorlist."
+    test -n "$DATABASES"  || DIE "cannot find repo names from /etc/pacman.conf."
+
+    mkdir -p "$checkdir"
+    cd "$checkdir"
+
+    for db in $DATABASES
+    do
+        url="$MIRROR_URL/$(basename $db .db)/os/x86_64"
+        wget -q --timeout=5 -O $db "$url/$db"
+        cmp $db $localdbdir/$db >/dev/null || {
+            ((updates++))
+        }
+    done
+    if [ $updates -ne 0 ] ; then
+        echo2 "Updates available:"
+        checkupdates | sed 's|^|    |'
+        return 0
+    else
+        echo2 "No updates."
+        return 1
+    fi
+}
+
+Main "$@"
