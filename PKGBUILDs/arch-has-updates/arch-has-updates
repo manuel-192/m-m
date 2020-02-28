@@ -10,34 +10,51 @@ DIE() {
     exit 1
 }
 
+GetFirstMirrorUrl() {
+    local repo="$1"
+    local url
+    local repoinfo="$(grep -A3 "^\[$repo\]$" /etc/pacman.conf)"
+    local mirrorlistfile="$(echo "$repoinfo" | grep "^Include = " | awk '{print $3}')"
+
+    if [ -n "$mirrorlistfile" ] ; then
+        url="$(grep "^Server = " $mirrorlistfile | head -n 1 | awk '{print $3}')"
+    else
+        url="$(echo "$repoinfo" | grep "^Server = " | head -n 1 | awk '{print $3}')"
+    fi
+    url="$(echo "$url" | sed -e 's|\$repo|'$repo'|' -e 's|\$arch|'$arch'|')"
+    echo "$url"
+}
+
 Main()
 {
     local checkdir=$HOME/.config/arch-has-updates
-    local db
+    local db repo arch=x86_64
     local url
     local db_changed=no
     local updates
     local localdbdir=/var/lib/pacman/sync
-    local DATABASES="$(grep "^\[[a-z\-]*\]$" /etc/pacman.conf | 
-                            grep -v "\[options\]" | sed 's|\[\(.*\)\]|\1.db|' | grep -P 'core|community|extra|multilib')"
-    local MIRROR_URL="$(grep "^Server = " /etc/pacman.d/mirrorlist | head -n 1 | awk '{print $3}')"
-    MIRROR_URL="$(echo "$MIRROR_URL" | sed 's|/\$repo.*$||')"
+    local curl="curl --silent --location --max-time 5 --fail --remote-name-all"
+    local DATABASES="$(grep "^\[[a-z\-]*\]$" /etc/pacman.conf | grep -v "\[options\]" | sed 's|\[\(.*\)\]|\1.db|')"
 
-    test -n "$MIRROR_URL" || DIE "cannot find mirror URL from /etc/pacman.d/mirrorlist."
+    #DATABASES="$(echo "$DATABASES" | grep -P 'core|extra|community|multilib')"
+
     test -n "$DATABASES"  || DIE "cannot find repo names from /etc/pacman.conf."
 
     mkdir -p "$checkdir"
     cd "$checkdir"
 
-    for db in $DATABASES
-    do
-        url="$MIRROR_URL/$(basename $db .db)/os/x86_64"
-        wget -q --timeout=5 -O $db "$url/$db"
+    for db in $DATABASES ; do
+        repo="$(basename $db .db)"
+        #echo2 "$repo ..."
+        url="$(GetFirstMirrorUrl "$repo")"
+        test -n "$url" || DIE "URL for repo [$repo] not found."
+        $curl "$url/$db" || DIE "fetching db files failed."
         cmp $db $localdbdir/$db >/dev/null || {
             db_changed=yes
             break
         }
     done
+
     if [ "$db_changed" = "yes" ] ; then
         updates="$(checkupdates)"
         if [ -n "$updates" ] ; then
