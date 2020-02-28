@@ -15,7 +15,8 @@ Main()
     local checkdir=$HOME/.config/arch-has-updates
     local db
     local url
-    local updates=0
+    local db_changed=no
+    local updates
     local localdbdir=/var/lib/pacman/sync
     local DATABASES="$(grep "^\[[a-z\-]*\]$" /etc/pacman.conf | 
                             grep -v "\[options\]" | sed 's|\[\(.*\)\]|\1.db|' | grep -P 'core|community|extra|multilib')"
@@ -33,17 +34,20 @@ Main()
         url="$MIRROR_URL/$(basename $db .db)/os/x86_64"
         wget -q --timeout=5 -O $db "$url/$db"
         cmp $db $localdbdir/$db >/dev/null || {
-            ((updates++))
+            db_changed=yes
+            break
         }
     done
-    if [ $updates -ne 0 ] ; then
-        echo2 "Updates available:"
-        checkupdates | sed 's|^|    |'
-        return 0
-    else
-        echo2 "No updates."
-        return 1
+    if [ "$db_changed" = "yes" ] ; then
+        updates="$(checkupdates)"
+        if [ -n "$updates" ] ; then
+            echo2 "Updates available:"
+            echo "$updates" | sed 's|^|    |' >&2
+            return 0
+        fi
     fi
+    echo2 "No updates."
+    return 1
 }
 
 Main "$@"
