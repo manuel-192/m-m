@@ -4,7 +4,7 @@
 pkgname=arch-cl
 pkgdesc="Arch packages changelog."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.2
+pkgver=0.3
 pkgrel=1
 arch=('any')
 license=('GPL')
