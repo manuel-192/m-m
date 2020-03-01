@@ -17,13 +17,13 @@ GitUpdate() {
 
 Main()
 {
-    local repodir="$PWD"                                       # has .git folder
+    local gitdir="$PWD"                                       # has .git folder
     local reponame="$(basename "$PWD")"
     local srcdir="$PWD/../_BUILD_/$reponame"
     local dstdir="$PWD/repo"
     local diffval=0
 
-    test -d "$repodir"/.git  || DIE "folder '$repodir/.git' not found!"
+    test -d "$gitdir"/.git   || DIE "folder '$gitdir/.git' not found!"
     test -d "$srcdir"        || DIE "folder '$srcdir' not found!"
     test -d "$dstdir"        || DIE "folder '$dstdir' not found!"
 
@@ -43,7 +43,7 @@ Main()
                 rm -f "$dstdir"/*.{db,files,sig,xz,zst}
                 cp    "$srcdir"/*.{db,files,sig,xz,zst} "$dstdir"
 
-                cd "$repodir"
+                cd "$gitdir"
                 GitUpdate
                 ;;
         esac
