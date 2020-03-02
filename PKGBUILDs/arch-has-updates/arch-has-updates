@@ -59,7 +59,7 @@ Main()
         updates="$(checkupdates)"
         if [ -n "$updates" ] ; then
             echo2 "Updates available:"
-            echo "$updates" | sed 's|^|    |' >&2
+            echo "$updates" | sed 's|^|    |'
             return 0
         fi
     fi

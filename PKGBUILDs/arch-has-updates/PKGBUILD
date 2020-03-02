@@ -4,7 +4,7 @@
 pkgname=arch-has-updates
 pkgdesc="Quick check if there are Arch updates."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.2.1
+pkgver=0.3
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -13,7 +13,7 @@ depends=('bash')
 source=(
     "$url/$pkgname"
 )
-sha512sums=('10f19761d2dad9d7079e2f75698a0ee1e6a0e70b23f315be2fc2eaf6212666fd29eeac85f390ebb716b610c33efaa0df7b046e2b108156a6f1477f1a1039fd80')
+sha512sums=('a56d9af12cdc3d17bd2fb3b94cd4b7d75ae0c0a804bed5939171c341f23c3f7a43e797f978f06303ee4300bfd7b3ebb1ba0df0d2ae4a0b9674025bf474c6993c')
 
 package() {
   cd $srcdir
