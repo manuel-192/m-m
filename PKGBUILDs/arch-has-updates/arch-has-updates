@@ -1,67 +1,22 @@
 #!/bin/bash
 #
-# Quickly find it there are any Arch updates by comparing local and remote package databases.
+# Like checkupdates, but return 0 when updates are available, 1 otherwise.
 #
 
-echo2() { echo "$@" >&2 ; }
+echo2()   { echo "$@" >&2 ; }
 
-DIE() {
-    echo2 "Error: $1"
-    exit 1
-}
-
-GetFirstMirrorUrl() {
-    local repo="$1"
-    local url
-    local repoinfo="$(grep -A3 "^\[$repo\]$" /etc/pacman.conf)"
-    local mirrorlistfile="$(echo "$repoinfo" | grep "^Include = " | awk '{print $3}')"
-
-    if [ -n "$mirrorlistfile" ] ; then
-        url="$(grep "^Server = " $mirrorlistfile | head -n 1 | awk '{print $3}')"
-    else
-        url="$(echo "$repoinfo" | grep "^Server = " | head -n 1 | awk '{print $3}')"
-    fi
-    url="$(echo "$url" | sed -e 's|\$repo|'$repo'|' -e 's|\$arch|'$arch'|')"
-    echo "$url"
-}
-
-Main()
-{
-    local checkdir=$HOME/.config/arch-has-updates
-    local db repo arch=x86_64
-    local url
-    local db_changed=no
-    local updates
-    local localdbdir=/var/lib/pacman/sync
-    local curl="curl --silent --location --max-time 5 --fail --remote-name-all"
-    local DATABASES="$(grep "^\[[a-z\-]*\]$" /etc/pacman.conf | grep -v "\[options\]" | sed 's|\[\(.*\)\]|\1.db|')"
-
-    #DATABASES="$(echo "$DATABASES" | grep -P 'core|extra|community|multilib')"
-
-    test -n "$DATABASES"  || DIE "cannot find repo names from /etc/pacman.conf."
-
-    mkdir -p "$checkdir"
-    cd "$checkdir"
-
-    for db in $DATABASES ; do
-        repo="$(basename $db .db)"
-        #echo2 "$repo ..."
-        url="$(GetFirstMirrorUrl "$repo")"
-        test -n "$url" || DIE "URL for repo [$repo] not found."
-        $curl "$url/$db" || DIE "fetching db files failed."
-        cmp $db $localdbdir/$db >/dev/null || {
-            db_changed=yes
-            break
-        }
-    done
-
-    if [ "$db_changed" = "yes" ] ; then
-        updates="$(checkupdates)"
-        if [ -n "$updates" ] ; then
-            echo2 "Updates available:"
-            echo "$updates" | sed 's|^|    |'
-            return 0
+Main() {
+    local updates="$(checkupdates)"
+    if [ -n "$updates" ] ; then
+        if [ 1 -eq 1 ] ; then
+            local date="$(date '+%Y/%m/%d %H:%M')"
+            local count="$(echo "$updates" | wc -l)"
+            local words
+            test "$count" = "1" && words="update is" || words="updates are"
+            echo2 "[$date] $count $words available:"
         fi
+        echo "$updates" | sed 's|^|    |'
+        return 0
     fi
     echo2 "No updates."
     return 1
