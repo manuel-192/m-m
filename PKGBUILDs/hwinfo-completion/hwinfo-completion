@@ -1,0 +1,62 @@
+# bash completion for hwinfo        -*- shell-script -*-
+
+_mylistselector()
+{
+    local list_elems_all="$1"
+
+    local realcur="${cur##*,}"
+    local prefix="${cur%$realcur}"
+    local elems word
+
+    for word in $list_elems_all
+    do
+        if ! [[ $prefix == *"$word"* ]]; then
+            elems="$word $elems"
+        fi
+    done
+    COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -S ' ' -- $realcur) )
+    #compopt -o nospace
+}
+
+_my_hwinfo_option_helper() { echo -n "[$1]: " >&2 ; }
+
+_my_hwinfo_completion() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    local opts1="--short --listcmd --map --verbose --version --help"
+    local opts2="--only --save-config --show-config --debug --log --dump-db"
+    local hwitems="--all --arch --bios --block --bluetooth --braille --bridge --camera"
+    hwitems+=" --cdrom --chipcard --cpu --disk --dsl --dvb --fingerprint --floppy"
+    hwitems+=" --framebuffer --gfxcard --hub --ide --isapnp --isdn --joystick --keyboard"
+    hwitems+=" --memory --mmc-ctrl --modem --monitor --mouse --netcard --network --partition"
+    hwitems+=" --pci --pcmcia --pcmcia-ctrl --pppoe --printer --redasd"
+    hwitems+=" --reallyall --scanner --scsi --smp --sound --storage-ctrl --sys --tape"
+    hwitems+=" --tv --uml --usb --usb-ctrl --vbe --wlan --xen --zip"
+    local xx
+
+    case "$prev" in
+        --only)            _my_hwinfo_option_helper "DEVNAME" ; return ;;
+        --save-config)     _my_hwinfo_option_helper "SPEC" ; return ;;
+        --show-config)     _my_hwinfo_option_helper "UDI" ; return ;;
+        --debug)           _my_hwinfo_option_helper "Debug level" ; return ;;
+        --dump-db)         _my_hwinfo_option_helper "0=external db, 1=internal db" ; return ;;
+        --log)             _filedir ; return ;;
+    esac
+    for xx in hwinfo $opts1 ; do
+        if [ "$prev" = "$xx" ] ; then
+            _mylistselector "$hwitems $opts1 $opts2"
+            return
+        fi
+    done
+    for xx in $hwitems ; do
+        if [ "$prev" = "$xx" ] ; then
+            _mylistselector "$hwitems $opts1 $opts2"
+            return
+        fi
+    done
+
+    _mylistselector "$hwitems $opts1 $opts2"
+} &&
+complete -F _my_hwinfo_completion hwinfo

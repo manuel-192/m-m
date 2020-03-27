@@ -1,0 +1,21 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=hwinfo-completion
+pkgdesc="Bash completion for hwinfo."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('37d237c536289b1e9f4302cbc33a87c9c4f96fbb100f1bcb3b64a752d801c6a8722adc4b8a03bca5c3f174b9846163a13fbcb085a8f4d1d23481075790c604a7')
+
+package() {
+  cd $srcdir
+  install -Dm644 $pkgname $pkgdir/usr/share/bash-completion/completions/hwinfo
+}
