@@ -1,0 +1,24 @@
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=eos-etc-skel
+pkgdesc="Certain /etc/skel files for EndeavourOS"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+# optdepends=(zsh)
+url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pkgname"
+
+source=(
+  $url/.bashrc            # copied to users
+  $url/.bashrc.common     # only in /etc/skel
+)
+sha512sums=('07442c1c4860ca96b49dbbaf71faf90d57b5f27935c9a80d6581acd5f5f3c3415ea2e20c4a77dc9dbed17867636dd52546a9bd180e6471cc48edc4189259e565'
+            '0741d77d2e357fb0bdedd7df4c8d69c6069216807fa7c9d6793d623909371b38f3859017a1af712eddb7f47351d9813c4b1170b5bbfe5a555758c507d4392f1d')
+
+package() {
+  install -d $pkgdir/etc/skel
+  install -Dm644 .bashrc             $pkgdir/etc/skel/.bashrc
+  install -Dm644 .bashrc.common      $pkgdir/etc/skel/.bashrc.common
+}
