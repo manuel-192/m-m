@@ -1,68 +1,36 @@
 #!/bin/bash
-#
-# AKM = Arch Kernel Manager with a GUI.
 
-echo2() { echo "$@" >&2 ; }
-debug() {
-    test $DEBUGGING -eq 1 && echo2 "$@"
+RepoType() {
+    test -z "$(grep "^\[testing\]$" /etc/pacman.conf)" && echo "Stable" || echo "Testing"
 }
 
-eos_yad() {
-    GDK_BACKEND=x11 /usr/bin/yad "$@"
-}
-eos_yad_terminal() {
-    # Show a terminal that is capable of supporting option -e properly. Empty if not found.
-    # Requires: yad
-    #
-    # These terminal programs are known not to work with this program:
-    #     qterminal
-    #     kitty
-    # The following terminals are known to work:
-    local suitable_terminals="xfce4-terminal konsole gnome-terminal mate-terminal lxterminal terminator tilix termite xterm"
-    local eos_terminal_prog=""
-    local xx
+Header() {
+    local fname="${FUNCNAME[1]}"
+    case "$fname" in
+        KernelOrg) fname="kernel.org"
+    esac
+    local hdr="<b>$fname</b>"
 
-    for xx in $suitable_terminals ; do
-        if [ -x "/usr/bin/$xx" ] ; then
-            eos_terminal_prog="/usr/bin/$xx"
-            echo "$eos_terminal_prog"
-            return 0
-        fi
-    done
-
-    printf "%s\n    %s\n%s" \
-           "Sorry, none of the terminal programs:" \
-           "$suitable_terminals" \
-           "is installed. Some features may not work as expected." \
-        | eos_yad --text-info \
-                  --title="Warning" --height=200 --width=700 --wrap --button=yad-ok:0
-    return 1
-}
-eos_yad_RunCmdTermBash() {
-    local cmd="$1"
-    local prompt="$2"
-
-    local term="$(eos_yad_terminal)"
-    test -n "$term" || return 1
-
-    local tmpfile=$(mktemp)
-
-    echo "#!/bin/bash"                                   >> $tmpfile
-    echo "$cmd"                                          >> $tmpfile
-    echo "read -p 'Press ENTER to close this window: '"  >> $tmpfile
-
-    chmod +x $tmpfile
-    if [ -n "$prompt" ] ; then
-        $term -e "bash -c \"echo $prompt ; $tmpfile ; rm -f $tmpfile\""
-    else
-        $term -e "bash -c \"$tmpfile ; rm -f $tmpfile\""
+    if [ "$fname" = "$(RepoType)" ] ; then
+        hdr+=" (current)"
     fi
+    echo "$hdr"
 }
 
-IsInstalled()   { pacman -Q "$1" >& /dev/null && echo true || echo false ; }
+LocalVersion() { /usr/bin/pacman -Q "$1" 2>/dev/null | /usr/bin/awk '{print $2}' ; }
+Exist()        { test -n "$version" && echo TRUE || echo FALSE ; }
 
-PkgVersion()    { pacman -Q "$1" 2>/dev/null | awk '{print $2}' ; }
-ArchVersion() {
+Installed() {
+    local version exist
+    cmd+=(--field="$(Header)":LBL "")
+    for xx in "${kernels[@]}" ; do
+        version="$(LocalVersion "$xx")"
+        exist="$(Exist)"
+        cmd+=(--field="$xx $version":CHK $exist)
+    done
+}
+
+StableVersion() {
     local pkg="$1"
     local repo
 
@@ -72,266 +40,121 @@ ArchVersion() {
     esac
     LANG=C pacman -Si $repo/"$pkg" | grep ^Version | awk '{print $3}'
 }
-TestingVersion() {
-    echo2 "    Arch-testing: $pkg ..."
-    grep -A2 /packages/testing/x86_64/$pkg/ "$testinginfo" | tail -n 1 | sed 's|^[ ]*<td>\([0-9a-z\.\-]*\)<.*$|\1|'
+
+Stable() {
+    local version exist
+    cmd+=(--field="$(Header)":LBL "")
+    for xx in "${kernels[@]}" ; do
+        version="$(StableVersion "$xx")"
+        exist="$(Exist)"
+        cmd+=(--field="$xx $version":LBL $exist)
+    done
 }
 
-NewValue() { echo "$result" | cut -d '|' -f $ix | tr [:upper:] [:lower:] ; }
+TestingVersion() {
+    local pkg="$1"
+    echo "$testinginfo" | grep -A2 /packages/testing/x86_64/$pkg/ | tail -n 1 | sed 's|^[ ]*<td>\([0-9a-z\.\-]*\)<.*$|\1|'
+}
+
+Testing() {
+    local testinginfo="$(curl -s "https://www.archlinux.org/packages/?sort=&repo=Testing")"
+    local version exist
+    cmd+=(--field="$(Header)":LBL "")
+    for xx in "${kernels[@]}" ; do
+        version="$(TestingVersion "$xx")"
+        test -n "$version" || version="$na"
+        exist="$(Exist)"
+        cmd+=(--field="$xx $version":LBL $exist)
+    done
+}
 
 KernelOrgVersion() {
-    case "$1" in
-        linux)
-            local stable="$(echo $(  grep -A2 stable:   $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g'))"
-            local mainline="$(echo $(grep -A2 mainline: $tmpfile | head -n 2 | grep strong | sed -e 's|^.*<strong>||' -e 's|</strong>.*$||' | grep -v rc))"
-            local result=$(vercmp "$mainline" "$stable")
-            if [ $result -gt 0 ] ; then
-                echo "$mainline"
-            else
-                echo "$stable"
-            fi
-            ;;
-        linux-lts)
-            echo $(grep -A2 longterm: $tmpfile | head -n 2 | grep strong | sed 's|<[^0-9]*>||g')
-            ;;
-        *)
-            echo "$na2"
-            ;;
-    esac
+    local type="$1"
+    echo "$kernelorg" | grep -A2 $type: | head -n 2 | grep strong | sed -e 's|^.*<strong>||' -e 's|</strong>.*$||' | grep -v rc
 }
 
-Main() {
-    local DEBUGGING=0
-    local install=() remove=()
-    declare -A Downgrade OldVersion NewVersion TestingVersion OldKernel OldHeader NewKernel NewHeader ArchVersion
-    local pkg
-    local pkgs="linux linux-lts linux-zen linux-hardened"
-    local dkms=$(test -n "$(PkgVersion dkms)" && echo true || echo false)
-    local cmd result
-    local xx ix
-    local missing_headers=()
-    local columns=7                                 # 4 = all features included. TODO: check value!!
-    local downgrade_supported=0
-    local na="--" na2="N/A"
-    local same="="
-    local uses_testing_repo=$(test -n "$(grep "^\[testing\]" /etc/pacman.conf)" && echo yes || echo no)
-    local tmpfile=$(mktemp)
-    local testinginfo=""
-
-    echo2 "Fetching information:"
-
-    testinginfo=$(mktemp)
-    wget -q --timeout=5 -O $testinginfo "https://www.archlinux.org/packages/?sort=&repo=Testing"
-
-    echo2 "    kernel.org ..."
-    wget -q -O $tmpfile https://www.kernel.org/index.html   # for KernelOrgVersion
-
-    for pkg in $pkgs ; do
-        xx="$(PkgVersion "$pkg")"
-        OldVersion["$pkg"]="$xx"
-        OldKernel["$pkg"]=$(test -n "$xx" && echo true || echo false)
-        xx="$(PkgVersion "$pkg"-headers)"
-        OldHeader["$pkg"]=$(test -n "$xx" && echo true || echo false)
-        xx="$(KernelOrgVersion "$pkg")"
-        NewVersion["$pkg"]="$xx"
-        xx="$(ArchVersion "$pkg")"
-        ArchVersion["$pkg"]="$xx"
-        xx="$(TestingVersion "$pkg")"
-        TestingVersion["$pkg"]="$xx"
-    done
-    rm -f $tmpfile
-    rm -f $testinginfo
-
-    cmd=(yad --form --title="Simple kernel manager" --window-icon=applications-system)
-
-    if [ $downgrade_supported -eq 0 ] ; then
-        ((columns--))
-    fi
-    cmd+=(--columns=$columns)
-
-    ### SHOW OLD VALUES
-
-    # Kernels
-    cmd+=(--field="<b>Kernel</b>:LBL" "")
-    for pkg in $pkgs ; do
-        cmd+=(--field="$pkg":chk ${OldKernel["$pkg"]})
-    done
-
-    # Headers
-    cmd+=(--field="<b>Headers</b>:LBL" "")
-    for pkg in $pkgs ; do
-        cmd+=(--field="${pkg}-headers":chk ${OldHeader["$pkg"]})
-    done
-
-    # Current versions
-    if [ "$uses_testing_repo" = "no" ] ; then
-        cmd+=(--field="<b>Installed\n(stable)</b>:LBL" "")
-    else
-        cmd+=(--field="<b>Installed\n(testing)</b>:LBL" "")
-    fi
-    for pkg in $pkgs ; do
-        xx="${OldVersion[$pkg]}"
-        test -n "$xx" || xx="$na"
-        cmd+=(--field=" $xx ":LBL "")
-    done
-
-    # Latest available versions at repos
-    cmd+=(--field="<b>Available\n(stable)</b>:LBL" "")
-    for pkg in $pkgs ; do
-        xx="${ArchVersion[$pkg]}"
+KernelOrg() {
+    local version
+    local kernelorg="$(curl -s https://www.kernel.org)"
+    local org_kernels=(mainline stable longterm linux-next)
+    local stableversion="$(KernelOrgVersion stable)"
+    cmd+=(--field="$(Header)":LBL "")
+    for xx in "${org_kernels[@]}" ; do
+        version="$(KernelOrgVersion "$xx")"
         case "$xx" in
-            "${OldVersion[$pkg]}") xx="$same" ;;
-            "") xx="$na" ;;
-        esac
-        cmd+=(--field=" $xx ":LBL "")
-    done
-
-    # Latest testing version
-    cmd+=(--field="<b>Available\n(testing)</b>:LBL" "")
-    for pkg in $pkgs ; do
-        xx="${TestingVersion[$pkg]}"
-        case "$xx" in
-            "") xx="$na" ;;
-        esac
-        cmd+=(--field=" $xx ":LBL "")
-    done
-
-    # Latest available versions at kernel.org
-    cmd+=(--field="<b>Kernel.org</b>:LBL" "")
-    for pkg in $pkgs ; do
-        xx="${NewVersion[$pkg]}"
-        test -n "$xx" || xx="$na"
-        cmd+=(--field=" $xx ":LBL "")
-    done
-
-    if [ $downgrade_supported -eq 1 ] ; then
-        # Downgrades
-        cmd+=(--field="<b>Downgrade</b>:LBL" "")
-        for pkg in $pkgs ; do
-            cmd+=(--field="":chk false)
-        done
-    fi
-
-    ### GET NEW VALUES
-
-    result=$("${cmd[@]}")
-    test -n "$result" || return 1
-
-    debug "$result"
-
-    # Kernels
-    ix=1                    # skip column header
-    for pkg in $pkgs ; do
-        ((ix++))
-        xx="$(NewValue)"
-        #debug "$pkg : $xx"
-        NewKernel["$pkg"]="$xx"
-    done
-
-    # Headers
-    ((ix++))                # skip column header
-    for pkg in $pkgs ; do
-        ((ix++))
-        xx="$(NewValue)"
-        #debug "${pkg}-headers : $xx"
-        NewHeader["$pkg"]="$xx"
-    done
-
-    # Current versions (read-only values)
-    ((ix++))
-    for pkg in $pkgs ; do
-        ((ix++))
-    done
-
-    # Latest versions (read-only values)
-    ((ix++))
-    for pkg in $pkgs ; do
-        ((ix++))
-    done
-
-    if [ $downgrade_supported -eq 1 ] ; then
-        # Downgrades
-        ((ix++))                # skip column header
-        for pkg in $pkgs ; do
-            ((ix++))
-            xx="$(NewValue)"
-            #debug "downgrade $pkg : $xx"
-            Downgrade["$pkg"]="$xx"
-        done
-    fi
-
-    ### CHECK IF "FIXING" VARIABLES IS NEEDED
-
-    for pkg in $pkgs ; do
-        if [ "$dkms" = "true" ] ; then
-            if [ "${NewKernel[$pkg]}" = "true" ] ; then
-                if [ "${NewHeader[$pkg]}" = "false" ] ; then
-                    missing_headers+=("$pkg"-headers)
+            mainline)
+                if [[ $version > $stableversion ]] ; then
+                    cmd+=(--field="$xx $version":LBL "")
+                else
+                    cmd+=(--field="$xx $na":LBL "")
                 fi
-            fi
-        fi
+                ;;
+            *) cmd+=(--field="$xx $version":LBL "") ;;
+        esac
     done
-    if [ -n "$missing_headers" ] ; then
-        echo "${missing_headers[*]}" | \
-            yad --text-info --width=400 --wrap --title="Kernel headers recommended with dkms" \
-                --button=yad-no:1 --button=yad-yes:0 \
-            && {
-            for pkg in "${missing_headers[@]}" ; do
-                xx="${pkg%-headers}"
-                NewHeader["$xx"]=true                 # headers probably are needed with dkms
-            done
-        }
-    fi
-
-    ### SHOW "NEW" VALUES AFTER ASKING THEM
-
-    if [ $DEBUGGING -eq 1 ] ; then
-        echo -n "kernels     :" ; for pkg in $pkgs ; do echo -n " ${NewKernel[$pkg]}" ; done ; echo ""
-        echo -n "headers     :" ; for pkg in $pkgs ; do echo -n " ${NewHeader[$pkg]}" ; done ; echo ""
-        echo -n "versions    :" ; for pkg in $pkgs ; do echo -n " ${OldVersion[$pkg]}" ; done ; echo ""
-        if [ $downgrade_supported -eq 1 ] ; then
-            echo -n "downgrades  :" ; for pkg in $pkgs ; do echo -n " ${Downgrade[$pkg]}" ; done ; echo ""
-        fi
-    fi
-
-    # Now we have arrays: OldKernel OldHeader NewKernel NewHeader.
-    # Build install and remove commands.
-
-    for pkg in $pkgs ; do
-        if [ "${NewKernel[$pkg]}" = "true" ] ; then
-            test "${OldKernel[$pkg]}" = "false" && install+=("$pkg")
-        else
-            test "${OldKernel[$pkg]}" = "true" && remove+=("$pkg")
-        fi
-        if [ "${NewHeader[$pkg]}" = "true" ] ; then
-            test "${OldHeader[$pkg]}" = "false" && install+=("$pkg"-headers)
-        else
-            test "${OldHeader[$pkg]}" = "true" && remove+=("$pkg"-headers)
-        fi
+    org_kernels=($na $na $na $na)
+    for xx in "${org_kernels[@]}" ; do
+        cmd+=(--field="$xx":LBL "")
     done
+}
 
-    debug "remove:  ${remove[*]}"
-    debug "install: ${install[*]}"
+Main()
+{
+    local na="--"
+    local kernels=(
+        linux             linux-headers
+        linux-lts         linux-lts-headers
+        linux-zen         linux-zen-headers
+        linux-hardened    linux-hardened-headers
+    )
+    local xx
+    local t1="Installed = currently installed packages and their versions.\n"
+          t1+="Stable = versions available from the stable repos.\n"
+          t1+="Testing = versions available from the testing repos.\n"
+          t1+="kernel.org = latest kernel versions at kernel.org.\n"
+          t1+="Your current repos are either Stable or Testing (see /etc/pacman.conf).\n\n"
+          t1+="Check/uncheck to install/uninstall.\n"
+          t1+="Marking '$na' means: info not available.\n"
+    local cmd=(
+        /usr/bin/yad
+        --form --title="Simple kernel manager" --columns=4
+        --text="$t1"
+        --image=system-software-update
+        --window-icon=applications-system
+    )
+
+    Installed
+
+    Stable
+    Testing
+
+    KernelOrg
+
+    local ix installed install=() uninstall=() pkg
+    local result="$("${cmd[@]}")"
+    test -z "$result" && return
+
+    result="${result:1}"                               # skip first LBL field !!
+
+    #echo "result = $result" >&2
+
+    for ((ix=0; ix < ${#kernels[@]}; ix++)) ; do
+        pkg="${kernels[$ix]}"
+        installed="$(LocalVersion "$pkg")"
+        case "$(echo "$result" | cut -d '|' -f $((ix+1)))" in
+            TRUE)   test -z "$installed" && install+=("$pkg") ;;
+            FALSE)  test -n "$installed" && uninstall+=("$pkg") ;;
+        esac
+    done
 
     cmd=()
-    if [ -n "$install" ] ; then
-        cmd+=(pacman -S)
-        for pkg in "${install[@]}" ; do
-            cmd+=("$pkg")
-        done
-        test -n "$remove" && cmd+=(";")
-    fi
-    if [ -n "$remove" ] ; then
-        cmd+=(pacman -Rsn)
-        for pkg in "${remove[@]}" ; do
-            cmd+=("$pkg")
-        done
-    fi
+    test -n "$uninstall" && cmd+=(pacman -Rsn ${uninstall[*]} ";")
+    test -n "$install"   && cmd+=(pacman -S ${install[*]} ";")
 
-    if [ -n "$cmd" ] ; then
-        echo "${cmd[@]}"
-        eos_yad_RunCmdTermBash "echo '${cmd[*]}' ; su -c \"${cmd[*]}\""
-    fi
+    test -n "$cmd" && {
+        cmd="terminator -x bash -c \"echo '${cmd[*]}' ; sudo bash -c '${cmd[*]}' ; read -p 'Press ENTER to close: '\""
+        $cmd
+    }
 }
 
-Main
+Main "$@"
