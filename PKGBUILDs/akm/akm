@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# use monospace (non-proportional) fonts!
+FormatNameVersion() { printf "<tt>%-12s %s  </tt>" "$1" "$2" ; }
+FormatVersion()     { printf "<tt>%s  </tt>" "$1" ; }
+FormatName()        { FormatVersion "$@" ; }
+
 RepoType() {
     test -z "$(grep "^\[testing\]$" /etc/pacman.conf)" && echo "Stable" || echo "Testing"
 }
@@ -14,19 +19,35 @@ Header() {
     if [ "$fname" = "$(RepoType)" ] ; then
         hdr+=" (current)"
     fi
-    echo "$hdr"
+    FormatVersion "$hdr"
 }
 
 LocalVersion() { /usr/bin/pacman -Q "$1" 2>/dev/null | /usr/bin/awk '{print $2}' ; }
 Exist()        { test -n "$version" && echo TRUE || echo FALSE ; }
 
-Installed() {
+Choose() {
     local version exist
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
         version="$(LocalVersion "$xx")"
         exist="$(Exist)"
-        cmd+=(--field="$xx $version":CHK $exist)
+        cmd+=(--field="":CHK $exist)
+    done
+}
+
+PkgName() {
+    cmd+=(--field="$(Header)":LBL "")
+    for xx in "${kernels[@]}" ; do
+        cmd+=(--field="$(FormatName "$xx")":LBL "")
+    done
+}
+
+Installed() {
+    local version
+    cmd+=(--field="$(Header)":LBL "")
+    for xx in "${kernels[@]}" ; do
+        version="$(LocalVersion "$xx")"
+        cmd+=(--field="$(FormatVersion "$version")":LBL "")
     done
 }
 
@@ -42,12 +63,11 @@ StableVersion() {
 }
 
 Stable() {
-    local version exist
+    local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
         version="$(StableVersion "$xx")"
-        exist="$(Exist)"
-        cmd+=(--field="$xx $version":LBL $exist)
+        cmd+=(--field="$(FormatVersion "$version")":LBL "")
     done
 }
 
@@ -58,13 +78,12 @@ TestingVersion() {
 
 Testing() {
     local testinginfo="$(curl -s "https://www.archlinux.org/packages/?sort=&repo=Testing")"
-    local version exist
+    local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
         version="$(TestingVersion "$xx")"
         test -n "$version" || version="$na"
-        exist="$(Exist)"
-        cmd+=(--field="$xx $version":LBL $exist)
+        cmd+=(--field="$(FormatVersion "$version")":LBL "")
     done
 }
 
@@ -84,51 +103,63 @@ KernelOrg() {
         case "$xx" in
             mainline)
                 if [[ $version > $stableversion ]] ; then
-                    cmd+=(--field="$xx $version":LBL "")
+                    cmd+=(--field="$(FormatNameVersion "$xx" "$version")":LBL "")
                 else
-                    cmd+=(--field="$xx $na":LBL "")
+                    cmd+=(--field="$(FormatNameVersion "$xx" "$na")":LBL "")
                 fi
                 ;;
-            *) cmd+=(--field="$xx $version":LBL "") ;;
+            *) cmd+=(--field="$(FormatNameVersion "$xx" "$version")":LBL "") ;;
         esac
     done
     org_kernels=($na $na $na $na)
     for xx in "${org_kernels[@]}" ; do
-        cmd+=(--field="$xx":LBL "")
+        cmd+=(--field="$(FormatName "$xx")":LBL "")
     done
 }
 
 Main()
 {
-    local na="--"
+    local na="(-)"
     local kernels=(
         linux             linux-headers
         linux-lts         linux-lts-headers
         linux-zen         linux-zen-headers
         linux-hardened    linux-hardened-headers
     )
+    local functions=(  # order is important!
+        Choose
+        PkgName
+        Installed
+        Stable
+        Testing
+        KernelOrg
+    )
     local xx
-    local t1="Installed = currently installed packages and their versions.\n"
-          t1+="Stable = versions available from the stable repos.\n"
-          t1+="Testing = versions available from the testing repos.\n"
-          t1+="kernel.org = latest kernel versions at kernel.org.\n"
-          t1+="Your current repos are either Stable or Testing (see /etc/pacman.conf).\n\n"
-          t1+="Check/uncheck to install/uninstall.\n"
-          t1+="Marking '$na' means: info not available.\n"
+    local t1=""
+
+    t1+="Here you'll see information about currently installed and available Linux kernels.\n"
+    t1+="You can install and/or uninstall kernel packages using the checkboxes on the left column.\n"
+    t1+="\n"
+    t1+="Column headers:\n"
+    t1+="        Choose = checkboxes for installing/uninstalling kernel packages.\n"
+    t1+="        PkgName = kernel package name\n"
+    t1+="        Installed = currently installed kernel package versions.\n"
+    t1+="        Stable = versions available from the stable repos.\n"
+    t1+="        Testing = versions available from the testing repos.\n"
+    t1+="        kernel.org = latest kernel versions at kernel.org.\n"
+    t1+="Your current repos are either Stable or Testing (see /etc/pacman.conf).\n"
+    t1+="Marking <b>$na</b> means: info not available.\n"
+
     local cmd=(
         /usr/bin/yad
-        --form --title="Simple kernel manager" --columns=4
+        --form --title="Simple kernel manager" --columns=${#functions[@]}
         --text="$t1"
         --image=system-software-update
         --window-icon=applications-system
     )
-
-    Installed
-
-    Stable
-    Testing
-
-    KernelOrg
+    for xx in "${functions[@]}" ; do
+        $xx
+    done
 
     local ix installed install=() uninstall=() pkg
     local result="$("${cmd[@]}")"
@@ -136,7 +167,7 @@ Main()
 
     result="${result:1}"                               # skip first LBL field !!
 
-    #echo "result = $result" >&2
+    #echo "result = $result" >&2 ; return
 
     for ((ix=0; ix < ${#kernels[@]}; ix++)) ; do
         pkg="${kernels[$ix]}"
@@ -150,6 +181,12 @@ Main()
     cmd=()
     test -n "$uninstall" && cmd+=(pacman -Rsn ${uninstall[*]} ";")
     test -n "$install"   && cmd+=(pacman -S ${install[*]} ";")
+
+    if [ 0 -eq 1 ] ; then
+        echo "uninstall = ${uninstall[*]}"
+        echo "install   = ${install[*]}"
+        return
+    fi
 
     test -n "$cmd" && {
         cmd="terminator -x bash -c \"echo '${cmd[*]}' ; sudo bash -c '${cmd[*]}' ; read -p 'Press ENTER to close: '\""
