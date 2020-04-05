@@ -7,8 +7,8 @@ How to use this repo? Check these [instructions](../../../m-repo-info/blob/maste
 [List of packages](../../../m-m/releases) (same as the <b>Releases</b> button above).
 
 ## NEWS
-Date       | News item
---------   | ----
+Date | News item
+:---|:---
 2020-03-24 | Users are **strongly** encouraged to use the **mirrorlist-m** file. See https://github.com/manuel-192/m-repo-info/blob/master/README.md
 2019-11-17 | reorganized packages again
 2019-10-21 | added pahis, paccache-service-manager, <strike>reboot-required</strike> and suc.
@@ -23,7 +23,7 @@ The old server address has been removed.
 ## Packages
 
 Name | Description | UI
----- | ---- | ----
+--- | --- | ---
 akm | Simple kernel manager for EndeavourOS and Arch based systems. | GUI
 arch-cl | Shows the changelog of an Arch package.
 arch-has-updates | Quickly find it there are any Arch package updates. |
