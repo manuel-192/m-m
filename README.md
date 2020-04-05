@@ -23,7 +23,7 @@ The old server address has been removed.
 ## Packages
 
 Name | Description | UI
---- | --- | ---
+:--- | :--- | :---
 akm | Simple kernel manager for EndeavourOS and Arch based systems. | GUI
 arch-cl | Shows the changelog of an Arch package.
 arch-has-updates | Quickly find it there are any Arch package updates. |
