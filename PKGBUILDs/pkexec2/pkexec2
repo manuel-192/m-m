@@ -7,12 +7,14 @@
 Main()
 {
     local xx
+    local prompt="Elevated privileges required:"
     local cmds="cd '$PWD' ;"
 
     for xx in "$@" ; do
         cmds+=" '$xx'"
     done
 
+    echo "$prompt" >&2
     /usr/bin/pkexec bash -c "$cmds"
 }
 
