@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # use monospace (non-proportional) fonts!
-FormatNameVersion() { printf "<tt>%-12s %s  </tt>" "$1" "$2" ; }
-FormatVersion()     { printf "<tt>%s  </tt>" "$1" ; }
+FormatNameVersion() { printf "%-12s %s" "$1" "$2" ; }
+FormatVersion()     { printf "%s<tt>  </tt>" "$1" ; }
 FormatName()        { FormatVersion "$@" ; }
 
 RepoType() {
@@ -12,7 +12,8 @@ RepoType() {
 Header() {
     local fname="${FUNCNAME[1]}"
     case "$fname" in
-        KernelOrg) fname="kernel.org"
+        KernelOrg) fname="$KOName" ;;
+        KOVersion) fname="$KOVersionName" ;;
     esac
     local hdr="<b>$fname</b>"
 
@@ -94,26 +95,31 @@ KernelOrgVersion() {
 
 KernelOrg() {
     local version
-    local kernelorg="$(curl -s https://www.kernel.org)"
-    local org_kernels=(mainline stable longterm linux-next)
+    cmd+=(--field="$(Header)":LBL "")
+    for xx in "${org_kernels[@]}" ; do
+        version="$(KernelOrgVersion "$xx")"
+        cmd+=(--field="$(FormatName "$xx")":LBL "")
+    done
+    for xx in $na $na $na $na ; do
+        cmd+=(--field="$(FormatName "")":LBL "")
+    done
+}
+
+KOVersion() {
+    local version
     local stableversion="$(KernelOrgVersion stable)"
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${org_kernels[@]}" ; do
         version="$(KernelOrgVersion "$xx")"
         case "$xx" in
-            mainline)
-                if [[ $version > $stableversion ]] ; then
-                    cmd+=(--field="$(FormatNameVersion "$xx" "$version")":LBL "")
-                else
-                    cmd+=(--field="$(FormatNameVersion "$xx" "$na")":LBL "")
-                fi
-                ;;
-            *) cmd+=(--field="$(FormatNameVersion "$xx" "$version")":LBL "") ;;
+            stable|longterm)
+                cmd+=(--field="$(FormatVersion "<b>$version</b>")":LBL "") ;;
+            *)
+                cmd+=(--field="$(FormatVersion "$version")":LBL "") ;;
         esac
     done
-    org_kernels=($na $na $na $na)
-    for xx in "${org_kernels[@]}" ; do
-        cmd+=(--field="$(FormatName "$xx")":LBL "")
+    for xx in $na $na $na $na ; do
+        cmd+=(--field="$(FormatVersion "")":LBL "")
     done
 }
 
@@ -133,7 +139,12 @@ Main()
         Stable
         Testing
         KernelOrg
+        KOVersion
     )
+    local kernelorg="$(curl -s https://www.kernel.org)"
+    local org_kernels=(mainline stable longterm linux-next)
+    local KOName="K.o.category"
+    local KOVersionName="K.o.version"
     local xx
     local t1=""
 
@@ -142,11 +153,12 @@ Main()
     t1+="\n"
     t1+="Column headers:\n"
     t1+="        Choose = checkboxes for installing/uninstalling kernel packages.\n"
-    t1+="        PkgName = kernel package name\n"
+    t1+="        PkgName = kernel package name.\n"
     t1+="        Installed = currently installed kernel package versions.\n"
     t1+="        Stable = versions available from the stable repos.\n"
     t1+="        Testing = versions available from the testing repos.\n"
-    t1+="        kernel.org = latest kernel versions at kernel.org.\n"
+    t1+="        $KOName = kernel category at kernel.org.\n"
+    t1+="        $KOVersionName = latest version announced at kernel.org.\n"
     t1+="Your current repos are either Stable or Testing (see /etc/pacman.conf).\n"
     t1+="Marking <b>$na</b> means: info not available.\n"
 
@@ -157,6 +169,7 @@ Main()
         --image=system-software-update
         --window-icon=applications-system
     )
+
     for xx in "${functions[@]}" ; do
         $xx
     done
