@@ -5,7 +5,7 @@ pkgname=cp-completion
 pkgdesc="Bash completion for the 'cp' command."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1.4
-pkgrel=2
+pkgrel=3
 arch=('any')
 license=('GPL')
 depends=(bash)
@@ -17,19 +17,5 @@ sha512sums=(
 )
 
 package() {
-  cd $srcdir
-
-  local comps=/usr/share/bash-completion/bash_completion
-  local fixer=remove_cp_command_from_common_completions
-
-  echo "#!/bin/bash" >> $fixer
-  echo "cp -a $comps $comps.bak-\$(date +%Y%m%d-%H%M)" >> $fixer
-  echo "sed -i 's|^\(complete -F _longopt .*\) cp \(.*\)\$|\1 \2|' $comps" >> $fixer
-
-  # install the new cp completion file
   install -Dm644 $pkgname $pkgdir/usr/share/bash-completion/completions/cp
-
-  # Install a command that removes the 'cp' command from the common completion definitions.
-  # This command needs to be run only once (until package bash-completion is upgraded).
-  install -Dm755 $fixer $pkgdir/usr/bin/$fixer
 }
