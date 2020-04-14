@@ -4,21 +4,24 @@
 pkgname=stickburn
 pkgdesc="GUI for burning ISO to USB stick with dd."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
+pkgver=1.1
 pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(bash yad)
 
 source=(
-    "$url/$pkgname"
-    "$url/$pkgname.desktop"
+    $pkgname
+    $pkgname.desktop
+    find-usb-sticks
 )
-sha512sums=('dd8b909ef2d42f7117555ab32eb0a544dcd1ffa9810f407afb54603533d3660e8e37b5af92c01ee6b3e741c69fab87164795b884b90dbbaffe585eda6dbe5a57'
-            '1eb13fe6e3edefbd1022d108832a2b295f8939d684abdba674a45453c5fbb8752a5a82743009144f7136a1f5b3cdc788c195cf56c02a8e6b59d437cef4b6fb82')
+sha512sums=('2f85107829c07df26694413926745fd0585f4d73f5381bef2271d1869ae60506a627c272fb3068f4af39aa7c30dbae70949855e9209d2f2eea74a9ad4dc8dca0'
+            '48c58caebd055f669a63af27413307a329a49fc4c7ddc627a208c90293fc016136a4d86524469f7c605e8194a15ce12d3dd212db7e504948f5be4bfb2f63b507'
+            'f1b7e23e16df16c375142e3de187a8bffe724b0fd70e133c521d11a83ee021fbba211cac071a4418884b3a0c65ba9df66093c5e6106209ced64c90fe8e7c26bd')
 
 package() {
   cd $srcdir
   install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+  install -Dm755 find-usb-sticks  $pkgdir/usr/bin/find-usb-sticks
   install -Dm644 $pkgname.desktop $pkgdir/usr/share/applications/$pkgname.desktop
 }

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+USB_all_infos()
+{
+    # Usage examples:
+    #     USB_all_infos PATH,SIZE,VENDOR,MODEL
+    #     USB_all_infos VENDOR
+
+    local options="$1"   # comma separated list of options for 'lsblk -o'
+    local info
+
+    case "$options" in
+        [A-Z]*)
+            info="$(lsblk -o $options,SUBSYSTEMS,TYPE,HOTPLUG | grep -E ':usb:|1$' | grep ' disk ')"
+            options=$(echo "$options" | tr ',' '\n' | wc -l)
+            ;;
+        *)
+            info="$(lsblk -o PATH,SIZE,VENDOR,MODEL,SUBSYSTEMS,TYPE,HOTPLUG | grep -E ':usb:|1$' | grep ' disk ')"
+            options=4
+            ;;
+    esac
+
+    case "$options" in
+        "1")   echo "${info[@]}" | awk '{printf "%-10s\n", $1}';;
+        "2")   echo "${info[@]}" | awk '{printf "%-10s %7s\n", $1, $2}';;
+        "3")   echo "${info[@]}" | awk '{printf "%-10s %7s %s\n", $1, $2, $3}';;
+        "4"|*) echo "${info[@]}" | awk '{printf "%-10s %7s %s %s\n", $1, $2, $3, $4}';;
+    esac
+}
+
+USB_info()
+{
+    local path="$1"
+    local option="$2"  # one option, e.g. VENDOR
+    USB_all_infos PATH,"$option" | grep "$path" | awk '{print $2}'
+}
+
+USB_generation()
+{
+    local vendor="$1"
+    local lines=7        # usb-devices lines for one entry, minus one
+    local speed=$(usb-devices | grep -B$lines "Driver=usb-storage" | grep -B$lines "Manufacturer=$vendor" | grep 'Spd=' | sed 's|^.*Spd=\([0-9]*\).*$|\1|')
+    case "$speed" in
+        480)  echo "2.0" ;;
+        5000) echo "3.0" ;;
+        *)    echo "[unknown: $speed]" ;;
+    esac
+}
+
+Main()
+{
+    local path vendor model usbgen
+
+    for path in $(USB_all_infos PATH)
+    do
+        vendor=$( USB_info "$path" VENDOR)
+        model=$(  USB_info "$path" MODEL)
+
+        usbgen=$( USB_generation "$vendor")
+
+        echo "$path: usb-$usbgen $vendor $model"
+    done
+}
+
+Main "$@"
