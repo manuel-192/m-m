@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=stickburn
+pkgdesc="GUI for burning ISO to USB stick with dd."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash yad)
+
+source=(
+    "$url/$pkgname"
+    "$url/$pkgname.desktop"
+)
+sha512sums=('dd8b909ef2d42f7117555ab32eb0a544dcd1ffa9810f407afb54603533d3660e8e37b5af92c01ee6b3e741c69fab87164795b884b90dbbaffe585eda6dbe5a57'
+            '1eb13fe6e3edefbd1022d108832a2b295f8939d684abdba674a45453c5fbb8752a5a82743009144f7136a1f5b3cdc788c195cf56c02a8e6b59d437cef4b6fb82')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+  install -Dm644 $pkgname.desktop $pkgdir/usr/share/applications/$pkgname.desktop
+}

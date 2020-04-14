@@ -1,0 +1,127 @@
+#!/bin/bash
+
+echo2() { echo "$@" >&2 ; }
+debug() { test "$DEBUG" = "yes" && echo2 "Debug: " "$@" ; }
+m_yad() { yad --window-icon=drive-removable-media-usb "$@" ; }
+
+DIE() {
+    echo2 "$progname error: $1"
+    m_yad --form --text="Error: $1" --title="$progname error" \
+          --button=yad-quit --width=400 --window-icon=dialog-error
+    exit 1
+}
+
+ConfField() {
+    local fieldname="$1"
+    grep "^$fieldname=" | cut -d '=' -f 2 | sed -e "s|^['\"]||" -e "s|['\"]$||"
+}
+
+DeviceOf() {
+    local usb_line="$1"
+    echo "$usb_line" | awk '{print $1}' | sed 's|:$||'
+}
+
+DD_command() {
+    local iso_file="$1"
+    local usb_stick="$2"
+    echo "dd status=progress bs=4M if=$iso_file of=$usb_stick && sync"
+}
+
+Main()
+{
+    local iso_file="$1"
+
+    local DEBUG=no
+
+    #test "$(uname -n)" = "kuulas" && DEBUG=yes    # TESTING ONLY !!!
+
+    local progname="stickburn"
+    local usb_stick=""
+    local conf="$HOME/.config/$progname.conf"
+    local iso_file_folder="."
+    local iso_file_folder_conf=""
+    local cmd=()
+    local result=""
+    local dd_command
+    local usb_field=1
+    local xx device tmp
+    local usb_sticks_info
+    local no_selection="(None)"
+    local txt
+
+    if [ -n "$iso_file" ] ; then
+        test -r "$iso_file" || DIE "ISO file '$iso_file' does not exist."
+    fi
+
+    echo2 "Finding USB drives, please wait..."
+    readarray -t usb_sticks_info <<< "$(find-usb-sticks)"
+
+    if [ -r "$conf" ] ; then
+        iso_file_folder_conf="$(cat "$conf" | ConfField 'ISO_folder')"
+        iso_file_folder="$iso_file_folder_conf"
+    fi
+
+    cmd=(m_yad --form --title="Burn ISO to a USB drive" --width=600 --height=400)
+    cmd+=(--button=yad-cancel:1 --button="Start burning now!usb-creator!Burns the selected ISO file to the selected USB drive":0)  # media-record, usb-creator
+    cmd+=(--field="Selected USB drive":RO "$no_selection")
+    if [ -z "$iso_file" ] ; then
+        cmd+=(--field="Selected ISO file":FL "$iso_file_folder")
+    else
+        cmd+=(--field="Selected ISO file":RO "$iso_file")
+    fi
+    cmd+=(--field="\nSelect USB drive button below:":LBL "")
+    for xx in "${usb_sticks_info[@]}" ; do
+        device="$(DeviceOf "$xx")"
+        tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
+        if [ -z "$tmp" ] ; then
+            cmd+=(--field="$xx":fbtn "@bash -c 'echo $usb_field:$device'")
+        fi
+    done
+    cmd+=(--field="\nUSB drives already mounted (umount if you want to burn!):":LBL "")
+    for xx in "${usb_sticks_info[@]}" ; do
+        device="$(DeviceOf "$xx")"
+        tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
+        if [ -n "$tmp" ] ; then
+            cmd+=(--field="    <i>$xx</i>":LBL "")
+        fi
+    done
+    txt="\nMAKE ABSOLUTELY SURE YOU SELECT THE RIGHT USB DRIVE!\n"
+    txt+="There's no turning back after you burn it!\n\n"
+    txt+="When the burn has finished, a small window notifies you about it."
+    cmd+=(--field="$txt":LBL "")
+ 
+    result="$("${cmd[@]}")"
+
+    test -n "$result" || return
+
+    #debug "result = ${result}"
+
+    iso_file="$(echo "$result" | cut -d '|' -f 2)"
+    usb_stick="$(echo "$result" | cut -d '|' -f 1 | awk '{print $1}' | sed 's|:$||')"
+
+    if [ ! -r "$iso_file" ] ; then
+        DIE "ISO file '$iso_file' does not exist."
+    fi
+    case "$usb_stick" in
+        "" | "$no_selection") DIE "USB drive not selected." ;;
+    esac
+    if [ -n "$(df --output=source,target | grep "^$usb_stick" | awk '{print $2}')" ] ; then
+        DIE "USB drive '$usb_stick' is mounted. Please umount it first!"
+    fi
+
+    #debug "iso file  = $iso_file"
+    #debug "usb stick = $usb_stick"
+
+    dd_command="dd status=progress oflag=direct bs=4M if=$iso_file of=$usb_stick"
+
+    debug "dd command = $dd_command"
+    echo2 "Burning, please wait (it takes several minutes) ..."
+    pkexec $dd_command
+
+    debug "Syncing..."
+    sync
+
+    m_yad --form --title="Burn ready" --width=300 --button=yad-ok:0 &
+}
+
+Main "$@"
