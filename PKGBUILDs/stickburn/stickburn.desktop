@@ -6,5 +6,5 @@ Comment=Burn ISO to USB drive
 Exec=stickburn
 Icon=drive-removable-media-usb
 Path=
-Terminal=false
-StartupNotify=false
+Terminal=true
+StartupNotify=true
