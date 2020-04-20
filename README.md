@@ -7,6 +7,10 @@ How to use this repo? Check these [instructions](../../../m-repo-info/blob/maste
 [List of packages](../../../m-m/releases) (same as the <b>Releases</b> button above).
 
 ## NEWS
+### Important news
+Important news can always be found at https://github.com/manuel-192/m-repo-info/blob/master/README.md.
+
+
 Date | News item
 :---|:---
 2020-04-20 | Moved package source of mirrorlist-m here from repo [m-more2].
