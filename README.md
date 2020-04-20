@@ -1,26 +1,17 @@
 # Collection of Manuel's packages.
 
-This repo includes packages created by Manuel (repository [m-m]).
-<br><br>
+Packages created by Manuel (repo **[m-m]**).
 
-How to use this repo? Check these [instructions](../../../m-repo-info/blob/master/README.md).<br>
-[List of packages](../../../m-m/releases) (same as the <b>Releases</b> button above).
+[Usage & News](../../../m-repo-info/blob/master/README.md)<br>
+[Repo details](../../../m-m/releases)
 
-## NEWS
-### Important news
-Important news can always be found at https://github.com/manuel-192/m-repo-info/blob/master/README.md.
-
-
+### News
 Date | News item
 :---|:---
 2020-04-20 | Moved package source of mirrorlist-m here from repo [m-more2].
-2020-03-24 | Users are **strongly** encouraged to use the **mirrorlist-m** file.<br>See https://github.com/manuel-192/m-repo-info/blob/master/README.md
-2019-11-17 | reorganized packages again
-2019-10-21 | added pahis, paccache-service-manager, <strike>reboot-required</strike> and suc.
-2019-08-26 | added 'arch-news-for-you' and 'remirror-arch'.
-2019-08-04 | the old server address works no more. It has been replaced with another,<br>see [instructions](../../../m-repo-info/blob/master/README.md).
+2020-03-24 | Users *must* use the **mirrorlist-m** file. [See this](../../../m-repo-info/blob/master/README.md).
 
-## Packages
+### Packages
 
 Name | Description | UI
 :--- | :--- | :---
