@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=stickburn
+Name=StickBurn
 Comment=Burn ISO to USB drive
 Exec=stickburn
 Icon=drive-removable-media-usb
