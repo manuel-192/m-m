@@ -43,9 +43,11 @@ Main()
     local cmd=()
     local result=""
     local dd_command
-    local usb_field=1
+    local iso_field=1
+    local usb_field=2
     local xx device tmp
     local usb_sticks_info
+    local usb_candidates=()
     local no_selection="(None)"
     local txt
 
@@ -55,6 +57,13 @@ Main()
 
     echo2 "Finding USB drives, please wait..."
     readarray -t usb_sticks_info <<< "$(find-usb-sticks)"
+    for xx in "${usb_sticks_info[@]}" ; do
+        device="$(DeviceOf "$xx")"
+        tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
+        if [ -z "$tmp" ] ; then
+            usb_candidates+=("$xx")
+        fi
+    done
 
     if [ -r "$conf" ] ; then
         iso_file_folder_conf="$(cat "$conf" | ConfField 'ISO_folder')"
@@ -62,21 +71,28 @@ Main()
     fi
 
     cmd=(m_yad --form --title="Burn ISO to a USB drive" --width=600 --height=400)
-    cmd+=(--button=yad-cancel:1 --button="Start burning now!usb-creator!Burns the selected ISO file to the selected USB drive":0)  # media-record, usb-creator
-    cmd+=(--field="Selected USB drive":RO "$no_selection")
+
+    # button icon: media-record, usb-creator
+    cmd+=(--button=yad-cancel:1 --button="Start burning now!usb-creator!Burns the selected ISO file to the selected USB drive":0)
+
     if [ -z "$iso_file" ] ; then
         cmd+=(--field="Selected ISO file":FL "$iso_file_folder")
     else
         cmd+=(--field="Selected ISO file":RO "$iso_file")
     fi
-    cmd+=(--field="\nSelect USB drive button below:":LBL "")
-    for xx in "${usb_sticks_info[@]}" ; do
-        device="$(DeviceOf "$xx")"
-        tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
-        if [ -z "$tmp" ] ; then
-            cmd+=(--field="$xx":fbtn "@bash -c 'echo $usb_field:$device'")
-        fi
-    done
+    if [ ${#usb_candidates[@]} -eq 1 ] ; then
+        cmd+=(--field="Selected USB drive":RO "${usb_candidates[0]}")
+    else
+        cmd+=(--field="Selected USB drive":RO "$no_selection")
+        cmd+=(--field="\nSelect USB drive button below (unless already shown above):":LBL "")
+        for xx in "${usb_sticks_info[@]}" ; do
+            device="$(DeviceOf "$xx")"
+            tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
+            if [ -z "$tmp" ] ; then
+                cmd+=(--field="$xx":fbtn "@bash -c 'echo $usb_field:$device'")
+            fi
+        done
+    fi
     cmd+=(--field="\nUSB drives already mounted (umount if you want to burn!):":LBL "")
     for xx in "${usb_sticks_info[@]}" ; do
         device="$(DeviceOf "$xx")"
@@ -96,8 +112,8 @@ Main()
 
     #debug "result = ${result}"
 
-    iso_file="$(echo "$result" | cut -d '|' -f 2)"
-    usb_stick="$(echo "$result" | cut -d '|' -f 1 | awk '{print $1}' | sed 's|:$||')"
+    iso_file="$(echo "$result" | cut -d '|' -f $iso_field)"
+    usb_stick="$(echo "$result" | cut -d '|' -f $usb_field | awk '{print $1}' | sed 's|:$||')"
 
     if [ ! -r "$iso_file" ] ; then
         DIE "ISO file '$iso_file' does not exist."
@@ -109,19 +125,21 @@ Main()
         DIE "USB drive '$usb_stick' is mounted. Please umount it first!"
     fi
 
-    #debug "iso file  = $iso_file"
-    #debug "usb stick = $usb_stick"
+    debug "iso file  = $iso_file"
+    debug "usb stick = $usb_stick"
 
     dd_command="dd status=progress oflag=direct bs=4M if=$iso_file of=$usb_stick"
 
-    debug "dd command = $dd_command"
+    echo2 "Command: $dd_command"
     echo2 "Burning, please wait (it takes several minutes) ..."
     pkexec $dd_command
 
     debug "Syncing..."
     sync
 
-    m_yad --form --title="Burn ready" --width=300 --button=yad-ok:0 &
+    notify-send --expire-time=30000 \
+                "USB drive burn is ready." \
+                "Burning the USB drive $usb_stick is ready." &
 }
 
 Main "$@"
