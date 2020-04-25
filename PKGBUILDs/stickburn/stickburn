@@ -68,6 +68,7 @@ Main()
     if [ -r "$conf" ] ; then
         iso_file_folder_conf="$(cat "$conf" | ConfField 'ISO_folder')"
         iso_file_folder="$iso_file_folder_conf"
+        test -d "$iso_file_folder" || DIE "$conf: value of ISO_folder is not a folder."
     fi
 
     cmd=(m_yad --form --title="Burn ISO to a USB drive" --width=600 --height=400)
@@ -76,7 +77,7 @@ Main()
     cmd+=(--button=yad-cancel:1)
 
     if [ -z "$iso_file" ] ; then
-        cmd+=(--field="Selected ISO file":FL "$iso_file_folder")
+        cmd+=(--field="Selected ISO file":FL "$iso_file_folder/*")
     else
         cmd+=(--field="Selected ISO file":RO "$iso_file")
     fi
@@ -133,11 +134,9 @@ Main()
     esac
  
     result="$("${cmd[@]}")"
-    debug "result = $result"
+    debug "result = '$result'"
 
     test -n "$result" || return
-
-    #debug "result = ${result}"
 
     iso_file="$(echo "$result" | cut -d '|' -f $iso_field)"
     if [ -n "$usb_stick" ] ; then
@@ -162,8 +161,11 @@ Main()
     dd_command="dd status=progress oflag=direct bs=4M if=$iso_file of=$usb_stick"
 
     echo2 "Command: $dd_command"
-    echo2 "Burning, please wait (it takes several minutes) ..."
-    pkexec $dd_command
+    echo2 "Starting to burn. It takes several minutes, be patient ..."
+    pkexec $dd_command || {
+        echo2 "Canceled."
+        return 1
+    }
 
     debug "Syncing..."
     sync
