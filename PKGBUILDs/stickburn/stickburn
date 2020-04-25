@@ -73,47 +73,78 @@ Main()
     cmd=(m_yad --form --title="Burn ISO to a USB drive" --width=600 --height=400)
 
     # button icon: media-record, usb-creator
-    cmd+=(--button=yad-cancel:1 --button="Start burning now!usb-creator!Burns the selected ISO file to the selected USB drive":0)
+    cmd+=(--button=yad-cancel:1)
 
     if [ -z "$iso_file" ] ; then
         cmd+=(--field="Selected ISO file":FL "$iso_file_folder")
     else
         cmd+=(--field="Selected ISO file":RO "$iso_file")
     fi
-    if [ ${#usb_candidates[@]} -eq 1 ] ; then
-        cmd+=(--field="Selected USB drive":RO "${usb_candidates[0]}")
-    else
-        cmd+=(--field="Selected USB drive":RO "$no_selection")
-        cmd+=(--field="\nSelect USB drive button below (unless already shown above):":LBL "")
-        for xx in "${usb_sticks_info[@]}" ; do
-            device="$(DeviceOf "$xx")"
-            tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
-            if [ -z "$tmp" ] ; then
-                cmd+=(--field="$xx":fbtn "@bash -c 'echo $usb_field:$device'")
-            fi
-        done
-    fi
-    cmd+=(--field="\nUSB drives already mounted (umount if you want to burn!):":LBL "")
-    for xx in "${usb_sticks_info[@]}" ; do
-        device="$(DeviceOf "$xx")"
-        tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
-        if [ -n "$tmp" ] ; then
-            cmd+=(--field="    <i>$xx</i>":LBL "")
-        fi
-    done
-    txt="\nMAKE ABSOLUTELY SURE YOU SELECT THE RIGHT USB DRIVE!\n"
-    txt+="There's no turning back after you burn it!\n\n"
-    txt+="When the burn has finished, a small window notifies you about it."
-    cmd+=(--field="$txt":LBL "")
+    case "${#usb_candidates[@]}" in
+        0)  case "${#usb_sticks_info[@]}" in
+                0) cmd+=(--field="<i>Sorry, no USB drives found.</i>":LBL "")
+                   result="No USB drives"
+                   ;;
+                *) txt="\n<i>Sorry, all USB drives are already mounted, cannot continue.\n"
+                   txt+="USB drive must be umounted for burning.</i>"
+                   cmd+=(--field="$txt":LBL "")
+                   result="No umounted USB drives"
+                   ;;
+            esac
+            ;;
+        1)
+            usb_stick="${usb_candidates[0]}"
+            cmd+=(--field="Selected USB drive: <b>$usb_stick</b>":LBL "")
+            ;;
+        *)  cmd+=(--field="Selected USB drive":RO "$no_selection")
+            cmd+=(--field="\nSelect USB drive button below (unless already shown above):":LBL "")
+            for xx in "${usb_sticks_info[@]}" ; do
+                device="$(DeviceOf "$xx")"
+                tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
+                if [ -z "$tmp" ] ; then
+                    cmd+=(--field="$xx":fbtn "@bash -c 'echo $usb_field:$device'")
+                fi
+            done
+            ;;
+    esac
+    case "$result" in
+        "No USB drives") ;;
+        *)
+            cmd+=(--field="\n\tUSB drives already mounted:":LBL "")
+            for xx in "${usb_sticks_info[@]}" ; do
+                device="$(DeviceOf "$xx")"
+                tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
+                if [ -n "$tmp" ] ; then
+                    cmd+=(--field="\t\t<i>$xx</i>":LBL "")
+                fi
+            done
+    esac
+    case "$result" in
+        "No USB drives" | "No umounted USB drives")
+            ;;
+        *)
+            cmd+=(--button="Start burning now!usb-creator!Burns the selected ISO file to the selected USB drive":0)
+
+            txt="\n<b>Make absolutely sure you select the right usb drive!</b>\n"
+            txt+="<i>There's no turning back after you start burning!</i>\n\n"
+            txt+="When burning has finished, a notification window appears."
+            cmd+=(--field="$txt":LBL "")
+            ;;
+    esac
  
     result="$("${cmd[@]}")"
+    debug "result = $result"
 
     test -n "$result" || return
 
     #debug "result = ${result}"
 
     iso_file="$(echo "$result" | cut -d '|' -f $iso_field)"
-    usb_stick="$(echo "$result" | cut -d '|' -f $usb_field | awk '{print $1}' | sed 's|:$||')"
+    if [ -n "$usb_stick" ] ; then
+        usb_stick="$(echo "$usb_stick" | awk '{print $1}' | sed 's|:$||')"
+    else
+        usb_stick="$(echo "$result" | cut -d '|' -f $usb_field | awk '{print $1}' | sed 's|:$||')"
+    fi
 
     if [ ! -r "$iso_file" ] ; then
         DIE "ISO file '$iso_file' does not exist."
