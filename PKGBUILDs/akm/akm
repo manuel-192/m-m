@@ -27,6 +27,7 @@ LocalVersion() { /usr/bin/pacman -Q "$1" 2>/dev/null | /usr/bin/awk '{print $2}'
 Exist()        { test -n "$version" && echo TRUE || echo FALSE ; }
 
 Choose() {
+    ShowFunction
     local version exist
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
@@ -37,6 +38,7 @@ Choose() {
 }
 
 PkgName() {
+    ShowFunction
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
         cmd+=(--field="$(FormatName "$xx")":LBL "")
@@ -44,6 +46,7 @@ PkgName() {
 }
 
 Installed() {
+    ShowFunction
     local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
@@ -64,6 +67,7 @@ StableVersion() {
 }
 
 Stable() {
+    ShowFunction
     local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
@@ -78,6 +82,7 @@ TestingVersion() {
 }
 
 Testing() {
+    ShowFunction
     local testinginfo="$(curl -s "https://www.archlinux.org/packages/?sort=&repo=Testing")"
     local version
     cmd+=(--field="$(Header)":LBL "")
@@ -99,6 +104,7 @@ KernelOrgVersion() {
 }
 
 KernelOrg() {
+    ShowFunction
     local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${org_kernels[@]}" ; do
@@ -111,6 +117,7 @@ KernelOrg() {
 }
 
 KOVersion() {
+    ShowFunction
     local version
     local stableversion="$(KernelOrgVersion stable)"
     cmd+=(--field="$(Header)":LBL "")
@@ -128,8 +135,14 @@ KOVersion() {
     done
 }
 
+ShowFunctionStart() { printf "Gathering information, please wait ." >&2 ; }
+ShowFunction()      { printf "." >&2 ; }
+ShowFunctionEnd()   { printf " done.\n" >&2 ; }
+
 Main()
 {
+    ShowFunctionStart
+
     local na="(-)"
     local kernels=(
         linux             linux-headers
@@ -146,6 +159,7 @@ Main()
         KernelOrg
         KOVersion
     )
+
     local kernelorg="$(curl -s https://www.kernel.org)"
     local org_kernels=(mainline stable longterm linux-next)
     local KOName="K.o.category"
@@ -178,6 +192,7 @@ Main()
     for xx in "${functions[@]}" ; do
         $xx
     done
+    ShowFunctionEnd
 
     local ix installed install=() uninstall=() pkg
     local result="$("${cmd[@]}")"
