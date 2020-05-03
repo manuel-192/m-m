@@ -1,0 +1,164 @@
+#!/bin/bash
+#
+# Copy built packages from old repo to new repo
+# and if changed, transfer to github.
+
+echo1() { echo "$@" ; }        # for "return" values from functions (output to stdout)
+echo2() { echo "$@" >&2 ; }    # output to stderr
+read2() { read "$@" >&2 ; }    # output to stderr
+
+DIE() {
+    echo2 "Error: $1"
+    exit 1
+}
+
+StateUpdate() {
+    local statefile=state
+    local stateval="$(head -n 1 $statefile)"
+    #Random ID generator, because the incrementing value is predictable
+    local NEW_UUID="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
+
+    echo $((stateval+1))                       > $statefile
+    echo "$NEW_UUID"                          >> $statefile
+    LANG=C date -u +"%a %b %d %H:%M:%S %Z %Y" >> $statefile
+}
+
+GetRepoName() {
+    local xx
+    reponame="$(basename "$PWD")"
+    if [ "$reponame" = "repo" ] ; then
+        reponame="$(/usr/bin/ls -1F | grep "/$" | tr -d '/')"
+    fi
+    case "$(echo "$reponame" | wc -l)" in
+        0) return 1 ;;
+        1) echo1 "$reponame" ;;
+        *)
+            echo2 "Potential repo names:"
+            while true ; do
+                echo2 "$reponame" | sed 's|^|    |'
+                read2 -p "Select reponame: "
+                if [ -n "$REPLY" ] && [ -n "$(echo "$reponame" | grep "^$REPLY$")" ]; then
+                    echo1 "$REPLY"
+                    return
+                fi
+                echo2 "sorry, '$REPLY' is none of the above!"
+            done
+            ;;
+    esac
+}
+
+CheckDiff() {
+    case "$reponame" in
+        "")
+            DIE "cannot determine reponame!"
+            ;;
+        endeavouros)
+            has_statefile=yes
+            statefile="$PWD/state"
+            test -r "$statefile" || DIE "file '$statefile' is missing!"
+            srcdir="$PWD/../_BUILD_/mirrors.mirror1"
+            dstdir="$PWD/$reponame/x86_64"
+            git_adds="$reponame state"
+            ;;
+        eos-tools)      # refers to [endeavouros-testing-dev]
+            DIE "sorry, $reponame is not currently supported!"
+            srcdir="$PWD/../_BUILD_/repo-testing.x86_64"
+            dstdir="$PWD/endeavouros-pkgtools"
+            git_adds="$(basename "$dstdir")"
+            ;;
+        *)
+            srcdir="$PWD/../_BUILD_/$reponame"
+            dstdir="$PWD/repo"
+            git_adds="$(basename "$dstdir")"
+            ;;
+    esac
+
+    test -d "$gitdir"/.git          || DIE "folder '$gitdir/.git' not found!"
+    test -r "$srcdir"/$reponame.db  || DIE "db file '$srcdir/$reponame.db' not found!"
+    test -d "$dstdir"               || DIE "folder '$dstdir' not found!"
+
+    diff "$srcdir" "$dstdir" \
+         -x 'assets.conf*' \
+         -x .git \
+         -x PKGBUILDS \
+         -x PKGBUILDs \
+         -x PKG_ARCHIVE \
+         -x .vscode
+    diffval=$?
+}
+
+ReplaceAssets() {
+    rm -f "$dstdir"/*.{db,files,sig,xz,zst}
+    cp -p "$srcdir"/*.{db,files,sig,xz,zst} "$dstdir"
+}
+
+MirrorStateUpdate() {
+    cd "$gitdir"
+    if [ "$has_statefile" = "yes" ] ; then
+        StateUpdate
+    fi
+}
+
+RunOnlyIfAllowed() {
+    local cmd="$1"
+    while true ; do
+        read2 -p "Run '$cmd' now (y/n)? "
+        case "$REPLY" in
+            [yY]*)
+                $cmd || DIE "'$cmd' failed."
+                break
+                ;;
+            [nN]*)
+                break
+                ;;
+        esac
+    done
+}
+
+GitUpdate() {
+    cd "$gitdir"
+    echo2 ""
+    echo2 "Adding files to github."
+    echo2 ""
+    RunOnlyIfAllowed "git pull"
+    git add $git_adds
+    git commit -m "."          # dummy commit message
+    echo2 ""
+    git push
+}
+
+Main()
+{
+    local gitdir="$PWD"                               # has .git folder
+    local reponame="$(GetRepoName)"
+    local has_statefile=no
+    local srcdir=""
+    local dstdir=""
+    local git_adds=""
+    local statefile=""
+    local diffval=0
+
+    CheckDiff
+
+    if [ $diffval -ne 0 ] ; then
+        while true ; do
+            echo2 ""
+            read2 -p "Changes detected. Replace local assets (y/n)? "
+            case "$REPLY" in
+                [yY]*)
+                    ReplaceAssets
+                    MirrorStateUpdate
+                    GitUpdate
+                    break
+                    ;;
+                [nN]*)
+                    break
+                    ;;
+            esac
+        done
+    else
+        echo2 "No changes."
+    fi
+}
+
+Main "$@"

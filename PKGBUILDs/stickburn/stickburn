@@ -27,9 +27,60 @@ DD_command() {
     echo "dd status=progress bs=4M if=$iso_file of=$usb_stick && sync"
 }
 
+Burn() {
+    dd_command="dd status=progress oflag=direct bs=4M if=$iso_file of=$usb_stick"
+
+    echo2 "Command: $dd_command"
+    echo2 "Starting to burn. It takes several minutes, be patient ..."
+
+    pkexec $dd_command || {
+        echo2 "Canceled."
+        exit 1
+    }
+}
+
+NotifySend() {
+    local ms="$1"
+    local header="$2"
+    local msg="$3"
+    local is_foreground="$4"
+
+    if [ "$is_foreground" = "no" ] ; then
+        notify-send --expire-time=$ms "$header" "$msg" &
+    else
+        notify-send --expire-time=$ms "$header" "$msg"
+        echo2 "Finished!"
+        sleep 5
+    fi
+}
+
+HandleParams() {
+    local arg
+    for arg in "$@" ; do
+        case "$arg" in
+            --fg) is_foreground=yes ;;
+            -*)   Usage ; exit 0 ;;
+            *)    iso_file="$arg" ;;
+        esac
+    done
+}
+
+Usage() {
+cat <<EOF >&2
+Usage: $progname [--fg] [iso-file]
+where
+    --fg       notification at the end is in foreground (when started from a launcher)
+    iso-file   name of the ISO file to burn
+EOF
+}
+
 Main()
 {
-    local iso_file="$1"
+    local progname=stickburn
+    local is_foreground=no
+    local iso_file=""
+
+    HandleParams "$@"
 
     local DEBUG=no
 
@@ -134,6 +185,7 @@ Main()
     esac
  
     result="$("${cmd[@]}")"
+
     debug "result = '$result'"
 
     test -n "$result" || return
@@ -158,21 +210,15 @@ Main()
     debug "iso file  = $iso_file"
     debug "usb stick = $usb_stick"
 
-    dd_command="dd status=progress oflag=direct bs=4M if=$iso_file of=$usb_stick"
-
-    echo2 "Command: $dd_command"
-    echo2 "Starting to burn. It takes several minutes, be patient ..."
-    pkexec $dd_command || {
-        echo2 "Canceled."
-        return 1
-    }
-
+    Burn
+    
     debug "Syncing..."
     sync
 
-    notify-send --expire-time=30000 \
-                "USB drive burn is ready." \
-                "Burning the USB drive $usb_stick is ready." &
+    NotifySend 30000 \
+               "USB drive burn is ready." \
+               "Burning the USB drive $usb_stick is ready." \
+               "$is_foreground"
 }
 
 Main "$@"
