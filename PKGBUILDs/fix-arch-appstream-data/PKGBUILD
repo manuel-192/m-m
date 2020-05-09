@@ -4,7 +4,7 @@
 pkgname=fix-archlinux-appstream-data
 pkgdesc="Workaround for the issue with archlinux-appstream-data."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
+pkgver=1.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -15,7 +15,7 @@ source=(
     $pkgname
 )
 sha512sums=('c10d45194fa9cae15af11b92bc2b78f055fa515428423bf19a9a9cf4f021078f3eb23a3dde1efee6ff357cc15587dcae27069bed94a90e26154bb793f86fcef5'
-            'abea526078bf1d43c253b84bbdc4c538d841e31a36136b8475fd32b84a474c065ebcb97a2b06e7116c0305e3c106800d5278bc9f0acc760687fd210d19c7a64c')
+            'a6d87ba69c07ccc0040653062591f5d617f202e338b281016b329c2ebe140cadcacc87580daa108c6348a2e72a1b6e9c7b3534e30cfc81c2df0c4a2b244ec848')
 
 package() {
     install -d $pkgdir/etc/pacman.d/hooks

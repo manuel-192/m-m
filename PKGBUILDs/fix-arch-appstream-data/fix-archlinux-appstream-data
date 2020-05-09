@@ -4,8 +4,6 @@ Main()
 {
     local commands=(
         "cd /usr/share/app-info/xmls ;"
-        "mkdir -p BAK ;"
-        "cp community.xml.gz BAK/ ;"
         "gunzip community.xml.gz ;"
         "sed -i community.xml -e 's|[<]em>not[<]/em>|*not*|' ;"
         "gzip community.xml"
