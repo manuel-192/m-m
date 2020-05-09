@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=fix-archlinux-appstream-data
+pkgdesc="Workaround for the issue with archlinux-appstream-data."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+
+source=(
+    $pkgname.hook
+    $pkgname
+)
+sha512sums=('c10d45194fa9cae15af11b92bc2b78f055fa515428423bf19a9a9cf4f021078f3eb23a3dde1efee6ff357cc15587dcae27069bed94a90e26154bb793f86fcef5'
+            'abea526078bf1d43c253b84bbdc4c538d841e31a36136b8475fd32b84a474c065ebcb97a2b06e7116c0305e3c106800d5278bc9f0acc760687fd210d19c7a64c')
+
+package() {
+    install -d $pkgdir/etc/pacman.d/hooks
+    install -Dm644 $pkgname.hook     $pkgdir/etc/pacman.d/hooks/$pkgname.hook
+    install -Dm755 $pkgname          $pkgdir/usr/bin/$pkgname
+}

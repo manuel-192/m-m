@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Type = Package
+Target = archlinux-appstream-data
+
+[Action]
+Description = Temporary workaround for archlinux-appstream-data
+When = PostTransaction
+Exec = /usr/bin/fix-archlinux-appstream-data
