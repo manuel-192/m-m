@@ -1,0 +1,21 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=pf
+pkgdesc="Package finder"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('18db60a6235fed11366efc55e60df6319cd263a018ab1f585167cf9a0d47b906dbc264205e9c67af25734c908d5e9cbe5f2a675010c7090403c34a2d30d50e0d')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+}
