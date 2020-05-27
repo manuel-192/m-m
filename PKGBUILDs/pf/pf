@@ -24,8 +24,13 @@ Options() {
 
 Usage() {
     local progname="$(basename "$0")"
+    local description="$progname"
+    
+    case "$progname" in
+        pf) description+=" (Packet Finder)" ;;
+    esac
     cat <<EOF >&2
-$progname searches packages with given search string(s) (all must match).
+$description searches packages with given search string(s) (all must match).
 Search is case insensitive.
 By default, both official and AUR packages are searched.
 
