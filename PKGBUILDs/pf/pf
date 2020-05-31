@@ -2,6 +2,8 @@
 
 # Find packages using several search strings. All search strings must match.
 
+# TODO: use getopt, see /usr/share/doc/util-linux/getopt/getopt-parse.bash
+
 DIE() {
     echo "Error: $1" >&2
     echo "" >&2
@@ -9,15 +11,28 @@ DIE() {
     exit 1
 }
 
+Cmd() {
+    echo "Command: " "$@" >&2
+    "$@" || DIE "'$*' failed."
+}
+
 Options() {
     local opt
     OPTIND=1
-    while getopts aoh opt ; do
+    cmd=search
+    while getopts :aohiI:rR:uU: opt ; do
         case "$opt" in
             a) prog="yay --aur" ;;
             o) prog="yay --repo" ;;
             h) Usage ; exit 0 ;;
-            *) DIE "unsupported option" ;;
+            i) cmd=install ;;
+            I) cmd=Install ; extraoptions="$OPTARG" ;;
+            r) cmd=remove ;;
+            R) cmd=Remove ; extraoptions="$OPTARG" ;;
+            u) cmd=update ;;
+            U) cmd=Update ; extraoptions="$OPTARG" ;;
+            :) DIE "unsupported or insufficient option '-$OPTARG'" ;;
+            *) DIE "unsupported option '-$OPTARG'" ;;
         esac
     done
 }
@@ -33,33 +48,101 @@ Usage() {
 $description searches packages with given search string(s) (all must match).
 Search is case insensitive.
 By default, both official and AUR packages are searched.
+Packages can also be installed, removed, and updated.
 
 Usage: $progname [options] string(s)
-   string      Search word
+       $progname [update-options]
+   string(s)   Search word(s) or package name(s)
    options:
-        -a     AUR packages only
-        -o     official packages only
+        -a     search AUR packages only
+        -o     search official packages only
         -h     this help
+        -i     install given package name(s)
+        -IS    install given package name(s) (S: pacman's single letter options for -S)
+               Note: value S=n means the same as --needed in pacman
+        -r     remove given package name(s)
+        -RR    remove given package name(s) (R: pacman's single letter options for -R)
+   update-options:
+        -u     update packages in the system (both official and AUR)
+        -UU    update packages in the system (U: 'a' for AUR, 'o' for official)
 
 Examples:
+   # search using words 'pdf' and 'cups':
    $progname pdf cups
    $progname -a pdf cups
    $progname -o pdf cups
+
+   # update system's packages:
+   $progname -u
+   $progname -Uo
+
+   # install packages:
+   $progname -i chromium geany
+   $progname -In chromium geany    # 'n' provides pacman's '--needed'
+
+   # remove (uninstall) packages: 
+   $progname -r chromium geany
+   $progname -Rsn chromium geany
 EOF
 }
 
 pkgfind()
 {
     local prog=yay
-    local arg cmd
+    local arg cmd=""
+    local extraoptions=""
+    local opts=""
+
     Options "$@"
     shift $((OPTIND-1))
-    test -n "$1" || DIE "no search string given"
-    cmd=($prog -S)
-    for arg in "$@" ; do
-        cmd+=(-s "$arg")
-    done
-    "${cmd[@]}"
+
+    case "$cmd" in
+        update|Update)
+            test -z "$1" || DIE "option -u|-U does not take more parameters ($*)"
+            ;;
+        *)
+            test -n "$1" || DIE "no search string or package name given" ;;
+    esac
+
+    case "$cmd" in
+        search)
+            cmd=($prog -S)
+            for arg in "$@" ; do
+                cmd+=(-s "$arg")
+            done
+            Cmd "${cmd[@]}"
+            ;;
+        install)
+            Cmd yay -S "$@" ;;
+        Install)
+            # TODO: better -S options handling
+            case "$extraoptions" in
+                n) opts+=" --needed" ;;
+                --*) opts+=" $extraoptions" ;;
+                *) opts+="$extraoptions" ;;
+            esac
+            Cmd yay -S$opts "$@"
+            ;;
+        remove)
+            Cmd yay -R "$@" ;;
+        Remove)
+            # TODO: better -R options handling
+            case "$extraoptions" in
+                --*) opts+=" $extraoptions" ;;
+                *) opts+="$extraoptions" ;;
+            esac
+            Cmd yay -R$opts "$@"
+            ;;
+        update)
+            Cmd yay -Syu ;;
+        Update)
+            case "$extraoptions" in
+                a) Cmd yay -Syua ;;
+                o) Cmd yay --repo -Syu ;;
+            esac
+            ;;
+    esac
+    
 }
 
 pkgfind "$@"
