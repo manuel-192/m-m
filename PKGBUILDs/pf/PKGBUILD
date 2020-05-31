@@ -13,7 +13,7 @@ depends=(bash yay)
 source=(
     "$url/$pkgname"
 )
-sha512sums=('59a3bac1a928cf1de625b1963a4a839f065e58449eeb0f20aa59f7750e6a11456dd851b22d1b08724825a7ebba0744bd93f166d7765dfd5aab819e8aac4d1886')
+sha512sums=('a62ef352cbaff2a7601ede98e81f5756b353975509f5650c87d22969f0bad261cef9d9d05cf99392fab8a037114f0225363e7f8595eee240f12dba68dd1416d3')
 
 package() {
   cd $srcdir
