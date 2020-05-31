@@ -116,11 +116,17 @@ pkgfind()
             Cmd yay -S "$@" ;;
         Install)
             # TODO: better -S options handling
+            local needed=""
             case "$extraoptions" in
-                n) opts+=" --needed" ;;
+                *n*) needed=" --needed"
+                     extraoptions="${extraoptions/n}"  # TODO: this removes only one 'n' ...
+                     ;;
+            esac
+            case "$extraoptions" in
                 --*) opts+=" $extraoptions" ;;
                 *) opts+="$extraoptions" ;;
             esac
+            opts+="$needed"
             Cmd yay -S$opts "$@"
             ;;
         remove)

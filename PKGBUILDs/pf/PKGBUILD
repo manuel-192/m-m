@@ -4,7 +4,7 @@
 pkgname=pf
 pkgdesc="Package finder"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.3
+pkgver=1.4
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -13,7 +13,7 @@ depends=(bash yay)
 source=(
     "$url/$pkgname"
 )
-sha512sums=('a62ef352cbaff2a7601ede98e81f5756b353975509f5650c87d22969f0bad261cef9d9d05cf99392fab8a037114f0225363e7f8595eee240f12dba68dd1416d3')
+sha512sums=('ef6cb7a218e04edb11067235dd0a2366a9f78401f43b4f9f2a5ae725054fdbc4ff86da3b85738520b9dea34f794e3f2ddf931ac8c04c032d68c16f2b2982d327')
 
 package() {
   cd $srcdir
