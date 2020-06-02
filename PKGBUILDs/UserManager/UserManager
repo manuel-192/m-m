@@ -3,11 +3,15 @@
 # Simple User Manager for Arch based operating systems.
 #
 
+Yad() {
+    /usr/bin/yad --window-icon=system-users "$@"
+}
+
 Error()
 {
     local msg="$1"
     local w=$((${#msg} * 10))
-    echo "$msg" | yad --text-info --title="Error!" --width=$w
+    echo "$msg" | Yad --text-info --title="Error!" --width=$w
 }
 
 GetIdFirstFree()
@@ -71,12 +75,12 @@ Execute()
     case "$extra" in
         -p=*)
             name=${extra:3}
-            result=$(yad --form --width=600 --title="Execute?" \
+            result=$(Yad --form --width=600 --title="Execute?" \
                          --field="Command":TXT "$cmd" \
                          --field="Password for $name":H "")
             ;;
         *)
-            result=$(yad --form --width=600 --title="Execute?" \
+            result=$(Yad --form --width=600 --title="Execute?" \
                          --field="Command":TXT "$cmd")
             ;;
     esac
@@ -92,7 +96,7 @@ Execute()
             pw=$(echo "$result" | cut -d '|' -f 2)
             echo "$name:$pw" | chpasswd
             if [ -d "/home/$name" ] ; then
-                echo "New user $name created." | yad --text-info --title="Info"
+                echo "New user $name created." | Yad --text-info --title="Info"
             fi
         fi
     else
@@ -129,7 +133,7 @@ CommonAdd()
 
     while true
     do
-        tmp=$(yad --form $geometry --title="Add $label" \
+        tmp=$(Yad --form $geometry --title="Add $label" \
                   --field="$Label name" "$label""-name-with-lowercase-letters" \
                   --field="$Label id":NUM "$id_firstfree" \
                   --field="<i>Existing $label names:</i>\n$unames":LBL "" \
@@ -172,7 +176,7 @@ CommonDel()
     local geometry=""
     local names="$(GetNames --nosys $file)"
     names=$(echo "$names" | tr ' ' '!')
-    local name=$(yad --form $geometry --title="Delete $label" \
+    local name=$(Yad --form $geometry --title="Delete $label" \
                      --field="\t$Label name":CB "$names")
     if [ "$name" = "" ] ; then
         return
@@ -233,7 +237,7 @@ UserMod()
     local uid=$(GetIdFirstFree $file $min_id)
     local geometry=""
 
-    local info=$(yad --form $geometry --title="Modify $label" \
+    local info=$(Yad --form $geometry --title="Modify $label" \
                      --field="$Label name":CB          "$names" \
                      --field="Operation":CB            "$ops" \
                      --field="Group (conditional)":CB  "$groups" \
@@ -257,6 +261,7 @@ UserMod()
     Execute "$cmd"
 }
 
+export -f Yad
 export -f GetNames GetIdFirstFree Execute IdExists NameExists Error
 export -f CommonAdd UserAdd GroupAdd
 export -f CommonDel UserDel GroupDel
@@ -264,21 +269,31 @@ export -f UserMod
 
 StartHere()
 {
-    local geometry="--width=250"
+    local geometry="--width=400"
+    local icon=system-users
     local help
+    local cmd=()
     #help="<big>Simple user manager.</big>\n"
-    if [ $(id -u) -ne 0 ] ; then
-        help+="\n<i>NOTE: root permissions required!</i>\n"
-    fi
 
-    yad --form --title="Simple User Manager" $geometry \
-        --field="$help":LBL "" \
-        --field="User add":fbtn     "bash -c UserAdd" \
-        --field="User Delete":fbtn  "bash -c UserDel" \
-        --field="User modify":fbtn  "bash -c UserMod" \
-        --field="Group add":fbtn    "bash -c GroupAdd" \
-        --field="Group delete":fbtn "bash -c GroupDel" \
-        --button=yad-quit:0 >& /dev/null
+    cmd+=(
+        Yad --form --title="Simple User Manager" $geometry --columns=2
+        --image=$icon
+    )
+    if [ $(id -u) -ne 0 ] ; then
+        cmd+=(
+            --columns=1
+            --field="\n<i>NOTE: root permissions required!</i>\n":LBL ""
+        )
+    fi
+    cmd+=(
+        --field="User add!list-add!":fbtn     "bash -c UserAdd" 
+        --field="User Delete!list-remove!":fbtn  "bash -c UserDel" 
+        --field="User modify!user-typing!":fbtn  "bash -c UserMod" 
+        --field="Group add!list-add!":fbtn    "bash -c GroupAdd"
+        --field="Group delete!list-remove!":fbtn "bash -c GroupDel"
+        --button=yad-quit:0
+    )
+    "${cmd[@]}" >& /dev/null
 }
 
 StartHere
