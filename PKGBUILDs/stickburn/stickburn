@@ -84,8 +84,6 @@ Main()
 
     local DEBUG=no
 
-    #test "$(uname -n)" = "kuulas" && DEBUG=yes    # TESTING ONLY !!!
-
     local progname="stickburn"
     local usb_stick=""
     local conf="$HOME/.config/$progname.conf"
