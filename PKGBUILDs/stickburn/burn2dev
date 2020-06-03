@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Burn ISO file to a (USB) drive.
+# Make sure drive's partitions are not mounted.
+
+DIE() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+IsDevMounted()
+{
+    # Is any partition of a disk device mounted?
+    local dev="$1"
+    test -n "$(/usr/bin/df | /usr/bin/grep "^$dev")"
+}
+
+Main()
+{
+    local dev="$1"
+    local iso="$2"
+
+    test "$(whoami)" = "root" || DIE "must run this as root"
+
+    test -n "$dev" || DIE "device parameter missing."
+    test -n "$(lsblk -p | grep -w ^$dev)" || DIE "device $dev not available."
+    IsDevMounted "$dev" && DIE "Sorry, $dev is currently mounted!"
+
+    test -n "$iso" || DIE "ISO file parameter missing."
+    test -r "$iso" || DIE "ISO file $iso does not exist."
+
+    dd status=progress oflag=direct bs=4M if="$iso" of="$dev"
+}
+
+Main "$@"

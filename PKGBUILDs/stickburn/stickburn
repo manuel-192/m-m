@@ -2,7 +2,7 @@
 
 echo2() { echo "$@" >&2 ; }
 debug() { test "$DEBUG" = "yes" && echo2 "Debug: " "$@" ; }
-m_yad() { yad --window-icon=drive-removable-media-usb "$@" ; }
+m_yad() { yad --window-icon=drive-removable-media-usb --image=media-flash "$@" ; }
 
 DIE() {
     echo2 "$progname error: $1"
@@ -28,12 +28,7 @@ DD_command() {
 }
 
 Burn() {
-    dd_command="dd status=progress oflag=direct bs=4M if=$iso_file of=$usb_stick"
-
-    echo2 "Command: $dd_command"
-    echo2 "Starting to burn. It takes several minutes, be patient ..."
-
-    pkexec $dd_command || {
+    pkexec burn2dev "$usb_stick" "$iso_file" || {
         echo2 "Canceled."
         exit 1
     }
@@ -70,7 +65,7 @@ cat <<EOF >&2
 Usage: $progname [--fg] [iso-file]
 where
     --fg       notification at the end is in foreground (when started from a launcher)
-    iso-file   name of the ISO file to burn
+    iso-file   path of the ISO file to burn
 EOF
 }
 
@@ -87,7 +82,7 @@ Main()
     local progname="stickburn"
     local usb_stick=""
     local conf="$HOME/.config/$progname.conf"
-    local iso_file_folder="."
+    local iso_file_folder=""
     local iso_file_folder_conf=""
     local cmd=()
     local result=""
@@ -99,40 +94,57 @@ Main()
     local usb_candidates=()
     local no_selection="(None)"
     local txt
+    local mounted_sticks=0
 
     if [ -n "$iso_file" ] ; then
         test -r "$iso_file" || DIE "ISO file '$iso_file' does not exist."
     fi
 
     echo2 "Finding USB drives, please wait..."
-    readarray -t usb_sticks_info <<< "$(find-usb-sticks)"
+    readarray -t usb_sticks_info <<< $(find-usb-sticks)
+
     for xx in "${usb_sticks_info[@]}" ; do
+        test -n "$xx" || continue
         device="$(DeviceOf "$xx")"
         tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
         if [ -z "$tmp" ] ; then
             usb_candidates+=("$xx")
         fi
     done
-
-    if [ -r "$conf" ] ; then
-        iso_file_folder_conf="$(cat "$conf" | ConfField 'ISO_folder')"
-        iso_file_folder="$iso_file_folder_conf"
-        test -d "$iso_file_folder" || DIE "$conf: value of ISO_folder is not a folder."
+    if [ ! -r "$conf" ] ; then
+        echo "#!/bin/bash"   > "$conf"
+        echo "ISO_folder=\"$HOME\""        >> "$conf"
     fi
+    test -r "$conf" || DIE "cannot create the configuration file '$conf'."
+
+    iso_file_folder_conf="$(cat "$conf" | ConfField 'ISO_folder')"
+    iso_file_folder="$iso_file_folder_conf"
+    test -d "$iso_file_folder" || {
+        # DIE "$conf: value of ISO_folder is not a folder."
+        echo2 "Warning: $conf: value of ISO_folder cannot be used. Changing ISO_folder to \$HOME."
+        iso_file_folder="$HOME"
+    }
 
     cmd=(m_yad --form --title="Burn ISO to a USB drive" --width=600 --height=400)
 
     # button icon: media-record, usb-creator
     cmd+=(--button=yad-cancel:1)
 
+    txt="Burn an ISO file to a USB drive.\n\n"
+    txt+="Select the ISO file from any folder.\n"
+    txt+="Note: ISO folder will be auto-saved, now: <b>$iso_file_folder</b>\n\n"
+    txt+="Select the target USB drive (unless auto-selected).\n"
+    cmd+=(--text="$txt")
+
     if [ -z "$iso_file" ] ; then
-        cmd+=(--field="Selected ISO file":FL "$iso_file_folder/*")
+        cmd+=(--field="<tt>ISO file:   </tt>":FL "$iso_file_folder/*")
     else
-        cmd+=(--field="Selected ISO file":RO "$iso_file")
+        cmd+=(--field="<tt>ISO file:   </tt>":RO "$iso_file")
     fi
     case "${#usb_candidates[@]}" in
-        0)  case "${#usb_sticks_info[@]}" in
-                0) cmd+=(--field="<i>Sorry, no USB drives found.</i>":LBL "")
+        0)  case "${usb_sticks_info[0]}" in
+                "")
+                   cmd+=(--field="<i>Sorry, no USB drives found.</i>":LBL "")
                    result="No USB drives"
                    ;;
                 *) txt="\n<i>Sorry, all USB drives are already mounted, cannot continue.\n"
@@ -144,9 +156,9 @@ Main()
             ;;
         1)
             usb_stick="${usb_candidates[0]}"
-            cmd+=(--field="Selected USB drive: <b>$usb_stick</b>":LBL "")
+            cmd+=(--field="<tt>USB drive:   </tt><b>$usb_stick</b>":LBL "")
             ;;
-        *)  cmd+=(--field="Selected USB drive":RO "$no_selection")
+        *)  cmd+=(--field="<tt>USB drive:</tt>":RO "$no_selection")
             cmd+=(--field="\nSelect USB drive button below (unless already shown above):":LBL "")
             for xx in "${usb_sticks_info[@]}" ; do
                 device="$(DeviceOf "$xx")"
@@ -160,11 +172,14 @@ Main()
     case "$result" in
         "No USB drives") ;;
         *)
-            cmd+=(--field="\n\tUSB drives already mounted:":LBL "")
             for xx in "${usb_sticks_info[@]}" ; do
                 device="$(DeviceOf "$xx")"
                 tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
                 if [ -n "$tmp" ] ; then
+                    ((mounted_sticks++))
+                    if [ $mounted_sticks -eq 1 ] ; then
+                        cmd+=(--field="\n\tUSB drives already mounted:":LBL "")
+                    fi
                     cmd+=(--field="\t\t<i>$xx</i>":LBL "")
                 fi
             done
@@ -175,9 +190,10 @@ Main()
         *)
             cmd+=(--button="Start burning now!usb-creator!Burns the selected ISO file to the selected USB drive":0)
 
-            txt="\n<b>Make absolutely sure you select the right usb drive!</b>\n"
+            txt="\n<b>Make absolutely sure you select the right USB drive!</b>\n"
             txt+="<i>There's no turning back after you start burning!</i>\n\n"
-            txt+="When burning has finished, a notification window appears."
+            txt+="Burning takes a few minutes.\n"
+            txt+="When burning has finished, a notification window will appear."
             cmd+=(--field="$txt":LBL "")
             ;;
     esac
@@ -198,12 +214,13 @@ Main()
     if [ ! -r "$iso_file" ] ; then
         DIE "ISO file '$iso_file' does not exist."
     fi
+
+    # Save ISO file folder to conf file
+    sed -i "$conf" -e 's|^ISO_folder=.*$|ISO_folder="'"$(dirname "$iso_file")"'"|'
+
     case "$usb_stick" in
         "" | "$no_selection") DIE "USB drive not selected." ;;
     esac
-    if [ -n "$(df --output=source,target | grep "^$usb_stick" | awk '{print $2}')" ] ; then
-        DIE "USB drive '$usb_stick' is mounted. Please umount it first!"
-    fi
 
     debug "iso file  = $iso_file"
     debug "usb stick = $usb_stick"
