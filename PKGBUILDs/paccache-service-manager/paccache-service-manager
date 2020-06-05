@@ -8,10 +8,16 @@
 #   polkit           (for pkexec)
 #
 
+Yad() {
+    local icon="/usr/share/endeavouros/EndeavourOS-icon.png"
+    test -r "$icon" || echo "$progname: warning: icon $icon not found." >&2
+    GDK_BACKEND=x11 /usr/bin/yad --window-icon="$icon" "$@"
+}
+
 DIE() {
     local msg="$1"
     shift
-    echo "Error: $msg" | yad --text-info --image=error --title="$progname error" \
+    echo "Error: $msg" | Yad --text-info --image=error --title="$progname error" \
                              --wrap --width=500 --height=300 --button=yad-quit:1 "$@"
     exit 1
 }
@@ -28,6 +34,8 @@ _paccache_cleaner_manager()
     local pt="paccache.timer"
     local cmds xx
     local period_vals
+    local txt
+    local image=disk-utility
 
     # possible period values, and set the default
     for xx in daily weekly monthly ; do
@@ -43,12 +51,17 @@ _paccache_cleaner_manager()
         *) DIE "sorry, variable 'keepcount' got value '$current_keepcount' from file '$service' but didn't understand it." --width=800 ;;
     esac
 
-    local du="$(/usr/bin/du -hd 1 /var/cache/pacman/pkg | /usr/bin/awk '{print $1}')"
+    local du="$(/usr/bin/du -hs /var/cache/pacman/pkg | /usr/bin/awk '{print $1}')"
     local df="$(/usr/bin/df -h | /usr/bin/grep -w / | /usr/bin/awk '{print $4}')"
 
-    local result=$(yad --form --width=400 \
+    txt="<b>Modifies the service that cleans up pacman cache periodically.\n"
+    txt+="Below you'll see features and their current values.\n\n"
+    txt+="Package cache usage: $du.\n"
+    txt+="Free space on disk: $df.</b>\n" \
+
+    local result=$(Yad --form --width=500 --image=$image \
                        --title='Pacman cache cleaner service manager' \
-                       --text="<b>Modifies the service that cleans up pacman cache periodically.\nBelow you'll see features and their current values.\n\nPackage cache usage: $du.    Free space on disk: $df.</b>" \
+                       --text="$txt" \
                        --field="":LBL "" \
                        --field='Cleaning period':CB "$period_vals" \
                        --field='Number of package versions to keep':NUM  "$current_keepcount"
