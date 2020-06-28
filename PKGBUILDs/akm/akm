@@ -27,7 +27,6 @@ LocalVersion() { /usr/bin/pacman -Q "$1" 2>/dev/null | /usr/bin/awk '{print $2}'
 Exist()        { test -n "$version" && echo TRUE || echo FALSE ; }
 
 Choose() {
-    ShowFunction
     local version exist
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
@@ -38,7 +37,6 @@ Choose() {
 }
 
 PkgName() {
-    ShowFunction
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
         cmd+=(--field="$(FormatName "$xx")":LBL "")
@@ -46,7 +44,6 @@ PkgName() {
 }
 
 Installed() {
-    ShowFunction
     local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
@@ -67,7 +64,6 @@ StableVersion() {
 }
 
 Stable() {
-    ShowFunction
     local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${kernels[@]}" ; do
@@ -82,7 +78,6 @@ TestingVersion() {
 }
 
 Testing() {
-    ShowFunction
     local testinginfo="$(curl -s "https://www.archlinux.org/packages/?sort=&repo=Testing")"
     local version
     cmd+=(--field="$(Header)":LBL "")
@@ -104,7 +99,6 @@ KernelOrgVersion() {
 }
 
 KernelOrg() {
-    ShowFunction
     local version
     cmd+=(--field="$(Header)":LBL "")
     for xx in "${org_kernels[@]}" ; do
@@ -117,7 +111,6 @@ KernelOrg() {
 }
 
 KOVersion() {
-    ShowFunction
     local version
     local stableversion="$(KernelOrgVersion stable)"
     cmd+=(--field="$(Header)":LBL "")
@@ -135,14 +128,21 @@ KOVersion() {
     done
 }
 
-ShowFunctionStart() { printf "Gathering information, please wait ." >&2 ; }
-ShowFunction()      { printf "." >&2 ; }
-ShowFunctionEnd()   { printf " done.\n" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+
+ShowFunctionLine() {
+    printf2 "%sGathering information: %3.f%%" $'\r' "$((100*SERVICES_DONE/SERVICES))"
+}
+ShowFunctionStart() {
+    SERVICES=${#functions[@]}
+    SERVICES_DONE=0
+    ShowFunctionLine
+}
+ShowFunction()      { ((SERVICES_DONE++)) ; ShowFunctionLine ; }
+ShowFunctionEnd()   { printf2 "\n" ; }
 
 Main()
 {
-    ShowFunctionStart
-
     local na="(-)"
     local kernels=(
         linux             linux-headers
@@ -159,6 +159,8 @@ Main()
         KernelOrg
         KOVersion
     )
+
+    ShowFunctionStart
 
     local kernelorg="$(curl -s https://www.kernel.org)"
     local org_kernels=(mainline stable longterm linux-next)
@@ -190,6 +192,7 @@ Main()
     )
 
     for xx in "${functions[@]}" ; do
+        ShowFunction
         $xx
     done
     ShowFunctionEnd
@@ -199,8 +202,6 @@ Main()
     test -z "$result" && return
 
     result="${result:1}"                               # skip first LBL field !!
-
-    #echo "result = $result" >&2 ; return
 
     for ((ix=0; ix < ${#kernels[@]}; ix++)) ; do
         pkg="${kernels[$ix]}"
