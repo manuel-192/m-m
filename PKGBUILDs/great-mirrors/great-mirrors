@@ -1,0 +1,312 @@
+#!/bin/bash
+
+echo2() { echo "$@" >&2 ; }
+
+DIE() {
+    echo2 "Error: $1"
+    if [ -n "$2" ] ; then
+        shift
+        "$@"
+        #test -n "$2" && $2
+    fi
+    Usage
+    exit 1
+}
+
+REFLECTOR_COUNTRIES="$(echo "Worldwide WW 0" ; reflector --list-countries)"
+CodeToCountry() {  # convert country code to country name
+    local code="$1"
+    local country="$(echo "$REFLECTOR_COUNTRIES" | grep -w "$code" | sed 's|^\(.*[a-z]\)[ ]*[A-Z][A-Z].*$|\1|')"
+    echo "$country"
+}
+
+ShowCountryCodes() {
+    case "$1" in
+        full)
+            echo2 "Supported country names and country codes:"
+            reflector --list-countries | sed 's| [ ]*[0-9]*$||'
+            ;;
+        simple)
+            echo2 "Supported country codes:"
+            reflector --list-countries | awk '{print $(NF-1)}' | tr '\n' ' '
+            echo2 ""
+            ;;
+    esac
+}
+
+CCCheck() {   # check validity of country code
+    case "$1" in
+        [A-Z][A-Z]) test -n "$(CodeToCountry "$1")" && return 0 ;;
+    esac
+    return 1  # fail
+}
+
+GetYourCountryCode() {
+    local IP code
+
+    IP="$(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com | tr -d '"')"  # ipv4 address
+    code="$(geoiplookup "$IP" | sed 's|^.*: \([A-Z][A-Z]\),.*$|\1|')"
+    CCCheck "$code" && {
+        echo "$code" ; return
+    }
+    code="$(whois "$IP" | grep ^country: | awk '{print $NF}')"
+    CCCheck "$code" && {
+        echo "$code" ; return
+    }
+
+    IP="$(dig -6 TXT +short o-o.myaddr.l.google.com @ns1.google.com | tr -d '"')"  # ipv6 address
+    code="$(geoiplookup6 "$IP" | sed 's|^.*: \([A-Z][A-Z]\),.*$|\1|')"
+    CCCheck "$code" && {
+        echo "$code" ; return
+    }
+    code="$(whois "$IP" | grep ^country: | awk '{print $NF}')"
+    CCCheck "$code" && {
+        echo "$code" ; return
+    }
+
+    code="$(curl -s https://ipinfo.io/country)"
+    CCCheck "$code" && {
+        echo "$code" ; return
+    }
+
+    # net services failed, use local variables, but may be wrong
+    code="$(locale | grep ^LC_TIME | cut -d '"' -f 2 | sed 's|^.*_\([A-Z][A-Z]\)\..*$|\1|')"
+    CCCheck "$code" && {
+        echo "$code" ; return
+    }
+}
+
+# gettime fetchurl (e.g gettime http://foo.com/core/os/i686/core.db.tar.gz)
+# returns the fetching time, or timeout, or unreachable
+GetTime() {
+    local url="$1"           # input url
+    local file="$2"          # output file
+    local MAX_TIME=5
+    local output
+
+    IFS=' ' output=( $(curl -s -m $MAX_TIME -w "%{time_total} %{http_code}" "$url" -o$file) )
+    (( $? == 28 )) && echo timeout && return
+    (( ${output[1]} >= 400 )) && echo unreachable && return
+    case "${output[1]}" in
+        ""|301|302)
+            echo unreachable ;;
+        *)
+            echo "${output[0]}" ;;
+    esac
+}
+
+GetLatestMirrorlist() {
+    local latest="https://www.archlinux.org/mirrorlist/?country=all&protocol=http&protocol=https&ip_version=4"
+    local mlfile=$(mktemp)
+    curl -s -m 10 "$latest" -o$mlfile
+    echo $mlfile
+}
+
+Options() {
+    local arg
+    local sortbase1="$sortbase" savefile1="$savefile" save1="$save" bundle1="$bundle"
+    local country
+
+    for arg in "$@" ; do
+        cmdline+=" '$arg'"
+        case "$arg" in
+            --speed | -s) sortbase1=speed ;;
+            --age   | -a) sortbase1=age ;;
+            --one   | -1) bundle1=yes ;;
+            --help  | -h) Usage ; exit 0 ;;
+            --save) save1=yes ;;
+            -ls) savefile1=lastsync ;;
+            -lu) savefile1=lastupdate ;;
+            --show-codes) ShowCountryCodes full ; exit 0 ;;
+            -*) DIE "unsupported option '$arg'" ;;
+            *)
+                case "$arg" in
+                    [A-Z][A-Z])
+                        country="$(CodeToCountry "$arg")"
+                        if [ -z "$country" ] ; then
+                            DIE "country code '$arg' not supported." ShowCountryCodes simple
+                        fi
+                        countries+=("$country")
+                        ;;
+                    *)
+                        countries+=("$arg")
+                        ;;
+                esac
+                ;;
+        esac
+    done
+    test -n "$countries" || DIE "country spec(s) required"
+    save="$save1"
+    bundle="$bundle1"
+    sortbase="$sortbase1"
+    savefile="$savefile1"
+}
+
+Default() {
+    test "$1" = "$2" && echo "(default)"
+}
+
+Usage() {
+    cat <<EOF >&2
+Usage: $0 [options] country-specs
+Options:
+    --help   | -h      This help
+    --speed  | -s      Sort output by speed               $(Default $sortbase speed)
+    --age    | -a      Sort output by time of last sync   $(Default $sortbase age)
+    --one    | -1      List all mirrors in one list       $(Default $bundle yes)
+    --save             Save file to \$HOME/mirrorlist     $(Default $save yes)
+    --ls               Age: use lastsync file             $(Default $savefile lastsync)
+    --lu               Age: use lastupdate file           $(Default $savefile lastupdate)
+    --show-codes       Show available country names and codes
+Option defaults are shown above.
+
+Country-specs is a space separated list of country names or country codes.
+Use quotes with names that contain spaces.
+
+EOF
+}
+
+OneCountry() {
+    # echo2 "$country:"
+    local synctime
+    for mirror in $mirrors_of_country ; do
+        time="$(GetTime $mirror/$savefile $savefile)"
+        case "$time" in
+            timeout|unreachable) echo2 "Warning: $mirror: $time" ; continue ;;
+        esac
+
+        # "Store" the mirror info to this line! Fields are:
+        #     mirror-url age fetchtime
+        synctime="$(cat $savefile)"
+        if [ -n "$synctime" ] ; then
+            echo "$mirror/\$repo/os/\$arch $((now - synctime)) $time $country"  # country should be the last because of 'column' below!
+        else
+            echo2 "$mirror: file $savefile not available"
+        fi
+        rm -f $savefile
+    done
+}
+
+Main()
+{
+    # local mirrorlist=/etc/pacman.d/mirrorlist.pacnew   # or get the latest at Arch
+    local progname="$(basename "$0")"
+    local repo=core
+    local arch=x86_64
+    local save=no                     # no or yes
+    local sortbase=age                # age or speed
+    local sf1=2                       # sort field, based on age
+    local sf1=3                       # sort field, based on age
+    local savefile=lastupdate         # lastupdate or lastsync (Arch says lastsync...)
+    local mirror
+    local country mirrors_of_country unsorted
+    local countries=()
+    local bundle=no
+    local agehdr=Age
+    local conffile=/etc/$progname.conf   # list of countries to use, one country name per line
+    local targetfile=$HOME/mirrorlist    #-$(date +%Y%m%d-%H%M)
+    local tmpfile1=$(mktemp)
+    local tmpfile=$(mktemp)
+    local cmdline="$progname"
+
+    if [ -r $conffile ] ; then
+        readarray -t countries <<< $(cat $conffile)
+    else
+        local local_country_code="$(GetYourCountryCode)"
+        if [ -n "$local_country_code" ] ; then
+            local local_country="$(CodeToCountry $local_country_code)"
+            countries=("$local_country")
+        fi
+    fi
+
+    Options "$@"
+
+    local now=$(date +%s)             # date --date='@2147483647'
+    local mirrorlist=$(GetLatestMirrorlist)
+
+    case "$sortbase" in
+        age)    sf1=2 ; sf2=3 ;;
+        speed)  sf1=3 ; sf2=2 ;;
+        *) DIE "unsupported sort base '$sortbase'" ;;
+    esac
+    if [ "$savefile" = lastsync ] ; then
+        ((now+=100))                          # trick to mitigate problem of negative time diffs
+        agehdr=Lastsync
+    fi
+
+    if [ "$bundle" = "yes" ] ; then
+        local all_results=""
+    else
+        declare -A all_results
+    fi
+
+    if [ "$bundle" = "yes" ] ; then
+        echo2 "Result as one list."
+    else
+        echo2 "Result as per country."
+    fi
+    echo2 "Note: this may take several minutes!"
+    echo2 ""
+
+    for country in "${countries[@]}" ; do
+        echo2 "$country"
+        mirrors_of_country=$(sed -n '/^## '"$country"'$/,/^$/p' $mirrorlist | sed '1d;$d' | grep "^#Server = https://" | awk '{print $3}' | sed 's|/$repo/os/$arch||')
+        unsorted=$(OneCountry)
+        if [ "$bundle" = "yes" ] ; then
+            all_results+="$unsorted"
+            all_results+=$'\n'             # may cause extra lines in output!
+        else
+            all_results[$country]="$unsorted"
+        fi
+    done
+    echo2 ""
+    rm -f $mirrorlist
+
+    rm -f $targetfile
+    echo "# Generated by $progname at $(date -u '+%Y-%m-%d %H:%M') UTC" >> $targetfile
+    echo "# Command line: $cmdline" >> $targetfile
+    if [ -r $conffile ] ; then
+        echo "# Config file $conffile read." >> $targetfile
+    else
+        if [ -n "$local_country" ] ; then
+            echo "# Current country '$local_country' added." >> $targetfile
+        fi
+    fi
+    echo "" >> $targetfile
+
+    cat $targetfile >&2
+
+    if [ "$bundle" = "yes" ] ; then
+        # show to user
+        echo "${all_results}" | sort -V -k$sf1,$sf2 | column -o " " -t -N "Mirror-url,$agehdr(sec),Fetch-time(sec),Country" > $tmpfile1
+        cat $tmpfile1
+        # store for the final result
+        cat $tmpfile1 >> $tmpfile
+        # write the mirrorlist defs
+        echo "${all_results}" | sort -V -k$sf1,$sf2 | awk '{print "Server = " $1}' | grep -v "^Server = $" >> $targetfile
+    else
+        for country in "${countries[@]}" ; do
+            echo "## $country" > $tmpfile1
+            echo "${all_results[$country]}" | sort -V -k$sf1,$sf2 | column -H - -o " " -t -N "Mirror-url,$agehdr(sec),Fetch-time(sec)" >> $tmpfile1
+            cat $tmpfile1
+            cat $tmpfile1 >> $tmpfile
+            echo "## $country" >> $targetfile
+            echo "${all_results[$country]}" | sort -V -k$sf1,$sf2 | awk '{print "Server = " $1}'  | grep -v "^Server = $" >> $targetfile
+        done
+    fi
+    if [ -r $HOME/mirrorlist ] ; then
+        echo "" >> $targetfile
+        echo "# Gathered ranking data:" >> $targetfile
+        echo "" >> $targetfile
+        cat $tmpfile | sed 's|^|## |' >> $targetfile
+
+        echo ""
+        echo "File $targetfile saved."
+        echo ""
+        echo "Note: you need to copy $targetfile to /etc/pacman.d/mirrorlist"
+        echo "(as root) in order to use it."
+    fi
+    rm -f $tmpfile $tmpfile1
+}
+
+Main "$@"

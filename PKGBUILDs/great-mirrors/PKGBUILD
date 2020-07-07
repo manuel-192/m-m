@@ -1,0 +1,21 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=great-mirrors
+pkgdesc="Choose great upstream mirrors into /etc/pacman.d/mirrorlist"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('9b697f057efb8020321eabdba2d27a2c32b05084eea92ffc8ddbf1045bd8be9a13a74078fb46b92779fe688039f440a8dfce78f4a74b378d363ad8bf7abc6882')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+}
