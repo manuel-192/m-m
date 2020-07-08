@@ -157,7 +157,7 @@ Options:
     --save             Save file to \$HOME/mirrorlist     $(Default $save yes)
     --ls               Age: use lastsync file             $(Default $savefile lastsync)
     --lu               Age: use lastupdate file           $(Default $savefile lastupdate)
-    --show-codes       Show available country names and codes
+    --show-codes       Show available country names and country codes
 Option defaults are shown above.
 
 Country-specs is a space separated list of country names or country codes.
@@ -172,7 +172,7 @@ OneCountry() {
     for mirror in $mirrors_of_country ; do
         time="$(GetTime $mirror/$savefile $savefile)"
         case "$time" in
-            timeout|unreachable) echo2 "Warning: $mirror: $time" ; continue ;;
+            timeout|unreachable) echo2 "    Warning: $mirror: $time" ; continue ;;
         esac
 
         # "Store" the mirror info to this line! Fields are:
@@ -269,7 +269,7 @@ Main()
         echo "# Config file $conffile read." >> $targetfile
     else
         if [ -n "$local_country" ] ; then
-            echo "# Current country '$local_country' added." >> $targetfile
+            echo "# Current country '$local_country' added automatically." >> $targetfile
         fi
     fi
     echo "" >> $targetfile
@@ -304,7 +304,7 @@ Main()
         echo "File $targetfile saved."
         echo ""
         echo "Note: you need to copy $targetfile to /etc/pacman.d/mirrorlist"
-        echo "(as root) in order to use it."
+        echo "      (as root) to actually use it."
     fi
     rm -f $tmpfile $tmpfile1
 }
