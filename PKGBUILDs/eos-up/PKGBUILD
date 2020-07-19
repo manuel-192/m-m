@@ -1,0 +1,22 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-up
+pkgdesc="Simple update"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(bash polkit yad)
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('8da18049d2ed01b71cee211f5d60500f4bb5d224606446db7b82bfac34371d0e5602e868be914274b7d873e2ce6640e85681d938ab4148f372db9be23fcd023e')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
+}

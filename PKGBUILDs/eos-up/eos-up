@@ -1,0 +1,143 @@
+#!/bin/bash
+#
+# Simple EndeavourOS updater.
+# Supports upstream packages and AUR.
+#
+# Requires packages:
+#   yad              (for yad)
+#   polkit           (for pkexec)
+#
+
+
+Yad() {
+    local icon="/usr/share/endeavouros/EndeavourOS-icon.png"
+    test -r "$icon" || echo "$progname: warning: icon $icon not found." >&2
+    GDK_BACKEND=x11 /usr/bin/yad --window-icon="$icon" "$@"
+}
+
+DIE() {
+    local msg="$1"
+    shift
+    echo "Error: $msg" | Yad --text-info --image=error --title="$progname error" \
+                             --wrap --width=500 --height=300 --button=yad-quit:1 "$@"
+    exit 1
+}
+
+source /usr/share/endeavouros/scripts/eos-script-lib-yad || DIE "cannot source /usr/share/endeavouros/scripts/eos-script-lib-yad"
+export -f eos_yad_terminal
+export -f eos_yad_RunCmdTermBash
+
+old_ResultFieldValue() {
+    local val="$(echo "$result" | cut -d '|' -f $ix)"
+    echo "$val"
+}
+
+ResultFieldValue() {
+    local -n refnam="$1"
+    local val="$(echo "$result" | cut -d '|' -f $ix)"
+    ((ix++))
+    refnam="$val"
+}
+
+SaveConfigFile() {
+    cat <<EOF > $conffile
+#!/bin/bash
+
+cnf_aur_support="$cnf_aur_support"
+cnf_refresh_all_dbs="$cnf_refresh_all_dbs"
+cnf_allow_downgrades="$cnf_allow_downgrades"
+EOF
+}
+
+_eos_up()
+{
+    # Default command is: sudo pacman -Syu
+
+    local progname=eos-up
+    local image=system-software-update
+    local cmds
+    local msg
+    local conffile=$HOME/.config/eos-up.conf
+
+    # config values to be saved:
+    local cnf_aur_support=FALSE
+    local cnf_refresh_all_dbs=FALSE    # = -Syy
+    local cnf_allow_downgrades=FALSE   # = -Suu
+
+    # config values not to be saved:
+    local cnf_overwrite=""
+
+    if [ -r $conffile ] ; then
+        source $conffile
+    fi
+
+    # Base command is: pacman -Syu
+    # Extras are added to the above.
+
+    msg="Updates your system of EndeavourOS packages.\n"
+    msg+="The default update command is: <b>sudo pacman -Syu</b>\n"
+    msg+="Selections made here will be saved for later use.\n"
+
+    cmds=(Yad --form
+              --width=600
+              --image=$image
+              --title='EndeavourOS updater'
+              --text="$msg"
+              --field="AUR support":CHK "$cnf_aur_support"
+              --field="Refresh all databases (seldom needed)":CHK "$cnf_refresh_all_dbs"
+              --field="Allow package downgrades (seldom needed)":CHK "$cnf_allow_downgrades"
+              --field='Overwrite files (like <b>/foo bar/*.so</b>)' ""
+         )
+
+    local result="$( "${cmds[@]}" )"
+
+    if [ -z "$result" ] ; then
+        return
+    fi
+
+    local ix=1
+    ResultFieldValue cnf_aur_support
+    ResultFieldValue cnf_refresh_all_dbs
+    ResultFieldValue cnf_allow_downgrades
+    ResultFieldValue cnf_overwrite
+
+    cmds=""
+    case "$cnf_aur_support" in
+        FALSE) cmds+="sudo pacman -Syu" ;;
+        TRUE)  cmds+="yay -Syu" ;;
+        *) DIE "cnf_aur_support value '$cnf_aur_support' is unsupported" ;;
+    esac
+    case "$cnf_refresh_all_dbs" in
+        FALSE) ;;
+        TRUE)  cmds+="y" ;;
+        *) DIE "cnf_refresh_all_dbs value '$cnf_refresh_all_dbs' is unsupported" ;;
+    esac
+    case "$cnf_allow_downgrades" in
+        FALSE) ;;
+        TRUE)  cmds+="u" ;;
+        *) DIE "cnf_allow_downgrades value '$cnf_allow_downgrades' is unsupported" ;;
+    esac
+    if [ -n "$cnf_overwrite" ] ; then
+        cmds+=" --overwrite '$cnf_overwrite'"
+    fi
+
+    SaveConfigFile
+
+    echo "$cmds"
+    eos_yad_RunCmdTermBash "$cmds"
+
+    return
+
+    if [ "$keepcount" != "$current_keepcount" ] || [ "$period" != "$current_period" ] ; then
+        cmds="systemctl status $pt >/dev/null && { systemctl stop $pt ; systemctl disable $pt ; }"
+        cmds+=" ; sed -i $service -e 's|^ExecStart=/usr/bin/paccache .*$|ExecStart=/usr/bin/paccache -rk$keepcount|'"
+        cmds+=" ; sed -i $timer -e 's|^OnCalendar=.*$|OnCalendar=$period|'"
+        cmds+=" ; systemctl enable $pt"
+        cmds+=" ; systemctl start $pt"
+        echo pkexec bash -c "$cmds"
+    else
+        echo "Nothing changed." >&2               
+    fi
+}
+
+_eos_up "$@"
