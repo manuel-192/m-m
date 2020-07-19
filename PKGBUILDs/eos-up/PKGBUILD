@@ -14,7 +14,7 @@ depends=(bash polkit yad)
 source=(
     "$url/$pkgname"
 )
-sha512sums=('8da18049d2ed01b71cee211f5d60500f4bb5d224606446db7b82bfac34371d0e5602e868be914274b7d873e2ce6640e85681d938ab4148f372db9be23fcd023e')
+sha512sums=('a7526d226d4a11ccf67b31b5263456ebdafb7345f084f25746d2f28518ddad555db0892191f7858b4980fe35455f3c6fa0ca94667af39668a6c91cdce427c926')
 
 package() {
   cd $srcdir
