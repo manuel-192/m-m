@@ -3,7 +3,7 @@
 # Wrapper for pacman. Knows when to have root permissions.
 # Usage: pacmanwrapper [pacman-parameters]
 
-Main()
+_pac2()
 {
     local rooterrorstring="error: you cannot perform this operation unless you are root."
     local log=$(mktemp)
@@ -35,4 +35,55 @@ Main()
     rm -f $log
 }
 
-Main "$@"
+_GitHub_is_ok() {
+    local has_github_mirror=no
+
+    if [ -n "$(grep "^Server = https://github.com/" /etc/pacman.conf)" ] ; then
+        has_github_mirror=yes
+    else
+        local list
+        for list in endeavouros-mirrorlist mirrorlist-m ; do
+            if [ -r "/etc/pacman.d/$list" ] ; then
+                if [ -n "$(grep "^Server = " /etc/pacman.d/$list | head -n 2 | grep github)" ] ; then    # 2 is an ad hoc value...
+                    has_github_mirror=yes
+                fi
+            fi
+        done
+    fi
+
+    if [ "$has_github_mirror" = "yes" ] ; then
+        local url=https://github.com/endeavouros-team/repo-testing/releases/download/x86_64/endeavouros-testing-dev.db
+        wget -q -O /dev/null $url
+    fi
+}
+
+_pac1() {
+    # workaround for github problems
+    local opt=""
+    local conf=""
+    local check_github=yes
+    local arg
+
+    for arg in "$@" ; do
+        case "$arg" in
+            -U | -Q* | -R* | -Sc* | -V | -h | --help) check_github=no ; break ;;
+        esac
+    done
+
+    if [ "$check_github" = "yes" ] ; then
+        _GitHub_is_ok || {
+            echo "GitHub has problems, using local db." >&2
+            conf="$HOME/pacman.conf.tmp"
+            rm -f "$conf"
+            opt="--config '$conf'"
+            cp /etc/pacman.conf "$conf"
+            sed -i "$conf" \
+                -e 's|^\(Server = https://github.com/.*\)$|#\1|' \
+                -e 's|^\(Include = /etc/pacman.d/mirrorlist-m\)$|#\1|'
+        }
+    fi
+
+    _pac2 $opt "$@"
+}
+
+_pac1 "$@"
