@@ -1336,11 +1336,19 @@ HandleOptions()
     fi
 }
 
+Destructor() {
+    local keep=5
+    echo "Leaving max $keep latest old versions." >&2
+    ((keep++))
+    rm -f $(command ls -1r /boot/grub/custom.cfg-* | tail -n +$keep)
+}
+
 StartHere()
 {
     Constructor
     HandleOptions "$@"
     StartHere2
+    Destructor
 }
 
 StartHere "$@"
