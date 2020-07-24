@@ -120,7 +120,7 @@ GitUpdate() {
     echo2 ""
     echo2 "Adding files to github."
     echo2 ""
-    RunOnlyIfAllowed "git pull"
+    #RunOnlyIfAllowed "git pull"
     git add $git_adds
     git commit -m "."          # dummy commit message
     echo2 ""
@@ -146,6 +146,8 @@ Main()
             read2 -p "Changes detected. Replace local assets (y/n)? "
             case "$REPLY" in
                 [yY]*)
+                    cd "$gitdir"
+                    RunOnlyIfAllowed "git pull"
                     ReplaceAssets
                     MirrorStateUpdate
                     GitUpdate

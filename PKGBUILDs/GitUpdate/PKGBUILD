@@ -4,7 +4,7 @@
 pkgname=GitUpdate
 pkgdesc="Update special repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
+pkgver=1.1
 pkgrel=1
 arch=('any')
 license=('custom')
@@ -13,7 +13,7 @@ depends=(bash)
 source=(
     $pkgname
 )
-sha512sums=('2a068232cdb33de9bc162b8b8458ce243bd0083c15f3d2832dea33b13d0e0c5bb21175b50e62031f029cbdc1d38e2f536803f4e3fe94b001d8220d187d71b7ba')
+sha512sums=('a5b04a07d21b762019ce242d40cb76b19226ef419533411e5dbf53b0fcc613942e2a3865a632a4769438d8d5da2389af00a3fb5dc7e79419a0f7a50f0ba01e6b')
 
 package() {
     install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
