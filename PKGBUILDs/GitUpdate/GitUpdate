@@ -47,6 +47,19 @@ GetRepoName() {
     esac
 }
 
+CreateExcludes() {
+    local xx
+    local files="$(/usr/bin/ls -1a "$srcdir")"
+
+    for xx in $files ; do
+        case "$xx" in
+            *.sig | *.xz | *.zst | *.db | *.files) ;;  # these we want to diff
+            . | ..) ;;                                 # not directories
+            *) excludes+=" -x $xx" ;;                  # not these files/dirs either
+        esac
+    done
+}
+
 CheckDiff() {
     case "$reponame" in
         "")
@@ -77,13 +90,10 @@ CheckDiff() {
     test -r "$srcdir"/$reponame.db  || DIE "db file '$srcdir/$reponame.db' not found!"
     test -d "$dstdir"               || DIE "folder '$dstdir' not found!"
 
-    diff "$srcdir" "$dstdir" \
-         -x 'assets.conf*' \
-         -x .git \
-         -x PKGBUILDS \
-         -x PKGBUILDs \
-         -x PKG_ARCHIVE \
-         -x .vscode
+    local excludes=""
+    CreateExcludes
+
+    diff "$srcdir" "$dstdir" $excludes
     diffval=$?
 }
 
