@@ -36,6 +36,9 @@ _pac2()
 }
 
 _GitHub_is_ok() {
+    if [ -e /etc/pac-no-ghc.cnf ] ; then
+        return 0
+    fi
     local has_github_mirror=no
 
     if [ -n "$(grep "^Server = https://github.com/" /etc/pacman.conf)" ] ; then
@@ -43,12 +46,12 @@ _GitHub_is_ok() {
     else
         local list
         for list in $(grep "^Include = /etc/pacman.d/" /etc/pacman.conf | uniq | awk '{print $NF}') ; do
-            if [ -r "/etc/pacman.d/$list" ] ; then
-                if [ -n "$(grep "^Server = " /etc/pacman.d/$list | head -n 2 | grep github)" ] ; then    # 2 is an ad hoc value...
+            if [ -r "$list" ] ; then
+                if [ -n "$(grep "^Server = " $list | head -n 2 | grep github)" ] ; then    # 2 is an ad hoc value...
                     has_github_mirror=yes
                 fi
             else
-                echo "Error: file '/etc/pacman.d/$list' does not exist. Check /etc/pacman.conf." >&2
+                echo "Error: file '$list' does not exist. Check /etc/pacman.conf." >&2
             fi
         done
     fi
