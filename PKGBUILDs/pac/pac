@@ -33,6 +33,7 @@ _pac2()
         *) cat $log ; echo "Warning: pacman returned error code $retpacman." >&2 ;;
     esac
     rm -f $log
+    return $retpacman
 }
 
 _GitHub_is_ok() {
