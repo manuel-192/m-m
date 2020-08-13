@@ -1,17 +1,16 @@
 #!/bin/bash
 #
-# antergos-customcfg, generate grub menu entries
-# for writing them to file /boot/grub/custom.cfg.
+# 'customcfg': generate grub-compatible menu entries into file /boot/grub/custom.cfg.
 #
 # Tested operating systems:
 # - Antergos (assumed system)
 # - Arch
+# - EndeavourOS
 # - Manjaro
 # - LinuxMint (and probably other Debian/Ubuntu based systems)
 # - Windows 10 (UEFI and BIOS legacy boot)
 # - Windows 7 (actually not tested...)
 #
-# $Id: antergos-customcfg,v 1.71 2019/07/18 07:55:20 manuel Exp $
 
 #set -u
 
@@ -321,12 +320,18 @@ GetOsNameFromMountPoint()
         case "$name" in
             ArchLinux) test -e "$mountpoint"/etc/pacman.d/antergos-mirrorlist && name=AntergosLinux ;;
         esac
+
+        # Remove the Linux suffix or prefix!
+        case "$name" in
+            *Linux) test ${#name} -gt 5 && name=${name:: -5} ;;  # remove suffix
+            Linux*) test ${#name} -gt 5 && name=${name:5}    ;;  # remove prefix
+        esac
     else
         warning "mount point '$mountpoint' does not contain /etc"
         name=$UNKNOWN
     fi
 
-    # Now $name should be: (unknown), AntergosLinux, ArchLinux, EndeavourOSLinux, ManjaroLinux, LinuxMint, etc.
+    # Now $name should be: (unknown), Antergos, Arch, EndeavourOS, Manjaro, Mint, etc.
 
     echo "$name"
 }
@@ -347,9 +352,9 @@ GetKernelsFromMountPoint()
         _pushd "$mountpoint"
         kernels=$(ls -1 vmlinuz* 2>/dev/null)
         case "$osname" in
-            LinuxMint) # use only the kernel symlink in the root dir!
+            Mint) # use only the kernel symlink in the root dir!
                 ;;
-            ArchLinux|AntergosLinux|ManjaroLinux|EndeavourOSLinux|*)
+            Arch|Antergos|Manjaro|EndeavourOS|*)
                 test "$kernels" != "" && kernels+=" "
                 if [ "$rootuuid" = "$bootuuid" ] ; then
                     # /boot is in the root partition
@@ -829,7 +834,7 @@ StartHere2()
                     fi
 
                     case "$osname" in
-                        ArchLinux|AntergosLinux|EndeavourOSLinux|ManjaroLinux)
+                        Arch|Antergos|EndeavourOS|Manjaro)
                             rwo=rw
                             if [ -f "$mnt"${boot}intel-ucode.img ] ; then
                                 ucode="${boot}intel-ucode.img"
@@ -842,7 +847,7 @@ StartHere2()
                             ;;
                         *)
                             case "$osname" in
-                                LinuxMint) ;;
+                                Mint) ;;
                                 *) warning "OS $osname not supported, generation may fail!" ;;
                             esac
                             rwo=ro
@@ -855,7 +860,7 @@ StartHere2()
                     for kernel in $kernels
                     do
                         case "$osname" in
-                            ArchLinux|AntergosLinux|EndeavourOSLinux|ManjaroLinux)
+                            Arch|Antergos|EndeavourOS|Manjaro)
                                 kern=$(basename "$kernel")
                                 kv=$(echo "$kern" | sed -e 's|vmlinuz-||' -e 's|-x86_64||')
                                 kv2=$(echo "$kern" | sed -e 's|vmlinuz-||')
@@ -962,7 +967,7 @@ StartHere2()
 			if [ "$EXTRAS_NOGUI" = "1" ] ; then
                             # menuentry without graphical desktop
                             case "$osname" in
-				AntergosLinux|EndeavourOSLinux)  # better support for these!
+				Antergos|EndeavourOS)  # better support for these!
 				    menuentryline="$(meline "$osname" "$kv" "$rootdev" "" "GUI=no")"
 				    out "$menuentryline"
                                     out "  savedefault"

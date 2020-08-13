@@ -4,7 +4,7 @@
 pkgname=customcfg
 pkgdesc="Create /boot/grub/custom.cfg for grub. Renamed from antergos-customcfg."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.2
+pkgver=0.3
 pkgrel=1
 
 arch=('any')
@@ -14,7 +14,7 @@ depends=('bash')
 source=(
     "$url/$pkgname"
 )
-sha512sums=('e0235695d0a4c6b63e287b61f499df9ad6551a8895f38fc0f0b57ad4243c06e804299173262067e2f617938d924722fbb6da64224a4035a56a7011ad8766c5a1')
+sha512sums=('245379769f622c2e2bb31601fd6b5a5447d921c58b50744c7e7185870b83f3f729cf7bcb94e695e133883a12e11a24a3b114d0481e3f394205716a2af144d008')
 
 package() {
   cd $srcdir

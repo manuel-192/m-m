@@ -1,9 +1,9 @@
 # customcfg
-Generates grub boot menu entries into file <b>/boot/grub/custom.cfg</b>
-in Arch based and other supported operating systems.
-Recognizes also other operating system installations,
-such as Arch, Antergos, EndeavourOS, Manjaro, LinuxMint and Windows.
-Generated custom.cfg is very similar to <i>/boot/grub/grub.cfg</i>,
+
+Generates grub-compatible boot menu entries into file **/boot/grub/custom.cfg**
+in Arch based and other supported operating systems.<br>
+Currently recognized systems: Arch, Antergos, EndeavourOS, Manjaro, LinuxMint and Windows.<br>
+The generated custom.cfg is very similar to <i>/boot/grub/grub.cfg</i>,
 but may be helpful if an entry in current grub.cfg is unable to boot,
 so it can be seen also as a helpful addition to grub.cfg.
 
@@ -21,6 +21,8 @@ Try command 'customcfg --help' for more info about options and usage.
 - The tool recognizes the latest Windows systems, but this is not extensively tested and may generate false results.
 
 ## Changes
+0.2: 2020-Aug-13
+- Shortened the generated OS names by removing the suffix/prefix "Linux".
 
 0.1.71: 2019-Jul-18
 - added support for EndeavourOS (experimental, not yet tested)
