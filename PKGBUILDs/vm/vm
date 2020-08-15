@@ -11,6 +11,7 @@ Main()
 
     case "$1" in
         create) VMcreate ;;
+        import) VMimport ;;
         start)  VMstart ;;
         remove) VMremove ;;
         info)   VMinfo ;;
@@ -26,6 +27,7 @@ VMusage() {
 Usage: $progname [command]
 Commands:
     create      Creates a new VM.
+    import      Imports a VM from an existing image.
     start       Starts an inactive VM.
     remove      Deletes all VM related files. No turning back!
     info        Show the location of the VM image file.
@@ -50,6 +52,19 @@ VMcreate() {
     esac
 
     Cmd --quiet virt-install --name $vmname --disk size=$disksize --memory $memsize -c $isofile --os-variant=archlinux
+}
+
+VMimport() {
+    # Convert existing VDI file to QEMU:
+    #   qemu-img convert -p img.vdi img.qcow2
+
+    echo2 "Sorry, import does not work yet!"
+    return 1
+
+    local imgfile=$(GiveFile "Image file name: ")
+    local memsize=$(GiveNumber "Memory size for the VM [MB]: ")
+
+    Cmd virt-install --import --memory $memsize --disk $imgfile --os-variant archlinux
 }
 
 NonExistingVM() {
