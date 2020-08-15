@@ -1,0 +1,147 @@
+#!/bin/bash
+
+# Very simple interface to qemu & virt-manager.
+
+Main()
+{
+    # packages: virt-manager qemu virt-viewer
+
+    local imagedir="$HOME/.local/share/libvirt/images"
+    local qemu_conf=/etc/libvirt/qemu.conf
+
+    case "$1" in
+        create) VMcreate ;;
+        start) VMstart ;;
+        remove) VMremove ;;
+        info) VMinfo ;;
+        *) VMusage ;;
+    esac
+}
+
+VMusage() {
+    local name=$(whoami)
+    local group=$(grep $(grep ^$name: /etc/passwd | cut -d ':' -f 4) /etc/group | cut -d ':' -f 1)
+
+    cat <<EOF
+Usage: $0 [command]
+Commands:
+    create      Creates a new VM.
+    start       Starts an inactive VM.
+    remove      Deletes all VM related files. No turning back!
+    info        Show the location of the VM image file.
+
+Note: before creating any VMs, please edit file $qemu_conf
+      and change 
+      - user to your user name ($name)
+      - group to your main group ($group)
+EOF
+}
+
+VMcreate() {
+    local vmname=$(GiveText "Name of the new VM: ")
+    local isofile=$(GiveFile "ISO file name: ")
+    local disksize=$(GiveNumber "Disk size for the VM [GB]: ")
+    local memsize=$(GiveNumber "Memory size for the VM [MB]: ")
+
+    read -p "Create the VM (Y/n) "
+    case "$REPLY" in
+        [yY]* | "") ;;
+        *) return ;;
+    esac
+
+    Cmd virt-install --name $vmname --disk size=$disksize --memory $memsize -c $isofile --os-variant=archlinux 
+}
+
+NonExistingVM() {
+    local vmname="$1"
+    local file="$2"
+    echo2 "Sorry, no VM with name '$vmname' exists."
+    test -n "$file" && echo2 "Image file '$file' not found."
+    echo2 "Existing VMs:"
+    virsh list --all
+}
+
+VMstart() {
+    local vmname=$(GiveText "Name of the new VM: ")
+    local info="$(virsh list --all | grep -w "$vmname")"
+
+    if [ -z "$info" ] ; then
+        NonExistingVM "$vmname"
+        return
+    fi
+
+    if [ -n "$(echo "$info" | grep "shut off")" ] ; then
+        Cmd virsh start $vmname
+    fi
+    Cmd virt-viewer $vmname
+}
+
+VMremove() {
+    local vmname=$(GiveText "Name of the VM to delete: ")
+    local info="$(virsh list --all | grep -w "$vmname")"
+    local imagefile="$imagedir/$vmname.qcow2"
+
+    if [ -z "$info" ] ; then
+        NonExistingVM "$vmname"
+        return
+    fi
+    if [ ! -r "$imagefile" ] ; then
+        NonExistingVM "$vmname" "$imagefile"
+        return
+    fi
+
+    read -p "Delete VM '$vmname' (y/N) "
+    case "$REPLY" in
+        [yY]*) ;;
+        *) return ;;
+    esac
+
+    Cmd virsh managedsave-remove $vmname
+    Cmd virsh undefine $vmname --remove-all-storage
+}
+
+VMinfo() {
+    ls -lh ~/.local/share/libvirt/images
+}
+
+
+
+echo2() { echo "$@" >&2 ; }
+
+GiveTextCommon() {
+    local type="$1"
+    local prompt="$2"
+
+    while true ; do
+        read -p "$prompt" >&2
+        case "$REPLY" in
+            "")
+                echo2 "Sorry, answer cannot be empty." ;;
+            *)
+                case "$type" in
+                    text)
+                        break ;;
+                    file)
+                        test -r "$REPLY" && break
+                        echo2 "Sorry, file '$REPLY' does not exist."
+                        ;;
+                    number)
+                        test -z "$(echo "$REPLY" | tr -d '0-9')" && break
+                        echo2 "Sorry, '$REPLY' is not a number."
+                        ;;
+                esac
+                ;;
+        esac
+    done
+    echo "$REPLY"
+}
+GiveText() { GiveTextCommon text "$1" ; }
+GiveFile() { GiveTextCommon file "$1" ; }
+GiveNumber() { GiveTextCommon number "$1" ; }
+
+Cmd() {
+    echo "$@"
+    # "$@"
+}
+
+Main "$@"
