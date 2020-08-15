@@ -1,0 +1,57 @@
+#!/bin/bash
+
+echo2() { echo "$@" >&2 ; }
+
+DIE() {
+    echo2 "Error: $1"
+    exit 1
+}
+
+Main()
+{
+    local mode="$1"
+    local query="$(xrandr --query)"
+    local output=$(echo "$query" | grep " connected " | head -n 1 | awk '{print $1}')
+    local resos=$(echo "$query" | grep "^ [ ]*[0-9][0-9]*x[0-9][0-9]* " | awk '{print $1}')
+    local ix
+    local cmd
+
+    readarray -t resos <<< $(echo "$resos")
+
+    if [ -n "$mode" ] ; then
+        for ((ix=0; ix < ${#resos[@]}; ix++)) ; do
+            test "$mode" = "${resos[$ix]}" && break
+        done
+        if [ "$mode" != "${resos[$ix]}" ] ; then
+            DIE "given mode does not exist. Run again without parameters to find the proper mode."
+        fi
+        echo "$query" | grep -w "$mode" | grep '*' >/dev/null && {
+            echo2 "Resolution $mode already set."
+            return
+        }
+    else
+        for ((ix=0; ix < ${#resos[@]}; ix++)) ; do
+            mode="${resos[$ix]}"
+            printf "%-3d: %s\n" "$ix" "$mode"
+        done
+        read -p "Give resolution index: " ix
+        if [ $ix -ge 0 ] && [ $ix -lt ${#resos[@]} ] ; then
+            mode="${resos[$ix]}"
+        else
+            DIE "index $ix not supported."
+        fi
+    fi
+
+    cmd="xrandr --output $output --mode $mode"
+
+    echo "Command to execute: $cmd"
+    read -p "Continue (Y/n)? "
+    case "$REPLY" in
+        [yY]* | "") ;;
+        *) return ;;
+    esac
+
+    $cmd
+}
+
+Main "$@"

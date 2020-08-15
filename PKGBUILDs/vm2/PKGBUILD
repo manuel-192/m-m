@@ -1,0 +1,21 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=vm2
+pkgdesc="Easy resolution changer."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash xorg-xrandr)
+
+source=(
+    "$url/$pkgname"
+)
+sha512sums=('9bb17120614211f5c510819b976190e2bb7ac039d169b73271c503c354c75a3010ab48325fefd83a3358898728a3ab5e35994207c6affab10ec1933588ca0945')
+
+package() {
+  cd $srcdir
+  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+}
