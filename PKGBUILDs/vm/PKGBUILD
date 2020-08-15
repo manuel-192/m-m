@@ -13,7 +13,7 @@ depends=(bash virt-manager qemu virt-viewer)
 source=(
     "$url/$pkgname"
 )
-sha512sums=('d401a37085cdc6f3635485b5798d3d1756a4b176e3bfe2d9ec6923750e67e90b1ac64741b54b083ecc763ac7046d21819d4152e93b2828064eb6f8a2595bcac5')
+sha512sums=('06aab99b667177aa54f88882b2b07970df85ac8ee7ed611651e7744fd963fe8ba0b0361bdd0c1d3156c7d88390c685c1659eec0f9a64c9c304390763c77cb0f3')
 
 package() {
   cd $srcdir

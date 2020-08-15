@@ -4,17 +4,17 @@
 
 Main()
 {
-    # packages: virt-manager qemu virt-viewer
-
+    local progname=vm
     local imagedir="$HOME/.local/share/libvirt/images"
     local qemu_conf=/etc/libvirt/qemu.conf
+    local log=/tmp/$progname.log
 
     case "$1" in
         create) VMcreate ;;
-        start) VMstart ;;
+        start)  VMstart ;;
         remove) VMremove ;;
-        info) VMinfo ;;
-        *) VMusage ;;
+        info)   VMinfo ;;
+        *)      VMusage ;;
     esac
 }
 
@@ -23,7 +23,7 @@ VMusage() {
     local group=$(grep $(grep ^$name: /etc/passwd | cut -d ':' -f 4) /etc/group | cut -d ':' -f 1)
 
     cat <<EOF
-Usage: $0 [command]
+Usage: $progname [command]
 Commands:
     create      Creates a new VM.
     start       Starts an inactive VM.
@@ -49,7 +49,7 @@ VMcreate() {
         *) return ;;
     esac
 
-    Cmd virt-install --name $vmname --disk size=$disksize --memory $memsize -c $isofile --os-variant=archlinux 
+    Cmd --quiet virt-install --name $vmname --disk size=$disksize --memory $memsize -c $isofile --os-variant=archlinux
 }
 
 NonExistingVM() {
@@ -63,7 +63,7 @@ NonExistingVM() {
 
 VMstart() {
     local vmname=$(GiveText "Name of the new VM: ")
-    local info="$(virsh list --all | grep -w "$vmname")"
+    local info="$(LANG=C virsh list --all | grep -w "$vmname")"
 
     if [ -z "$info" ] ; then
         NonExistingVM "$vmname"
@@ -71,14 +71,14 @@ VMstart() {
     fi
 
     if [ -n "$(echo "$info" | grep "shut off")" ] ; then
-        Cmd virsh start $vmname
+        Cmd --quiet virsh start $vmname
     fi
-    Cmd virt-viewer $vmname
+    Cmd --quiet virt-viewer $vmname
 }
 
 VMremove() {
     local vmname=$(GiveText "Name of the VM to delete: ")
-    local info="$(virsh list --all | grep -w "$vmname")"
+    local info="$(LANG=C virsh list --all | grep -w "$vmname")"
     local imagefile="$imagedir/$vmname.qcow2"
 
     if [ -z "$info" ] ; then
@@ -140,8 +140,14 @@ GiveFile() { GiveTextCommon file "$1" ; }
 GiveNumber() { GiveTextCommon number "$1" ; }
 
 Cmd() {
-    echo "$@"
-    # "$@"
+    if [ "$1" = "--quiet" ] ; then
+        shift
+        echo "[$progname]-$ $@"
+        "$@" >& /dev/null
+    else
+        echo "[$progname]-$ $@"
+        "$@"
+    fi
 }
 
 Main "$@"
