@@ -1,0 +1,161 @@
+#!/bin/bash
+
+ExistingVMs() {
+    LANG=C virsh list --all | grep -vP "^-|^ Id|^$" | awk '{print $2}'
+}
+
+echo2() { echo "$@" >&2 ; }
+debug() { test 1 -eq 1 && echo2 "$@" ; }
+DIE()   {
+    local msg="$1"
+    echo2 "$PROG_NAME: error: $msg"
+    YadError "$msg" "$PROG_NAME"
+    exit 1
+}
+Cmd() {
+    echo2 "$@"
+    "$@"
+}
+
+VMAlreadyExists() {
+    local vmname="$1"
+    local xx
+    local existing
+    readarray -t existing <<< $(ExistingVMs)
+    for xx in "${existing[@]}" ; do
+        test "$xx" = "$vmname" && return 0
+    done
+    return 1
+}
+
+YadForm() {  # common options for all yad form windows
+    GDK_BACKEND=x11 yad --form --window-icon=virt-manager "$@"
+}
+
+YadError() {
+    local msg="$1"
+    local PROG_NAME="$2"
+    YadForm --title="$PROG_NAME: error" --text="$1" --button=yad-quit --image=error --width=400
+}
+
+Main()
+{
+    export PROG_NAME=vm-gui
+    local configfile="$HOME/.config/$PROG_NAME.conf"
+    local imagedir="$HOME/.local/share/libvirt/images"
+    local icon="" #virt-manager
+    local main=(
+        YadForm --title="Simple VM manager"
+        --text="Select one of the operations below"
+        --image=user-info
+        --width=400
+        --field="Create!$icon!Create a new VM":fbtn       "bash -c Create"
+        --field="Start!$icon!Start an existing VM":fbtn   "bash -c Start"
+        --field="Remove!$icon!Remove an existing VM":fbtn "bash -c Remove"
+        --button=yad-quit
+    )
+
+    "${main[@]}" > /dev/null &
+}
+
+_existingVMs() {   # show VM names as 'quoted' strings
+    local existing
+    readarray -t existing <<< $(ExistingVMs)
+    local exi=""
+    for xx in "${existing[@]}" ; do
+        if [ -z "$exi" ] ; then
+            exi+="'$xx'"
+        else
+            exi+=" '$xx'"
+        fi
+    done
+    echo "$exi"
+}
+
+Create() {
+    local result retval
+    local variant=archlinux
+    local ram=$(LANG=C free --mega | grep ^Mem: | awk '{print $4}')
+    local ramlimit=8192
+    local disksz=15
+    local name="$(mktemp -u "$imagedir"/unnamed.XXX)"   # unique name in $imagedir
+    local exi="$(_existingVMs)"
+    local txt="Give info and select OK to create the new VM."
+    txt+="\n[Existing VMs: $exi]"
+
+    name="$(basename "$name")"
+    ((ram/=2)) ; test $ram -gt $ramlimit && ram=$ramlimit
+
+    local create=(
+        YadForm --image=dialog-question
+            --title="Create a VM"
+            --text="$txt"
+            --field="VM name"               "$name"
+            --field="OS variant"            "$variant"
+            --field="ISO file":FL           "*.iso"
+            --field="Disk size GB":NUM      "$disksz"
+            --field="RAM size MB":NUM       "$ram"
+            --button=yad-cancel:1
+            --button=" Create VM now!face-cool!":0
+    )
+    result="$("${create[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    debug $(echo "result = $result" | tr '|' ' ')
+
+    local vmname="$(    echo "$result" | cut -d '|' -f 1)"
+    local osvariant="$( echo "$result" | cut -d '|' -f 2)"
+    local isofile="$(   echo "$result" | cut -d '|' -f 3)"
+    local disksize="$(  echo "$result" | cut -d '|' -f 4)"
+    local ramsize="$(   echo "$result" | cut -d '|' -f 5)"
+
+    VMAlreadyExists "$vmname" && DIE "VM named '$vmname' already exists."
+    test -r "$isofile" || DIE "ISO file '$isofile' does not exist."
+
+    Cmd virt-install --quiet \
+        --name "$vmname" \
+        --disk size=$disksize --memory $ramsize \
+        -c $isofile --os-variant=$osvariant
+}
+
+Start() {
+    local result retval
+    local info
+    local exicb="$(ExistingVMs | tr '\n' '!' | sed 's|!$||')"
+    local txt="Select the VM to run."
+
+    local start=(
+        YadForm --image=dialog-question
+            --title="Run an existing VM"
+            --text="$txt"
+            --width=400
+            --field="VM name":CB         "$exicb"
+            --button=yad-cancel:1
+            --button=" Run VM now!face-cool!":0
+    )
+    result="$("${start[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    local vmname="$(echo "$result" | cut -d '|' -f 1)"
+    local info="$(LANG=C virsh list --all | grep -w "$vmname")"
+
+    test -n "$info" || DIE "VM named '$vmname' does not exist."
+
+    if [ -n "$(echo "$info" | grep "shut off")" ] ; then
+        Cmd virsh --quiet start "$vmname"
+    fi
+    Cmd virt-viewer "$vmname"
+}
+
+Remove() {
+    DIE "TODO!!!"
+}
+
+export -f Create Start Remove
+export -f echo2 debug DIE Cmd ExistingVMs VMAlreadyExists YadForm YadError _existingVMs
+
+Main "$@"

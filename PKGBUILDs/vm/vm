@@ -4,19 +4,39 @@
 
 Main()
 {
+    local op="$1"
+    local shiftcount=0
+    local yes=false
+
+    Options "$@"
+    shift $shiftcount
+
     local progname=vm
     local imagedir="$HOME/.local/share/libvirt/images"
     local qemu_conf=/etc/libvirt/qemu.conf
     local log=/tmp/$progname.log
 
-    case "$1" in
-        create) VMcreate ;;
-        import) VMimport ;;
-        start)  VMstart ;;
-        remove) VMremove ;;
-        info)   VMinfo ;;
+    case "$op" in
+        create) VMcreate "$@" ;;
+        import) VMimport "$@" ;;
+        start)  VMstart "$@" ;;
+        remove) VMremove "$@" ;;
+        info)   VMinfo "$@" ;;
         *)      VMusage ;;
     esac
+}
+
+Options() {
+    local xx
+
+    ((shiftcount++))    # op
+
+    for xx in "$@" ; do
+        case "$xx" in
+            -[yY]* | --[yY]*) yes=true ; ((shiftcount++)) ;;
+            -*) WNusage ; exit 1 ;;
+        esac
+    done
 }
 
 VMusage() {
@@ -24,7 +44,9 @@ VMusage() {
     local group=$(grep $(grep ^$name: /etc/passwd | cut -d ':' -f 4) /etc/group | cut -d ':' -f 1)
 
     cat <<EOF
-Usage: $progname [command]
+Usage: $progname [options] [command]
+Options:
+    --yes       Automatically answer "yes" to all questions.
 Commands:
     create      Creates a new VM.
     import      Imports a VM from an existing image.
@@ -40,18 +62,31 @@ EOF
 }
 
 VMcreate() {
-    local vmname=$(GiveText "Name of the new VM: ")
-    local isofile=$(GiveFile "ISO file name: ")
-    local disksize=$(GiveNumber "Disk size for the VM [GB]: ")
-    local memsize=$(GiveNumber "Memory size for the VM [MB]: ")
+    local vmname="$1"
+    local isofile="$2"
+    local disksize="$3"
+    local memsize="$4"
 
-    read -p "Create the VM (Y/n) "
-    case "$REPLY" in
-        [yY]* | "") ;;
-        *) return ;;
-    esac
+    test -n "$vmname"   ||  vmname=$(GiveText "Name of the new VM: ")
+    test -n "$isofile"  ||  isofile=$(GiveFile "ISO file name: ")
+    test -n "$disksize" ||  disksize=$(GiveNumber "Disk size for the VM [GB]: ")
+    test -n "$memsize"  ||  memsize=$(GiveNumber "Memory size for the VM [MB]: ")
 
-    Cmd --quiet virt-install --name $vmname --disk size=$disksize --memory $memsize -c $isofile --os-variant=archlinux
+    if [ "$yes" = "false" ] ; then
+        read -p "Create the VM (Y/n) "
+        case "$REPLY" in
+            [yY]* | "") ;;
+            *) return ;;
+        esac
+    fi
+
+    Cmd --quiet \
+        virt-install \
+        --name $vmname \
+        --disk size=$disksize \
+        --memory $memsize \
+        -c $isofile \
+        --os-variant=archlinux
 }
 
 VMimport() {
@@ -77,7 +112,7 @@ NonExistingVM() {
 }
 
 VMstart() {
-    local vmname=$(GiveText "Name of the new VM: ")
+    local vmname=$(GiveText "Name of the VM: ")
     local info="$(LANG=C virsh list --all | grep -w "$vmname")"
 
     if [ -z "$info" ] ; then
@@ -92,7 +127,7 @@ VMstart() {
 }
 
 VMremove() {
-    local vmname=$(GiveText "Name of the VM to delete: ")
+    local vmname="$(GiveText "Name of the VM to delete: ")"
     local info="$(LANG=C virsh list --all | grep -w "$vmname")"
     local imagefile="$imagedir/$vmname.qcow2"
 
@@ -111,12 +146,23 @@ VMremove() {
         *) return ;;
     esac
 
-    Cmd virsh managedsave-remove $vmname
-    Cmd virsh undefine $vmname --remove-all-storage
+    VMIsRunning "$vmname" && Cmd virsh destroy "$vmname" --graceful
+    Cmd virsh managedsave-remove "$vmname"
+    Cmd virsh undefine "$vmname" --remove-all-storage
 }
 
 VMinfo() {
     ls -lh ~/.local/share/libvirt/images
+}
+
+VMIsRunning() {
+    local vmname="$1"
+    local info="$(LANG=C virsh list --all | grep -w "$vmname")"
+    if [ "$(echo "$info" | awk '{print $3}')" = "running" ] ; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 

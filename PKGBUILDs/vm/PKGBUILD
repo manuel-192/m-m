@@ -4,18 +4,23 @@
 pkgname=vm
 pkgdesc="Simple CLI interface to virt-manager & qemu."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.1
+pkgver=1.2
 pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(bash virt-manager qemu virt-viewer)
 
 source=(
-    "$url/$pkgname"
+    "$url/${pkgname}"
+    "$url/${pkgname}-gui"
+    "$url/${pkgname}-gui.desktop"
 )
-sha512sums=('9ffb672a2d40bb06d082deafa8cfb4f538fbf043e6c0b492833c6990fa16b51e39c0f836241d91878a381b59dc2ca8219e5fa1618029e67035d538bbc4d1fef6')
+sha512sums=('da2ec25b93077fd5d3be7fcd61cc6bf6fe566c2c995c5c821eca979a51dda51ddc51a44caed6c1edf9bcfa365890512e8944711e957181c763a46659865f4246'
+            '2ba38555789795371ff1408bb7ab832315f633d75c2f97950624e46534872c588de4d069b23ef40cdaa118e7c9bb4cd0f06ea22efdca633ac0f5cfb492024a1b'
+            '06ef7007a8b2a24338daccb82c2cd0c07b886304a288d474e6f4e459916537142c6ec0e5c244afe3e95f6d90bd9e85c93391e6b91d0e97a13a3b9420c994b245')
 
 package() {
-  cd $srcdir
-  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+  install -Dm755 ${pkgname}              $pkgdir/usr/bin/${pkgname}
+  install -Dm755 ${pkgname}-gui          $pkgdir/usr/bin/${pkgname}-gui
+  install -Dm644 ${pkgname}-gui.desktop  $pkgdir/usr/share/applications/${pkgname}-gui.desktop
 }

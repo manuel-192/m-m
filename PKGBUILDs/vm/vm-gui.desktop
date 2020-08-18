@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=vm-gui
+Comment=A simple GUI for virt-manager, qemu, and virt-viewer
+Exec=vm-gui
+Icon=virt-manager
+Path=
+Terminal=false
+StartupNotify=true
