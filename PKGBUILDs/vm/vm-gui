@@ -29,13 +29,13 @@ VMAlreadyExists() {
 }
 
 YadForm() {  # common options for all yad form windows
-    GDK_BACKEND=x11 yad --form --window-icon=virt-manager "$@"
+    GDK_BACKEND=x11 yad --form --window-icon=virt-manager --width=400 "$@"
 }
 
 YadError() {
     local msg="$1"
     local PROG_NAME="$2"
-    YadForm --title="$PROG_NAME: error" --text="$1" --button=yad-quit --image=error --width=400
+    YadForm --title="$PROG_NAME: error" --text="$1" --button=yad-quit --image=error
 }
 
 Main()
@@ -43,15 +43,27 @@ Main()
     export PROG_NAME=vm-gui
     local configfile="$HOME/.config/$PROG_NAME.conf"
     local imagedir="$HOME/.local/share/libvirt/images"
-    local icon="" #virt-manager
+    local icon=system-run #virt-manager
+    local screensize="$(xrandr --query | grep -A20 " connected " | grep '*' | awk '{print $1}')"
+    local y="" x=""
+    if [ -n "$screensize" ] ; then
+        y=$(echo $screensize | cut -d 'x' -f 2)
+        y=$(((y*50)/70))
+        y="--posy=$y"
+
+        x=$(echo $screensize | cut -d 'x' -f 1)
+        x=$((x/2))
+        x="--posx=$x"
+    fi
     local main=(
         YadForm --title="Simple VM manager"
         --text="Select one of the operations below"
         --image=user-info
-        --width=400
-        --field="Create!$icon!Create a new VM":fbtn       "bash -c Create"
-        --field="Start!$icon!Start an existing VM":fbtn   "bash -c Start"
-        --field="Remove!$icon!Remove an existing VM":fbtn "bash -c Remove"
+        --width=300 --height=150 $x $y
+        --columns=3
+        --field="Create!document-new!Create a new VM":fbtn       "bash -c Create"
+        --field="Start!document-open!Start an existing VM":fbtn   "bash -c Start"
+        --field="Remove!list-remove!Remove an existing VM":fbtn "bash -c Remove"
         --button=yad-quit
     )
 
@@ -96,7 +108,7 @@ Create() {
             --field="Disk size GB":NUM      "$disksz"
             --field="RAM size MB":NUM       "$ram"
             --button=yad-cancel:1
-            --button=" Create VM now!face-cool!":0
+            --button=" Create VM now!document-new!":0
     )
     result="$("${create[@]}")"
     retval=$?
@@ -122,7 +134,6 @@ Create() {
 
 Start() {
     local result retval
-    local info
     local exicb="$(ExistingVMs | tr '\n' '!' | sed 's|!$||')"
     local txt="Select the VM to run."
 
@@ -130,10 +141,9 @@ Start() {
         YadForm --image=dialog-question
             --title="Run an existing VM"
             --text="$txt"
-            --width=400
             --field="VM name":CB         "$exicb"
             --button=yad-cancel:1
-            --button=" Run VM now!face-cool!":0
+            --button=" Run VM now!document-open!":0
     )
     result="$("${start[@]}")"
     retval=$?
@@ -152,7 +162,40 @@ Start() {
 }
 
 Remove() {
-    DIE "TODO!!!"
+    local result retval
+    local info
+    local exicb="$(ExistingVMs | tr '\n' '!' | sed 's|!$||')"
+    local txt="Select the VM to delete."
+
+    local start=(
+        YadForm --image=dialog-question
+            --title="Delete an existing VM"
+            --text="$txt"
+            --field="VM name":CB         "$exicb"
+            --button=yad-cancel:1
+            --button=" Delete VM now!list-remove!":0
+    )
+    result="$("${start[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    local vmname="$(echo "$result" | cut -d '|' -f 1)"
+    local info="$(LANG=C virsh list --all | grep -w "$vmname")"
+
+    test -n "$info" || DIE "VM named '$vmname' does not exist."
+
+    YadForm --title="Are you sure?" --text="Really want to delete '$vmname'?\n"
+    case "$?" in
+        0) ;;
+        *) return ;;
+    esac
+
+    if [ "$(echo "$info" | awk '{print $3}')" = "running" ] ; then
+        Cmd virsh destroy "$vmname" --graceful
+    fi
+    Cmd virsh managedsave-remove "$vmname"
+    Cmd virsh undefine "$vmname" --remove-all-storage
 }
 
 export -f Create Start Remove
