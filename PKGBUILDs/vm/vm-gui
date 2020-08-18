@@ -92,7 +92,7 @@ Create() {
     local disksz=15
     local name="$(mktemp -u "$imagedir"/unnamed.XXX)"   # unique name in $imagedir
     local exi="$(_existingVMs)"
-    local txt="Give info and select OK to create the new VM."
+    local txt="Give the VM settings and then Create the VM."
     txt+="\n[Existing VMs: $exi]"
 
     name="$(basename "$name")"
