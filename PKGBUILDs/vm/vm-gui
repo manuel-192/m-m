@@ -41,8 +41,9 @@ YadError() {
 Main()
 {
     export PROG_NAME=vm-gui
-    local configfile="$HOME/.config/$PROG_NAME.conf"
-    local imagedir="$HOME/.local/share/libvirt/images"
+    export IMAGE_DIR="$HOME/.local/share/libvirt/images"
+    export CONFIG_FILE="$HOME/.config/$PROG_NAME.conf"
+
     local icon=system-run #virt-manager
     local screensize="$(xrandr --query | grep -A20 " connected " | grep '*' | awk '{print $1}')"
     local y="" x=""
@@ -60,8 +61,9 @@ Main()
         --text="Select one of the operations below"
         --image=user-info
         --width=300 --height=150 $x $y
-        --columns=3
+        --columns=2
         --field="Create!document-new!Create a new VM":fbtn       "bash -c Create"
+        --field="Import VDI!document-open!Import an existing VDI file":fbtn   "bash -c ImportVDI"
         --field="Start!document-open!Start an existing VM":fbtn   "bash -c Start"
         --field="Remove!list-remove!Remove an existing VM":fbtn "bash -c Remove"
         --button=yad-quit
@@ -84,15 +86,64 @@ _existingVMs() {   # show VM names as 'quoted' strings
     echo "$exi"
 }
 
+ImportVDI() {
+    local result retval
+    local fmt=qcow2
+    local variant=generic
+    local ram=$(LANG=C free --mega | grep ^Mem: | awk '{print $7}')
+    local ramlimit=8192
+    local name="$(mktemp -u "$IMAGE_DIR"/unnamed.XXX)"   # unique name in $IMAGE_DIR
+    local exi="$(_existingVMs)"
+    local txt="Give VM settings and import the VDI."
+    txt+="\nNote: converting image will take some time, please be patient."
+    txt+="\n[Existing VMs: $exi]"
+
+    name="$(basename "$name")"
+    ((ram/=2)) ; test $ram -gt $ramlimit && ram=$ramlimit
+
+    local import=(
+        YadForm --image=dialog-question
+            --title="Import a VDI"
+            --text="$txt"
+            --field="VM name"               "$name"
+            --field="OS variant"            "$variant"
+            --field="VDI image file":FL     "*.vdi"
+            --field="RAM size MB":NUM       "$ram"
+            --button=yad-cancel:1
+            --button=" Import VDI now!document-open!":0
+    )
+    result="$("${import[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    debug $(echo "result = $result" | tr '|' ' ')
+
+    local vmname="$(    echo "$result" | cut -d '|' -f 1)"
+    local osvariant="$( echo "$result" | cut -d '|' -f 2)"
+    local vdifile="$(   echo "$result" | cut -d '|' -f 3)"
+    local ramsize="$(   echo "$result" | cut -d '|' -f 4)"
+
+    VMAlreadyExists "$vmname" && DIE "VM named '$vmname' already exists."
+    test -r "$vdifile" || DIE "Image file '$vdifile' does not exist."
+
+    # convert VDI to qcow2
+    local image="$IMAGE_DIR/$vmname".$fmt
+
+    echo2 "Converting VDI image, please wait ..."
+    Cmd qemu-img convert -O $fmt "$vdifile" "$image"
+    Cmd virt-install --quiet --import --memory $ramsize --disk "$image" --os-variant "$osvariant" --name "$vmname"
+}
+
 Create() {
     local result retval
-    local variant=archlinux
-    local ram=$(LANG=C free --mega | grep ^Mem: | awk '{print $4}')
+    local variant=generic
+    local ram=$(LANG=C free --mega | grep ^Mem: | awk '{print $7}')
     local ramlimit=8192
     local disksz=15
-    local name="$(mktemp -u "$imagedir"/unnamed.XXX)"   # unique name in $imagedir
+    local name="$(mktemp -u "$IMAGE_DIR"/unnamed.XXX)"   # unique name in $IMAGE_DIR
     local exi="$(_existingVMs)"
-    local txt="Give the VM settings and then Create the VM."
+    local txt="Give VM settings and create the VM."
     txt+="\n[Existing VMs: $exi]"
 
     name="$(basename "$name")"
@@ -129,7 +180,7 @@ Create() {
     Cmd virt-install --quiet \
         --name "$vmname" \
         --disk size=$disksize --memory $ramsize \
-        -c $isofile --os-variant=$osvariant
+        -c "$isofile" --os-variant "$osvariant"
 }
 
 Start() {
@@ -198,7 +249,7 @@ Remove() {
     Cmd virsh undefine "$vmname" --remove-all-storage
 }
 
-export -f Create Start Remove
+export -f Create ImportVDI Start Remove
 export -f echo2 debug DIE Cmd ExistingVMs VMAlreadyExists YadForm YadError _existingVMs
 
 Main "$@"

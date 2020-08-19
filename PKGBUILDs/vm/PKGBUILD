@@ -4,18 +4,18 @@
 pkgname=vm
 pkgdesc="Simple CLI interface to virt-manager & qemu."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.2
-pkgrel=2
+pkgver=1.3
+pkgrel=1
 arch=('any')
 license=('GPL')
-depends=(bash virt-manager qemu virt-viewer)
+depends=(bash virt-install qemu virt-viewer xorg-xrandr yad)
 
 source=(
 #    "$url/${pkgname}"
     "$url/${pkgname}-gui"
     "$url/${pkgname}-gui.desktop"
 )
-sha512sums=('632ff0bdd4208e2097cdd6de7df9c18e36b7dec572bbf934a6ff8cc7e7550bfd7f99ba8f3f97126e41e77bb3fa604b6a1a94659a28d81ceab78203ee9e69ed79'
+sha512sums=('11335b422f86299d0acfb188fd720740972185fcb460ba8fd36cc76b16644523c35d48cedc592aaa9e1e8c115269f0e3f240d5d880d24557e930e81c57899791'
             '06ef7007a8b2a24338daccb82c2cd0c07b886304a288d474e6f4e459916537142c6ec0e5c244afe3e95f6d90bd9e85c93391e6b91d0e97a13a3b9420c994b245')
 
 package() {
