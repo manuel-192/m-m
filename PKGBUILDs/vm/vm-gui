@@ -56,12 +56,15 @@ Main()
         x=$((x/2))
         x="--posx=$x"
     fi
+    local txt="Select one of the operations below.\n\n"
+    txt+="Tips:\n"
+    txt+="- to use copy/paste and share files, install spice-vdagent to the VM\n"
     local main=(
         YadForm --title="Simple VM manager"
-        --text="Select one of the operations below"
+        --text="$txt"
         --image=user-info
-        --width=300 --height=150 $x $y
-        --columns=2
+        --width=500 --height=150 $x $y
+        --columns=4
         --field="Create!document-new!Create a new VM":fbtn       "bash -c Create"
         --field="Import VDI!document-open!Import an existing VDI file":fbtn   "bash -c ImportVDI"
         --field="Start!document-open!Start an existing VM":fbtn   "bash -c Start"
