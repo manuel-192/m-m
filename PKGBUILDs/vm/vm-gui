@@ -6,6 +6,8 @@ ExistingVMs() {
 
 echo2() { echo "$@" >&2 ; }
 debug() { test 1 -eq 1 && echo2 "$@" ; }
+info()  { echo2 "$PROG_NAME: info: $1" ; }
+
 DIE()   {
     local msg="$1"
     echo2 "$PROG_NAME: error: $msg"
@@ -15,6 +17,26 @@ DIE()   {
 Cmd() {
     echo2 "$@"
     "$@"
+}
+
+CommandProgress() {
+    local prompt="$1"
+    shift
+    local tmpfile=$(mktemp)
+    local term=xterm           # xterm, konsole work directly, gnome-terminal with more params, others don't
+    local xx
+
+    echo "#!/bin/bash"          >> $tmpfile
+    echo "echo '$prompt'"       >> $tmpfile
+    for xx in "$@" ; do
+        printf "'%s' " "$xx"    >> $tmpfile
+    done
+    printf "\n"                 >> $tmpfile
+    echo "sleep 1"              >> $tmpfile
+    echo "rm -f $tmpfile"       >> $tmpfile
+
+    chmod +x $tmpfile
+    xterm -e $tmpfile
 }
 
 VMAlreadyExists() {
@@ -40,9 +62,15 @@ YadError() {
 
 Main()
 {
+    #local OLD_IMAGE_DIR="$HOME/.local/share/libvirt/images"
+
     export PROG_NAME=vm-gui
-    export IMAGE_DIR="$HOME/.local/share/libvirt/images"
+    export IMAGE_DIR="$HOME/$(echo "$PROG_NAME" | tr '[:lower:]' '[:upper:]')"
     export CONFIG_FILE="$HOME/.config/$PROG_NAME.conf"
+    test -r "$CONFIG_FILE" && source "$CONFIG_FILE"
+
+    info "VM folder = $IMAGE_DIR"
+    mkdir -p "$IMAGE_DIR"
 
     local icon=system-run #virt-manager
     local screensize="$(xrandr --query | grep -A20 " connected " | grep '*' | awk '{print $1}')"
@@ -134,13 +162,14 @@ ImportVDI() {
     local image="$IMAGE_DIR/$vmname".$fmt
 
     echo2 "Converting VDI image, please wait ..."
-    Cmd qemu-img convert -O $fmt "$vdifile" "$image"
+    CommandProgress "Progress of conversion:" qemu-img convert -O $fmt -p "$vdifile" "$image" 
+    chmod 600 "$image"
     Cmd virt-install --quiet --import --memory $ramsize --disk "$image" --os-variant "$osvariant" --name "$vmname"
-    chmod 600 $image
 }
 
 Create() {
     local result retval
+    local fmt=qcow2
     local variant=generic
     local ram=$(LANG=C free --mega | grep ^Mem: | awk '{print $7}')
     local ramlimit=8192
@@ -177,15 +206,16 @@ Create() {
     local isofile="$(   echo "$result" | cut -d '|' -f 3)"
     local disksize="$(  echo "$result" | cut -d '|' -f 4)"
     local ramsize="$(   echo "$result" | cut -d '|' -f 5)"
+    local image="$IMAGE_DIR/$vmname".$fmt
 
     VMAlreadyExists "$vmname" && DIE "VM named '$vmname' already exists."
     test -r "$isofile" || DIE "ISO file '$isofile' does not exist."
 
     Cmd virt-install --quiet \
         --name "$vmname" \
-        --disk size=$disksize --memory $ramsize \
+        --disk "$image",size=$disksize --memory $ramsize \
         -c "$isofile" --os-variant "$osvariant"
-    chmod 600 $image
+    chmod 600 "$image"
 }
 
 Start() {
@@ -255,6 +285,6 @@ Remove() {
 }
 
 export -f Create ImportVDI Start Remove
-export -f echo2 debug DIE Cmd ExistingVMs VMAlreadyExists YadForm YadError _existingVMs
+export -f echo2 debug DIE Cmd ExistingVMs VMAlreadyExists YadForm YadError _existingVMs CommandProgress
 
 Main "$@"
