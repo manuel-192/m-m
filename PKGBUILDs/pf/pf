@@ -106,9 +106,11 @@ pkgfind()
 
     case "$cmd" in
         search)
-            cmd=($prog -S)
+            #cmd=($prog -S)
+            cmd=($prog -Ss)
             for arg in "$@" ; do
-                cmd+=(-s "$arg")
+                #cmd+=(-s)
+                cmd+=("$arg")
             done
             Cmd "${cmd[@]}"
             ;;
