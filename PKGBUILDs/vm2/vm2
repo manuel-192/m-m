@@ -7,7 +7,7 @@ DIE() {
     exit 1
 }
 
-Main()
+ResolutionChange()
 {
     local mode="$1"
     local query="$(xrandr --query)"
@@ -52,6 +52,20 @@ Main()
     esac
 
     $cmd
+}
+
+LibVirtGuest() {
+    if [ -n "$(lspci | grep "QXL paravirtual graphic card")" ] ; then
+        # libvirt guest
+        local pkgs="spice-vdagent"
+        echo "Installing $pkgs, elevated privileges required."
+        pkexec pacman -S $pkgs
+    fi
+}
+
+Main() {
+    ResolutionChange "$@"
+    LibVirtGuest
 }
 
 Main "$@"

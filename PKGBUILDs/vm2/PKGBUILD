@@ -4,7 +4,7 @@
 pkgname=vm2
 pkgdesc="Easy resolution changer."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
+pkgver=1.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -13,7 +13,7 @@ depends=(bash xorg-xrandr)
 source=(
     "$url/$pkgname"
 )
-sha512sums=('9bb17120614211f5c510819b976190e2bb7ac039d169b73271c503c354c75a3010ab48325fefd83a3358898728a3ab5e35994207c6affab10ec1933588ca0945')
+sha512sums=('ad7a1a1abdef1eb5c11d6aae3cafbca17a95cc0f5b4198466be3146cbc8fa4b4bd40c73d53736885269c77edc012cdd44c979330ecc14685fdcc96930670df56')
 
 package() {
   cd $srcdir
