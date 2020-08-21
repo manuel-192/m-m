@@ -136,6 +136,7 @@ ImportVDI() {
     echo2 "Converting VDI image, please wait ..."
     Cmd qemu-img convert -O $fmt "$vdifile" "$image"
     Cmd virt-install --quiet --import --memory $ramsize --disk "$image" --os-variant "$osvariant" --name "$vmname"
+    chmod 600 $image
 }
 
 Create() {
@@ -184,6 +185,7 @@ Create() {
         --name "$vmname" \
         --disk size=$disksize --memory $ramsize \
         -c "$isofile" --os-variant "$osvariant"
+    chmod 600 $image
 }
 
 Start() {

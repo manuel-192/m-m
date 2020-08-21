@@ -2,9 +2,9 @@
 Version=1.0
 Type=Application
 Name=vm-gui
-Comment=A simple GUI for virt-manager, qemu, and virt-viewer
+Comment=A simple GUI for qemu. libvirt and virt-viewer
 Exec=vm-gui
-Icon=virt-manager
+Icon=virt-viewer
 Path=
 Terminal=false
 StartupNotify=true
