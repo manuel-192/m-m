@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Set reso permanently with a GUI.
+
+echo2()       { echo "$@" >&2 ; }
+DIE()         { echo2 "Error: $1" ;  Usage ; exit 1 ; }
+CurrentReso() { xrandr --query | grep "^[ ][ 0-9x.]*\*" | awk '{print $1}' ; }
+SaveConfig()  { echo "$1" > "$conf" ; }
+
+Cmd() {
+    echo "$@"
+    "$@"
+}
+
+Options() {
+    local arg
+
+    for arg in "$@" ; do
+        case "$arg" in
+            --use-stored | -u)
+                use_stored=yes
+                ;;
+            --help | -h)
+                Usage
+                exit 0
+                ;;
+            -*)
+                DIE "unsupported option '$arg'"
+                ;;
+            *)
+                DIE "unsupported parameter '$arg'"
+                ;;
+        esac
+    done
+}
+
+Usage() {
+    cat <<EOF
+Usage: $progname [options]
+Options:
+   --use-stored | -u   Change to the previously stored resolution. Useful e.g. at login.
+                       Note: you must store the resolution value into file $conf
+                       before this option changes anything.
+   --help | -h         This help.
+EOF
+}
+
+ResolutionChangeGUI()
+{
+    # Collect background data:
+    local progname=vmreso
+    local query="$(xrandr --query)"
+    local output=$(echo "$query" | grep " connected " | head -n 1 | awk '{print $1}')
+    local resos=$(echo "$query" | grep "^ [ ]*[0-9][0-9]*x[0-9][0-9]* " | awk '{print $1}')
+    local conf=$HOME/.config/vmreso.conf
+    local current_reso
+    local stored_reso
+    local xrandr="xrandr --output $output --mode"
+    readarray -t resos <<< $(echo "$resos")
+    current_reso="$(CurrentReso)"
+    test -r "$conf" && stored_reso="$(cat "$conf")"
+
+    # Values that user options may change:
+    local use_stored=no
+
+    # Include all user options:
+    Options "$@"
+
+    # Just revert to the stored resolution (if it exists):
+    if [ "$use_stored" = "yes" ] ; then
+        if [ -n "$stored_reso" ] ; then
+            Cmd $xrandr $stored_reso
+            return
+        fi
+        DIE "no stored resolution, nothing done."
+    fi
+
+    # Create a GUI that shows possible values, then select one:
+
+    # xrandr=emacs       # TESTING !!!
+
+    local reso
+    local mark
+    local txt="<tt>"
+    txt+="Select one of the resolutions below.\n"
+    txt+="  * = current resolution\n"
+    txt+="  @ = stored resolution\n"
+    txt+="  % = current and stored resolution"
+    txt+="</tt>"
+    local cmd=( yad
+                --form
+                --title="Change display resolution"
+                --text="$txt"
+                --width=400
+                --window-icon=/usr/share/endeavouros/EndeavourOS-logo.png
+                --image=display
+                --columns=2
+                --button=yad-cancel:1
+                --button="Make permanent":0
+              )
+    for reso in "${resos[@]}" ; do
+        case "$reso" in
+            $current_reso) test "$reso" = "$stored_reso"  && mark="%" || mark="*" ;;
+            $stored_reso)  test "$reso" = "$current_reso" && mark="%" || mark="@" ;;
+            *) mark=" " ;;
+        esac
+        cmd+=(--field="$reso $mark":fbtn "$xrandr $reso")
+    done
+
+    # Run the GUI and possibly save the resolution:
+    "${cmd[@]}" >/dev/null && SaveConfig "$(CurrentReso)"
+}
+
+Main() {
+    ResolutionChangeGUI "$@"
+}
+
+Main "$@"

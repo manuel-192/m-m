@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=vmreso
+Comment=Change Display Resolution
+Exec=vmreso --use-stored
+Icon=/usr/share/endeavouros/EndeavourOS-icon.png
+Hidden=true
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel
+Categories=System
