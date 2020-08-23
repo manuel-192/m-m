@@ -5,7 +5,7 @@ pkgname=vm2
 pkgdesc="Easy resolution changer."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1.2.1
-pkgrel=1
+pkgrel=2
 arch=('any')
 license=('GPL')
 depends=(bash xorg-xrandr)
@@ -24,4 +24,7 @@ package() {
   install -Dm755 vmreso           $pkgdir/usr/bin/vmreso
   install -Dm644 vmreso.desktop   $pkgdir/etc/xdg/autostart/vmreso.desktop
   install -Dm644 vmreso.desktop   $pkgdir/usr/share/applications/vmreso.desktop
+
+  sed -i $pkgdir/usr/share/applications/vmreso.desktop \
+      -e 's|^Exec=.*$|Exec=vmreso|'
 }
