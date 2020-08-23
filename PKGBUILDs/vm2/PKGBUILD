@@ -15,7 +15,9 @@ source=(
     "$url/vmreso"
     "$url/vmreso.desktop"
 )
-sha512sums=('ad7a1a1abdef1eb5c11d6aae3cafbca17a95cc0f5b4198466be3146cbc8fa4b4bd40c73d53736885269c77edc012cdd44c979330ecc14685fdcc96930670df56')
+sha512sums=('ad7a1a1abdef1eb5c11d6aae3cafbca17a95cc0f5b4198466be3146cbc8fa4b4bd40c73d53736885269c77edc012cdd44c979330ecc14685fdcc96930670df56'
+            '95004dcd28885efe8ad109f8ed4285fdbff6174d7db8193f9dcdff44f7dc83283b45bb8944e3db8c6bfd2ee1a44b5ab78f75b591d0971f36dbec826742a88da9'
+            '17645aa33a719a070e2cbeff82e42e123c9a78422ad1f385df2d4cdb6c85b1e11bb74540aae397977fdb8e55b6fac2ed9375f064208ef1958dff9f61699388c3')
 
 package() {
   install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
