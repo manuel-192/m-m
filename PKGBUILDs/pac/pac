@@ -5,10 +5,7 @@
 
 _pac2()
 {
-    local rooterrorstring="error: you cannot perform this operation unless you are root."
-    local log=$(mktemp)
     local pacman=/usr/bin/pacman
-    local retpacman
     local xx sudo
 
     for xx in su-c_wrapper sudo ; do     # su-c_wrapper from EndeavourOS, the welcome app!
@@ -17,6 +14,16 @@ _pac2()
             break
         fi
     done
+
+    case "$needs_privileges" in
+        no) $pacman "$@" ; return $? ;;
+        yes) $sudo $pacman "$@" ; return $? ;;
+        "") ;;
+    esac
+
+    local rooterrorstring="error: you cannot perform this operation unless you are root."
+    local retpacman
+    local log=$(mktemp)
 
     LANG=C $pacman "$@" >& $log
     retpacman=$?
@@ -67,16 +74,38 @@ _pac1() {
     # workaround for github problems
     local opt=""
     local conf=""
-    local check_github=yes
+    local need_check_github=yes
+    local needs_privileges=no
     local arg
 
     for arg in "$@" ; do
         case "$arg" in
-            -U | -Q* | -R* | -Sc* | -V | -h | --help) check_github=no ; break ;;
+            -Si* | -Sg* | -Sl* | -Ss* | -Dk* | -Fl*)
+                need_check_github=no
+                break
+                ;;
+            -U | -Q* | -R* | -Sc* | -V | -h | --help)
+                need_check_github=no
+                break
+                ;;
         esac
     done
 
-    if [ "$check_github" = "yes" ] ; then
+    if [ -n "$needs_privileges" ] ; then
+        for arg in "$@" ; do
+            case "$arg" in
+                -Si* | -Sg* | -Sl* | -Ss* | -Dk* | -Fl*)
+                    break
+                    ;;
+                -U* | -S* | -R* | -D* | -y* | -u* | --refresh)
+                    needs_privileges=yes
+                    break
+                    ;;
+            esac
+        done
+    fi
+
+    if [ "$need_check_github" = "yes" ] ; then
         _GitHub_is_ok || {
             echo "GitHub has problems, using local db." >&2
             conf="$HOME/pacman.conf.tmp"
