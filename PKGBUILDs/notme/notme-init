@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Initialize the 'notme' systemd service.
+
+Main()
+{
+    local progname=notme
+    local userdir="$HOME/.config/systemd/user"
+    local instdir=/usr/share/endeavouros/scripts
+    local xx
+
+    mkdir -p "$userdir"
+
+    for xx in timer service ; do
+        if [ ! -r "$userdir/$progname.$xx" } ; then
+            cp "$instdir/$progname.$xx" "$userdir"
+        fi
+    done
+
+    systemctl --user enable --now $progname.timer
+    systemctl --user daemon-reload
+}
+
+Main "$@"

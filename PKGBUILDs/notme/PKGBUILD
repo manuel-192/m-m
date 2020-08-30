@@ -14,11 +14,13 @@ depends=(
 
 source=(
     "$url/$pkgname"
+    "$url/$pkgname"-init
     "$url/$pkgname.timer"
     "$url/$pkgname.service"
     "$url/README.md"
 )
 sha512sums=('4584ee33b02d5982da59380545e86953059d60479ba95a000af54e8804904e9e4242da91f8b902f89f7bb3c387fef8e91eb5a59117a07d5cdbbc9bc2e03b0654'
+            '307c82a5e13c4e65f3ae96582f5e2d7adbaa57d69aa675ce69348979b8c2a02a51a6dd26251916c8985790aab29601561fb99271c754d27d284405a463c870ae'
             '4575d7394ed40fbd8e3128ccf1ef138ac6bddc992ad7af276b9f95e24215e4c1db97c17fbf84eef331de2ed100ca943c55e158cd79d432fa4e7da41a0e56a837'
             'ba8ec0cdc8487686df19793b61d2a6689741b380c590236e626681edb1dfa5e092b1caaa3ff1045fcabe4fe9461b848bb262e09bf4ec41abba664e5a5553b442'
             'c5cb25b9b1a2a0d7432c4066d129d9f683d453dca41c4226628caf1b3c8d4e7b6bf9f1e7b5a3fadd98bc7e3d0f7e9bf2498d64a24ebdc91c3a15a250361783b0')
@@ -27,8 +29,9 @@ package() {
     local xx
 
     install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+    install -Dm755 ${pkgname}-init  $pkgdir/usr/bin/${pkgname}-init
 
     for xx in timer service ; do
-        install -Dm644 $pkgname.$xx   $pkgdir/etc/systemd/system/$pkgname.$xx
+        install -Dm644 $pkgname.$xx   $pkgdir/usr/share/endeavouros/scripts/$pkgname.$xx
     done
 }
