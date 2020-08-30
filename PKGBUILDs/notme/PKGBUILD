@@ -8,7 +8,9 @@ pkgver=1
 pkgrel=1
 arch=('any')
 license=('GPL')
-depends=(bash)
+depends=(
+    bash
+)
 
 source=(
     "$url/$pkgname"

@@ -1,64 +1,100 @@
 #!/bin/bash
 
 # Assumptions:
-# - README.md has lines like:
+# - README.md has news lines like:
+#       - datetime newscontents
+#   for example:
 #       - 2020/09/01-16:00 some news [link](https://...)
 
 ShowMsg() {
+    # usage: ShowMsg [--no-yad] "msg" [other-parameters-for-yad]
+
+    local show_yad=yes
+    test "$1" = "--no-yad" && { show_yad=no ; shift ; }
     local msg="$1"
+    shift
+
     echo "$msg" >&2
+
+    if [ "$show_yad" = "yes" ] ; then
+        yad --form --text="$msg" --title="notme message" --button=yad-quit \
+            --width=300 --height=200 \
+            --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png \
+            --image=user-info \
+            "$@"
+    fi
 }
 
+ShowMsgError() { ShowMsg "$@" --image=error ; }
+
 DIE() {
-    ShowMsg "Error: $1"
+    ShowMsgError "$@"
     exit 1
 }
 
 GetEosNews() {
-    curl -s $newsfile | grep "^- 20"
+    local prefix="- "
+    eosnews="$(wget -q -O- --timeout 5 $newsfile)"
+    case "$eosnews" in
+        "") DIE "GetEosNews failed" ;;
+        *) eosnews="$(echo "$eosnews" | grep "^${prefix}20" | sed "s|^$prefix||")"
+    esac
 }
 
 UpdateUserconf() {
-    local newest="$(echo "$eosnews" | head -n 1 | awk '{print $1}')"
+    local newest="$(echo "${eosnewsarr[0]}" | awk '{print $1}')"
+    if [ "${newest::2}" != "20" ] ; then
+        DIE "config file saving corruption!"
+    fi
     echo "$newest" > "$userconf"
 }
 
 ShowUserNews() {
-    xdg-open $newsfile
+    xdg-open ${newsfileshow}
 }
 
 UserHasNews() {
-    local latest_seen
+    local where
+    local lastix=$(( ${#eosnewsarr[@]} - 1))
+    local latest_seen="$(echo "${eosnewsarr[$lastix]}" | awk '{print $1}')"
+    local lastseen_ix=$lastix
+    local ix
 
     if [ -r "$userconf" ] ; then
         latest_seen="$(cat "$userconf")"
+        where=config
     else
-        latest_seen="$(echo "$eosnews" | tail -n 1 | awk '{print $2}')"
+        where=news
     fi
-    if [ -z "$(echo "$eosnews" | grep "^$latest_seen")" ] ; then
-        mv -f "$userconf" "$userconf".bak
-        UpdateUserConf
-        DIE "News file corruption! Resetting config file."
+    if [ "${latest_seen::2}" != "20" ] ; then
+        test -r "$userconf" && mv -f "$userconf" "$userconf".bak
+        echo "$latest_seen" > "$userconf"
+        DIE "$where file reading corruption! Resetting config file."
     fi
-    if [ -n "$(echo "$eosnews" | grep -B1 "^$latest_seen" | grep -v "^$latest_seen")" ] ; then
-        return 0
-    else
+    if [ "$(echo "${eosnewsarr[0]}" | awk '{print $1}')" = "$latest_seen" ] ; then
         return 1
+    else
+        return 0
     fi
 }
 
 Main()
 {
     local userconf="$HOME/.config/notme-latest-seen.conf"
-    local newsfile=https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/notme/README.md
-    local eosnews="$(GetEosNews)"
-    test $? -eq 0 || DIE "GetEosNews failed"
+    local newsfile=https://raw.githubusercontent.com/manuel-192/m-m/master/PKGBUILDs/notme/README.md
+    local newsfileshow=https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/notme/README.md
+    local eosnewsarr
+    local eosnews
+    
+    GetEosNews
+
+    readarray -t eosnewsarr <<< $(echo "$eosnews")
 
     UserHasNews && {
         ShowUserNews
         UpdateUserconf
     } || {
-        ShowMsg "No news."
+        ShowMsg --no-yad "No news."
     }
 }
 
