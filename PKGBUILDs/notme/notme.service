@@ -1,0 +1,9 @@
+[Unit]
+Description=EndeavourOS news notification service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/notme
+
+[Install]
+WantedBy=notme.timer

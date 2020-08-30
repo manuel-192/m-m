@@ -1,10 +1,6 @@
 #!/bin/bash
 
-# Assumptions:
-# - README.md has news lines like:
-#       - datetime newscontents
-#   for example:
-#       - 2020/09/01-16:00 some news [link](https://...)
+# EndeavourOS news
 
 ShowMsg() {
     # usage: ShowMsg [--no-yad] "msg" [other-parameters-for-yad]
@@ -17,7 +13,8 @@ ShowMsg() {
     echo "$msg" >&2
 
     if [ "$show_yad" = "yes" ] ; then
-        yad --form --text="$msg" --title="notme message" --button=yad-quit \
+        GDK_BACKEND=x11 \
+        yad --form --text="$msg" --title="${progname} message" --button=yad-quit \
             --width=300 --height=200 \
             --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png \
             --image=user-info \
@@ -32,32 +29,34 @@ DIE() {
     exit 1
 }
 
+ShowUserNews() { xdg-open $newsfileshow ; }
+
 GetEosNews() {
-    #local prefix="- "
-    local fmt="20[0-9][0-9]/[0-1][0-9]/[0-3][0-9]-[0-2[0-9]:[0-5][0-9][ ]*"  # works for only this century...
+    local template="20[0-9][0-9]/[0-1][0-9]/[0-3][0-9]-[0-2][0-9]:[0-5][0-9][ ]*"  # works for only this century...
     eosnews="$(wget -q -O- --timeout 5 $newsfile)"
     case "$eosnews" in
-        "") DIE "GetEosNews failed" ;;
-        *) eosnews="$(echo "$eosnews" | grep "^$fmt")"
+        "") DIE "$FUNCNAME failed" ;;
+        *)
+            eosnews="$(echo "$eosnews" | grep "^$template" | sed 's/|//')"
+            readarray -t eosnewsarr <<< $(echo "$eosnews")
+            ;;
     esac
 }
 
 UpdateUserconf() {
-    local newest="$(echo "${eosnewsarr[0]}" | awk '{print $1}')"
+    local newest="$(GetNewsDate 0)"
     if [ "${newest::2}" != "20" ] ; then
-        DIE "config file saving corruption!"
+        DIE "$FUNCNAME: config file saving corruption!"
     fi
     echo "$newest" > "$userconf"
 }
 
-ShowUserNews() {
-    xdg-open ${newsfileshow}
-}
+GetNewsDate() { local ix="$1" ; echo "${eosnewsarr[$ix]}" | awk '{print $1}' ; }
 
 UserHasNews() {
     local where
     local lastix=$(( ${#eosnewsarr[@]} - 1))
-    local latest_seen="$(echo "${eosnewsarr[$lastix]}" | awk '{print $1}')"
+    local latest_seen="$(GetNewsDate $lastix)"
     local lastseen_ix=$lastix
     local ix
 
@@ -70,9 +69,9 @@ UserHasNews() {
     if [ "${latest_seen::2}" != "20" ] ; then
         test -r "$userconf" && mv -f "$userconf" "$userconf".bak
         echo "$latest_seen" > "$userconf"
-        DIE "$where file reading corruption! Resetting config file."
+        DIE "$FUNCNAME: $where file reading corruption! Resetting config file."
     fi
-    if [ "$(echo "${eosnewsarr[0]}" | awk '{print $1}')" = "$latest_seen" ] ; then
+    if [ "$(GetNewsDate 0)" = "$latest_seen" ] ; then
         return 1
     else
         return 0
@@ -81,15 +80,14 @@ UserHasNews() {
 
 Main()
 {
-    local userconf="$HOME/.config/notme-latest-seen.conf"
-    local newsfile=https://raw.githubusercontent.com/manuel-192/m-m/master/PKGBUILDs/notme/README.md
-    local newsfileshow=https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/notme/README.md
+    local progname=notme
+    local userconf="$HOME/.config/${progname}-latest-seen.conf"
+    local newsfile=https://raw.githubusercontent.com/manuel-192/m-m/master/PKGBUILDs/${progname}/README.md
+    local newsfileshow=https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/${progname}/README.md
     local eosnewsarr
     local eosnews
     
     GetEosNews
-
-    readarray -t eosnewsarr <<< $(echo "$eosnews")
 
     UserHasNews && {
         ShowUserNews
