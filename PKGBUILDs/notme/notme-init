@@ -12,7 +12,7 @@ Main()
     mkdir -p "$userdir"
 
     for xx in timer service ; do
-        if [ ! -r "$userdir/$progname.$xx" } ; then
+        if [ ! -r "$userdir/$progname.$xx" ] ; then
             cp "$instdir/$progname.$xx" "$userdir"
         fi
     done
