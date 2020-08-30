@@ -33,11 +33,12 @@ DIE() {
 }
 
 GetEosNews() {
-    local prefix="- "
+    #local prefix="- "
+    local fmt="20[0-9][0-9]/[0-1][0-9]/[0-3][0-9]-[0-2[0-9]:[0-5][0-9][ ]*"  # works for only this century...
     eosnews="$(wget -q -O- --timeout 5 $newsfile)"
     case "$eosnews" in
         "") DIE "GetEosNews failed" ;;
-        *) eosnews="$(echo "$eosnews" | grep "^${prefix}20" | sed "s|^$prefix||")"
+        *) eosnews="$(echo "$eosnews" | grep "^$fmt")"
     esac
 }
 
