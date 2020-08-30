@@ -1,0 +1,32 @@
+#!/bin/bash
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=notme
+pkgdesc="EndeavourOS news notification tool."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+
+source=(
+    "$url/$pkgname"
+    "$url/$pkgname.timer"
+    "$url/$pkgname.service"
+    "$url/README.md"
+)
+sha512sums=('2a21581db7f894a4a93eb965966981f89ad326bfb6abff8c8aeb3aa3df98af4f29d4e80a3bb9d66b03d25b658efc09aff686831b6407028641fea89f853277ce'
+            'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e'
+            'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e'
+            'bb6e6ce39281f9d3ec00ec50ad4399aa5cc51b00e4c0648d266336747f628107dfad7ee500aed286b845cb71d484c12c43b704a797e3bdd70e9abea8bfb22548')
+
+package() {
+    local xx
+
+    install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+
+    for xx in timer service ; do
+        install -Dm644 $pkgname.$xx   $pkgdir/etc/systemd/system/$pkgname.$xx
+    done
+}

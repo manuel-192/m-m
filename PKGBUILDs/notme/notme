@@ -1,0 +1,62 @@
+#!/bin/bash
+
+ShowMsg() {
+    local msg="$1"
+    echo "$msg" >&2
+}
+
+DIE() {
+    ShowMsg "Error: $1"
+    exit 1
+}
+
+GetEosNews() {
+    # curl -s $newsfile | grep "^20"
+    cat README.md | grep "^20"
+}
+
+UpdateUserconf() {
+    local newest="$(echo "$eosnews" | head -n 1 | awk '{print $1}')"
+    echo "$newest" > "$userconf"
+}
+
+ShowUserNews() {
+    xdg-open $newsfile
+}
+
+UserHasNews() {
+    local latest_seen
+
+    if [ -r "$userconf" ] ; then
+        latest_seen="$(cat "$userconf")"
+    else
+        latest_seen="$(echo "$eosnews" | tail -n 1 | awk '{print $1}')"
+    fi
+    if [ -z "$(echo "$eosnews" | grep "^$latest_seen")" ] ; then
+        mv -f "$userconf" "$userconf".bak
+        rm -f "$userconf"
+        DIE "News file corruption! Resetting config file."
+    fi
+    if [ -n "$(echo "$eosnews" | grep -B1 "^$latest_seen" | grep -v "^$latest_seen")" ] ; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+Main()
+{
+    local userconf="$HOME/.config/notme-latest-seen.conf"
+    local newsfile=https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/notme/README.md
+    local eosnews="$(GetEosNews)"
+    test $? -eq 0 || DIE "GetEosNews failed"
+
+    UserHasNews && {
+        ShowUserNews
+        UpdateUserconf
+    } || {
+        ShowMsg "No news."
+    }
+}
+
+Main "$@"
