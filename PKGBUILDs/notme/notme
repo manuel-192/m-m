@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Assumptions:
+# - README.md has lines like:
+#       - 2020/09/01-16:00 some news [link](https://...)
+
 ShowMsg() {
     local msg="$1"
     echo "$msg" >&2
@@ -11,8 +15,7 @@ DIE() {
 }
 
 GetEosNews() {
-    # curl -s $newsfile | grep "^20"
-    cat README.md | grep "^20"
+    curl -s $newsfile | grep "^- 20"
 }
 
 UpdateUserconf() {
@@ -30,11 +33,11 @@ UserHasNews() {
     if [ -r "$userconf" ] ; then
         latest_seen="$(cat "$userconf")"
     else
-        latest_seen="$(echo "$eosnews" | tail -n 1 | awk '{print $1}')"
+        latest_seen="$(echo "$eosnews" | tail -n 1 | awk '{print $2}')"
     fi
     if [ -z "$(echo "$eosnews" | grep "^$latest_seen")" ] ; then
         mv -f "$userconf" "$userconf".bak
-        rm -f "$userconf"
+        UpdateUserConf
         DIE "News file corruption! Resetting config file."
     fi
     if [ -n "$(echo "$eosnews" | grep -B1 "^$latest_seen" | grep -v "^$latest_seen")" ] ; then
