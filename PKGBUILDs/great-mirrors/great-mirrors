@@ -3,14 +3,16 @@
 echo2() { echo "$@" >&2 ; }
 
 DIE() {
-    echo2 "Error: $1"
+    local msg="$1"
+
+    echo2 "Error: $msg"
+
     if [ -n "$2" ] ; then
+        # run a command after the message
         shift
         "$@"
-        #test -n "$2" && $2
     fi
-    Usage
-    exit 1
+    Usage 1
 }
 
 REFLECTOR_COUNTRIES="$(echo "Worldwide WW 0" ; reflector --list-countries)"
@@ -104,8 +106,9 @@ GetLatestMirrorlist() {
 
 Options() {
     local arg
-    local sortbase1="$sortbase" savefile1="$savefile" save1="$save" bundle1="$bundle"
     local country
+    # Use temporary variables because the Usage function shows defaults.
+    local sortbase1="$sortbase" savefile1="$savefile" save1="$save" bundle1="$bundle"
 
     for arg in "$@" ; do
         cmdline+=" '$arg'"
@@ -113,12 +116,12 @@ Options() {
             --speed | -s) sortbase1=speed ;;
             --age   | -a) sortbase1=age ;;
             --one   | -1) bundle1=yes ;;
-            --help  | -h) Usage ; exit 0 ;;
-            --save) save1=yes ;;
-            -ls) savefile1=lastsync ;;
-            -lu) savefile1=lastupdate ;;
+            --help  | -h) Usage 0 ;;
+            --save)       save1=yes ;;
+            -ls)          savefile1=lastsync ;;
+            -lu)          savefile1=lastupdate ;;
             --show-codes) ShowCountryCodes full ; exit 0 ;;
-            -*) DIE "unsupported option '$arg'" ;;
+            -*)           DIE "unsupported option '$arg'" ;;
             *)
                 case "$arg" in
                     [A-Z][A-Z])
@@ -142,29 +145,37 @@ Options() {
     savefile="$savefile1"
 }
 
-Default() {
-    test "$1" = "$2" && echo "(default)"
-}
-
 Usage() {
+    local def="yes    "
+    local emp="no     "
+    local aaa="Default"   # dummy to get the measure for the strings above
+
     cat <<EOF >&2
-Usage: $0 [options] country-specs
+Usage: $progname [options] country-specs
 Options:
-    --help   | -h      This help
-    --speed  | -s      Sort output by speed               $(Default $sortbase speed)
-    --age    | -a      Sort output by time of last sync   $(Default $sortbase age)
-    --one    | -1      List all mirrors in one list       $(Default $bundle yes)
-    --save             Save file to \$HOME/mirrorlist     $(Default $save yes)
-    --ls               Age: use lastsync file             $(Default $savefile lastsync)
-    --lu               Age: use lastupdate file           $(Default $savefile lastupdate)
-    --show-codes       Show available country names and country codes
-Option defaults are shown above.
+    Long         Short  Active? Description
+    ====         =====  ======= ===========
+    --speed      -s     $(Default $sortbase speed) Sort output by speed
+    --age        -a     $(Default $sortbase age) Sort output by the time of latest updates
+    --one        -1     $(Default $bundle yes) List all mirrors in one list
+    --save              $(Default $save yes) Save file to \$HOME/mirrorlist
+    --lu                $(Default $savefile lastupdate) Age: use lastupdate file
+    --ls                $(Default $savefile lastsync) Age: use lastsync file
+    --show-codes                Show available country names and country codes
+    --help       -h             This help
 
 Country-specs is a space separated list of country names or country codes.
-Use quotes with names that contain spaces.
+Use quotes with a name that contains spaces (e.g. "United Kingdom").
+
+Examples:
+    $progname --show-codes
+    $progname FR DE "United Kingdom"
 
 EOF
+    test -n "$1" && exit "$1"
 }
+
+Default() { test "$1" = "$2" && printf "$def" || printf "$emp" ; }
 
 OneCountry() {
     # echo2 "$country:"
@@ -178,6 +189,10 @@ OneCountry() {
         # "Store" the mirror info to this line! Fields are:
         #     mirror-url age fetchtime
         synctime="$(cat $savefile)"
+        if [ $synctime -gt $now ] ; then
+            echo2 "    Info: $mirror clock seems ahead of time by $((synctime - now)) seconds. Resetting the difference."
+            synctime=now                  # mirror's clock is ahead of time !?
+        fi
         if [ -n "$synctime" ] ; then
             echo "$mirror/\$repo/os/\$arch $((now - synctime)) $time $country"  # country should be the last because of 'column' below!
         else
@@ -229,8 +244,8 @@ Main()
         speed)  sf1=3 ; sf2=2 ;;
         *) DIE "unsupported sort base '$sortbase'" ;;
     esac
-    if [ "$savefile" = lastsync ] ; then
-        ((now+=200))                          # trick to mitigate problem of negative time diffs
+    if [ "$savefile" = "lastsync" ] ; then
+        # ((now+=200))                          # trick to mitigate problem of negative time diffs
         agehdr=Lastsync
     fi
 
