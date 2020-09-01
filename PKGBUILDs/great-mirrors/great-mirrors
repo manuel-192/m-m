@@ -202,6 +202,19 @@ OneCountry() {
     done
 }
 
+ReadConfig() {
+    local ix xx
+    source $conffile
+    if [ -n "${use_countries[$local_country_code]}" ] ; then
+        # limit to less than 100 countries!
+        for ((ix=1; ix<100; ix++)) ; do
+            xx="$(echo "${use_countries[$local_country_code]}" | cut -d '|' -f $ix)"
+            test -n "$xx" || break
+            countries+=("$xx")
+        done
+    fi
+}
+
 Main()
 {
     # local mirrorlist=/etc/pacman.d/mirrorlist.pacnew   # or get the latest at Arch
@@ -218,17 +231,17 @@ Main()
     local countries=()
     local bundle=no
     local agehdr=Age
-    local conffile=/etc/$progname.conf   # list of countries to use, one country name per line
+    local conffile=/etc/mirror-countries.conf   # list of countries to use in a particular country
     local targetfile=$HOME/mirrorlist    #-$(date +%Y%m%d-%H%M)
     local tmpfile1=$(mktemp)
     local tmpfile=$(mktemp)
     local cmdline="$progname"
+    local local_country_code="$(GetYourCountryCode)"
 
-    if [ -r $conffile ] ; then
-        readarray -t countries <<< $(cat $conffile)
-    else
-        local local_country_code="$(GetYourCountryCode)"
-        if [ -n "$local_country_code" ] ; then
+    if [ -n "$local_country_code" ] ; then
+        test -r $conffile && ReadConfig            # may not find anything here...
+        if [ -z "$countries" ] ; then
+            # make sure your country is included (provided it is supported by the Arch mirroring system)
             local local_country="$(CodeToCountry $local_country_code)"
             countries=("$local_country")
         fi

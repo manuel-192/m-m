@@ -4,18 +4,20 @@
 pkgname=great-mirrors
 pkgdesc="Choose great upstream mirrors into /etc/pacman.d/mirrorlist"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.1
+pkgver=1.2
 pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(bash)
 
 source=(
-    "$url/$pkgname"
+    "$url"/$pkgname
+    "$url"/mirror-countries.conf
 )
-sha512sums=('378cffd0a2222b19f1b31f04543931aa5860bfd912b1067006aed197fb43e44e2f06223fc7841bc3faeb3effd52b10a2933fd1e19b2473fe3c344f351823323c')
+sha512sums=('8ea45c18f1ccc4cd926d8a9ab60122bc999ba27aaef9dc16665b287c175202ed4ad8e47a26695daa97a447b0027b30a30be68bf4f3d0dd30f86e2239270725fe'
+            '1bcd82c4af7256cc0a2a4b226730fa9849220e44c133da696d6a626ee70d89dd71b009d3cc4f27488d5523ea926d7f666c8d312c3a76c08a64c018d330d698ab')
 
 package() {
-  cd $srcdir
-  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+  install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
+  install -Dm644 mirror-countries.conf  $pkgdir/etc/mirror-countries.conf
 }
