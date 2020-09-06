@@ -182,7 +182,16 @@ Default() { test "$1" = "$2" && printf "$def" || printf "$emp" ; }
 OneCountry() {
     # echo2 "$country:"
     local synctime
+    local excluded
+    local mirrorpart
+
     for mirror in $mirrors_of_country ; do
+        excluded=no
+        for mirrorpart in "${excluded_mirrors[@]}" ; do
+            [[ $mirror =~ $mirrorpart ]] && { excluded=yes ; break ; }
+        done
+        test "$excluded" = "yes" && continue
+
         time="$(GetTime $mirror/$savefile $savefile)"
         case "$time" in
             timeout|unreachable) echo2 "    Warning: $mirror: $time" ; continue ;;
@@ -215,6 +224,14 @@ ReadConfig() {
             countries+=("$xx")
         done
     fi
+    if [ -n "${exclude_mirrors[$local_country_code]}" ] ; then
+        # limit to less than 200 mirrors!
+        for ((ix=1; ix<200; ix++)) ; do
+            xx="$(echo "${exclude_mirrors[$local_country_code]}" | cut -d '|' -f $ix)"
+            test -n "$xx" || break
+            excluded_mirrors+=("$xx")
+        done
+    fi
 }
 
 Main()
@@ -231,6 +248,7 @@ Main()
     local mirror
     local country mirrors_of_country unsorted
     local countries=()
+    local excluded_mirrors=()
     local bundle=no
     local agehdr=Age
     local conffile=/etc/mirror-countries.conf   # list of countries to use in a particular country
