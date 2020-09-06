@@ -159,7 +159,6 @@ Main()
         ReplaceAssets
         MirrorStateUpdate
         GitUpdate
-        break
     else
         echo2 "No changes."
     fi
