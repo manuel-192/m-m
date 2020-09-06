@@ -151,23 +151,15 @@ Main()
     CheckDiff
 
     if [ $diffval -ne 0 ] ; then
-        while true ; do
-            echo2 ""
-            read2 -p "Changes detected. Replace local assets (y/n)? "
-            case "$REPLY" in
-                [yY]*)
-                    cd "$gitdir"
-                    RunOnlyIfAllowed "git pull"
-                    ReplaceAssets
-                    MirrorStateUpdate
-                    GitUpdate
-                    break
-                    ;;
-                [nN]*)
-                    break
-                    ;;
-            esac
-        done
+        echo2 ""
+        echo "Changes detected. Will replace local assets after 'git pull', then sync all to github."
+
+        cd "$gitdir"
+        RunOnlyIfAllowed "git pull"
+        ReplaceAssets
+        MirrorStateUpdate
+        GitUpdate
+        break
     else
         echo2 "No changes."
     fi
