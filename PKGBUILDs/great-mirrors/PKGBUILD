@@ -4,11 +4,12 @@
 pkgname=great-mirrors
 pkgdesc="Choose great upstream mirrors into /etc/pacman.d/mirrorlist"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.2.2
+pkgver=1.2.3
 pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(bash)
+backup=(etc/mirror-countries.conf)
 
 source=(
     "$url"/$pkgname
