@@ -104,7 +104,7 @@ ResolutionChangeGUI()
             $stored_reso)  test "$reso" = "$current_reso" && mark="%" || mark="@" ;;
             *) mark=" " ;;
         esac
-        cmd+=(--field="$reso $mark":fbtn "$xrandr $reso")
+        cmd+=(--field="$mark $reso":fbtn "$xrandr $reso")
     done
 
     # Run the GUI and possibly save the resolution:
