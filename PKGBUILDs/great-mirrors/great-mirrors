@@ -118,9 +118,10 @@ Options() {
             --one   | -1)  bundle1=yes ;;
             --help  | -h)  Usage 0 ;;
             --save)        save1=yes ;;
-            --ls    | -ls) savefile1=lastsync ;;
-            --lu    | -lu) savefile1=lastupdate ;;
+            --ls)          savefile1=lastsync ;;
+            --lu)          savefile1=lastupdate ;;
             --show-codes)  ShowCountryCodes full ; exit 0 ;;
+            --show-config) less $conffile ; exit 0 ;;
             -*)            DIE "unsupported option '$arg'" ;;
             *)
                 case "$arg" in
@@ -153,16 +154,17 @@ Usage() {
     cat <<EOF >&2
 Usage: $progname [options] country-specs
 Options:
-    Long         Short  Active? Description
-    ====         =====  ======= ===========
-    --speed      -s     $(Default $sortbase speed) Sort output by speed
-    --age        -a     $(Default $sortbase age) Sort output by the time of latest updates
-    --one        -1     $(Default $bundle yes) List all mirrors in one list
-    --save              $(Default $save yes) Save file to \$HOME/mirrorlist
-    --lu         -ls    $(Default $savefile lastupdate) Age: use lastupdate file
-    --ls         -lu    $(Default $savefile lastsync) Age: use lastsync file
-    --show-codes                Show available country names and country codes
-    --help       -h             This help
+    Long           Short  Active? Description
+    ====           =====  ======= ===========
+    --speed        -s     $(Default $sortbase speed) Sort output by speed
+    --age          -a     $(Default $sortbase age) Sort output by the time of latest updates
+    --one          -1     $(Default $bundle yes) List all mirrors in one list
+    --save                $(Default $save yes) Save file to \$HOME/mirrorlist
+    --lu                  $(Default $savefile lastupdate) Age: use lastupdate file
+    --ls                  $(Default $savefile lastsync) Age: use lastsync file
+    --show-codes                  Show available country names and country codes
+    --show-config                 Show the configuration file $conffile
+    --help         -h             This help
 
 Country-specs is a space separated list of country names or country codes.
 Use quotes with a name that contains spaces (e.g. "United Kingdom").
