@@ -113,15 +113,15 @@ Options() {
     for arg in "$@" ; do
         cmdline+=" '$arg'"
         case "$arg" in
-            --speed | -s) sortbase1=speed ;;
-            --age   | -a) sortbase1=age ;;
-            --one   | -1) bundle1=yes ;;
-            --help  | -h) Usage 0 ;;
-            --save)       save1=yes ;;
-            -ls)          savefile1=lastsync ;;
-            -lu)          savefile1=lastupdate ;;
-            --show-codes) ShowCountryCodes full ; exit 0 ;;
-            -*)           DIE "unsupported option '$arg'" ;;
+            --speed | -s)  sortbase1=speed ;;
+            --age   | -a)  sortbase1=age ;;
+            --one   | -1)  bundle1=yes ;;
+            --help  | -h)  Usage 0 ;;
+            --save)        save1=yes ;;
+            --ls    | -ls) savefile1=lastsync ;;
+            --lu    | -lu) savefile1=lastupdate ;;
+            --show-codes)  ShowCountryCodes full ; exit 0 ;;
+            -*)            DIE "unsupported option '$arg'" ;;
             *)
                 case "$arg" in
                     [A-Z][A-Z])
@@ -159,8 +159,8 @@ Options:
     --age        -a     $(Default $sortbase age) Sort output by the time of latest updates
     --one        -1     $(Default $bundle yes) List all mirrors in one list
     --save              $(Default $save yes) Save file to \$HOME/mirrorlist
-    --lu                $(Default $savefile lastupdate) Age: use lastupdate file
-    --ls                $(Default $savefile lastsync) Age: use lastsync file
+    --lu         -ls    $(Default $savefile lastupdate) Age: use lastupdate file
+    --ls         -lu    $(Default $savefile lastsync) Age: use lastsync file
     --show-codes                Show available country names and country codes
     --help       -h             This help
 
