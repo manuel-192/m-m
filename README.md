@@ -22,7 +22,7 @@ customcfg | Creates a new file /boot/grub/custom.cfg containing boot menu entrie
 eat | An easy to use pastebin helper.<br>"Eat" file contents or command outputs and send them to pastebin.
 hwinfo-completion | Bash completion for the `hwinfo` command (experimental).
 mirrorlist-m | a mirrorlist package for all Manuel's repositories here
-ncd | cd combined with $CDPATH and more 
+ncd | cd + $CDPATH combined and more 
 pac | Pacman wrapper. Knows when sudo is needed, and supports bash command completion.
 paccache-service-manager | (See EndeavourOS) Manages the systemd service that limits the number of packages in the package cache. | GUI
 pkexec2 | Wrapper for pkexec, retaining the current working directory instead of changing it to /root.
