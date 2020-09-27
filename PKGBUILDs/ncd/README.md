@@ -13,7 +13,7 @@ $HOME/.config/ncd/excludes
 ```
 to better define which directories to use or *not* to use.
 
-Note: `ncd` does not support cd option -L nor -P.
+Note: `ncd` does not support cd options -L nor -P.
 
 ## Install
 Install ncd in the normal Arch way:
