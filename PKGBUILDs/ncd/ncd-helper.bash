@@ -59,6 +59,9 @@ NcdCandidates() {
     local treedata=""
     local paths=()
     local xx ix
+    local findopt=""
+
+    [ "$follow_symlinks" = "yes" ] && findopt="-L"
 
     [ -d "$ncddir" ] || mkdir -p "$ncddir"
 
@@ -83,7 +86,7 @@ NcdCandidates() {
 
     # search predefined
     for xx in "${paths[@]}" ; do
-        treedata+="$(/usr/bin/find "$xx" -type d)"
+        treedata+="$(/usr/bin/find $findopt "$xx" -type d)"
     done
 
     if [ -r "$excludes" ] ; then
@@ -105,19 +108,34 @@ NcdCandidates() {
     fi
 }
 
+NcdOptions() {
+    local conf=$HOME/.config/ncd/ncd.conf
+    local NCD_PATHS_OPTS
+    local NCD_EXCLUDES_OPTS
+    local xx
+
+    source $conf || return 1
+
+    for xx in "${NCD_PATHS_OPTS[@]}" ; do
+        case "$xx" in
+            -L) follow_symlinks=yes ;;
+            *)  echo "Error: unsupported parameter '$xx' in NCD_PATHS_OPTS." >&2 ; exit 1 ;;
+        esac
+    done
+
+    for xx in "${NCD_EXCLUDES_OPTS[@]}" ; do
+        case "$xx" in
+            *)  echo "Error: unsupported parameter '$xx' in NCD_EXCLUDES_OPTS." >&2 ; exit 1 ;;
+        esac
+    done
+}
+
 ncd() {
     local arg="$1"
+    local follow_symlinks=no                # safer default not to follow symlinks
 
-    #######################################
-    # excludes:
-    #   - a definition per line
-    #   - grep syntax !?
-    #   - basic definitions usually have leading and trailing /
-    #   - trailing / can also be trailing $
-    # paths:
-    #   - a definition per line
-    #   - 'find' syntax for the starting folder
-    #######################################
+    NcdOptions
+
     local xx yy=() zz
 
     # simple cases: use cd

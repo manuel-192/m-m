@@ -44,6 +44,16 @@ The two configuration files (mentioned above) contain full or partial path detin
 They are used for excluding (full) paths that contain these strings.<br>
 Note: these paths can contain `grep` expression syntax (see the trailing '$' above).
 
+### ~/.config/ncd/ncd.conf example
+```
+NCD_PATHS_OPTS=(-L)
+NCD_EXCLUDES_OPTS=()
+```
+This configuration file sets properties for the ncd function.<br>
+The -L option means ncd will follow symbolic links when searching for paths. Note that following symbolic links may cause endless loops, so be careful with this option if you have symbolic links in the search paths.
+That's why it is not enabled by default.
+<br>
+Currently the only supported option is -L for NCD_PATHS_OPTS, and nothing for NCD_EXCLUDES_OPTS.
 ## Full example
 Assuming the following paths in ~/.config/ncd/paths:
 ```
