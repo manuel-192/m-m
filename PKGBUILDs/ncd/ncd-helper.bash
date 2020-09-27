@@ -1,15 +1,15 @@
 #!/bin/bash
 
 ###############################################################################
-# ncd - simple command line app like Norton CD in the 80's.
+# ncd - simple command line app combining cd with $CDPATH and more.
 #
-# Requires two configuration files:
+# Uses two configuration files:
 #   ~/.config/ncd/paths
 #   ~/.config/ncd/excludes
 #
 # Example config files (one path per line)
 #
-#   ~/.config/ncd/paths:  (note the trailing '/')
+#   ~/.config/ncd/paths:
 #      ~/Documents/
 #      ~/MyData/
 #
@@ -57,15 +57,27 @@ NcdCandidates() {
     local pathsconf=$ncddir/paths             # must have trailing /
     local excludes=$ncddir/excludes           # must have trailing / or $
     local treedata=""
-    local paths
-    local xx
+    local paths=()
+    local xx ix
 
-    [ -d "$ncddir" ]  || mkdir -p "$ncddir"
-    [ -r $pathsconf ] || touch $pathsconf
-    [ -r $excludes ]  || touch $excludes
+    [ -d "$ncddir" ] || mkdir -p "$ncddir"
 
     # Now try match to predefined paths.
-    readarray -t paths <<< $(/usr/bin/cat "$pathsconf" | NcdRemoveComments | /usr/bin/sed -e "s|^\$HOME|$HOME|" -e "s|^~|$HOME|")
+    if [ -r "$pathsconf" ] ; then
+        if [ $(/usr/bin/stat -c %s "$pathsconf") -gt 0 ] ; then
+            readarray -t paths <<< $(/usr/bin/cat "$pathsconf" | NcdRemoveComments | /usr/bin/sed -e "s|^\$HOME|$HOME|" -e "s|^~|$HOME|")
+        fi
+    fi
+
+    if [ -n "$CDPATH" ] ; then
+        for xx in $(echo "$CDPATH" | tr ':' ' ') ; do
+            paths+=("$xx")
+        done
+    fi
+    for ((ix=0; ix < ${#paths[@]}; ix++)) ; do
+        xx="${paths[$ix]}"
+        [ "${xx: -1}" = "/" ] || paths[$ix]+="/"   # allow symlinks
+    done
 
     [ -n "$paths" ] || return 1
 
@@ -74,10 +86,12 @@ NcdCandidates() {
         treedata+="$(/usr/bin/find "$xx" -type d)"
     done
 
-    # filter excluded paths
-    for xx in $(cat $excludes | NcdRemoveComments) ; do
-        treedata="$(echo "$treedata" | /usr/bin/grep -v "$xx")"
-    done
+    if [ -r "$excludes" ] ; then
+        # filter excluded paths
+        for xx in $(cat $excludes | NcdRemoveComments) ; do
+            treedata="$(echo "$treedata" | /usr/bin/grep -v "$xx")"
+        done
+    fi
 
     # filter duplicate paths
     treedata="$(echo "$treedata" | /usr/bin/sort | /usr/bin/uniq)"
