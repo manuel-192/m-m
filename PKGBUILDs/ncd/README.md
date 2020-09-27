@@ -23,7 +23,7 @@ Another step is still needed: user should *source* file ncd-helper.bash in $HOME
 ```
 source /etc/skel/ncd-helper.bash
 ```
-Finally, user needs to *source* file ~/.bashrc. This can be done in several alternative ways, e.g. directly `source ~/.bashrc`, or log out and log in, or rebooting and log in.
+Finally, user needs to *source* file ~/.bashrc. This can be done in several alternative ways, e.g. directly `source ~/.bashrc`, or log out and log in, or reboot and log in.
 
 ## Configuration files
 The two configuration files (mentioned above) contain full or partial path detinitions, one definition per line.
