@@ -27,12 +27,12 @@ Finally, user needs to *source* file ~/.bashrc. This can be done in several alte
 
 ## Configuration files
 The two configuration files (mentioned above) contain full or partial path detinitions, one definition per line.
-### Example ~/.config/ncd/paths
+### ~/.config/ncd/paths example
 ```
 ~/Documents
 ~/MyData/Projects
 ```
-### Example ~/.config/ncd/excludes
+### ~/.config/ncd/excludes example
 ```
 /.git/
 /.git$/
