@@ -61,7 +61,7 @@ Currently the following options are supported:
 Variable | Supported options
 :--- | :---
 NCD_OPTS | --showdir
-NCD_PATHS_OPTS | --folllow-symlinks
+NCD_PATHS_OPTS | --follow-symlinks
 NCD_EXCLUDES_OPTS | (none)
 
 ## Full example
