@@ -118,21 +118,9 @@ NcdChDir() {
     [ "$show_dir" = "yes" ] && pwd | sed "s|^$HOME|~|"
 }
 
-NcdUsage() {
-    cat <<EOF >&2
-Usage: ncd [path]
-ncd works mostly like cd.
-With configuration files
-    ~/.config/ncd/ncd.conf
-    ~/.config/ncd/paths
-    ~/.config/ncd/excludes
-user may control how ncd behaves.
-
-For more info, see https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md.
-EOF
-}
-
 NcdOptions() {
+    # config file options
+    
     local conf=$HOME/.config/ncd/ncd.conf
     local NCD_PATHS_OPTS
     local NCD_EXCLUDES_OPTS
@@ -166,6 +154,13 @@ ncd() {
     local arg="$1"
     local follow_symlinks=no                # safer default not to follow symlinks
     local show_dir=no
+
+    case "$arg" in
+        --help | -h)
+            xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md
+            return
+            ;;
+    esac
 
     NcdOptions
 
