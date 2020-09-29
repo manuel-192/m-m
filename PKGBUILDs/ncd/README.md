@@ -51,18 +51,17 @@ NCD_OPTS=(--showdir)
 NCD_PATHS_OPTS=(--follow-symlinks)
 NCD_EXCLUDES_OPTS=()
 ```
-The --showdir option makes ncd to show the new directory name after changing to it.
-This configuration file sets properties for the ncd function.<br>
-The --follow-symlinks option means ncd will follow symbolic links when searching for paths.<br>
-Note that following symbolic links may cause endless loops, so be careful with this option if you have symbolic links in the search paths. That's why it is not enabled by default.<br>
+This configuration file sets properties for the ncd function.
 
 Currently the following options are supported:
 
-Variable | Supported options
-:--- | :---
-NCD_OPTS | --showdir
-NCD_PATHS_OPTS | --follow-symlinks
+Variable | Supported options | Description
+:--- | :--- | :---
+NCD_OPTS | --showdir | Makes ncd show the new directory name after changing to it.
+NCD_PATHS_OPTS | --follow-symlinks | ncd will follow symbolic links when searching for paths.<br>Note that following symbolic links may cause endless loops,<br>so be careful with this option if you have symbolic links in the search paths.<br>That's why it is not enabled by default.
 NCD_EXCLUDES_OPTS | (none)
+
+<br>
 
 ## Full example
 Assuming the following paths in ~/.config/ncd/paths:
