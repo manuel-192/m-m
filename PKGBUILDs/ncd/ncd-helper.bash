@@ -108,17 +108,49 @@ NcdCandidates() {
     fi
 }
 
+
+NcdChDir() {
+    if [ -n "$1" ] ; then
+        cd "$1" >/dev/null
+    else
+        cd
+    fi
+    [ "$show_dir" = "yes" ] && pwd | sed "s|^$HOME|~|"
+}
+
+NcdUsage() {
+    cat <<EOF >&2
+Usage: ncd [path]
+ncd works mostly like cd.
+With configuration files
+    ~/.config/ncd/ncd.conf
+    ~/.config/ncd/paths
+    ~/.config/ncd/excludes
+user may control how ncd behaves.
+
+For more info, see https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md.
+EOF
+}
+
 NcdOptions() {
     local conf=$HOME/.config/ncd/ncd.conf
     local NCD_PATHS_OPTS
     local NCD_EXCLUDES_OPTS
+    local NCD_OPTS
     local xx
 
     source $conf || return 1
 
+    for xx in "${NCD_OPTS[@]}" ; do
+        case "$xx" in
+            --showdir) show_dir=yes ;;
+            *)  echo "Error: unsupported parameter '$xx' in NCD_OPTS." >&2 ; exit 1 ;;
+        esac
+    done
+
     for xx in "${NCD_PATHS_OPTS[@]}" ; do
         case "$xx" in
-            -L) follow_symlinks=yes ;;
+            --follow-symlinks) follow_symlinks=yes ;;
             *)  echo "Error: unsupported parameter '$xx' in NCD_PATHS_OPTS." >&2 ; exit 1 ;;
         esac
     done
@@ -133,6 +165,7 @@ NcdOptions() {
 ncd() {
     local arg="$1"
     local follow_symlinks=no                # safer default not to follow symlinks
+    local show_dir=no
 
     NcdOptions
 
@@ -141,9 +174,9 @@ ncd() {
     # simple cases: use cd
     case "$arg" in
         . | */. | .. | */.. | -)
-            cd "$arg" >/dev/null ; return ;;
+            NcdChDir "$arg" ; return ;;
         "")
-            cd ; return ;;
+            NcdChDir ; return ;;
     esac
 
     # Try a match using the $arg directly.
@@ -155,12 +188,12 @@ ncd() {
         done
         if [ -n "$yy" ] ; then
             if [ "${#yy[@]}" -eq 1 ] ; then
-                cd "$yy"
+                NcdChDir "$yy"
                 return
             else
                 yy="$(NcdSelectFromList "${yy[@]}")"
                 [ $? -eq 0 ] || return
-                cd "$yy"
+                NcdChDir "$yy"
                 return
             fi
         fi
@@ -172,7 +205,7 @@ ncd() {
     NcdCandidates || return 1
     
     if [ -d "$newdir" ] ; then
-        cd "$newdir"
+        NcdChDir "$newdir"
     else
         echo "Sorry, folder starting with '$arg' not found." >&2
     fi

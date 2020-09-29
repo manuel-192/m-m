@@ -28,7 +28,8 @@ source /etc/skel/ncd-helper.bash
 Finally, user needs to *source* file ~/.bashrc. This can be done in several alternative ways, e.g. directly `source ~/.bashrc`, or log out and log in, or reboot and log in.
 
 ## Configuration files
-The two configuration files (mentioned above) contain full or partial path detinitions, one definition per line.
+The two configuration files mentioned above contain full or partial path definitions, one definition per line.<br>
+There is a third configuration file ~/.config/ncd/ncd.conf that sets general ncd options.
 ### ~/.config/ncd/paths example
 ```
 ~/Documents
@@ -46,14 +47,22 @@ Note: these paths can contain `grep` expression syntax (see the trailing '$' abo
 
 ### ~/.config/ncd/ncd.conf example
 ```
+NCD_OPTS=(--showdir)
 NCD_PATHS_OPTS=(-L)
 NCD_EXCLUDES_OPTS=()
 ```
+The --showdir option makes ncd to show the new directory name after changing to it.
 This configuration file sets properties for the ncd function.<br>
-The -L option means ncd will follow symbolic links when searching for paths. Note that following symbolic links may cause endless loops, so be careful with this option if you have symbolic links in the search paths.
-That's why it is not enabled by default.
-<br>
-Currently the only supported option is -L for NCD_PATHS_OPTS, and nothing for NCD_EXCLUDES_OPTS.
+The -L option means ncd will follow symbolic links when searching for paths. Note that following symbolic links may cause endless loops, so be careful with this option if you have symbolic links in the search paths. That's why it is not enabled by default.<br>
+
+Currently the following options are supported:
+
+Variable | Supported options
+:--- | :---
+NCD_OPTS | --showdir
+NCD_PATHS_OPTS | -L
+NCD_EXCLUDES_OPTS | (none)
+
 ## Full example
 Assuming the following paths in ~/.config/ncd/paths:
 ```
@@ -100,25 +109,58 @@ drwxr-xr-x 3 manuel manuel 4096 2020-09-20 19:35 reflector-simple
 drwxr-xr-x 4 manuel manuel 4096 2020-09-22 20:41 welcome
 drwxr-xr-x 6 manuel manuel 4096 2020-09-04 17:26 z_archived
 -rw-r--r-- 1 manuel manuel  200 2020-09-04 17:26 README.md
+$
+$ ls -l ~/EndeavourOS/PKGBUILDS/welcome
+total 368
+drwxr-xr-x 2 manuel manuel      4096 2020-09-04 17:26 wiki-pictures
+-rw-r--r-- 1 manuel manuel      8686 2020-09-04 17:26 Adding-own-commands.md
+-rw-r--r-- 1 manuel manuel      7126 2020-09-22 20:40 PKGBUILD
+-rw-r--r-- 1 manuel manuel       751 2020-09-04 17:26 README.md
+-rwxr-xr-x 1 manuel manuel      1508 2020-09-04 17:26 calamares-update
+-rw-r--r-- 1 manuel manuel       645 2020-09-04 17:26 changelog.md
+-rw-r--r-- 1 manuel manuel       484 2020-09-04 17:26 changelog.txt
+-rwxr-xr-x 1 manuel manuel       493 2020-09-04 17:26 eos-kill-yad-zombies
+-rwxr-xr-x 1 manuel manuel      1610 2020-09-15 13:22 eos-set-background-picture
+-rw-r--r-- 1 manuel manuel       986 2020-09-04 17:26 ksetwallpaper.py
+-rw-r--r-- 1 manuel manuel     11552 2020-09-15 16:51 translations-welcome-de.bash
+-rw-r--r-- 1 manuel manuel     10752 2020-09-15 10:44 translations-welcome-en.bash
+-rw-r--r-- 1 manuel manuel     10823 2020-09-04 17:26 translations-welcome-es.bash
+-rw-r--r-- 1 manuel manuel     11187 2020-09-15 13:27 translations-welcome-fi.bash
+-rw-r--r-- 1 manuel manuel     11645 2020-09-13 18:50 translations-welcome-fr.bash
+-rw-r--r-- 1 manuel manuel      9057 2020-09-04 17:26 translations-welcome-it.bash
+-rw-r--r-- 1 manuel manuel      8854 2020-09-04 17:26 translations-welcome-pl.bash
+-rw-r--r-- 1 manuel manuel     10147 2020-09-04 17:26 translations-welcome-pt.bash
+-rw-r--r-- 1 manuel manuel      8442 2020-09-04 17:26 translations-welcome-reference.bash
+-rw-r--r-- 1 manuel manuel      9169 2020-09-04 17:26 translations-welcome-ro.bash
+-rw-r--r-- 1 manuel manuel     14345 2020-09-22 20:39 translations-welcome-ru.bash
+-rw-r--r-- 1 manuel manuel      8807 2020-09-04 17:26 translations-welcome-se.bash
+-rw-r--r-- 1 manuel manuel     12066 2020-09-16 12:39 translations-welcome-sk.bash
+-rw-r--r-- 1 manuel manuel      9681 2020-09-05 23:22 translations-welcome-zh.bash
+-rw-r--r-- 1 manuel manuel      7893 2020-09-04 17:26 translations-welcome.bash
+-rwxr-xr-x 1 manuel manuel      1421 2020-09-20 19:36 wallpaper-once
+-rw-r--r-- 1 manuel manuel       331 2020-09-04 17:26 wallpaper-once.desktop
+-rwxr-xr-x 1 manuel manuel     57766 2020-09-27 21:23 welcome
+-rwxr-xr-x 1 manuel manuel      4065 2020-09-04 17:26 welcome-dnd
+-rw-r--r-- 1 manuel manuel     33684 2020-09-04 17:26 welcome-dnd-tips.png
+-rw-r--r-- 1 manuel manuel     17909 2020-09-04 17:26 welcome-dnd-window.png
+-rwxr-xr-x 1 manuel manuel       495 2020-09-04 17:26 welcome.desktop
 ```
-this is the output of the following commands:
+this is the output of the following commands (note: option --showdir is used):
 ```
-$ pwd
-/home/manuel/Documents
+$ ncd ~/Documents
+~/Documents
 $ ncd
-$ pwd
-/home/manuel
+~
 $ ncd wel
-$ pwd
-/home/manuel/EndeavourOS/PKGBUILDS/welcome
+~/EndeavourOS/PKGBUILDS/welcome
 $ ncd nvidi
  1   ~/EndeavourOS/PKGBUILDS/nvidia-installer
  2   ~/EndeavourOS/PKGBUILDS/nvidia-installer-db
  3   ~/EndeavourOS/PKGBUILDS/nvidia-installer-dkms
 Select number or Q: 3
-$ pwd
-/home/manuel/EndeavourOS/PKGBUILDS/nvidia-installer-dkms
+~/EndeavourOS/PKGBUILDS/nvidia-installer-dkms
+$ ncd wiki-pic
+~/EndeavourOS/PKGBUILDS/welcome/wiki-pictures
 $ ncd -
-$ pwd
-/home/manuel/EndeavourOS/PKGBUILDS/welcome
+~/EndeavourOS/PKGBUILDS/nvidia-installer-dkms
 ```
