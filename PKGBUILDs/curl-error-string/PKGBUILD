@@ -1,0 +1,22 @@
+# Maintainer: manuel <info@endeavouros.com>
+
+pkgname=curl-error-string
+pkgdesc="Convert curl error code to a string."
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(
+  bash
+)
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+
+source=(
+  $url/$pkgname
+)
+
+sha512sums=('fe2e90bcb1159d384137cb2269fb4c3ab5f702e9e884ce4e11da91d188e891c9ed6e1f9358983524c204800fc6b85c8958ab6a32a1c4f663b3763a2a0898b44b')
+
+package() {
+  install -Dm755 $pkgname  $pkgdir/usr/bin/$pkgname
+}
