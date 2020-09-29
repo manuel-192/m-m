@@ -48,19 +48,20 @@ Note: these paths can contain `grep` expression syntax (see the trailing '$' abo
 ### ~/.config/ncd/ncd.conf example
 ```
 NCD_OPTS=(--showdir)
-NCD_PATHS_OPTS=(-L)
+NCD_PATHS_OPTS=(--follow-symlinks)
 NCD_EXCLUDES_OPTS=()
 ```
 The --showdir option makes ncd to show the new directory name after changing to it.
 This configuration file sets properties for the ncd function.<br>
-The -L option means ncd will follow symbolic links when searching for paths. Note that following symbolic links may cause endless loops, so be careful with this option if you have symbolic links in the search paths. That's why it is not enabled by default.<br>
+The --follow-symlinks option means ncd will follow symbolic links when searching for paths.<br>
+Note that following symbolic links may cause endless loops, so be careful with this option if you have symbolic links in the search paths. That's why it is not enabled by default.<br>
 
 Currently the following options are supported:
 
 Variable | Supported options
 :--- | :---
 NCD_OPTS | --showdir
-NCD_PATHS_OPTS | -L
+NCD_PATHS_OPTS | --folllow-symlinks
 NCD_EXCLUDES_OPTS | (none)
 
 ## Full example
