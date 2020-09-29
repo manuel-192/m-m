@@ -35,6 +35,14 @@ There is a third configuration file ~/.config/ncd/ncd.conf that sets general ncd
 ~/Documents
 ~/MyData/Projects
 ```
+These paths are the starting points for recursive search of *leaf* folders (last in any path in a tree).<br>
+For example, if folders ~/Documents/Work/Projects and ~/Documents/Work/Admin exist, then command
+```
+ncd Proj
+```
+would change directory to ~/Documents/Work/Projects.<br>
+See more examples below.
+
 ### ~/.config/ncd/excludes example
 ```
 /.git/
