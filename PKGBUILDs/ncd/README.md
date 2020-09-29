@@ -33,7 +33,7 @@ There is a third configuration file ~/.config/ncd/ncd.conf that sets general ncd
 ### ~/.config/ncd/paths example
 ```
 ~/Documents
-~/MyData/Projects
+~/MyData/Pictures
 ```
 These paths are the starting points for recursive search of *leaf* folders (last in any path in a tree).<br>
 For example, if folders ~/Documents/Work/Projects and ~/Documents/Work/Admin exist, then command
