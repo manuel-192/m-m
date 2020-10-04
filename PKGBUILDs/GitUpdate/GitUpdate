@@ -93,13 +93,38 @@ CheckDiff() {
     local excludes=""
     CreateExcludes
 
-    diff "$srcdir" "$dstdir" $excludes
-    diffval=$?
+    diff "$srcdir" "$dstdir" $excludes >/dev/null
+    diff_x86_64=$?
+    case "$diff_x86_64" in
+        2) DIE "'diff $srcdir $dstdir' failed." ;;
+    esac
+
+    # ARM news check!
+    if [ "$reponame" = "endeavouros" ] ; then
+        $ArmPkgCheck check
+        diff_arm=$?
+        case "$diff_arm" in
+            2) DIE "$ArmPkgCheck check failed." ;;
+        esac
+    fi
 }
 
 ReplaceAssets() {
-    rm -f "$dstdir"/*.{db,files,sig,xz,zst}
-    cp -p "$srcdir"/*.{db,files,sig,xz,zst} "$dstdir"
+    case "$reponame" in
+        endeavouros)
+            if [ $diff_arm -eq 1 ] ; then
+                $ArmPkgCheck copy || DIE "$ArmPkgCheck copy failed."
+            fi
+            if [ $diff_x86_64 -eq 1 ] ; then
+                rm -f "$dstdir"/*.{db,files,sig,xz,zst}
+                cp -p "$srcdir"/*.{db,files,sig,xz,zst} "$dstdir"
+            fi
+            ;;
+        *)
+            rm -f "$dstdir"/*.{db,files,sig,xz,zst}
+            cp -p "$srcdir"/*.{db,files,sig,xz,zst} "$dstdir"
+            ;;
+    esac
 }
 
 MirrorStateUpdate() {
@@ -139,18 +164,24 @@ GitUpdate() {
 
 Main()
 {
-    local gitdir="$PWD"                               # has .git folder
+    local gitdir="$PWD"                     # has .git folder
     local reponame="$(GetRepoName)"
     local has_statefile=no
     local srcdir=""
     local dstdir=""
     local git_adds=""
     local statefile=""
-    local diffval=0
+    local diff_x86_64=0                     # 1 = has updates
+    local diff_arm=0                        # 1 = has updates
+    local ArmPkgCheck=/usr/bin/ArmPkgCheck
+
+    if [ "$reponame" = "endeavouros" ] ; then
+        [ -x $ArmPkgCheck ] || DIE "$ArmPkgCheck not found."
+    fi
 
     CheckDiff
 
-    if [ $diffval -ne 0 ] ; then
+    if [ $diff_x86_64 -ne 0 ] || [ $diff_arm -ne 0 ] ; then
         echo2 ""
         echo "Changes detected. Will replace local assets after 'git pull', then sync all to github."
 

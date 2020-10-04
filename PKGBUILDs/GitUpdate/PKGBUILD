@@ -4,17 +4,20 @@
 pkgname=GitUpdate
 pkgdesc="Update special repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.3.1
+pkgver=1.4
 pkgrel=1
 arch=('any')
 license=('custom')
-depends=(bash)
+depends=(bash git)
 
 source=(
     $pkgname
+    ArmPkgCheck
 )
-sha512sums=('18eb1baa99934bffb78fb15ab06961ec531050fe3dd1315106d6ee0f8f35192dad697893adb2416f156a393edfee93a3a246f69f12879d19a8cf0cd5f691049e')
+sha512sums=('ba3b0093500ec22170a7b3b32c5a9990c24c4fc147a7b96608fa6b243e493d0216918c364f428eebf6639da7082dcf722685442e2368871020e771e3a0e94c97'
+            'e9ca288732905602ce55b41db38f94dbf5f777211ffdfe826a2bf8ec55b32ee08450c74b3c4dc348f369ed6d717c83709defac29c688911041eb028cf7cb4118')
 
 package() {
-    install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
+    install -Dm755 $pkgname     $pkgdir/usr/bin/$pkgname
+    install -Dm755 ArmPkgCheck  $pkgdir/usr/bin/ArmPkgCheck
 }

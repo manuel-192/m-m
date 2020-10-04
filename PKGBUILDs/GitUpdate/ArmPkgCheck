@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# If there are new ARM packages, copy them to the EOS release folder.
+# Return:
+#   0 = no new ARM packages
+#   1 = new ARM packages are available
+#   2 = an error occurred
+
+DIE() {
+    echo "$progname: Error: $1" >&2
+    exit 2
+}
+
+Pushd() { pushd "$@" >/dev/null || DIE "$FUNCNAME $* failed." ; }
+Popd()  { popd  "$@" >/dev/null || DIE "$FUNCNAME $* failed." ; }
+
+Main()
+{
+    local op="$1"   # check or copy
+    local progname=ArmPkgCheck
+
+    case "$op" in
+        check | copy) ;;
+        *) DIE "give: check or copy" ;;
+    esac
+
+    local releaseDir="$HOME/NCD/EOS/repo/endeavouros"
+    local armDir="$HOME/NCD/EOS-arm/repo/endeavouros-arm"
+    local armDirs=(aarch64 armv7h)
+    local adir
+    local retval=0
+
+    [ -d "$releaseDir" ] || DIE "'$releaseDir' does not exist."
+    [ -d "$armDir" ]     || DIE "'$armDir' does not exist."
+
+    for adir in "${armDirs[@]}" ; do
+        mkdir -p "$releaseDir/$adir" || DIE "'$releaseDir/$adir' failed."
+    done
+
+    case "$op" in
+        check)
+            Pushd $armDir
+            git pull || DIE "ARM: 'git pull' failed."
+            Popd
+            ;;
+    esac
+
+    for adir in "${armDirs[@]}" ; do
+        case "$op" in
+            check)
+                diff "$armDir/$adir" "$releaseDir/$adir" >/dev/null
+                case "$?" in
+                    1) retval=1 ;;
+                    2) DIE "'diff $armDir/$adir $releaseDir/$adir' failed." ;;
+                esac
+                ;;
+            copy)
+                rm -f "$releaseDir/$adir"/*.{db,files,sig,xz,zst}                 || DIE "$releaseDir/$adir: cleaning failed."
+                cp -p "$armDir/$adir"/*.{db,files,sig,xz,zst} "$releaseDir/$adir" || DIE "$releaseDir/$adir: copy failed."
+                ;;
+        esac
+    done
+
+    return $retval
+}
+
+Main "$@"
