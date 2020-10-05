@@ -1,0 +1,51 @@
+#!/bin/bash
+
+DIE() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+Main()
+{
+    local confdir=$HOME/.config/ncd
+    local source="source /etc/skel/ncd-helper.bash"
+
+    [ -d $confdir ] && DIE "folder '$confdir' already exists, will not override."
+
+    mkdir -p $confdir || DIE "creating '$confdir' failed."
+
+    cat <<EOF > $confdir/ncd.conf
+NCD_OPTS=(
+  --showdir
+)
+NCD_PATHS_OPTS=(
+# --follow-symlinks
+)
+NCD_EXCLUDES_OPTS=(
+)
+EOF
+
+    cat <<EOF > $confdir/excludes
+# /.git/
+# /.git$
+EOF
+
+    cat <<EOF > $confdir/paths
+# ~/Documents
+# ~/Pictures
+EOF
+
+    echo "$source" >> $HOME/.bashrc
+
+    cat <<EOF
+
+    echo "Added line '$source' in the end of ~/.bashrc."
+    echo "Please check now that it is OK."
+EOF
+#    printf "Press ENTER to continue (or Ctrl-C to quit): "
+#    read
+
+    source ~/.bashrc   # ??
+}
+
+Main "$@"
