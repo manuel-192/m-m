@@ -15,7 +15,7 @@ source=(
     $url/ncd-install
 )
 sha512sums=('e44252aad06eaf7c02d749bb18257cfa91287483bfb209c2538136ca9c5a84dbc49bdee33abfbb5f1d13d5c67cedeb603b47906894451bef66559aae9821c496'
-            'b68cb87b2ef4bfb78921182576d4700ce0730e7da7ef4fc501307fba93ff81569fd3bc9cc338dce0fc133fb343d2bd546d01601cd5589ccd52df6036246bfcba')
+            'bf2a00de0c2615ff05da2a789d553e5ea2a8fcf184b196f23f2f694180309b53a996e9cfd5775b8fd69a8bc770757907425d00824bf1d4147273874ba65e6ff7')
 
 package() {
     install -Dm644 ncd-helper.bash         $pkgdir/etc/skel/ncd-helper.bash

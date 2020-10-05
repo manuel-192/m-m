@@ -35,17 +35,12 @@ EOF
 # ~/Pictures
 EOF
 
-    echo "$source" >> $HOME/.bashrc
+    printf "\n%s\n" "$source" >> $HOME/.bashrc
 
     cat <<EOF
-
     echo "Added line '$source' in the end of ~/.bashrc."
     echo "Please check now that it is OK."
 EOF
-#    printf "Press ENTER to continue (or Ctrl-C to quit): "
-#    read
-
-    source ~/.bashrc   # ??
 }
 
 Main "$@"
