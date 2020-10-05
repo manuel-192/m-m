@@ -1,59 +1,84 @@
 # ncd - cd and $CDPATH combined and more
 
-**ncd** is a bash function that can be used for changing directories in very much the same way as the traditional `cd` command.<br>
+`ncd` is a *bash function* that can be used for changing directories in very much the same way as the traditional `cd` command.<br>
 `ncd` simply provides more control in selecting the target directory.
 
 For `cd` user may create a variable CDPATH which cd uses as potential "root" directories where the
 "leaf" directories reside.
 
-`ncd` can use CDPATH too. In addition to CDPATH, `ncd` can use two configuration files
+`ncd` can use CDPATH too. In addition to CDPATH, `ncd` can control which paths to search and which *not*
+with the help of these two *path definition* files:
 ```
 $HOME/.config/ncd/paths
 $HOME/.config/ncd/excludes
 ```
-to better define which directories to use or *not* to use.
+See more info about these files below.
 
-Note: `ncd` does not support cd options -L nor -P.
+<small>Note: `ncd` does not support cd options -L nor -P.</small>
 
 ## Install
+
+In overview, the following steps are needed:
+1. install `ncd` package
+1. run `ncd-install`
+1. source ~/.bashrc
+
 Install ncd in the normal Arch way:
 ```
-sudo pacman -S ncd
+$ sudo pacman -S ncd
 ```
-This will write file **ncd-helper.bash** into `/etc/skel`.<br>
-Another step is still needed: user should *source* file ncd-helper.bash in $HOME/.bashrc by adding the following line into `~/.bashrc`:
+The following command writes the inclusion of the actual `ncd` function via `~/.bashrc`:
 ```
-source /etc/skel/ncd-helper.bash
+$ ncd-install
 ```
-Finally, user needs to *source* file ~/.bashrc. This can be done in several alternative ways, e.g. directly `source ~/.bashrc`, or log out and log in, or reboot and log in.
+`ncd-install` will write line `source /etc/skel/ncd-helper.bash` in the end of ~/.bashrc.
+
+<b><i>Note that user is adviced to check that it is OK to do the source command in the end of ~/.bashrc. If not, user should move that command in the proper place inside ~/.bashrc.</i></b>
+
+`ncd-install` will also write all configuration files into `~/.config/ncd`. If that folder already exists, ncd-install stops without overriding anything.
+
+Finally, to enable the ncd functionality, user needs to *source* file ~/.bashrc:
+```
+$ source ~/.bashrc
+```
+Essentially the same can be achieved in alternative ways, e.g. log out and log in, or reboot and log in.
 
 ## Configuration files
-The two configuration files mentioned above contain full or partial path definitions, one definition per line.<br>
-There is a third configuration file ~/.config/ncd/ncd.conf that sets general ncd options.
+
+The two path definition files mentioned above contain full or partial path definitions, one definition per line.<br>
+There is a third configuration file `~/.config/ncd/ncd.conf` that sets general ncd options.
+
 ### ~/.config/ncd/paths example
+
+These paths are the starting points for recursive search of *leaf* folders (leafs are the "last" folders in any path in a tree).<br>
+Basically any path in the system *can* be used here, but usually folders under $HOME are used.<br>
+If only $HOME subfolders should be searched, then simple `~` is should do the trick.
+
+We might have the following paths:
 ```
 ~/Documents
 ~/MyData/Pictures
 ```
-These paths are the starting points for recursive search of *leaf* folders (last in any path in a tree).<br>
-For example, if folders ~/Documents/Work/Projects and ~/Documents/Work/Admin exist, then command
+Then, for example, if folders `~/Documents/Work/Projects` and `~/Documents/Work/Admin` exist, command
 ```
 ncd Proj
 ```
-would change directory to ~/Documents/Work/Projects.<br>
+would change directory to `~/Documents/Work/Projects`.<br>
 See more examples below.
 
 ### ~/.config/ncd/excludes example
+
 ```
 /.git/
 /.git$/
 /OldStuff/
 /OldStuff$
 ```
-They are used for excluding (full) paths that contain these strings.<br>
-Note: these paths can contain `grep` expression syntax (see the trailing '$' above).
+These (partial) path specifications are used for excluding (full) paths that contain any of these strings.<br>
+Note: these paths can contain `grep` regular expression syntax (like e.g. the trailing '$' above: `/OldStuff$`).
 
 ### ~/.config/ncd/ncd.conf example
+
 ```
 NCD_OPTS=(--showdir)
 NCD_PATHS_OPTS=(--follow-symlinks)
@@ -66,7 +91,7 @@ Currently the following options are supported:
 Variable | Supported options | Description
 :--- | :--- | :---
 NCD_OPTS | --showdir | Makes ncd show the new directory name after changing to it.
-NCD_PATHS_OPTS | --follow-symlinks | ncd will follow symbolic links when searching for paths.<br>Note that following symbolic links may cause endless loops,<br>so be careful with this option if you have symbolic links in the search paths.<br>That's why it is not enabled by default.
+NCD_PATHS_OPTS | --follow-symlinks | `ncd` will follow symbolic links when searching for paths.<br>Note that following symbolic links may cause endless loops,<br>so be careful with this option if you have symbolic links in the search paths.<br>That's why it is *disabled* by default.
 NCD_EXCLUDES_OPTS | (none)
 
 <br>
@@ -153,7 +178,7 @@ drwxr-xr-x 2 manuel manuel      4096 2020-09-04 17:26 wiki-pictures
 -rw-r--r-- 1 manuel manuel     17909 2020-09-04 17:26 welcome-dnd-window.png
 -rwxr-xr-x 1 manuel manuel       495 2020-09-04 17:26 welcome.desktop
 ```
-this is the output of the following commands (note: option --showdir is used):
+this is the output of the following commands (note: option `--showdir` is used):
 ```
 $ ncd ~/Documents
 ~/Documents
