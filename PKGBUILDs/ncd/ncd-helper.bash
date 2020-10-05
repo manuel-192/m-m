@@ -107,7 +107,7 @@ NcdCandidates() {
         readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$arg"[^/]*$)"
     fi
 
-    if [ "${#newdir[@]}" -gt 1 ] ; then
+    if [ "${newdir[0]}" != "" ] && [ "${newdir[1]}" != "" ] ; then
         newdir="$(NcdSelectFromList "${newdir[@]}")"
         [ $? -eq 0 ] || return 1
     fi
