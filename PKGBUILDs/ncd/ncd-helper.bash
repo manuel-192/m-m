@@ -99,8 +99,13 @@ NcdCandidates() {
     # filter duplicate paths
     treedata="$(echo "$treedata" | /usr/bin/sort | /usr/bin/uniq)"
 
-    # find a match (or many matches)
-    readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$arg"[^/]*$)"
+    # find an "exact" match (or many exact matches)
+    readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$arg"$)"
+
+    if [ "${newdir[0]}" = "" ] ; then
+        # find a "non-exact" match (or many non-exact matches)
+        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$arg"[^/]*$)"
+    fi
 
     if [ "${#newdir[@]}" -gt 1 ] ; then
         newdir="$(NcdSelectFromList "${newdir[@]}")"
@@ -150,6 +155,26 @@ NcdOptions() {
     done
 }
 
+NcdDirectMatch() {
+    if [ -n "$zz" ] ; then
+        for xx in "${zz[@]}" ; do
+            [ -d "$xx" ] && yy+=("$xx")
+        done
+        if [ -n "$yy" ] ; then
+            if [ "${#yy[@]}" -eq 1 ] ; then
+                NcdChDir "$yy"
+                return 0
+            else
+                yy="$(NcdSelectFromList "${yy[@]}")"
+                [ $? -eq 0 ] || return 1
+                NcdChDir "$yy"
+                return 0
+            fi
+        fi
+    fi
+    return 1  # no match
+}
+
 ncd() {
     local arg="$1"
     local follow_symlinks=no                # safer default not to follow symlinks
@@ -177,22 +202,7 @@ ncd() {
     # Try a match using the $arg directly.
 
     readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg"* 2>/dev/null)"
-    if [ -n "$zz" ] ; then
-        for xx in "${zz[@]}" ; do
-            [ -d "$xx" ] && yy+=("$xx")
-        done
-        if [ -n "$yy" ] ; then
-            if [ "${#yy[@]}" -eq 1 ] ; then
-                NcdChDir "$yy"
-                return
-            else
-                yy="$(NcdSelectFromList "${yy[@]}")"
-                [ $? -eq 0 ] || return
-                NcdChDir "$yy"
-                return
-            fi
-        fi
-    fi
+    NcdDirectMatch && return 0
 
     # Use predefined paths.
 
