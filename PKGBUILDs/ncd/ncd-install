@@ -31,6 +31,7 @@ EOF
 EOF
 
     cat <<EOF > $confdir/paths
+~
 # ~/Documents
 # ~/Pictures
 EOF
