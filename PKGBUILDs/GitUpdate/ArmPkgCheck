@@ -25,7 +25,7 @@ Main()
     esac
 
     local releaseDir="$HOME/NCD/EOS/repo/endeavouros"
-    local armDir="$HOME/NCD/EOS-arm/repo/endeavouros-arm"
+    local armDir="$HOME/NCD/EOS-arm/repo/endeavouros"
     local armDirs=(aarch64 armv7h)
     local adir
     local retval=0

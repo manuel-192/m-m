@@ -164,6 +164,10 @@ GitUpdate() {
 
 Main()
 {
+    [ -f .GitUpdate ] || DIE "no .GitUpdate file in folder $PWD"
+    [ -d .git ]       || DIE "no .git folder in $PWD"
+    [ -L .git ]       && DIE ".git must not be symlink in $PWD"
+
     local gitdir="$PWD"                     # has .git folder
     local reponame="$(GetRepoName)"
     local has_statefile=no
