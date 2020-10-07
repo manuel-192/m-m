@@ -692,11 +692,13 @@ _extras_generate()
                     out '    loopback loop $isofile'
                     version="$(echo $isofilexx | sed 's|.*-\([0-9\.]*\)-.*|\1|')"
                     if [ $(vercmp $version 2020.09.20) -lt 0 ] ; then
+                        # old ISOs
                         out '    linux (loop)/arch/boot/x86_64/vmlinuz img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
-			out '    initrd  (loop)/arch/boot/intel-ucode.img (loop)/arch/boot/x86_64/archiso.img'
-                    else
-                        out '    linux (loop)/arch/boot/x86_64/vmlinuz-linux img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
 			out '    initrd  (loop)/arch/boot/intel_ucode.img (loop)/arch/boot/x86_64/archiso.img'
+                    else
+                        # new ISOs
+                        out '    linux (loop)/arch/boot/x86_64/vmlinuz-linux img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
+			out '    initrd  (loop)/arch/boot/intel-ucode.img (loop)/arch/boot/x86_64/archiso.img'
                     fi
                     out '}'
                     ;;
