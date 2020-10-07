@@ -696,7 +696,7 @@ _extras_generate()
                     else
                         out '    linux (loop)/arch/boot/x86_64/vmlinuz-linux img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
                     fi
-                    out '    initrd  (loop)/arch/boot/intel_ucode.img (loop)/arch/boot/x86_64/archiso.img'
+                    out '    initrd  (loop)/arch/boot/intel-ucode.img (loop)/arch/boot/x86_64/archiso.img'
                     out '}'
                     ;;
                 *manjaro*)
