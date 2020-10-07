@@ -613,6 +613,7 @@ _get_grub_default_value()
 
 _extras_generate()
 {
+    local version
     #local iso=$(LatestAntergosIsoVersion)  # just the ISO version number, e.g. 18.3
     local bootpath="$1"
     local chainfile="$bootpath"grub/custom01.cfg
@@ -673,13 +674,28 @@ _extras_generate()
                     out '    initrd (loop)/arch/boot/intel_ucode.img (loop)/arch/boot/archiso.img'
                     out '}'
                     ;;
-                *archlinux* | *endeavouros*)
+                *archlinux*)
                     out "menuentry 'Boot $(basename $isofilexx)' {"
                     out "    set isofile=$isofilexx"
                     out '    search --no-floppy --set=root --file $isofile'
                     out '    probe -u $root --set=uuid'
                     out '    loopback loop $isofile'
                     out '    linux (loop)/arch/boot/x86_64/vmlinuz img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
+                    out '    initrd  (loop)/arch/boot/intel_ucode.img (loop)/arch/boot/x86_64/archiso.img'
+                    out '}'
+                    ;;
+                *endeavouros*)
+                    out "menuentry 'Boot $(basename $isofilexx)' {"
+                    out "    set isofile=$isofilexx"
+                    out '    search --no-floppy --set=root --file $isofile'
+                    out '    probe -u $root --set=uuid'
+                    out '    loopback loop $isofile'
+                    version="$(echo $isofilexx | sed 's|.*-\([0-9\.]*\)-.*|\1|')"
+                    if [ $(vercmp $version 2020.09.20) -lt 0 ] ; then
+                        out '    linux (loop)/arch/boot/x86_64/vmlinuz img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
+                    else
+                        out '    linux (loop)/arch/boot/x86_64/vmlinuz-linux img_dev=/dev/disk/by-uuid/$uuid img_loop=$isofile'
+                    fi
                     out '    initrd  (loop)/arch/boot/intel_ucode.img (loop)/arch/boot/x86_64/archiso.img'
                     out '}'
                     ;;
