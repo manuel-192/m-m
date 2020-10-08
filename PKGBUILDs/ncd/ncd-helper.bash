@@ -201,6 +201,9 @@ ncd() {
 
     # Try a match using the $arg directly.
 
+    readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg" 2>/dev/null)"
+    NcdDirectMatch && return 0
+
     readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg"* 2>/dev/null)"
     NcdDirectMatch && return 0
 
