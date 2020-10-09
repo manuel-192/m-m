@@ -28,6 +28,8 @@ EOF
     cat <<EOF > $confdir/excludes
 # /.git/
 # /.git$
+# /RCS$
+# /.vscode[s]*
 EOF
 
     cat <<EOF > $confdir/paths

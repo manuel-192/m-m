@@ -4,7 +4,7 @@
 pkgname=ncd
 pkgdesc="Another cd augmenter."
 url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pkgname"
-pkgver=0.3
+pkgver=0.4
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,8 +14,8 @@ source=(
     $url/ncd-helper.bash
     $url/ncd-install
 )
-sha512sums=('0f2db1b759b6a17ebbb60c18e71fd13d7562d3fc6b78b17c416906478c6082adc1796f56cb03ee5d7aee926fc29f4248832e107229a1f82e57a3869eaf4ce18e'
-            '64111ca5dff19220d82dca6ad0d8a983d7fd3b1c896e31be16bbb1885cf877ac4ac974d6267a5d1c92850220fbd9eec2d8b151ab230acead0f0a6119f65df9d4')
+sha512sums=('cb5bcc1f8987d6a177528937049a979c37b05a8ea72a0a3e0198110ae39f9b1c89c8e00206c984a29f216f8dccb8a8589068d4ce70ed73692806ba741cbfb9e0'
+            '94ea5fdf40867e03d26d7bebc2f7fe99ffb26966f58904a33d2c4d2353d5319f8d2ef1d4ac6c7168caf1a059bb6d63275d0f6e33ac36999c109dc36c0d723a2d')
 
 package() {
     install -Dm644 ncd-helper.bash         $pkgdir/etc/skel/ncd-helper.bash

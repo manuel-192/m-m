@@ -99,6 +99,14 @@ NcdCandidates() {
     # filter duplicate paths
     treedata="$(echo "$treedata" | /usr/bin/sort | /usr/bin/uniq)"
 
+
+    # Now we have the final tree data!
+
+    if [ "$show_tree" = "yes" ] ; then
+        echo "$treedata"
+        return 2
+    fi
+
     # find an "exact" match (or many exact matches)
     readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$arg"$)"
 
@@ -175,42 +183,62 @@ NcdDirectMatch() {
     return 1  # no match
 }
 
+NcdUsage() {
+    cat <<EOF
+Usage: ncd {path | option}
+Options:
+    -h | --help           Show online help of ncd.
+    -t | --show-tree      Show the list of paths where leaf folders will be searched.
+EOF
+}
+
 ncd() {
     local arg="$1"
     local follow_symlinks=no                # safer default not to follow symlinks
     local show_dir=no
+    local show_tree=no
 
     case "$arg" in
         --help | -h)
             xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md
             return
             ;;
+        --show-tree | -t)
+            show_tree=yes
+            ;;
     esac
 
-    NcdOptions
+    NcdOptions # options from config file
 
-    local xx yy=() zz
+    if [ "$show_tree" = "no" ] ; then
+        local xx yy=() zz
 
-    # simple cases: use cd
-    case "$arg" in
-        . | */. | .. | */.. | -)
-            NcdChDir "$arg" ; return ;;
-        "")
-            NcdChDir ; return ;;
-    esac
+        # simple cases: use cd
+        case "$arg" in
+            . | */. | .. | */.. | -)
+                NcdChDir "$arg" ; return ;;
+            "")
+                NcdChDir ; return ;;
+        esac
 
-    # Try a match using the $arg directly.
+        # Try a match using the $arg directly.
 
-    readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg" 2>/dev/null)"
-    NcdDirectMatch && return 0
+        readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg" 2>/dev/null)"
+        NcdDirectMatch && return 0
 
-    readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg"* 2>/dev/null)"
-    NcdDirectMatch && return 0
+        readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg"* 2>/dev/null)"
+        NcdDirectMatch && return 0
+    fi
 
     # Use predefined paths.
 
     local newdir
-    NcdCandidates || return 1
+    NcdCandidates
+    case "$?" in
+        0) ;;
+        1) return 1 ;;
+        2) return 0 ;;
+    esac
     
     if [ -d "$newdir" ] ; then
         NcdChDir "$newdir"
