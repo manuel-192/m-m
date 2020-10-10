@@ -15,8 +15,8 @@
 #
 #   ~/.config/ncd/excludes:  (note the leading '/', and trailing '/' or '$')
 #
-#      /.git/
-#      /.git$
+#      /\.git/
+#      /\.git$
 #      /Documents/unimportant/
 #      /Documents/unimportant$
 #
@@ -206,8 +206,8 @@ Configuration files at ~/.config/ncd:
             NCD_EXCLUDES_OPTS=()
     excludes
         Example (note: grep syntax for paths):
-            /.git/
-            /.git$
+            /\.git/
+            /\.git$
             /foobar/
     paths
         Example:

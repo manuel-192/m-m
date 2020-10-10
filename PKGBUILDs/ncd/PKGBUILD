@@ -4,7 +4,7 @@
 pkgname=ncd
 pkgdesc="Another cd augmenter."
 url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pkgname"
-pkgver=0.4.2
+pkgver=0.4.3
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ source=(
     $url/ncd-helper.bash
     $url/ncd-install
 )
-sha512sums=('b7efb837e2db0520d60398e0a9c86b8493832b2d3382fc302f0eac5807929bc8b730b05db42c872775a2b21d7c927a2a9d6edb2f30a5f25b7f59837a8812107a'
+sha512sums=('4e57bdee0d74d143a8c62e8a256e6002cf90de7a03daceebc7e36424db2c920c5b581e1ba1b6f087c3e72887793f3a71b492ca7c91bde73bc9fb74fef5e5aff6'
             '94ea5fdf40867e03d26d7bebc2f7fe99ffb26966f58904a33d2c4d2353d5319f8d2ef1d4ac6c7168caf1a059bb6d63275d0f6e33ac36999c109dc36c0d723a2d')
 
 package() {

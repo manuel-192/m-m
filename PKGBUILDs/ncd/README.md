@@ -74,8 +74,8 @@ See more examples below.
 ### ~/.config/ncd/excludes example
 
 ```
-/.git/
-/.git$/
+/\.git/
+/\.git$/
 /OldStuff/
 /OldStuff$
 ```
@@ -108,8 +108,8 @@ Assuming the following paths in ~/.config/ncd/paths:
 ```
 and the following exclude definitions in ~/.config/ncd/excludes:
 ```
-/.git/
-/.git$
+/\.git/
+/\.git$
 ```
 and the following directory contents:
 ```
