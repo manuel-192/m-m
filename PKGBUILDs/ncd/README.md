@@ -33,7 +33,10 @@ $ ncd-install
 ```
 `ncd-install` will write line `source /etc/skel/ncd-helper.bash` in the end of ~/.bashrc.
 
-<b><i>Note that user is adviced to check that it is OK to do the source command in the end of ~/.bashrc. If not, user should move that command in the proper place inside ~/.bashrc.</i></b>
+<i><span style="color:red">
+Note that user is adviced to check that it is OK to do the source command in the end of ~/.bashrc.
+If not, user should move that command in the proper place inside ~/.bashrc.
+</span></i>
 
 `ncd-install` will also write all configuration files into `~/.config/ncd`. If that folder already exists, ncd-install stops without overriding anything.
 
