@@ -26,6 +26,10 @@
 #
 ###############################################################################
 
+NcdError() {
+    echo "Error: $1" >&2
+}
+
 NcdSelectFromList() {
     local newdirs=("$@")
     local ix reply dir
@@ -107,12 +111,12 @@ NcdCandidates() {
         return 2
     fi
 
-    # find an "exact" match (or many exact matches)
-    readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$arg"$)"
-
-    if [ "${newdir[0]}" = "" ] ; then
+    if [ "$whole_word_match" = "yes" ] ; then
+        # find a "whole word" match (or many "whole word" matches)
+        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$path"$)"
+    else
         # find a "non-exact" match (or many non-exact matches)
-        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$arg"[^/]*$)"
+        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$path"[^/]*$)"
     fi
 
     if [ "${newdir[0]}" != "" ] && [ "${newdir[1]}" != "" ] ; then
@@ -185,11 +189,29 @@ NcdDirectMatch() {
 
 NcdUsage() {
     cat <<EOF >&2
-Usage: ncd {path | option}
-Options:
+Usage:
+         ncd option1
+         ncd [option2] path
+
+option1:
     -h | --help           This help.
     -hh                   This help and additional online help.
     -t | --show-tree      Show the list of paths where leaf folders will be searched.
+
+option2:
+    -w | --whole-word     Show only whole word matches for leafs instead of just head match.
+
+path:
+    - any path that 'cd' can handle, or
+    - any 'leaf' folder name or the start of a 'leaf' folder name, without the leading parent path.
+    A 'leaf' folder of '/usr/share/endeavouros' is 'endeavouros'.
+    Examples:
+        ncd endeavouros       (full leaf name)
+        ncd endeavour         (start of leaf name)
+        ncd ..                (relative path)
+        ncd /usr/share        (full path)
+        ncd -                 (back to the previous folder)
+        ncd -w sound          (matches leaf 'sound' but not e.g. 'sounds')
 
 Configuration files at ~/.config/ncd:
     ncd.conf
@@ -217,25 +239,43 @@ EOF
 }
 
 ncd() {
-    local arg="$1"
+    local arg
+    local path
     local follow_symlinks=no                # safer default not to follow symlinks
     local show_dir=no
     local show_tree=no
+    local whole_word_match=no
 
-    case "$arg" in
-        --help | -h)
-            NcdUsage
-            return
-            ;;
-        -hh)
-            xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md 2>/dev/null
-            ncd --help
-            return
-            ;;
-        --show-tree | -t)
-            show_tree=yes
-            ;;
-    esac
+    for arg in "$@" ; do
+        case "$arg" in
+            --help | -h)
+                NcdUsage
+                return
+                ;;
+            -hh)
+                xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md 2>/dev/null
+                ncd --help
+                return
+                ;;
+            --show-tree | -t)
+                show_tree=yes
+                ;;
+            --whole-word | -w)
+                whole_word_match=yes
+                ;;
+            -*)
+                if [ "$arg" = "-" ] ; then
+                    path="$arg"
+                else
+                    NcdError "unsupported option '$arg'."
+                    return 1
+                fi
+                ;;
+            *)
+                path="$arg"
+                ;;
+        esac
+    done
 
     NcdOptions # options from config file
 
@@ -243,20 +283,21 @@ ncd() {
         local xx yy=() zz
 
         # simple cases: use cd
-        case "$arg" in
+        case "$path" in
             . | */. | .. | */.. | -)
-                NcdChDir "$arg" ; return ;;
+                NcdChDir "$path" ; return ;;
             "")
                 NcdChDir ; return ;;
         esac
 
-        # Try a match using the $arg directly.
-
-        readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg" 2>/dev/null)"
-        NcdDirectMatch && return 0
-
-        readarray -t zz <<< "$(/usr/bin/ls -d1 "$arg"* 2>/dev/null)"
-        NcdDirectMatch && return 0
+        # Try a match using the $path directly.
+        if [ "$whole_word_match" = "yes" ] ; then
+            readarray -t zz <<< "$(/usr/bin/ls -d1 "$path" 2>/dev/null)"
+            NcdDirectMatch && return 0
+        else
+            readarray -t zz <<< "$(/usr/bin/ls -d1 "$path"* 2>/dev/null)"
+            NcdDirectMatch && return 0
+        fi
     fi
 
     # Use predefined paths.
@@ -272,6 +313,6 @@ ncd() {
     if [ -d "$newdir" ] ; then
         NcdChDir "$newdir"
     else
-        echo "Sorry, folder starting with '$arg' not found." >&2
+        echo "Sorry, folder starting with '$path' not found." >&2
     fi
 }
