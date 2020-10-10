@@ -35,8 +35,8 @@ $ ncd-install
 
 
 ```diff
-- Note that user is adviced to check that it is OK to do the source command in the end of ~/.bashrc.
-- If not, user should move that command in the proper place inside ~/.bashrc.
+--> Note that user is adviced to check that it is OK to do the source command in the end of ~/.bashrc.
+--> If not, user should move that command in the proper place inside ~/.bashrc.
 ```
 
 
