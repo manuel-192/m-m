@@ -184,11 +184,34 @@ NcdDirectMatch() {
 }
 
 NcdUsage() {
-    cat <<EOF
+    cat <<EOF >&2
 Usage: ncd {path | option}
 Options:
     -h | --help           Show online help of ncd.
     -t | --show-tree      Show the list of paths where leaf folders will be searched.
+
+Configuration files at ~/.config/ncd:
+    ncd.conf
+        Bash array variables:
+            NCD_OPTS
+                --showdir            Show the target folder name.
+            NCD_PATHS_OPTS
+                --follow-symlinks    Search for leaf folders "behind" symlinks.
+            NCD_EXCLUDES_OPTS
+                                     (Currently no options.)
+        Example:
+            NCD_OPTS=(--showdir)
+            NCD_PATHS_OPTS=(--follow-symlinks)
+            NCD_EXCLUDES_OPTS=()
+    excludes
+        Example (note: grep syntax for paths):
+            /.git/
+            /.git$
+            /foobar/
+    paths
+        Example:
+            ~/Documents
+            ~/Pictures
 EOF
 }
 
@@ -200,7 +223,8 @@ ncd() {
 
     case "$arg" in
         --help | -h)
-            xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md
+            NcdUsage
+            xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md 2>/dev/null
             return
             ;;
         --show-tree | -t)
