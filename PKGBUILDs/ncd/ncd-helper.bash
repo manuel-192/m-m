@@ -187,7 +187,8 @@ NcdUsage() {
     cat <<EOF >&2
 Usage: ncd {path | option}
 Options:
-    -h | --help           Show online help of ncd.
+    -h | --help           This help.
+    -hh                   This help and additional online help.
     -t | --show-tree      Show the list of paths where leaf folders will be searched.
 
 Configuration files at ~/.config/ncd:
@@ -224,7 +225,11 @@ ncd() {
     case "$arg" in
         --help | -h)
             NcdUsage
+            return
+            ;;
+        -hh)
             xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/ncd/README.md 2>/dev/null
+            ncd --help
             return
             ;;
         --show-tree | -t)
