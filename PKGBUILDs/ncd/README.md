@@ -21,7 +21,7 @@ See more info about these files below.
 ### Overview
 
 The following steps are needed:
-1. install `ncd` package
+1. install the `ncd` package
 1. run `ncd-install`
 1. source ~/.bashrc
 
