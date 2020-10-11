@@ -18,11 +18,14 @@ See more info about these files below.
 
 ## Install
 
-In overview, the following steps are needed:
+### Overview
+
+The following steps are needed:
 1. install `ncd` package
 1. run `ncd-install`
 1. source ~/.bashrc
 
+### Install details
 Install ncd in the normal Arch way:
 ```
 $ sudo pacman -S ncd
