@@ -62,7 +62,7 @@ These paths are the starting points for recursive search of *leaf* folders (leaf
 Basically any path in the system *can* be used here, but usually folders under $HOME are used.<br>
 If only $HOME subfolders should be searched, then simple `~` is should do the trick.
 
-We might have the following paths:
+Let's assume we have the following paths in ~/.config/ncd/paths:
 ```
 ~/Documents
 ~/MyData/Pictures
@@ -86,15 +86,14 @@ These (partial) path specifications are used for excluding (full) paths that con
 Note: these paths can contain `grep` regular expression syntax (like e.g. the trailing '$' above: `/OldStuff$`).
 
 ### ~/.config/ncd/ncd.conf example
+This file has bash array variables that contain specific options.<br>For example:
 
 ```
-NCD_OPTS=(--showdir)
-NCD_PATHS_OPTS=(--follow-symlinks)
-NCD_EXCLUDES_OPTS=()
+NCD_OPTS=(--showdir)                 # general ncd options
+NCD_PATHS_OPTS=(--follow-symlinks)   # options for the searched paths
+NCD_EXCLUDES_OPTS=()                 # options for path exclusions (currently none)
 ```
-This configuration file sets properties for the ncd function.
-
-Currently the following options are supported:
+The options set certain features of the `ncd` function.<br>Currently the following options are supported:
 
 Variable | Supported options | Description
 :--- | :--- | :---
@@ -104,13 +103,13 @@ NCD_EXCLUDES_OPTS | (none)
 <br>
 
 ## More details
-
+Details of `ncd` usage can be shown with this command:
 ```
 ncd --help
 ```
 
 ## Full example
-Assuming the following paths in ~/.config/ncd/paths:
+Assuming the following contents in ~/.config/ncd/paths:
 ```
 ~/EndeavourOS/PKGBUILDS
 ```
