@@ -30,11 +30,11 @@ Install ncd in the normal Arch way:
 ```
 $ sudo pacman -S ncd
 ```
-The following command writes the inclusion of the actual `ncd` function via `~/.bashrc`:
+The following command includes the `ncd` function into `~/.bashrc`:
 ```
 $ ncd-install
 ```
-`ncd-install` will write line `source /etc/skel/ncd-helper.bash` in the end of ~/.bashrc.
+by writing line `source /etc/skel/ncd-helper.bash` in the end of ~/.bashrc.
 
 
 ```diff
