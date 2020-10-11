@@ -42,15 +42,20 @@ NcdSelectFromList() {
             esac
             printf "%2d   %s\n" "$((ix+1))" "$dir" >&2
         done
-        read -p "Select number or Q: " reply >&2
-        case "$reply" in
-            [qQ]*) echo "[quit]" ; return 1 ;;
-        esac
-        [ -z "$(echo "$reply" | tr -d '0-9')" ] || continue
-        if [ "$reply" -ge 1 ] && [ "$reply" -le ${#newdirs[@]} ] ; then
-            echo "${newdirs[$((reply-1))]}"
-            return 0
+
+        read -p "Select number (or ENTER to quit): " reply >&2
+
+        if [ -z "$reply" ] ; then
+            echo "[quit]"
+            return 1
         fi
+        if [ -z "$(echo "$reply" | tr -d '0-9')" ] ; then
+            if [ "$reply" -ge 1 ] && [ "$reply" -le ${#newdirs[@]} ] ; then
+                echo "${newdirs[$((reply-1))]}"
+                return 0
+            fi
+        fi
+        echo "unsupported input '$reply'" >&2
     done
 }
 
