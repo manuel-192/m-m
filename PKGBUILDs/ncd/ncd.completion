@@ -1,0 +1,29 @@
+# bash completion for ncd        -*- shell-script -*-
+
+_ncd_complete() {
+    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+_ncd_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+#    case "$prev" in
+#        --reponame)
+#            COMPREPLY=( $(compgen -W "" -- "$cur") )
+#            ;;
+#        *)
+            case "$cur" in
+                -* | "")
+                    _ncd_complete "<folder> --help -h -hh --show-tree -t --whole-word -w"
+                    ;;
+                *)
+                    _filedir -d
+                    ;;
+            esac
+#            ;;
+#    esac
+} &&
+complete -F _ncd_ ncd

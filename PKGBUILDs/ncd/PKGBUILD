@@ -4,20 +4,24 @@
 pkgname=ncd
 pkgdesc="Another cd augmenter."
 url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pkgname"
-pkgver=0.4.5
+pkgver=0.5
 pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(bash)
+optdepends=(bash-completion)
 
 source=(
     $url/ncd-helper.bash
     $url/ncd-install
+    $url/ncd.completion
 )
 sha512sums=('b2b2b7c659ddc0f0d8321971ba6981944ab95934320f60f4435fb88f929c301d3f887eb700170902fe2a1a7273a78dac440f8e0df4ab277f5d786fceaa0c092a'
-            '94ea5fdf40867e03d26d7bebc2f7fe99ffb26966f58904a33d2c4d2353d5319f8d2ef1d4ac6c7168caf1a059bb6d63275d0f6e33ac36999c109dc36c0d723a2d')
+            '94ea5fdf40867e03d26d7bebc2f7fe99ffb26966f58904a33d2c4d2353d5319f8d2ef1d4ac6c7168caf1a059bb6d63275d0f6e33ac36999c109dc36c0d723a2d'
+            'eafcd17cddaac3e831c6fdebd1b9c3175467d55296dc7ddabf1655cbb70e3fdebbcf6d39afab91b65a1282ce71fe73e8f18bc224608e9a3f95dec911464d7b42')
 
 package() {
     install -Dm644 ncd-helper.bash         $pkgdir/etc/skel/ncd-helper.bash
     install -Dm755 ncd-install             $pkgdir/usr/bin/ncd-install
+    install -Dm755 ncd.completion          $pkgdir/usr/share/bash-completion/completions/ncd
 }
