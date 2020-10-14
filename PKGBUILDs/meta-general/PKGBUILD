@@ -4,19 +4,17 @@
 pkgname=meta-general
 pkgdesc="Nice stuff meta."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1
-pkgrel=4
+pkgver=0.2
+pkgrel=1
 arch=(any)
 license=(GPL)
-
 depends=(
     # upstream
-    android-tools
-    avidemux-qt
     ccrypt
     chromium
     colordiff
-    exo xdg-utils
+    emacs
+    exo
     gparted
     gufw
     hub
@@ -27,31 +25,51 @@ depends=(
     meld
     most
     orage
+    pacutils
     rcs
     sddm
     simple-scan
     terminator
-    thunderbird
+    unison
+    xdg-utils
     xz
-    youtube-dl
-    # clamav evolution solaar
 
     # m-m
-    customcfg
-    meta-bash
-    meta-cpp
-    meta-games
-    pahis
-    pkexec2
-    suc
-    syu
-    UserManager
-    yaygg
+    #customcfg
+    #meta-bash
+    #meta-cpp
+    #meta-games
+    #pahis
+    #pkexec2
+    #suc
+    #syu
+    #UserManager
+    #yaygg
 
     # m-more
-    code-fix
+    #code-fix
+)
+optdepends=(
+    "android-tools: Tools for managing Android devices"
+    "avidemux-qt: Video editor"
+    "clamav: Virus scanner"
+    "code: great IDE"
+    "evolution: E-mail client"
+    "kaffeine: great TV watching"
+    "llpp: fast PDF reader"
+    "mpv: good video player"
+    "thunderbird: Email client"
+    "solaar: Logitech USB device (mouse,keyboard) manager"
+    "udiskie: nice removable disk mounter"
+    "youtube-dl: Youtube stuff"
 )
 
 package() {
+    local xx
+    echo "Making sure the following packages are installed:"
+    for xx in "${depends[@]}" ; do
+        echo "    $xx"
+    done
     echo Done.
 }
+
