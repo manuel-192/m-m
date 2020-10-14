@@ -4,7 +4,7 @@
 pkgname=install-kde
 pkgdesc="KDE installer package"
 pkgver=0.1
-pkgrel=1
+pkgrel=1.1
 arch=('any')
 license=("GPL")
 url="https://raw.githubusercontent.com/endeavouros-team/install-scripts/master/netinstall.yaml"
@@ -16,3 +16,4 @@ depends=(
 package() {
   echo Done.
 }
+
