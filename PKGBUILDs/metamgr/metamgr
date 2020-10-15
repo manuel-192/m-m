@@ -105,9 +105,9 @@ RemoveIfInstalled() {
 }
 
 BuildInstall() {
-    local date=$(date '+%s')   # seconds from 1970 UTC
+    local version_suffix="updated by PKGBUILD"
     sed -i PKGBUILD \
-        -e "s|^\(pkgver=.*\)$|\1.eos.$date|"
+        -e "s|^\(pkgver=.*\)$|\1.eos.$version_suffix|"
 
     # A problem with meta packages:
     #   "Users cannot remove meta package dependencies without having to uninstall the meta package itself."
