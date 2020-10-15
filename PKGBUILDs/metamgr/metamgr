@@ -121,7 +121,7 @@ BuildInstall() {
 
 Cleanup() {
     cd $origdir
-    # rm -rf $workdir
+    rm -rf $workdir
 }
 
 ParamCheck() {
