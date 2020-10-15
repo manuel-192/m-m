@@ -114,7 +114,9 @@ BuildInstall() {
     # See https://wiki.archlinux.org/index.php/Meta_package_and_package_group#Difference_between_meta_package_and_package_group
 
     [ "$has_real_removes" = "yes" ] && RemoveIfInstalled "$meta"
-    makepkg --clean --nodeps --force --install --syncdeps || DIE "failed to build and install new meta-package '$meta'"
+    printf "\nBuilding and installing package '$meta':\n\n" >&2
+    makepkg --clean --nodeps --force --install --syncdeps --noconfirm || \
+        DIE "failed to build and install new meta-package '$meta'"
 }
 
 Cleanup() {
@@ -139,7 +141,7 @@ ParamCheck() {
 CreateWorkEnv() {
     workdir=$(mktemp -d /tmp/$progname.XXXXX)
     cd $workdir
-    yay -G "$meta" || {
+    yay -G "$meta" >/dev/null || {
         Cleanup
         DIE "problem fetching the PKGBUILD of meta-package '$meta'"
     }

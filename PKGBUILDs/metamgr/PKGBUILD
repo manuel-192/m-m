@@ -13,7 +13,7 @@ depends=(yay)
 source=(
     $url/$pkgname
 )
-sha512sums=('681996b4a455e01e9ca2691365e5432f9614cd50bb9f4a52bf26f49ec72c384461d6f06dad4eb33f3749f82dce98956b1dd8ce96413d576a4acac0b9420247e0')
+sha512sums=('7427bcfe24759f7172dda495983e909420c59f7a7701b70efbc0f8a6bc2c994f509d26aeb41d91a8f1f1740dc8802ed2c14e1d782967548e11113a96023c4856')
 
 package() {
     install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
