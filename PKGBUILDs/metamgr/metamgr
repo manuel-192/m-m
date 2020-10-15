@@ -1,0 +1,209 @@
+#!/bin/bash
+
+# Manipulate the PKGBUILD of a meta package.
+    
+# Fetch the PKGBUILD of the given meta package.
+# Use the deps of the currently installed meta-package or deps in the fetched PKGBUILD.
+# Find dep-package names from a given meta package, e.g. plasma-meta: discover, kde*, etc.
+# Manipulate the "depends" array if the meta package by adding or removing a package.
+# Build and install the new meta package with: makepkg
+
+DIE() {
+    echo "Error: $1" >&2
+    [ -n "$workdir" ] && echo "See folder '$workdir' for more details" >&2
+    echo "" >&2
+    Usage
+    exit 1
+}
+
+GetDepends() {
+    IsInstalledPkg "$meta"
+
+    if [ "$?" -eq 0 ] ; then
+        # The meta-package is currently installed.
+        # Get the dependencies of the meta-package from the currently installed meta-package.
+        local xx
+        local deps="$(LANG=C pacman -Qi "$meta" | sed -n '/^Depends On /,/^Optional Deps /p' | sed -e '$d' -e 's|^Depends On[ ]*:||')"
+        for xx in $deps ; do
+            depends_mod+=("$xx")
+        done
+    else
+        # Get the dependencies of the meta-package from the fetched PKGBUILD.
+        source PKGBUILD
+        depends_mod=("${depends[@]}")
+    fi
+}
+
+PutDepends() {
+    # Make the PKGBUILD use new dependencies.
+
+    # rename old 'depends' array variable
+    sed -i PKGBUILD \
+        -e "s|^depends=(|_depends_replaced_=(|"
+
+    local xx
+    local newval=$( while true ; do
+                        echo "depends=("
+                        for xx in "${depends_mod[@]}" ; do
+                            echo "    '$xx'"
+                        done
+                        echo ")"
+                        break
+                    done
+          )
+    local tmpname=$(mktemp -u PKGBUILD.XXXXXXXX)
+    mv PKGBUILD $tmpname
+    echo "$newval" > PKGBUILD
+    cat $tmpname >> PKGBUILD
+    rm -f $tmpname
+}
+
+AddDepends() {
+    local sub dd
+    local new_depends
+
+    new_depends=("${depends_mod[@]}")
+
+    for sub in "$@" ; do
+        for dd in "${depends_mod[@]}" ; do
+            [ "$sub" = "$dd" ] && break
+        done
+        [ "$sub" = "$dd" ] || new_depends+=("$sub")
+    done
+    depends_mod=("${new_depends[@]}")
+}
+
+IsInstalledPkg() {
+    pacman -Q "$1" >& /dev/null
+}
+
+RemoveDepends() {
+    local sub dd
+    local new_depends=()
+
+    for dd in "${depends_mod[@]}" ; do
+        for sub in "$@" ; do
+            [ "$sub" = "$dd" ] && break
+        done
+        if [ "$sub" = "$dd" ] ; then
+            IsInstalledPkg "$sub" && has_real_removes=yes
+        else
+            new_depends+=("$dd")
+        fi
+    done
+    depends_mod=("${new_depends[@]}")
+}
+
+RemoveIfInstalled() {
+    local pkg="$1"
+
+    IsInstalledPkg "$pkg"
+    if [ $? -eq 0 ] ; then
+        echo "Removing package '$pkg':"
+        sudo pacman -Rsn "$pkg" || DIE "failed to remove package '$pkg'"
+    fi
+}
+
+BuildInstall() {
+    local date=$(date '+%s')   # seconds from 1970 UTC
+    sed -i PKGBUILD \
+        -e "s|^\(pkgver=.*\)$|\1.eos.$date|"
+
+    # A problem with meta packages:
+    #   "Users cannot remove meta package dependencies without having to uninstall the meta package itself."
+    # See https://wiki.archlinux.org/index.php/Meta_package_and_package_group#Difference_between_meta_package_and_package_group
+
+    [ "$has_real_removes" = "yes" ] && RemoveIfInstalled "$meta"
+    makepkg --clean --nodeps --force --install --syncdeps || DIE "failed to build and install new meta-package '$meta'"
+}
+
+Cleanup() {
+    cd $origdir
+    # rm -rf $workdir
+}
+
+ParamCheck() {
+    [ -n "$meta" ] || DIE "meta-package missing"
+    [ -n "$1" ]    || DIE "dep-package(s) missing"
+
+    local xx
+    for xx in "$@" ; do
+        case "$xx" in
+            -*) removes+=("${xx:1}") ;;
+            +*) adds+=("${xx:1}") ;;
+            *) DIE "add or remove '$xx'? Prepend with + or -" ;;
+        esac
+    done
+}
+
+CreateWorkEnv() {
+    workdir=$(mktemp -d /tmp/$progname.XXXXX)
+    cd $workdir
+    yay -G "$meta" || {
+        Cleanup
+        DIE "problem fetching the PKGBUILD of meta-package '$meta'"
+    }
+    cd "$meta"
+    [ -r PKGBUILD ] || DIE "file 'meta/PKGBUILD' is not found"
+    [ -n "$(grep '^depends=(' PKGBUILD)" ] || DIE "$meta/PKGBUILD has no 'depends' array, please check!"
+
+    # Now we are in $workdir/$meta and have ./PKGBUILD
+}
+
+Main()
+{
+    local meta="$1"
+    local progname=metamgr
+    local workdir=""
+    local origdir="$PWD"
+    local adds=() removes=() has_real_removes=no
+    local depends_mod
+    shift
+
+    case "$meta" in
+        -h | --help | "") Usage ; return ;;
+    esac
+
+    ParamCheck "$@"
+    CreateWorkEnv
+
+    GetDepends
+
+    AddDepends    "${adds[@]}"
+    RemoveDepends "${removes[@]}"
+
+    PutDepends
+    
+    BuildInstall && Cleanup
+}
+
+Usage() {
+    cat <<EOF
+Usage:
+    $progname meta-package {prefix}dep-package [{prefix}dep-package ...]
+    $progname command help-option
+
+First usage syntax:
+    prefix
+        +   Adds the given dep-package as a dependency for the given meta-package.
+        -   Removes the given dep-package from the dependencies of the meta-package.
+
+    dep-package
+        A dependency package for the given meta-package.
+
+    meta-package
+        A package that has specifies required dependency packages.
+
+Second usage syntax:
+    help-option
+        -h | --help
+            This help.
+
+Example:
+    # For plasma-meta: remove discover, add kaffeine
+    $progname plasma-meta -discover +kaffeine
+
+EOF
+}
+
+Main "$@"
