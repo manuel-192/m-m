@@ -18,6 +18,7 @@ Main()
 {
     local op="$1"   # check or copy
     local progname=ArmPkgCheck
+    local git_pull_log
 
     case "$op" in
         check | copy) ;;
@@ -40,7 +41,7 @@ Main()
     case "$op" in
         check)
             Pushd $armDir
-            git pull || DIE "ARM: 'git pull' failed."
+            git_pull_log="$(git pull)" || DIE "ARM: 'git pull' failed."
             Popd
             ;;
     esac
@@ -50,7 +51,7 @@ Main()
             check)
                 diff "$armDir/$adir" "$releaseDir/$adir" >/dev/null
                 case "$?" in
-                    1) retval=1 ;;
+                    1) retval=1 ; printf "%s:\n  %s\n" "$adir" "$git_pull_log" >&2 ;;
                     2) DIE "'diff $armDir/$adir $releaseDir/$adir' failed." ;;
                 esac
                 ;;
