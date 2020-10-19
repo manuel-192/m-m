@@ -4,7 +4,7 @@
 pkgname=metamgr
 pkgdesc="Meta package manager."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.3
+pkgver=0.4
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -13,7 +13,7 @@ depends=(yay)
 source=(
     $url/$pkgname
 )
-sha512sums=('599db37c524c5d5b5fb537527a5537d6c62850dc685472c30437bb537839749655ddf64b1bdedda53030e8c06ee89431bc98d23776798875bfe96758c009049c')
+sha512sums=('84738be3621d9aaa9077a34e10f8104e3812fdeea69c80638dc3418f2de31497be25cd8abc2102c16af60ab57aa1fb3ba1b955d38fc0e03b3248d0d46e5bb0e8')
 
 package() {
     sed -i $pkgname \

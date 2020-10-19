@@ -16,22 +16,18 @@ DIE() {
     exit 1
 }
 
-GetDepends() {
-    IsInstalledPkg "$meta"
+Info() {
+    echo "---> Info: $1" >&2
+}
 
-    if [ "$?" -eq 0 ] ; then
-        # The meta-package is currently installed.
-        # Get the dependencies of the meta-package from the currently installed meta-package.
-        local xx
-        local deps="$(LANG=C pacman -Qi "$meta" | sed -n '/^Depends On /,/^Optional Deps /p' | sed -e '$d' -e 's|^Depends On[ ]*:||')"
-        for xx in $deps ; do
-            depends_mod+=("$xx")
-        done
-    else
-        # Get the dependencies of the meta-package from the fetched PKGBUILD.
-        source PKGBUILD
-        depends_mod=("${depends[@]}")
-    fi
+IsInstalledPkg() {
+    pacman -Q "$1" >& /dev/null
+}
+
+GetDepends() {
+    # Get the dependencies of the meta-package from the fetched PKGBUILD.
+    source PKGBUILD
+    depends_mod=("${depends[@]}")
 }
 
 PutDepends() {
@@ -41,40 +37,23 @@ PutDepends() {
     sed -i PKGBUILD \
         -e "s|^depends=(|_depends_replaced_=(|"
 
-    local xx
-    local newval=$( while true ; do
-                        echo "depends=("
-                        for xx in "${depends_mod[@]}" ; do
-                            echo "    '$xx'"
-                        done
-                        echo ")"
-                        break
-                    done
-          )
+    local newval=$( printf "depends=(\n%s\n)\n" "$(printf "    '%s'\n" "${depends_mod[@]}")" )
     local tmpname=$(mktemp -u PKGBUILD.XXXXXXXX)
     mv PKGBUILD $tmpname
+
+    # echo "$newval" >&2                 # TESTING !!
+
     echo "$newval" > PKGBUILD
     cat $tmpname >> PKGBUILD
     rm -f $tmpname
 }
 
 AddDepends() {
-    local sub dd
-    local new_depends
-
-    new_depends=("${depends_mod[@]}")
-
-    for sub in "$@" ; do
-        for dd in "${depends_mod[@]}" ; do
-            [ "$sub" = "$dd" ] && break
-        done
-        [ "$sub" = "$dd" ] || new_depends+=("$sub")
+    local dep
+    for dep in "$@" ; do
+        Info "adding dependency '$dep' to '$meta'"
+        depends_mod+=("$dep")
     done
-    depends_mod=("${new_depends[@]}")
-}
-
-IsInstalledPkg() {
-    pacman -Q "$1" >& /dev/null
 }
 
 RemoveDepends() {
@@ -86,7 +65,16 @@ RemoveDepends() {
             [ "$sub" = "$dd" ] && break
         done
         if [ "$sub" = "$dd" ] ; then
-            IsInstalledPkg "$sub" && has_real_removes=yes
+            IsInstalledPkg "$sub"
+            case "$?" in
+                0)
+                    Info "removing '$sub' from meta package '$meta'"
+                    must_delete_meta_temporarily=yes
+                    ;;
+                *)
+                    IsInstalledPkg "$meta" && Info "dependency '$sub' of fetched '$meta' is not currently installed"
+                    ;;
+            esac
         else
             new_depends+=("$dd")
         fi
@@ -97,15 +85,25 @@ RemoveDepends() {
 RemoveIfInstalled() {
     local pkg="$1"
 
+    [ "$must_delete_meta_temporarily" = "yes" ] || return
+
     IsInstalledPkg "$pkg"
-    if [ $? -eq 0 ] ; then
-        echo "Removing package '$pkg':"
-        sudo pacman -Rsn "$pkg" || DIE "failed to remove package '$pkg'"
-    fi
+    case "$?" in
+        0)
+            Info "uninstalling meta package '$pkg':"
+            sudo pacman -Rdd "$pkg" || DIE "failed to remove package '$pkg'"
+            ;;
+        *)
+            #Info "'$pkg' is not currently installed."
+            ;;
+    esac
 }
 
 BuildInstall() {
     local version_suffix="updated by PKGBUILD"
+    if [ "$version_suffix" = "updated by PKGBUILD" ] ; then
+        version_suffix="12345"
+    fi
     sed -i PKGBUILD \
         -e "s|^\(pkgver=.*\)$|\1.eos.$version_suffix|"
 
@@ -113,10 +111,11 @@ BuildInstall() {
     #   "Users cannot remove meta package dependencies without having to uninstall the meta package itself."
     # See https://wiki.archlinux.org/index.php/Meta_package_and_package_group#Difference_between_meta_package_and_package_group
 
-    [ "$has_real_removes" = "yes" ] && RemoveIfInstalled "$meta"
-    printf "\nBuilding and installing package '$meta':\n\n" >&2
-    makepkg --clean --nodeps --force --install --syncdeps --noconfirm || \
-        DIE "failed to build and install new meta-package '$meta'"
+    RemoveIfInstalled "$meta"
+    Info "Building package '$meta' and installing (using --noconfirm):"
+
+    makepkg --clean --nodeps --force --syncdeps --install --noconfirm \
+        || DIE "failed to build and install new meta-package '$meta'"
 }
 
 Cleanup() {
@@ -158,7 +157,8 @@ Main()
     local progname=metamgr
     local workdir=""
     local origdir="$PWD"
-    local adds=() removes=() has_real_removes=no
+    local adds=() removes=()
+    local must_delete_meta_temporarily=no    # if any dep-package is removed, temporarily delete current meta package and create new
     local depends_mod
     shift
 
@@ -175,7 +175,6 @@ Main()
     RemoveDepends "${removes[@]}"
 
     PutDepends
-    
     BuildInstall && Cleanup
 }
 
