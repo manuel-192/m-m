@@ -1,6 +1,9 @@
 #!/bin/bash
 
 ###############################################################################
+#
+# Author: manuel (see https://forum.endeavouros.com)
+#
 # ncd - simple command line app combining cd with $CDPATH and more.
 #
 # Uses two configuration files:
