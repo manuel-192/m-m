@@ -1,12 +1,15 @@
 #!/bin/bash
-
+#
+# Author: manuel (see https://forum.endeavouros.com)
+#
 # Manipulate the PKGBUILD of a meta package.
-    
+#    
 # Fetch the PKGBUILD of the given meta package.
 # Use the deps of the currently installed meta-package or deps in the fetched PKGBUILD.
 # Find dep-package names from a given meta package, e.g. plasma-meta: discover, kde*, etc.
 # Manipulate the "depends" array if the meta package by adding or removing a package.
 # Build and install the new meta package with: makepkg
+#
 
 DIE() {
     echo "Error: $1" >&2
