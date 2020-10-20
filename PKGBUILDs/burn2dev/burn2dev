@@ -45,7 +45,7 @@ EOF
 ShowDevices() {
     printf "Information about candidate (=unmounted) USB devices:\n" >&2
 
-    local lsblk='lsblk -p -o NAME,VENDOR,MODEL,FSTYPE,LABEL,UUID,FSAVAIL,MOUNTPOINT'
+    local lsblk='lsblk -p -o NAME,VENDOR,MODEL,FSTYPE,LABEL,UUID,FSAVAIL'
     local devs="$(FindUnmountedUsbDevices)"
 
     if [ -n "$devs" ] ; then

@@ -4,7 +4,7 @@
 pkgname=burn2dev
 pkgdesc="CLI burning ISO to USB stick with dd."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
+pkgver=1.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ source=(
     $pkgname
     find-usb-sticks
 )
-sha512sums=('5029dccb9fda813fc5575faccaa1e4d0133fe2af461785e192b7176e1b49ed3554a2ac23d782c2fa0abca43d50749c54ea8e50d8a6c079840071dc33da2c05c9'
+sha512sums=('f984828bbe6b94846f60d26aac3f44c8c2cd8975000c889626e0c94e38939f23b1010170b0aa3fa2a5d0d680830f36f09080e9a183e966cd72b22a84cadc76db'
             'bbd7d2a7322ade84eab95c16b43614b86b370ace793d0e7a6eb161def15f20de19605d23658b1b30733f7fab210852abc3f90a7f87a507ffcf4e6242961e8d09')
 
 package() {
