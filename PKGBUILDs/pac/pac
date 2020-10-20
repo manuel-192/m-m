@@ -1,5 +1,7 @@
 #!/bin/bash
-
+#
+# Author: manuel (see https://forum.endeavouros.com)
+#
 # Wrapper for pacman. Knows when to have root permissions.
 # Usage: pacmanwrapper [pacman-parameters]
 
