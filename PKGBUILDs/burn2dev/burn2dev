@@ -8,7 +8,7 @@
 # Usage() required command 'find-usb-sticks'.
 
 DIE() {
-    printf "%s\n\n" "$progname: Error: $1" >&2
+    printf "%s\n\n" "Error: $progname: $1" >&2
     [ -n "$2" ] && $2
     Usage
     exit 1
@@ -47,8 +47,12 @@ ShowDevices() {
 
     local lsblk='lsblk -p -o NAME,VENDOR,MODEL,FSTYPE,LABEL,UUID,FSAVAIL,MOUNTPOINT'
     local devs="$(FindUnmountedUsbDevices)"
-    
-    $lsblk $devs | sed -e 's|^NAME   |DEVICE |' -e 's|^|    |' | sed '/^[ ]*DEVICE .*$/a\ ' >&2
+
+    if [ -n "$devs" ] ; then
+        $lsblk $devs | sed -e 's|^NAME   |DEVICE |' -e 's|^|    |' | sed '/^[ ]*DEVICE .*$/a\ ' >&2
+    else
+        echo "    Candidate USB devices not found!" >&2
+    fi
     echo "" >&2
 }
 
@@ -81,30 +85,23 @@ Main()
 {
     local progname="$(basename "$0")"
     case "$1" in
-        --list-usb-candidates | --list | -l)
-            ShowDevices
-            return
-            ;;
-        --help | -h)
-            Usage
-            return
-            ;;
-        -*)
-            DIE "unsupported option '$1'."
-            ;;
+        --list-usb-candidates | --list | -l) ShowDevices ; return ;;
+        --help | -h)                         Usage ;       return ;;
+        -*)                                  DIE "unsupported option '$1'." ;;
     esac
     local dev="$1"
     local iso="$2"
     local usb_devices=""
 
-    test -n "$dev" || DIE "device parameter missing."
-    test -n "$(lsblk -p | grep -w ^$dev)" || DIE "device $dev is not available." ShowDevices
-    IsDevMounted "$dev" && DIE "$dev contains mounted partitions!" ShowDevices
+    [ -n "$dev" ]                        || DIE "parameters missing."
+    [ -n "$(lsblk -p | grep -w ^$dev)" ] || DIE "device $dev is not available." ShowDevices
+    IsDevMounted "$dev"                  && DIE "$dev contains mounted partitions!" ShowDevices
     usb_devices="$(FindUnmountedUsbDevices)"
-    IsUsbDevice "$dev" "$usb_devices" || DIE "device $dev is not an unmounted USB device!"
+    [ -n "$usb_devices" ]                || DIE "No unmounted USB devices found."
+    IsUsbDevice "$dev" "$usb_devices"    || DIE "device $dev is not an unmounted USB device!" ShowDevices
 
-    test -n "$iso" || DIE "ISO file parameter is missing."
-    test -r "$iso" || DIE "ISO file $iso does not exist."
+    [ -n "$iso" ]                        || DIE "ISO file parameter is missing."
+    [ -r "$iso" ]                        || DIE "ISO file $iso does not exist."
 
     test "$(whoami)" = "root" || DIE "must run this program as root"
 

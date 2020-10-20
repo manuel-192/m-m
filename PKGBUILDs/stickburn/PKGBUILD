@@ -4,27 +4,21 @@
 pkgname=stickburn
 pkgdesc="GUI for burning ISO to USB stick with dd."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.7
+pkgver=1.8
 pkgrel=1
 arch=('any')
 license=('GPL')
-depends=(bash yad)
+depends=(bash yad burn2dev)
 
 source=(
     $pkgname
     $pkgname.desktop
-    find-usb-sticks
-    burn2dev
 )
 sha512sums=('d0881555914ae557fc45eea9236a2b1403d35d2e1dca878a648eecca44eee7909c1e744528cc9ece970f10b3839c57393bf467762fa598bd8a4e6ad8456457ba'
-            '02c2027ff3f187cd988220f01e2fbba5398dece1528529090a39014fe8a956f89ef2deb05475c4f7040dbf6adf248afc9b6915a38c664fd7da558e57886719f7'
-            'bbd7d2a7322ade84eab95c16b43614b86b370ace793d0e7a6eb161def15f20de19605d23658b1b30733f7fab210852abc3f90a7f87a507ffcf4e6242961e8d09'
-            '85c5531809bbccb501f4429c4e04263532945a73bf64c79f1aa31966ffeb417e088711d29b89201a78bdce80fea7a6dab06f047cbed020ef58b5544650a48c15')
+            '02c2027ff3f187cd988220f01e2fbba5398dece1528529090a39014fe8a956f89ef2deb05475c4f7040dbf6adf248afc9b6915a38c664fd7da558e57886719f7')
 
 package() {
   cd $srcdir
   install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
-  install -Dm755 find-usb-sticks  $pkgdir/usr/bin/find-usb-sticks
-  install -Dm755 burn2dev         $pkgdir/usr/bin/burn2dev
   install -Dm644 $pkgname.desktop $pkgdir/usr/share/applications/$pkgname.desktop
 }
