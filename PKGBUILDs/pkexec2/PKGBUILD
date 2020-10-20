@@ -4,7 +4,7 @@
 pkgname=pkexec2
 pkgdesc='pkexec wrapper, retaining the current working directory instead of changing it to /root'
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.3
+pkgver=1.4
 pkgrel=1
 
 arch=('any')
@@ -14,7 +14,7 @@ depends=('bash' 'polkit')
 source=(
     "$url/$pkgname"
 )
-sha512sums=('d4174cb84a58232c7a8b66709ce7886e038c3974e8d1c0c2d7eaf9103ee7ada7b7512a8ba219f248649f644dc9c2177aa466b51ca7df47f558a98349c7c5993a')
+sha512sums=('3e8292868a83e48942bf8763468ce53ccfc29688e0f0527f58f6bd06347d5c6c71b03c6e68d1aec8fcb7e1e0c7a26f28b7138e295a0e2517492d942f5eb95345')
 
 package() {
     cd $srcdir
