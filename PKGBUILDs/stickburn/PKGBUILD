@@ -4,7 +4,7 @@
 pkgname=stickburn
 pkgdesc="GUI for burning ISO to USB stick with dd."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.6
+pkgver=1.7
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -18,8 +18,8 @@ source=(
 )
 sha512sums=('d0881555914ae557fc45eea9236a2b1403d35d2e1dca878a648eecca44eee7909c1e744528cc9ece970f10b3839c57393bf467762fa598bd8a4e6ad8456457ba'
             '02c2027ff3f187cd988220f01e2fbba5398dece1528529090a39014fe8a956f89ef2deb05475c4f7040dbf6adf248afc9b6915a38c664fd7da558e57886719f7'
-            'f1b7e23e16df16c375142e3de187a8bffe724b0fd70e133c521d11a83ee021fbba211cac071a4418884b3a0c65ba9df66093c5e6106209ced64c90fe8e7c26bd'
-            'a141ff85c1f1351e2a96f8e57b8ff3aa3bf16ec228320cba6bcdc7ae97b7ab6ef4abd0cf4dbc01cbeefc8e6287a24acb69216f63c17dcbd3d07b6d077e367aed')
+            'bbd7d2a7322ade84eab95c16b43614b86b370ace793d0e7a6eb161def15f20de19605d23658b1b30733f7fab210852abc3f90a7f87a507ffcf4e6242961e8d09'
+            '85c5531809bbccb501f4429c4e04263532945a73bf64c79f1aa31966ffeb417e088711d29b89201a78bdce80fea7a6dab06f047cbed020ef58b5544650a48c15')
 
 package() {
   cd $srcdir

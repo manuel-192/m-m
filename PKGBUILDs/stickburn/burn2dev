@@ -1,10 +1,16 @@
 #!/bin/bash
-
+#
+# Author: manuel (see https://forum.endeavouros.com)
+#
 # Burn ISO file to a (USB) drive.
 # Make sure drive's partitions are not mounted.
+#
+# Usage() required command 'find-usb-sticks'.
 
 DIE() {
-    echo "Error: $1" >&2
+    printf "%s\n\n" "$progname: Error: $1" >&2
+    [ -n "$2" ] && $2
+    Usage
     exit 1
 }
 
@@ -15,19 +21,92 @@ IsDevMounted()
     test -n "$(/usr/bin/df | /usr/bin/grep "^$dev")"
 }
 
+Usage() {
+    cat <<EOF >&2
+Usage:
+    $progname device iso
+    $progname -l
+    $progname -h
+
+Parameters:
+    device    A target drive device name, e.g. /dev/sdc
+    iso       ISO file containing the OS.
+    -l        Show information about possible (unmounted) target USB drive candidates.
+    -h        Show this help.
+
+Notes:
+- Be careful to select the correct target device!
+- To find the right target device, use e.g. command: lsblk -fp
+- Target device cannot be mounted while burning it.
+- Run this program as root.
+EOF
+}
+
+ShowDevices() {
+    printf "Information about candidate (=unmounted) USB devices:\n" >&2
+
+    local lsblk='lsblk -p -o NAME,VENDOR,MODEL,FSTYPE,LABEL,UUID,FSAVAIL,MOUNTPOINT'
+    local devs="$(FindUnmountedUsbDevices)"
+    
+    $lsblk $devs | sed -e 's|^NAME   |DEVICE |' -e 's|^|    |' | sed '/^[ ]*DEVICE .*$/a\ ' >&2
+    echo "" >&2
+}
+
+FindUnmountedUsbDevices() {
+    local sticksinfo
+    local stick dev devs=""
+
+    readarray -t sticksinfo <<<  $(find-usb-sticks)
+
+    for stick in "${sticksinfo[@]}" ; do
+        dev="$(echo "$stick" | awk '{print $1}' | sed 's|:$||')"
+        IsDevMounted "$dev" || {
+            devs+="$dev "
+        }
+    done
+    echo "$devs"
+}
+
+IsUsbDevice() {
+    local dev="$1"
+    local devs="$2"
+    local xx
+    for xx in $devs ; do
+        [ "$xx" = "$dev" ] && return 0
+    done
+    return 1
+}
+
 Main()
 {
+    local progname="$(basename "$0")"
+    case "$1" in
+        --list-usb-candidates | --list | -l)
+            ShowDevices
+            return
+            ;;
+        --help | -h)
+            Usage
+            return
+            ;;
+        -*)
+            DIE "unsupported option '$1'."
+            ;;
+    esac
     local dev="$1"
     local iso="$2"
-
-    test "$(whoami)" = "root" || DIE "must run this as root"
+    local usb_devices=""
 
     test -n "$dev" || DIE "device parameter missing."
-    test -n "$(lsblk -p | grep -w ^$dev)" || DIE "device $dev not available."
-    IsDevMounted "$dev" && DIE "Sorry, $dev is currently mounted!"
+    test -n "$(lsblk -p | grep -w ^$dev)" || DIE "device $dev is not available." ShowDevices
+    IsDevMounted "$dev" && DIE "$dev contains mounted partitions!" ShowDevices
+    usb_devices="$(FindUnmountedUsbDevices)"
+    IsUsbDevice "$dev" "$usb_devices" || DIE "device $dev is not an unmounted USB device!"
 
-    test -n "$iso" || DIE "ISO file parameter missing."
+    test -n "$iso" || DIE "ISO file parameter is missing."
     test -r "$iso" || DIE "ISO file $iso does not exist."
+
+    test "$(whoami)" = "root" || DIE "must run this program as root"
 
     dd status=progress oflag=direct bs=4M if="$iso" of="$dev"
 }
