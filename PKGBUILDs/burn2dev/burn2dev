@@ -5,7 +5,7 @@
 # Burn ISO file to a (USB) drive.
 # Make sure drive's partitions are not mounted.
 #
-# Usage() required command 'find-usb-sticks'.
+# Requires command 'find-usb-sticks'.
 
 DIE() {
     printf "%s\n\n" "Error: $progname: $1" >&2

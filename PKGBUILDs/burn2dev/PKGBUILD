@@ -4,7 +4,7 @@
 pkgname=burn2dev
 pkgdesc="CLI burning ISO to USB stick with dd."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.1
+pkgver=1.2
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,8 +14,8 @@ source=(
     $pkgname
     find-usb-sticks
 )
-sha512sums=('f984828bbe6b94846f60d26aac3f44c8c2cd8975000c889626e0c94e38939f23b1010170b0aa3fa2a5d0d680830f36f09080e9a183e966cd72b22a84cadc76db'
-            'bbd7d2a7322ade84eab95c16b43614b86b370ace793d0e7a6eb161def15f20de19605d23658b1b30733f7fab210852abc3f90a7f87a507ffcf4e6242961e8d09')
+sha512sums=('781542f4abb6746629833f779041102fdaf2f5bfc5cc607e2b3f9c06696a3443a32fa7f7ac85fc3bf363f064af682e33b2f30a72efa72ebdc62e583cbc97609d'
+            'c8b3b39494ffae1ad1cd2b5004b32cc466f66c804dca0aafefa07dc172bcf71e4bf0f8e6d88d63f98e828f6c211141d58a659910ff8639d2c83d6e3d3cd345cc')
 
 package() {
   install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname

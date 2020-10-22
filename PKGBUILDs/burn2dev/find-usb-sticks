@@ -46,22 +46,24 @@ USB_generation()
     case "$speed" in
         480)  echo "2.0" ;;
         5000) echo "3.0" ;;
-        *)    echo "[unknown: $speed]" ;;
+        *)    echo "[Mbps:$speed]" ;;
     esac
 }
 
 Main()
 {
     local path vendor model usbgen
+    local size
 
     for path in $(USB_all_infos PATH)
     do
         vendor=$( USB_info "$path" VENDOR)
         model=$(  USB_info "$path" MODEL)
+        size=$(  USB_info "$path" SIZE)
 
         usbgen=$( USB_generation "$vendor")
 
-        echo "$path: usb-$usbgen $vendor $model"
+        echo "$path: usb-$usbgen $vendor $model $size"
     done
 }
 
