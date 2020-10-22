@@ -1,0 +1,122 @@
+#!/bin/bash
+#
+# A workaround for grub-mkconfig's initrd line generation problem on some distros.
+# This modifies two files, see their names (in "local file=...") in the functions below.
+#
+# NOTE: to restore old behavior, simply reinstall packages 'grub' and 'os-prober'.
+
+_log2() {
+    echo "$@" >&2
+}
+
+_logfile() {
+    echo "$@" >> $log
+}
+
+_log() {
+    _log2 "$@"
+    _logfile "$@"
+}
+
+_die() {
+    _log "Error: $@"
+    rm -f $lock
+    exit 1
+}
+
+_check_file_existence() {
+    local file="$1"
+    local pkg="$2"
+    if [ ! -r "$file" ] ; then
+        case "$pkg" in
+            grub)
+                _die "file '$file' from package '$pkg' does not exist." \
+                     "Note: if you have used grub-customizer, you may need to reinstall grub, but be careful!"
+                ;;
+            os-prober)
+                _die "file '$file' from package '$pkg' does not exist."
+                ;;
+        esac
+    fi
+}
+
+_backup() {
+    local file="$1"
+    local pkg="$2"
+    _check_file_existence "$file" "$pkg"
+    cp -a $file $file.$timemark || _die "$file: backup failed."
+    chmod -x $file.$timemark    || _die "$file.$timemark: chmod failed."
+}
+
+_show_result() {
+    local file="$1"
+    local diffs=""
+
+    [ -r $file.$timemark ] && diffs="$(diff $file $file.$timemark)"
+
+    if [ "$diffs" != "" ] ; then
+        changed=yes
+        _logfile "$prompt: Changes for $file:"
+        _logfile "$diffs"
+        _logfile "$prompt: Backup to $file.$timemark."
+        _log2 "$prompt: $file changed. See file $log."
+    else
+        _logfile "$prompt: $file not changed."
+    fi
+}
+
+_grub_mod1() {
+    local file=/etc/grub.d/10_linux               # from package 'grub'
+    local varname=GRUB_DISABLE_SUBMENU            # re-use official var name!
+    _backup $file grub
+
+    local before1='{dirname}\/initramfs-'
+    local insert1="if [ \"\$$varname\" != \"y\" ] ; then"
+
+    local before2='{GRUB_DISABLE_RECOVERY}'
+    local insert2="fi"
+
+    sed -i $file \
+        -e "/$before1/i \  $insert1" \
+        -e "/$before2/i \  $insert2"
+    _show_result $file
+}
+
+_grub_mods() {
+    _grub_mod1
+}
+
+Main() {
+    local progname=grub-tweaks
+    local in_pkg=$progname
+    local lock=/var/log/$progname.lck
+    local log=/var/log/$progname.log
+    local prompt="===> INFO"
+    local warning="===> WARNING"
+    local changed=no
+
+    if [ -r $lock ] ; then
+        _log2 "$progname is already running!"
+        return
+    fi
+    if [ $EUID -ne 0 ] ; then
+        _log2 "Elevated privileges required!"
+        return 1
+    fi
+    touch $lock
+
+    rm -f $log
+
+    local timemark="$(date +%s)"
+
+    _log2 "$prompt: $in_pkg / $progname:"
+    _grub_mods
+
+    rm -f $lock
+
+    if [ "$changed" = "yes" ] ; then
+        /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
+    fi
+}
+
+Main "$@"

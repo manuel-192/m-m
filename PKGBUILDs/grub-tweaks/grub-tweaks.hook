@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = grub
+
+[Action]
+Description = Tweak 'grub' after upgrading.
+When = PostTransaction
+Depends = grub
+Exec = /usr/bin/grub-tweaks

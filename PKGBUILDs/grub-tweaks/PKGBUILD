@@ -1,0 +1,28 @@
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=grub-tweaks
+pkgdesc="Fixes, additions and enhancements to grub."
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(grub)
+
+url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pkgname"
+
+source=(
+  $url/$pkgname
+  $url/$pkgname.hook
+)
+sha512sums=('97fe813795c8a4ec5e60848704456180611d066b81df44c5ebe613beb2a0329622256a2a373cd6b983e3313d54cba55d649e4c77388e87af19faa035fe058979'
+            'c4385129b97f9ce2d92b095c1d87f0e10ed071ad04523106a08c0caffe5ef036a3ec2ce6d22610221b7bdbbd0334bf8baa6a536a9db8a6899fbdac44c615efd0')
+
+package() {
+  cd $srcdir
+
+  install -d $pkgdir/etc/pacman.d/hooks
+  install -d $pkgdir/usr/bin
+
+  install -Dm644 $pkgname.hook $pkgdir/etc/pacman.d/hooks/$pkgname.hook
+  install -Dm755 $pkgname      $pkgdir/usr/bin/$pkgname
+}
