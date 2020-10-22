@@ -65,9 +65,8 @@ _show_result() {
     fi
 }
 
-_grub_mod1() {
+_grub_mod3() {
     local file=/etc/grub.d/10_linux               # from package 'grub'
-    local varname=GRUB_DISABLE_SUBMENU            # re-use official var name!
     _backup $file grub
 
     local before1='{dirname}\/initramfs-'
@@ -82,8 +81,32 @@ _grub_mod1() {
     _show_result $file
 }
 
+_grub_mod2() {
+    local file=/etc/default/grub
+
+    if [ -z "$(grep "^$varname=" $file)" ] ; then
+        _backup $file grub
+        printf "\n%s\n" "$varname=$varvalue" >> $file
+        _show_result $file
+    fi
+}
+
+_grub_mod1() {
+    local file=/usr/bin/grub-mkconfig
+
+    _backup $file grub
+    sed -i $file \
+        -e "/^  GRUB_DISABLE_SUBMENU$/i \  $varname \\\\"  # new var before this old var
+    _show_result $file
+}
+
 _grub_mods() {
+    local varname=GRUB_DISABLE_FALLBACK     # unofficial var name!
+    local varvalue=n                        # sensible general default value
+
     _grub_mod1
+    _grub_mod2
+    _grub_mod3
 }
 
 Main() {
