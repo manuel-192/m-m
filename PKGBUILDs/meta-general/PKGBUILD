@@ -4,7 +4,7 @@
 pkgname=meta-general
 pkgdesc="Nice stuff meta."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.2
+pkgver=0.3
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -61,7 +61,6 @@ optdepends=(
     "thunderbird: Email client"
     "solaar: Logitech USB device (mouse,keyboard) manager"
     "udiskie: nice removable disk mounter"
-    "youtube-dl: Youtube stuff"
 )
 
 package() {
@@ -72,4 +71,5 @@ package() {
     done
     echo Done.
 }
+
 
