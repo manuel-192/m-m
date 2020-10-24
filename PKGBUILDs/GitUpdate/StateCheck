@@ -1,0 +1,43 @@
+#!/bin/bash
+
+DIE() {
+    echo "Error: $1" >&2
+    Cleanup
+    exit 1
+}
+
+Cleanup() {
+    if [ -n "$state_remote" ] ; then
+        if [ -r "$state_remote" ] ; then
+            rm -f "$state_remote"
+        fi
+    fi
+}
+
+Main()
+{
+    local state_local=state
+    [ -r $state_local ] || DIE "local state file not found"
+    [ -d .git ] || DIE "'$PWD' is no git folder"
+    [ -L .git ] && DIE "'.git' can't be a symlink"
+    [ -n "$(grep "https://github.com/endeavouros-team/repo" .git/config)" ] || {
+        DIE "folder '$PWD' is not endeavouros team repo"
+    }
+    local state_remote=$(mktemp)
+
+    wget -q -O $state_remote https://mirror.alpix.eu/endeavouros/repo/state || {
+        DIE "remote state file unavailable"
+    }
+
+    echo "Comparing remote and local 'state' files:" >&2
+    diff "$state_remote" "$state_local"
+    case "$?" in
+        0) echo "state: OK" >&2 ;;
+        1) DIE "differences found!" ;;
+        2) DIE "comparison failure" ;;
+    esac
+
+    Cleanup
+}
+
+Main "$@"
