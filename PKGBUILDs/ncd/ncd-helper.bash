@@ -108,13 +108,13 @@ NcdCandidates() {
         done
     fi
 
-    # filter out leaf folders that have file .no-ncd
+    # filter out leaf folders that have file $leaf_exclude_file
     local newline
     printf -v newline "\n"
     treedata2="$treedata"
     treedata=""
     for xx in $treedata2 ; do
-        if [ ! -r "$xx"/.no-ncd ] ; then
+        if [ ! -r "$xx/$leaf_exclude_file" ] ; then
             treedata+="$xx$newline"
         fi
     done
@@ -254,6 +254,8 @@ Configuration files at ~/.config/ncd:
         Example:
             ~/Documents
             ~/Pictures
+
+Individual leaf folders can be excluded by adding an empty file '$leaf_exclude_file' there.
 EOF
 }
 
@@ -264,6 +266,7 @@ ncd() {
     local show_dir=no
     local show_tree=no
     local whole_word_match=no
+    local leaf_exclude_file=".no-ncd"
 
     for arg in "$@" ; do
         case "$arg" in
