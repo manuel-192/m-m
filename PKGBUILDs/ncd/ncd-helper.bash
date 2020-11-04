@@ -68,7 +68,7 @@ NcdCandidates() {
     local ncddir=$HOME/.config/ncd
     local pathsconf=$ncddir/paths             # must have trailing /
     local excludes=$ncddir/excludes           # must have trailing / or $
-    local treedata=""
+    local treedata="" treedata2
     local paths=()
     local xx ix
     local findopt=""
@@ -107,6 +107,17 @@ NcdCandidates() {
             treedata="$(echo "$treedata" | /usr/bin/grep -v "$xx")"
         done
     fi
+
+    # filter out leaf folders that have file .no-ncd
+    local newline
+    printf -v newline "\n"
+    treedata2="$treedata"
+    treedata=""
+    for xx in $treedata2 ; do
+        if [ ! -r "$xx"/.no-ncd ] ; then
+            treedata+="$xx$newline"
+        fi
+    done
 
     # filter duplicate paths
     treedata="$(echo "$treedata" | /usr/bin/sort | /usr/bin/uniq)"
