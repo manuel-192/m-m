@@ -102,6 +102,14 @@ NCD_PATHS_OPTS | --follow-symlinks | `ncd` will follow symbolic links when searc
 NCD_EXCLUDES_OPTS | (none)
 <br>
 
+## Excluding particular folders
+In order to exclude a particular folder (e.g. there are many leaf folders named MyDocs and only one of them is useful),
+the "unnecessary" leaf folders can have an empty file `.no-ncd`. For example:
+```
+$ touch $HOME/OldStuff/MyDocs/.no-ncd
+```
+will exclude $HOME/OldStuff/MyDocs from the searched folders list.
+
 ## More details
 Details of `ncd` usage can be shown with this command:
 ```
