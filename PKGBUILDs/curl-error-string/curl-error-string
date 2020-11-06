@@ -30,27 +30,19 @@ EOF
 }
 
 CurlReturnCodeToString() {
-    local generate=no
     local curlRetCode=""
     local converter=/usr/local/bin/curl-code-to-string-converter
 
     while [ -n "$1" ] ; do
         case "$1" in
-            --create | -c)
-                generate=yes ; shift ;;
-            --remove | -r)
-                echo "Removing $converter:" >&2
-                sudo rm -f $converter ; return ;;
-            -*)
-                DIE "unsupported option '$1'" ;;
-            *)
-                curlRetCode="$1" ; shift ;;
+            --create | -c)  Generate ; return ;;
+            --remove | -r)  echo "Removing $converter:" >&2 ; sudo rm -f $converter ; return ;;
+            -*)             DIE "unsupported option '$1'" ;;
+            *)              curlRetCode="$1" ; shift ;;
         esac
     done
 
-    if [ "$generate" = "yes" ] || [ ! -x $converter ] ; then
-        Generate
-    fi
+    [ -x $converter ] || Generate
     [ -x $converter ] || DIE "curl code to text converter '$converter' not found."
 
     $converter "$curlRetCode"

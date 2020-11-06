@@ -2,7 +2,7 @@
 
 pkgname=curl-error-string
 pkgdesc="Convert curl error code to human friendly text."
-pkgver=1.1
+pkgver=1.1.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -15,7 +15,7 @@ source=(
   $url/$pkgname
 )
 
-sha512sums=('621ec7be286014a1e163ef472fbd5e4321ff161b885a73583d363bd7f6424e457a29886d1462911156411a56acfe339aae20fcad7e2c8e1d846e895745c7d267')
+sha512sums=('6518d0e4e8a575910158e0a96c61d05bf5f6eea5dec1099e360135e96b8e1709168041f93263be5221d2d4df72784642abb446bacbeff91c6156d5aa78381429')
 
 package() {
   install -Dm755 $pkgname  $pkgdir/usr/bin/$pkgname
