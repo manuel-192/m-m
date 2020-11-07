@@ -15,6 +15,9 @@ DIE() {
     Usage 1
 }
 
+WARN() { echo2 "    Warning: $1" ; }
+INFO() { echo2 "    Info: $1" ; }
+
 REFLECTOR_COUNTRIES="$(echo "Worldwide WW 0" ; reflector --list-countries)"
 CodeToCountry() {  # convert country code to country name
     local code="$1"
@@ -87,13 +90,26 @@ GetTime() {
     local output
 
     IFS=' ' output=( $(curl -s -m $MAX_TIME -w "%{time_total} %{http_code}" "$url" -o$file) )
-    (( $? == 28 )) && echo timeout && return
-    (( ${output[1]} >= 400 )) && echo unreachable && return
+    if [ $? -eq 28 ] ; then
+        echo timeout
+        return
+    fi
     case "${output[1]}" in
         ""|301|302)
-            echo unreachable ;;
+            echo unreachable
+            return
+            ;;
         *)
-            echo "${output[0]}" ;;
+            if [ "${output[1]}" -ge "400" ] ; then
+                echo unreachable
+                return
+            fi
+            ;;
+    esac
+    case "${output[0]}" in
+        "")
+            echo unreachable    ;;
+        *)  echo "${output[0]}" ;;
     esac
 }
 
@@ -186,6 +202,7 @@ OneCountry() {
     local mirrorpart
 
     for mirror in $mirrors_of_country ; do
+        rm -f $savefile
         excluded=no
         for mirrorpart in "${excluded_mirrors[@]}" ; do
             [[ $mirror =~ $mirrorpart ]] && { excluded=yes ; break ; }
@@ -194,21 +211,25 @@ OneCountry() {
 
         time="$(GetTime $mirror/$savefile $savefile)"
         case "$time" in
-            timeout|unreachable) echo2 "    Warning: $mirror: $time" ; continue ;;
+            timeout|unreachable) WARN "$mirror: $time" ; continue ;;
         esac
+        if [ ! -r $savefile ] ; then
+            WARN "$mirror: $savefile not found"
+            continue
+        fi
 
         # "Store" the mirror info to this line! Fields are:
         #     mirror-url age fetchtime
         synctime="$(cat $savefile)"
+        if [ -z "$synctime" ] ; then
+            WARN "$mirror: $savefile is empty!"
+            continue
+        fi
         if [ $synctime -gt $now ] ; then
-            echo2 "    Info: $mirror clock seems ahead of time by $((synctime - now)) seconds. Resetting the difference."
+            INFO "$mirror clock seems ahead of time by $((synctime - now)) seconds. Resetting the difference."
             synctime=now                  # mirror's clock is ahead of time !?
         fi
-        if [ -n "$synctime" ] ; then
-            echo "$mirror/\$repo/os/\$arch $((now - synctime)) $time $country"  # country should be the last because of 'column' below!
-        else
-            echo2 "$mirror: file $savefile not available"
-        fi
+        echo "$mirror/\$repo/os/\$arch $((now - synctime)) $time $country"  # country should be the last because of 'column' below!
         rm -f $savefile
     done
 }
