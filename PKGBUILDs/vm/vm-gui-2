@@ -1,0 +1,306 @@
+#!/bin/bash
+
+ExistingVMs() {
+    LANG=C virsh list --all | grep -vP "^-|^ Id|^$" | awk '{print $2}'
+}
+
+echo2() { echo "$@" >&2 ; }
+debug() { test 1 -eq 1 && echo2 "$@" ; }
+info()  { echo2 "$PROG_NAME: info: $1" ; }
+
+DIE()   {
+    local msg="$1"
+    echo2 "$PROG_NAME: error: $msg"
+    YadError "$msg" "$PROG_NAME"
+    exit 1
+}
+Cmd() {
+    echo2 "$@"
+    "$@"
+}
+
+CommandProgress() {
+    local prompt="$1"
+    shift
+    local tmpfile=$(mktemp)
+    local term=xterm           # xterm, konsole work directly, gnome-terminal with more params, others don't
+    local xx
+
+    echo "#!/bin/bash"          >> $tmpfile
+    echo "echo '$prompt'"       >> $tmpfile
+    for xx in "$@" ; do
+        printf "'%s' " "$xx"    >> $tmpfile
+    done
+    printf "\n"                 >> $tmpfile
+    echo "sleep 1"              >> $tmpfile
+    echo "rm -f $tmpfile"       >> $tmpfile
+
+    chmod +x $tmpfile
+    xterm -e $tmpfile
+}
+
+VMAlreadyExists() {
+    local vmname="$1"
+    local xx
+    local existing
+    readarray -t existing <<< $(ExistingVMs)
+    for xx in "${existing[@]}" ; do
+        test "$xx" = "$vmname" && return 0
+    done
+    return 1
+}
+
+YadForm() {  # common options for all yad form windows
+    GDK_BACKEND=x11 yad --form --window-icon=virt-manager --width=400 "$@"
+}
+
+YadError() {
+    local msg="$1"
+    local PROG_NAME="$2"
+    YadForm --title="$PROG_NAME: error" --text="$1" --button=yad-quit --image=error
+}
+
+Main()
+{
+    #local OLD_IMAGE_DIR="$HOME/.local/share/libvirt/images"
+
+    export PROG_NAME=vm-gui
+    export IMAGE_DIR="$HOME/$(echo "$PROG_NAME" | tr '[:lower:]' '[:upper:]')"
+    export CONFIG_FILE="$HOME/.config/$PROG_NAME.conf"
+    test -r "$CONFIG_FILE" && source "$CONFIG_FILE"
+
+    info "VM folder = $IMAGE_DIR"
+    mkdir -p "$IMAGE_DIR"
+
+    local icon=system-run #virt-manager
+    local screensize="$(xrandr --query | grep -A20 " connected " | grep '*' | awk '{print $1}')"
+    local y="" x=""
+    if [ -n "$screensize" ] ; then
+        y=$(echo $screensize | cut -d 'x' -f 2)
+        y=$(((y*50)/70))
+        y="--posy=$y"
+
+        x=$(echo $screensize | cut -d 'x' -f 1)
+        x=$((x/2))
+        x="--posx=$x"
+    fi
+    local txt="Select one of the operations below.\n\n"
+    txt+="Tips:\n"
+    txt+="- to use copy/paste and share files, install spice-vdagent to the VM\n"
+    local main=(
+        YadForm --title="Simple VM manager"
+        --text="$txt"
+        --image=user-info
+        --width=500 --height=150 $x $y
+        --columns=5
+        --field="Create!document-new!Create a new VM":fbtn       "bash -c Create"
+        --field="Import VDI!document-open!Import an existing VDI file":fbtn       "bash -c 'Import vdi'"
+#        --field="Import QCOW2!document-open!Import an existing QCOW2 file":fbtn   "bash -c 'Import qcow2'"
+        --field="Start!document-open!Start an existing VM":fbtn   "bash -c Start"
+        --field="Remove!list-remove!Remove an existing VM":fbtn "bash -c Remove"
+        --button=yad-quit
+    )
+
+    "${main[@]}" > /dev/null &
+}
+
+_existingVMs() {   # show VM names as 'quoted' strings
+    local existing
+    readarray -t existing <<< $(ExistingVMs)
+    local exi=""
+    for xx in "${existing[@]}" ; do
+        if [ -z "$exi" ] ; then
+            exi+="'$xx'"
+        else
+            exi+=" '$xx'"
+        fi
+    done
+    echo "$exi"
+}
+
+Import() {
+    local type="$1"                 # vdi or qcow2
+    case "$type" in
+        vdi|qcow2) ;;
+        *) echo "Error: import type must be given." >&2 ; return 1 ;;
+    esac
+    local TYPE=$(echo "$type" | tr '[:lower:]' '[:upper:]')
+    local result retval
+    local fmt=qcow2
+    local variant=generic
+    local ram=$(LANG=C free --mega | grep ^Mem: | awk '{print $7}')
+    local ramlimit=8192
+    local name="$(mktemp -u "$IMAGE_DIR"/unnamed.XXX)"   # unique name in $IMAGE_DIR
+    name="$(basename "$name")"
+    local exi="$(_existingVMs)"
+    local txt="Give VM settings and import the $TYPE image."
+    if [ "$type" = "vdi" ] ; then
+        txt+="\nNote: converting $TYPE image will take some time, please be patient."
+    fi
+    txt+="\n[Existing VMs: $exi]"
+
+    ((ram/=2)) ; test $ram -gt $ramlimit && ram=$ramlimit
+
+    local import=(
+        YadForm --image=dialog-question
+            --title="Import a $TYPE image"
+            --text="$txt"
+            --field="VM name"               "$name"
+            --field="OS variant"            "$variant"
+            --field="$TYPE image file":FL   "*.$type"
+            --field="RAM size MB":NUM       "$ram"
+            --button=yad-cancel:1
+            --button=" Import $TYPE image now!document-open!":0
+    )
+    result="$("${import[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    debug $(echo "result = $result" | tr '|' ' ')
+
+    local vmname="$(     echo "$result" | cut -d '|' -f 1)"
+    local osvariant="$(  echo "$result" | cut -d '|' -f 2)"
+    local input_image="$(echo "$result" | cut -d '|' -f 3)"   # vdi or qcow2
+    local ramsize="$(    echo "$result" | cut -d '|' -f 4)"
+    local image
+
+    VMAlreadyExists "$vmname" && DIE "VM named '$vmname' already exists."
+    test -r "$input_image" || DIE "Image file '$input_image' does not exist."
+
+    case "$type" in
+        vdi)
+            # convert VDI to qcow2
+            image="$IMAGE_DIR/$vmname".$fmt
+            echo2 "Converting VDI image, please wait ..."
+            CommandProgress "Progress of conversion:" qemu-img convert -O $fmt -p "$input_image" "$image"
+            ;;
+        qcow2)
+            image="$input_image"   # simple import, no conversion!
+            ;;
+    esac
+    chmod 600 "$image"
+    Cmd virt-install --quiet --import --memory $ramsize --disk "$image" --os-variant "$osvariant" --name "$vmname"
+}
+
+Create() {
+    local result retval
+    local fmt=qcow2
+    local variant=generic
+    local ram=$(LANG=C free --mega | grep ^Mem: | awk '{print $7}')
+    local ramlimit=8192
+    local disksz=15
+    local name="$(mktemp -u "$IMAGE_DIR"/unnamed.XXX)"   # unique name in $IMAGE_DIR
+    local exi="$(_existingVMs)"
+    local txt="Give VM settings and create the VM."
+    txt+="\n[Existing VMs: $exi]"
+
+    name="$(basename "$name")"
+    ((ram/=2)) ; test $ram -gt $ramlimit && ram=$ramlimit
+
+    local create=(
+        YadForm --image=dialog-question
+            --title="Create a VM"
+            --text="$txt"
+            --field="VM name"               "$name"
+            --field="OS variant"            "$variant"
+            --field="ISO file":FL           "*.iso"
+            --field="Disk size GB":NUM      "$disksz"
+            --field="RAM size MB":NUM       "$ram"
+            --button=yad-cancel:1
+            --button=" Create VM now!document-new!":0
+    )
+    result="$("${create[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    debug $(echo "result = $result" | tr '|' ' ')
+
+    local vmname="$(    echo "$result" | cut -d '|' -f 1)"
+    local osvariant="$( echo "$result" | cut -d '|' -f 2)"
+    local isofile="$(   echo "$result" | cut -d '|' -f 3)"
+    local disksize="$(  echo "$result" | cut -d '|' -f 4)"
+    local ramsize="$(   echo "$result" | cut -d '|' -f 5)"
+    local image="$IMAGE_DIR/$vmname".$fmt
+
+    VMAlreadyExists "$vmname" && DIE "VM named '$vmname' already exists."
+    test -r "$isofile" || DIE "ISO file '$isofile' does not exist."
+
+    Cmd virt-install --quiet \
+        --name "$vmname" \
+        --disk "$image",size=$disksize --memory $ramsize \
+        -c "$isofile" --os-variant "$osvariant"
+    chmod 600 "$image"
+}
+
+Start() {
+    local result retval
+    local exicb="$(ExistingVMs | tr '\n' '!' | sed 's|!$||')"
+    local txt="Select the VM to run."
+
+    local start=(
+        YadForm --image=dialog-question
+            --title="Run an existing VM"
+            --text="$txt"
+            --field="VM name":CB         "$exicb"
+            --button=yad-cancel:1
+            --button=" Run VM now!document-open!":0
+    )
+    result="$("${start[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    local vmname="$(echo "$result" | cut -d '|' -f 1)"
+    local info="$(LANG=C virsh list --all | grep -w "$vmname")"
+
+    test -n "$info" || DIE "VM named '$vmname' does not exist."
+
+    if [ -n "$(echo "$info" | grep "shut off")" ] ; then
+        Cmd virsh --quiet start "$vmname"
+    fi
+    Cmd virt-viewer "$vmname"
+}
+
+Remove() {
+    local result retval
+    local info
+    local exicb="$(ExistingVMs | tr '\n' '!' | sed 's|!$||')"
+    local txt="Select the VM to delete."
+
+    local start=(
+        YadForm --image=dialog-question
+            --title="Delete an existing VM"
+            --text="$txt"
+            --field="VM name":CB         "$exicb"
+            --button=yad-cancel:1
+            --button=" Delete VM now!list-remove!":0
+    )
+    result="$("${start[@]}")"
+    retval=$?
+    test $retval -eq 0 || return $retval
+    test -n "$result" || return
+
+    local vmname="$(echo "$result" | cut -d '|' -f 1)"
+    local info="$(LANG=C virsh list --all | grep -w "$vmname")"
+
+    test -n "$info" || DIE "VM named '$vmname' does not exist."
+
+    YadForm --title="Are you sure?" --text="Really want to delete '$vmname'?\n"
+    case "$?" in
+        0) ;;
+        *) return ;;
+    esac
+
+    if [ "$(echo "$info" | awk '{print $3}')" = "running" ] ; then
+        Cmd virsh destroy "$vmname" --graceful
+    fi
+    Cmd virsh managedsave-remove "$vmname"
+    Cmd virsh undefine "$vmname" --remove-all-storage
+}
+
+export -f Create Import Start Remove
+export -f echo2 debug DIE Cmd ExistingVMs VMAlreadyExists YadForm YadError _existingVMs CommandProgress
+
+Main "$@"
