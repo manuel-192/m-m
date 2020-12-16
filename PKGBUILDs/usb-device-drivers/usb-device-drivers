@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Detect drivers for USB devices, and possibly install them.
+#
+# Currently only one Brother printer is in the database.
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Install() {
+    local driver
+    local repo
+    local prompt
+    local helper=/usr/bin/paru
+    [ -x $helper ] || helper=/usr/bin/yay
+    [ -x $helper ] || DIE "no AUR helper installed" >&2
+    local info
+    local to_install=()
+    local Device="Device: "
+    local indent="        "  # use the length of $Device !
+
+    printf "%s%s\n" "$Device" "$device" >&2
+
+    for driver in "$@" ; do
+        info="$($helper -Si "$driver")"
+        if [ -n "$info" ] ; then
+            if ( $(pacman -Q "$driver" >& /dev/null) ) ; then
+                echo "${indent}driver: $driver [installed]" >&2
+            else
+                repo="$(echo "$info" | grep ^Repository | awk '{print $NF}')"
+                case "$repo" in
+                    aur) prompt="${indent}Install driver $driver from AUR (Y/n)? " ;;
+                    *)   prompt="${indent}Install driver $driver (Y/n)? " ;;
+                esac
+                read -p "$prompt" >&2
+                case "$REPLY" in
+                    ""|[yY]*) to_install+=("$driver") ;;
+                esac
+            fi
+        else
+            echo "${indent}driver: [unknown]" >&2
+        fi
+    done
+    [ -n "$to_install" ] && $helper -S "${to_install[@]}"
+}
+
+Main()
+{
+    local progname=$(basename "$0")
+    local tokens_on_line=3
+    local databasefile=/usr/share/endeavouros/scripts/usb-device-drivers-database.bash
+    [ -r "$databasefile" ] || DIE "$databasefile is missing"
+    if [ 0 -eq 1 ] ; then
+        local usb_device_database=(
+            # Every line has $tokens_on_line (currently 3) tokens:
+            #   "vendor:devid"   "driver"   "optional-driver"
+            #
+            # Important: use empty string "" for each missing token.
+            
+            # Brother multifunction: printer and scanner drivers:
+            04f9:0422  brother-dcp-l2537dw-printer  brscan4
+        )
+    fi
+    local usb_devices
+    local line ix
+    local device
+    local usb_device_database=()
+
+    source "$databasefile"
+
+    readarray -t usb_devices <<< $(lsusb)
+
+    for line in "${usb_devices[@]}" ; do
+        device="$(echo "$line" | cut -d' ' -f7-)"
+        for ((ix = 0; ix < ${#usb_device_database[@]}; ix += tokens_on_line)) ; do
+            case "$line" in
+                *" ${usb_device_database[$ix]} "*)
+                    Install "${usb_device_database[$((ix+1))]}" "${usb_device_database[$((ix+2))]}"
+                    ;;
+            esac
+        done
+    done
+}
+
+Main "$@"

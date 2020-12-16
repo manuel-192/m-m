@@ -1,0 +1,27 @@
+#!/bin/bash
+# Maintainer: manuel at forum.endeavouros.com
+
+pkgname=usb-device-drivers
+pkgdesc="Detect USB devices and install missing drivers."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(yay usbutils)
+optdepends=("paru: another supported AUR helper")
+
+source=(
+    $url/$pkgname
+    $url/${pkgname}-database.bash
+)
+sha512sums=('94a969dbe3a159d87f60a4a4c7e031a088e8bee96bcd80d9c109ee689cd59bc65fa307635817975ac514a5cf5c9810e956177858e2b97f708ddc903b04fe7f98'
+            'bcf52b9c83e6d83c058c7549a140a55fa3fbb88c51836f69938779a346bf7acb7e3c4e6fafba034153dcd60bdd7cdfdd78def178c248a518734355092b0766e2')
+
+package() {
+    install -d $pkgdir/usr/bin
+    install -d $pkgdir/usr/share/endeavouros/scripts
+
+    install -Dm755 $pkgname                 $pkgdir/usr/bin/$pkgname
+    install -Dm644 ${pkgname}-database.bash $pkgdir/usr/share/endeavouros/scripts/${pkgname}-database.bash
+}
