@@ -2,13 +2,16 @@
 # Maintainer: manuel (see forum.endeavouros.com)
 
 pkgname=pkginfo
-pkgdesc="Arch packages info viewer."
+pkgdesc="Arch & AUR packages info viewer."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
 pkgrel=1
 arch=('any')
 license=('GPL')
-depends=(bash xdg-utils paru)
+depends=(bash xdg-utils)
+optdepends=("yay:  an AUR helper supported by '$pkgname'"
+            "paru: an AUR helper supported by '$pkgname'"
+           )
 
 source=(
     $url/$pkgname
