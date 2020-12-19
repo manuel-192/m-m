@@ -1,0 +1,23 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=pkginfo
+pkgdesc="Arch packages info viewer."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash xdg-utils paru)
+
+source=(
+    $url/$pkgname
+    $url/$pkgname.completion
+)
+sha512sums=('a625954b3451b58d3730b4b602917f652d385b894b01e4344fb065aaa00128f639e1dec979537852f4ced963126732826d5331ea78825d27af1bfb52c3af0f2b'
+            'ca8a7a0a3124c7d0a19a7596501aadd1ac12af8f57613121a55b21820c27865a4a9c2d4918dce29dcda0929764b90d1408a867581c8ec38f007a98a2b3ddb522')
+
+package() {
+  install -Dm755 $pkgname              "$pkgdir"/usr/bin/$pkgname
+  install -Dm644 $pkgname.completion   "$pkgdir"/usr/share/bash-completion/completions/$pkgname
+}

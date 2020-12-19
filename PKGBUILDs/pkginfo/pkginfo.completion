@@ -1,0 +1,26 @@
+# bash completion for pkginfo        -*- shell-script -*-
+
+_pkginfo_complete() {
+    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+_pkginfo_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+#    case "$prev" in
+#        --reponame)
+#            COMPREPLY=( $(compgen -W "" -- "$cur") )
+#            ;;
+#        *)
+            case "$cur" in
+                *)
+                    _pkginfo_complete "$(pacman -Slq)"
+                    ;;
+            esac
+#            ;;
+#    esac
+} &&
+complete -F _pkginfo_ pkginfo
