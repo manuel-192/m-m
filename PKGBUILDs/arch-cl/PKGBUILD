@@ -11,11 +11,10 @@ license=('GPL')
 depends=('bash')
 
 source=(
-    "$url/$pkgname"
+    $url/$pkgname
 )
 sha512sums=('0b6e36e7cc38e0cd8463ce6f8410ad4c568e387c4c59061099db8250d0c68f985109737499e6dabcf85064d40e80bd6204d17fcfb15af18b78bce1fe01109f71')
 
 package() {
-  cd $srcdir
-  install -Dm755 $pkgname $pkgdir/usr/bin/$pkgname
+  install -Dm755 $pkgname "$pkgdir"/usr/bin/$pkgname
 }
