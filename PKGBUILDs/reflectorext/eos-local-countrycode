@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Show your local country code. Possibly check if code is supported by reflector.
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+ReflectorHasCountry() {
+    local code="$1"
+    local REFLECTOR_COUNTRIES="$(/usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed '1d')"
+    echo "$REFLECTOR_COUNTRIES" | /usr/bin/grep -w "$code"
+}
+
+CCCheck() {   # check validity of country code
+    local code="$1"
+    case "$code" in
+        [A-Z][A-Z]) [ -n "$(ReflectorHasCountry "$code")" ] && return 0 ;;
+    esac
+    return 1  # fail
+}
+
+GetYourCountryCode() { /usr/bin/curl -s https://ipinfo.io/country ; }  # two capital letters
+
+Main()
+{
+    local code
+
+    case "$1" in
+        --reflector-check | -c)
+            code="$(GetYourCountryCode)"
+            CCCheck "$code" || return 1
+            ;;
+        "")
+            code="$(GetYourCountryCode)"
+            ;;
+        *)
+            DIE "unsupported parameter '$1'"
+            ;;
+    esac
+    echo "$code"
+}
+
+Main "$@"

@@ -1,0 +1,25 @@
+#!/bin/bash
+# Maintainer: manuel at forum.endeavouros.com
+
+pkgname=reflectorext
+pkgdesc="Reflector with extensions"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(reflector
+         curl  # for eos-local-countrycode
+        )
+
+source=(
+    $url/$pkgname
+    $url/eos-local-countrycode
+)
+sha512sums=('aea12a94fc8c871f71780cc421c2b203839f85691f27f5b7f606699b011863c937a7292068db94f7296a429855b12a5dbad06bbc89ced3f99f7fea9bbd928b92'
+            '70ca67d36c0d3d100dab0e79690cd7321f0d1db27241f2b9745aa646477d0d4cf6f6e60a726aeaaba9442644b1c8beba9bfd6c17d05907a91b2cb1d23645b26f')
+
+package() {
+    install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
+    install -Dm755 eos-local-countrycode  $pkgdir/usr/bin/eos-local-countrycode
+}

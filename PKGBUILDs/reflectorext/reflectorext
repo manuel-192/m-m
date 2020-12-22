@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Reflector with extensions.
+
+Options() {
+    local cc arg
+
+    for arg in "$@" ; do
+        case "$arg" in
+
+            # "extensions" to reflector
+            --select-local-country | -L)
+                # Find local country and add it to reflector's option --country
+                cc="$(./eos-local-countrycode --reflector-check)"
+                [ -n "$cc" ] && args=("-c$cc" "${args[@]}")
+                ;;
+
+            # "native" reflector parameters
+            *)
+                args+=("$arg")
+                ;;
+        esac
+    done
+}
+
+Main()
+{
+    local args=()
+
+    Options "$@"
+
+    reflector "${args[@]}"
+}
+
+Main "$@"
