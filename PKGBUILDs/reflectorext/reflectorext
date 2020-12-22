@@ -2,20 +2,40 @@
 
 # Reflector with extensions.
 
-Options() {
-    local cc arg
+LocalCountry() {
+    /usr/bin/eos-local-countrycode --reflector-check
+}
 
-    for arg in "$@" ; do
+Options() {
+    local cc="" arg
+    local conf=/etc/reflectorext.conf
+    local from_config_file=""
+    local defaults=""
+
+    [ -r $conf ] && from_config_file="$(/usr/bin/cat $conf)"
+
+    if [ -z "$1" ] && [ -z "$from_config_file" ] ; then
+        cc="$(LocalCountry)"
+        defaults="--country $cc -c* --sort country"
+    fi
+
+    for arg in $defaults $from_config_file "$@" ; do
         case "$arg" in
 
             # "extensions" to reflector
-            --select-local-country | -L)
+
+            --local-country | -L)
                 # Find local country and add it to reflector's option --country
-                cc="$(./eos-local-countrycode --reflector-check)"
-                [ -n "$cc" ] && args=("-c$cc" "${args[@]}")
+                [ -n "$cc" ] || cc="$(LocalCountry)"
+                [ -n "$cc" ] && args+=(--country $cc)
+                ;;
+            --all-countries | -A)
+                # Use all countries
+                args+=(-c*)
                 ;;
 
             # "native" reflector parameters
+
             *)
                 args+=("$arg")
                 ;;
@@ -29,7 +49,7 @@ Main()
 
     Options "$@"
 
-    reflector "${args[@]}"
+    /usr/bin/reflector "${args[@]}"
 }
 
 Main "$@"
