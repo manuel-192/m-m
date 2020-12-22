@@ -14,24 +14,27 @@ Options() {
 
     [ -r $conf ] && from_config_file="$(/usr/bin/cat $conf)"
 
+    # default values
+    cc="$(LocalCountry)"
+    [ -n "$cc" ] && defaults="--country $cc"
+    defaults+=" -c* --sort country"
+
     if [ -z "$1" ] && [ -z "$from_config_file" ] ; then
-        cc="$(LocalCountry)"
-        defaults="--country $cc -c* --sort country"
+        from_config_file="$defaults"
     fi
 
-    for arg in $defaults $from_config_file "$@" ; do
+    for arg in $from_config_file "$@" ; do
         case "$arg" in
 
             # "extensions" to reflector
 
             --local-country | -L)
                 # Find local country and add it to reflector's option --country
-                [ -n "$cc" ] || cc="$(LocalCountry)"
                 [ -n "$cc" ] && args+=(--country $cc)
                 ;;
-            --all-countries | -A)
-                # Use all countries
-                args+=(-c*)
+            --add-defaults | -A)
+                # Add the defaults above
+                args+=($defaults)
                 ;;
 
             # "native" reflector parameters
