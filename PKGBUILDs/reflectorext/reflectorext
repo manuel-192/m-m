@@ -2,8 +2,10 @@
 
 # Reflector with extensions.
 
-WARN() {
-    echo "$progname: warning: $1" >&2
+DIE()  {
+    printf "%s: error: %s\n\n" "$progname" "$1" >&2
+    Usage
+    exit 1
 }
 
 LocalCountry() {
@@ -16,17 +18,19 @@ Import() {
 }
 
 Usage() {
-    cat <<EOF
-Usage: $progname [reflector-options | ${progname}-options]
+    cat <<EOF >&2
+Usage: $progname [${progname}-options | reflector-options]
 where
-    reflector-options           Any option supported by reflector.
-
     ${progname}-options
+        --no-conf      | -N     Don't try to read $conf. If used, must be the first parameter.
         --country-auto | -C     If the local country is recognized by reflector, automatically add it as a country option.
         --defaults-add | -D     Add the default options: -c<local-country> -c* --sort=country.
         --import=X              Import another configuration file "X" (must be compatible with any $progname options).
         --safesave              Rank mirrors as non-root and save mirrorlist to $ml.
-                                Note: --safesave conflicts with --save.
+                                Note: --safesave conflicts with reflector's --save.
+        --helpext      | -H     This help.
+
+    reflector-options           Any option supported by reflector.
 
 If no options are given, use the default options (see option -D above).
 Configuration file $conf may contain any of the above options.
@@ -35,15 +39,19 @@ EOF
 
 Options() {
     local progname="$(basename "$0")"    # reflectorext
-    local lcc="" arg
+    local lcc=""
     local conf=/etc/$progname.conf
     local from_config_file=""
     local importsfile=""
     local imports=""
     local defaults=""
     local has_country_option=no
+    local arg
 
-    [ -r $conf ] && from_config_file="$(Import $conf)"
+    case "$1" in
+         --no-conf | -N) shift ;;
+         *)  [ -r $conf ] && from_config_file="$(Import $conf)" ;;
+    esac
 
     # default values
     lcc="$(LocalCountry)"
@@ -54,7 +62,7 @@ Options() {
     for arg in $from_config_file "$@" ; do
         case "$arg" in
 
-            # "extensions" to reflector
+            # reflectorext "extensions":
 
             --country-auto | -C)
                 [ -n "$lcc" ] && args+=(--country $lcc)
@@ -68,18 +76,21 @@ Options() {
                     imports="$(Import "$importsfile")"
                     args+=($imports)
                 else
-                    WARN "import file '$importsfile' not found."
+                    DIE "import file '$importsfile' not found."
                 fi
                 ;;
             --safesave)
                 safesave=yes
                 ;;
-            --newhelp | -H)
+            --helpext | -H)
                 Usage
                 exit 0
                 ;;
+            --no-conf | -N)
+                DIE "if used, '$arg' must be the first parameter."
+                ;;
 
-            # "native" reflector parameters
+            # reflector "native" parameters:
 
             *)
                 args+=("$arg")
@@ -91,12 +102,9 @@ Options() {
     for arg in "${args[@]}" ; do
         case "$arg" in
             -c* | --country | --country=*)
-                has_country_option=yes
-                #break
-                ;;
+                has_country_option=yes ;;
             --save | --save=*)
-                [ "$safesave" = "yes" ] && WARN "both options --save and --safesave used." >&2
-                ;;
+                [ "$safesave" = "yes" ] && DIE "options --save and --safesave conflict" ;;
         esac
     done
     if [ "$has_country_option" = "no" ] ; then
@@ -105,6 +113,11 @@ Options() {
 }
 
 Reflector() {
+    cat <<EOF
+##==============================================================================
+##=============== reflextorext, reflector with extensions ======================
+##==============================================================================
+EOF
     /usr/bin/reflector "${args[@]}" | /usr/bin/grep -v "^sorting by None <function country_sort_key.<locals>.key_func at 0x"
 }
 

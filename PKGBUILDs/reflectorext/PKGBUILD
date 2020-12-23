@@ -4,7 +4,7 @@
 pkgname=reflectorext
 pkgdesc="Reflector with extensions"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1.4
+pkgver=0.1.5
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -16,7 +16,7 @@ source=(
     $url/$pkgname
     $url/eos-local-countrycode
 )
-sha512sums=('15e90751398fb91fbc45aab614d0b006be3bb059a41b138a875e0bd0778ab810e60047a2974f972b4372e0af9f52c99cb59a818b4350e87d2f0d51b8391d50ff'
+sha512sums=('9343c6abb148a44f0b284cd6d86e140ee5e88360fc8b6712b1f61eb8b3e1772ca5aacf94f21699abab2ce0174ac7236e058f8b4f47ea66c2dc8ebfaf4f695115'
             '70ca67d36c0d3d100dab0e79690cd7321f0d1db27241f2b9745aa646477d0d4cf6f6e60a726aeaaba9442644b1c8beba9bfd6c17d05907a91b2cb1d23645b26f')
 
 package() {
