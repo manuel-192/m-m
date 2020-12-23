@@ -6,35 +6,58 @@ LocalCountry() {
     /usr/bin/eos-local-countrycode --reflector-check
 }
 
+Import() {
+    local file="$1"
+    cat "$file" | grep -v -P "[ ]*#|^$"
+}
+
 Options() {
-    local cc="" arg
+    local progname="$(basename "$0")"
+    local lcc="" arg
     local conf=/etc/reflectorext.conf
     local from_config_file=""
+    local importsfile=""
+    local imports=""
     local defaults=""
+    local has_country_option=no
 
-    [ -r $conf ] && from_config_file="$(/usr/bin/cat $conf)"
+    [ -r $conf ] && from_config_file="$(Import $conf)"
 
     # default values
-    cc="$(LocalCountry)"
-    [ -n "$cc" ] && defaults="--country $cc"
-    defaults+=" -c* --sort country"
+    lcc="$(LocalCountry)"
+    [ -n "$lcc" ] && defaults="--country $lcc "
+    defaults+="-c* --sort country"
 
-    if [ -z "$1" ] && [ -z "$from_config_file" ] ; then
-        from_config_file="$defaults"
-    fi
+    # We have:
+    # - config file
+    # - defaults
+    # - user options
+    #
+    # - always user options
+    # - if config file, use it
+    # - if no country specified, then add defaults
 
     for arg in $from_config_file "$@" ; do
         case "$arg" in
 
             # "extensions" to reflector
 
-            --local-country | -L)
-                # Find local country and add it to reflector's option --country
-                [ -n "$cc" ] && args+=(--country $cc)
+            --country-auto | -C)
+                # If local country is supported by reflector, add it to reflector's option --country
+                [ -n "$lcc" ] && args+=(--country $lcc)
                 ;;
-            --add-defaults | -A)
-                # Add the defaults above
+            --defaults-add | -D)
+                # Add the default options above
                 args+=($defaults)
+                ;;
+            --import=*)
+                importsfile="${arg#*=}"
+                if [ -r "$importsfile" ] ; then
+                    imports="$(Import "$importsfile")"
+                    args+=($imports)
+                else
+                    echo "$progname: warning: import file '$importsfile' not found." >&2
+                fi
                 ;;
 
             # "native" reflector parameters
@@ -44,6 +67,15 @@ Options() {
                 ;;
         esac
     done
+    for arg in "${args[@]}" ; do
+        case "$arg" in
+            -c* | --country | --country=*) has_country_option=yes ; break ;;
+        esac
+    done
+
+    if [ "$has_country_option" = "no" ] ; then
+        args+=($defaults)
+    fi
 }
 
 Main()
@@ -52,7 +84,7 @@ Main()
 
     Options "$@"
 
-    /usr/bin/reflector "${args[@]}"
+    /usr/bin/reflector "${args[@]}" | /usr/bin/grep -v "^sorting by None <function country_sort_key.<locals>.key_func at 0x"
 }
 
 Main "$@"
