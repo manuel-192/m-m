@@ -2,6 +2,10 @@
 
 # Reflector with extensions.
 
+WARN() {
+    echo "$progname: warning: $1" >&2
+}
+
 LocalCountry() {
     /usr/bin/eos-local-countrycode --reflector-check
 }
@@ -11,10 +15,28 @@ Import() {
     cat "$file" | grep -v -P "[ ]*#|^$"
 }
 
+Usage() {
+    cat <<EOF
+Usage: $progname [reflector-options | ${progname}-options]
+where
+    reflector-options           Any option supported by reflector.
+
+    ${progname}-options
+        --country-auto | -C     If the local country is recognized by reflector, automatically add it as a country option.
+        --defaults-add | -D     Add the default options: -c<local-country> -c* --sort=country.
+        --import=X              Import another configuration file "X" (must be compatible with any $progname options).
+        --safesave              Rank mirrors as non-root and save mirrorlist to $ml.
+                                Note: --safesave conflicts with --save.
+
+If no options are given, use the default options (see option -D above).
+Configuration file $conf may contain any of the above options.
+EOF
+}
+
 Options() {
-    local progname="$(basename "$0")"
+    local progname="$(basename "$0")"    # reflectorext
     local lcc="" arg
-    local conf=/etc/reflectorext.conf
+    local conf=/etc/$progname.conf
     local from_config_file=""
     local importsfile=""
     local imports=""
@@ -28,26 +50,16 @@ Options() {
     [ -n "$lcc" ] && defaults="--country $lcc "
     defaults+="-c* --sort country"
 
-    # We have:
-    # - config file
-    # - defaults
-    # - user options
-    #
-    # - always user options
-    # - if config file, use it
-    # - if no country specified, then add defaults
-
+    # manage reflectorext options and pass reflector options
     for arg in $from_config_file "$@" ; do
         case "$arg" in
 
             # "extensions" to reflector
 
             --country-auto | -C)
-                # If local country is supported by reflector, add it to reflector's option --country
                 [ -n "$lcc" ] && args+=(--country $lcc)
                 ;;
             --defaults-add | -D)
-                # Add the default options above
                 args+=($defaults)
                 ;;
             --import=*)
@@ -56,8 +68,15 @@ Options() {
                     imports="$(Import "$importsfile")"
                     args+=($imports)
                 else
-                    echo "$progname: warning: import file '$importsfile' not found." >&2
+                    WARN "import file '$importsfile' not found."
                 fi
+                ;;
+            --safesave)
+                safesave=yes
+                ;;
+            --newhelp | -H)
+                Usage
+                exit 0
                 ;;
 
             # "native" reflector parameters
@@ -67,24 +86,46 @@ Options() {
                 ;;
         esac
     done
+
+    # additional option management
     for arg in "${args[@]}" ; do
         case "$arg" in
-            -c* | --country | --country=*) has_country_option=yes ; break ;;
+            -c* | --country | --country=*)
+                has_country_option=yes
+                #break
+                ;;
+            --save | --save=*)
+                [ "$safesave" = "yes" ] && WARN "both options --save and --safesave used." >&2
+                ;;
         esac
     done
-
     if [ "$has_country_option" = "no" ] ; then
         args+=($defaults)
     fi
 }
 
+Reflector() {
+    /usr/bin/reflector "${args[@]}" | /usr/bin/grep -v "^sorting by None <function country_sort_key.<locals>.key_func at 0x"
+}
+
 Main()
 {
     local args=()
+    local safesave=no
+    local ml=/etc/pacman.d/mirrorlist
 
     Options "$@"
 
-    /usr/bin/reflector "${args[@]}" | /usr/bin/grep -v "^sorting by None <function country_sort_key.<locals>.key_func at 0x"
+    if [ "$safesave" = "yes" ] ; then
+        local tmp="$(mktemp "$HOME"/.$progname.XXXXX)"
+        Reflector > "$tmp"
+        echo "Storing mirrorlist to $ml." >&2
+        sudo bash -c "cp '$tmp' $ml ; chown root:root $ml ; chmod 0644 $ml"
+        rm -f "$tmp"
+    else
+        Reflector
+    fi
+
 }
 
 Main "$@"
