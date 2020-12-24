@@ -1,0 +1,123 @@
+# bash completion for reflectorext        -*- shell-script -*-
+
+_my_complete() {
+    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+_my_complete_int() {
+    COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
+    compopt -o nospace
+}
+
+_my_complete_percent() {
+    COMPREPLY=( $(compgen -W "{0..100}" -- "$cur") )
+    compopt -o nosort
+}
+
+
+_ReflectorOpts() {
+    local opts=(
+        --help #-h
+        --connection-timeout= #n
+        --download-timeout= #n
+        --list-countries
+        --cache-timeout= #n
+        --url= #URL
+        --save= #<filepath>
+        --sort= #{age,rate,country,score,delay}
+        --verbose
+        --info
+        #-a= #n
+        --age= #n
+        #-c #<country name or code>[,<country name or code>,...]
+        --country= #<country name or code>[,<country name or code>,...]
+        #-f= #n
+        --fastest= #n
+        #-i #<regex>
+        --include= #<regex>
+        #-x #<regex>
+        --exclude= #<regex>
+        #-l= #n
+        --latest= #n
+        --score= #n
+        #-n= #n
+        --number= #n
+        #-p #<protocol>[,<protocol>,...]
+        --protocol= #<protocol>[,<protocol>,...]
+        --completion-percent= #[0-100]
+        --isos
+        --ipv4
+        --ipv6
+    )
+    echo "${opts[*]}"
+}
+_ReflectorCountries() {
+    local countries=(
+        $(/usr/bin/reflector --list-countries | /usr/bin/tail -n+3 | sed 's|.*\([A-Z][A-Z]\).*|\1|')
+    )
+    echo "${countries[*]}"
+}
+
+_ReflectorExtOpts() {
+    # /usr/bin/reflectorext --show-params
+    # echo "--country-auto -C --defaults-add -D --import= --safesave --helpext -H --no-conf -N"
+    echo "--country-auto --defaults-add --import= --safesave --helpext --no-conf"
+}
+
+_reflectorext_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        --import)
+            _filedir
+            return
+            ;;
+
+        --save)
+            _filedir
+            return
+            ;;
+        --sort)
+            _my_complete "age rate country score delay"
+            return
+            ;;
+        --country)
+            _my_complete "$(_ReflectorCountries)"
+            return
+            ;;
+        --protocol)
+            _my_complete "https http rsync"
+            return
+            ;;
+        --age | --connection-timeout | --download-timeout | cache-timeout | --fastest | --latest | --score | --number)
+            _my_complete_int
+            return
+            ;;
+        --completion-percent)
+            _my_complete_percent
+            return
+            ;;
+    esac
+
+    # Handle top-level options.
+    # Command 'reflectorext --show-params' shows all available parameters.
+
+    case "$cur" in
+        -* | "")
+            # Any option or no parameters.
+            _my_complete "$(_ReflectorExtOpts) $(_ReflectorOpts)"
+            ;;
+        *)
+            # A non-option parameter given.
+            ## Folder required.
+            ##_filedir -d
+            ;;
+    esac
+} &&
+complete -F _reflectorext_ reflectorext

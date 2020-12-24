@@ -89,6 +89,10 @@ Options() {
             --no-conf | -N)
                 DIE "if used, '$arg' must be the first parameter."
                 ;;
+            --show-params)
+                echo "--country-auto -C --defaults-add -D --import= --safesave --helpext -H --no-conf -N"
+                exit 0
+                ;;
 
             # reflector "native" parameters:
 

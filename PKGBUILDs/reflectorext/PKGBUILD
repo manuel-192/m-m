@@ -4,7 +4,7 @@
 pkgname=reflectorext
 pkgdesc="Reflector with extensions"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1.5
+pkgver=0.1.6
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,12 +14,15 @@ depends=(reflector
 
 source=(
     $url/$pkgname
+    $url/$pkgname.completion
     $url/eos-local-countrycode
 )
-sha512sums=('9343c6abb148a44f0b284cd6d86e140ee5e88360fc8b6712b1f61eb8b3e1772ca5aacf94f21699abab2ce0174ac7236e058f8b4f47ea66c2dc8ebfaf4f695115'
+sha512sums=('7d5030754ccc380b4a2b06330383364e24c1233472c74c9006ed69ffa883efc5a29de5b7f5a4b701b62b8a395f177784273ea05409833f6ab44babd389d60413'
+            'a8b3f30c416f7da298b0ba24b799b8673797f57755d89af7e3c3abd69ccb4544b6b73e85f607c69cc533d26a1fbd21b9e0524eb206f797f216c97fdf501d7f05'
             '70ca67d36c0d3d100dab0e79690cd7321f0d1db27241f2b9745aa646477d0d4cf6f6e60a726aeaaba9442644b1c8beba9bfd6c17d05907a91b2cb1d23645b26f')
 
 package() {
     install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
+    install -Dm644 $pkgname.completion    $pkgdir/usr/share/bash-completion/completions/$pkgname
     install -Dm755 eos-local-countrycode  $pkgdir/usr/bin/eos-local-countrycode
 }
