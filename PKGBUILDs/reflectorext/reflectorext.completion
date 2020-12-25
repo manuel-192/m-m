@@ -15,54 +15,36 @@ _my_complete_percent() {
     compopt -o nosort
 }
 
-
+_ReflectorCountries() {
+    /usr/bin/reflector --list-countries | /usr/bin/tail -n+3 | /usr/bin/sed 's|.*\([A-Z][A-Z]\).*|\1|'
+}
 _ReflectorOpts() {
     local opts=(
-        --help #-h
-        --connection-timeout= #n
-        --download-timeout= #n
-        --list-countries
+        --age= #n         #-a= #n
         --cache-timeout= #n
-        --url= #URL
-        --save= #<filepath>
-        --sort= #{age,rate,country,score,delay}
-        --verbose
-        --info
-        #-a= #n
-        --age= #n
-        #-c #<country name or code>[,<country name or code>,...]
-        --country= #<country name or code>[,<country name or code>,...]
-        #-f= #n
-        --fastest= #n
-        #-i #<regex>
-        --include= #<regex>
-        #-x #<regex>
-        --exclude= #<regex>
-        #-l= #n
-        --latest= #n
-        --score= #n
-        #-n= #n
-        --number= #n
-        #-p #<protocol>[,<protocol>,...]
-        --protocol= #<protocol>[,<protocol>,...]
         --completion-percent= #[0-100]
-        --isos
+        --connection-timeout= #n
+        --country= #<country name or code>[,<country name or code>,...]   #-c #<country name or code>[,<country name or code>,...]
+        --download-timeout= #n
+        --exclude= #<regex>        #-x #<regex>
+        --fastest= #n        #-f= #n
+        --help #-h
+        --include= #<regex>        #-i #<regex>
+        --info
         --ipv4
         --ipv6
+        --isos
+        --latest= #n        #-l= #n
+        --list-countries
+        --number= #n        #-n= #n
+        --protocol= #<protocol>[,<protocol>,...]        #-p #<protocol>[,<protocol>,...]
+        --save= #<filepath>
+        --score= #n
+        --sort= #{age,rate,country,score,delay}
+        --url= #URL
+        --verbose
     )
     echo "${opts[*]}"
-}
-_ReflectorCountries() {
-    local countries=(
-        $(/usr/bin/reflector --list-countries | /usr/bin/tail -n+3 | sed 's|.*\([A-Z][A-Z]\).*|\1|')
-    )
-    echo "${countries[*]}"
-}
-
-_ReflectorExtOpts() {
-    # /usr/bin/reflectorext --show-params
-    # echo "--country-auto -C --defaults-add -D --import= --safesave --helpext -H --no-conf -N"
-    echo "--country-auto --defaults-add --import= --safesave --helpext --no-conf"
 }
 
 _reflectorext_() 
@@ -70,53 +52,38 @@ _reflectorext_()
     local cur prev #words cword split
     _init_completion -s || return
 
+    local reflectorext_options="--country-auto --defaults-add --import= --safesave --helpext --no-conf"
+    local all_options="$reflectorext_options $(_ReflectorOpts)"
+
     # Handle options that need sub-options.
     # Each option "case" should return immediately.
 
     case "$prev" in
-        --import)
-            _filedir
-            return
-            ;;
 
-        --save)
-            _filedir
-            return
-            ;;
-        --sort)
-            _my_complete "age rate country score delay"
-            return
-            ;;
-        --country)
-            _my_complete "$(_ReflectorCountries)"
-            return
-            ;;
-        --protocol)
-            _my_complete "https http rsync"
-            return
-            ;;
+        # Reflector options.
+        --completion-percent) _my_complete_percent ;;
+        --country)            _my_complete "$(_ReflectorCountries)" ;;
+        --protocol)           _my_complete "https http rsync" ;;
+        --save)               _filedir ;;
+        --sort)               _my_complete "age rate country score delay" ;;
         --age | --connection-timeout | --download-timeout | cache-timeout | --fastest | --latest | --score | --number)
             _my_complete_int
-            return
             ;;
-        --completion-percent)
-            _my_complete_percent
-            return
-            ;;
-    esac
 
-    # Handle top-level options.
-    # Command 'reflectorext --show-params' shows all available parameters.
+        # Reflectorext options.
+        --import) _filedir ;;
 
-    case "$cur" in
-        -* | "")
-            # Any option or no parameters.
-            _my_complete "$(_ReflectorExtOpts) $(_ReflectorOpts)"
-            ;;
         *)
-            # A non-option parameter given.
-            ## Folder required.
-            ##_filedir -d
+            # Handle all top-level parameters.
+            case "$cur" in
+                -* | "")
+                    # Any option or nothing yet.
+                    _my_complete "$all_options"
+                    ;;
+                *)
+                    # Non-option parameters.
+                    ;;
+            esac
             ;;
     esac
 } &&
