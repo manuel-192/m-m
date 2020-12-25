@@ -8,6 +8,10 @@ DIE()  {
     exit 1
 }
 
+WARN() {
+    printf "%s: warning: %s\n\n" "$progname" "$1" >&2
+}
+
 LocalCountry() {
     /usr/bin/eos-local-countrycode --reflector-check
 }
@@ -22,13 +26,19 @@ Usage() {
 Usage: $progname [${progname}-options | reflector-options]
 where
     ${progname}-options
-        --no-conf      | -N     Don't try to read $conf. If used, must be the first parameter.
-        --country-auto | -C     If the local country is recognized by reflector, automatically add it as a country option.
-        --defaults-add | -D     Add the default options: -c<local-country> -c* --sort=country.
-        --import=X              Import another configuration file "X" (must be compatible with any $progname options).
-        --safesave              Rank mirrors as non-root and save mirrorlist to $ml.
-                                Note: --safesave conflicts with reflector's --save.
-        --helpext      | -H     This help.
+        --no-conf | -N
+              Don't try to read $conf. If used, must be the first parameter.
+        --auto-include-country | -I
+              If the local country is recognized by reflector, automatically add it as a country option.
+        --defaults-add | -D
+              Add the default options: -c<local-country> -c* --sort=country.
+        --import=X
+              Import another configuration file "X" (must be compatible with any $progname options).
+        --safesave
+              Rank mirrors as non-root and save mirrorlist to $ml.
+              Note: --safesave conflicts with reflector's --save.
+        --helpext | -H
+              This help.
 
     reflector-options           Any option supported by reflector.
 
@@ -64,7 +74,7 @@ Options() {
 
             # reflectorext "extensions":
 
-            --country-auto | -C)
+            --auto-include-country | -I)
                 [ -n "$lcc" ] && args+=(--country $lcc)
                 ;;
             --defaults-add | -D)
@@ -88,10 +98,6 @@ Options() {
                 ;;
             --no-conf | -N)
                 DIE "if used, '$arg' must be the first parameter."
-                ;;
-            --show-params)
-                echo "--country-auto -C --defaults-add -D --import= --safesave --helpext -H --no-conf -N"
-                exit 0
                 ;;
 
             # reflector "native" parameters:

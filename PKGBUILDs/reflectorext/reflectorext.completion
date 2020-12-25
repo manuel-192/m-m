@@ -5,6 +5,12 @@ _my_complete() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
 }
 
+_my_complete2() {       # Fails!
+    local IFS=$'\n'
+    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
 _my_complete_int() {
     COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
     compopt -o nospace
@@ -16,7 +22,11 @@ _my_complete_percent() {
 }
 
 _ReflectorCountries() {
+    # country codes:
     /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|.*\([A-Z][A-Z]\).*|\1|'
+
+    # country names:
+    # /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|^\([A-Z][a-zA-Z ]*[a-z]\).*$|\1|'
 }
 _ReflectorOpts() {
     local opts=(
@@ -52,7 +62,7 @@ _reflectorext_()
     local cur prev #words cword split
     _init_completion -s || return
 
-    local reflectorext_options="--country-auto --defaults-add --import= --safesave --helpext --no-conf"
+    local reflectorext_options="--auto-include-country --defaults-add --import= --safesave --helpext --no-conf"
     local all_options="$reflectorext_options $(_ReflectorOpts)"
 
     # Handle options that need sub-options.
