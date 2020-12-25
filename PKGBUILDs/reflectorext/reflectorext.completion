@@ -16,7 +16,7 @@ _my_complete_percent() {
 }
 
 _ReflectorCountries() {
-    /usr/bin/reflector --list-countries | /usr/bin/tail -n+3 | /usr/bin/sed 's|.*\([A-Z][A-Z]\).*|\1|'
+    /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|.*\([A-Z][A-Z]\).*|\1|'
 }
 _ReflectorOpts() {
     local opts=(
