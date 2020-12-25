@@ -4,8 +4,8 @@
 pkgname=reflectorext
 pkgdesc="Reflector with extensions"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1.8
-pkgrel=1.1
+pkgver=0.2
+pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(reflector
@@ -16,13 +16,16 @@ source=(
     $url/$pkgname
     $url/$pkgname.completion
     $url/eos-local-countrycode
+    $url/reflector.completion      # help reflector too!
 )
 sha512sums=('c4021703517216b691cff1c5986c96f78cab4c73d7309a248981f8237e825ba54a7e8e516b63fbe787be71a674ddf8475b319426389dd72a0a075ccd1dc4e010'
             '3563e0c505d2243f4d9c9236418651826cbfbfd76487e5b0513d7bab16e3f5c9fff8f524644a01bf3f1593c653161537bb54c5ae397cc8078b7023c44774fbb1'
-            '70ca67d36c0d3d100dab0e79690cd7321f0d1db27241f2b9745aa646477d0d4cf6f6e60a726aeaaba9442644b1c8beba9bfd6c17d05907a91b2cb1d23645b26f')
+            '70ca67d36c0d3d100dab0e79690cd7321f0d1db27241f2b9745aa646477d0d4cf6f6e60a726aeaaba9442644b1c8beba9bfd6c17d05907a91b2cb1d23645b26f'
+            '4aea33d9161e0f2464f451a66593389dd6c335e3a6b6b2b0a9e9f5b67b7e744600587c7fb74db60bbb1ad0439054076a48d6c003f73f00b3f3d69ea04e7cd53a')
 
 package() {
     install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
-    install -Dm644 $pkgname.completion    $pkgdir/usr/share/bash-completion/completions/$pkgname
     install -Dm755 eos-local-countrycode  $pkgdir/usr/bin/eos-local-countrycode
+    install -Dm644 $pkgname.completion    $pkgdir/usr/share/bash-completion/completions/$pkgname
+    install -Dm644 reflector.completion   $pkgdir/usr/share/bash-completion/completions/reflector
 }
