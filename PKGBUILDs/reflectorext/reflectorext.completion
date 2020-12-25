@@ -5,22 +5,6 @@ _my_complete() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
 }
 
-_my_complete2() {       # Fails!
-    local IFS=$'\n'
-    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
-    [[ $COMPREPLY == *= ]] && compopt -o nospace
-}
-
-_my_complete_int() {
-    COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
-    compopt -o nospace
-}
-
-_my_complete_percent() {
-    COMPREPLY=( $(compgen -W "{0..100}" -- "$cur") )
-    compopt -o nosort
-}
-
 _ReflectorCountries() {
     # country codes:
     /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|.*\([A-Z][A-Z]\).*|\1|'
@@ -30,28 +14,28 @@ _ReflectorCountries() {
 }
 _ReflectorOpts() {
     local opts=(
-        --age= #n         #-a= #n
-        --cache-timeout= #n
-        --completion-percent= #[0-100]
-        --connection-timeout= #n
-        --country= #<country name or code>[,<country name or code>,...]   #-c #<country name or code>[,<country name or code>,...]
-        --download-timeout= #n
-        --exclude= #<regex>        #-x #<regex>
-        --fastest= #n        #-f= #n
+        --age #n         #-a= #n
+        --cache-timeout #n
+        --completion-percent #[0-100]
+        --connection-timeout #n
+        --country #<country name or code>[,<country name or code>,...]   #-c #<country name or code>[,<country name or code>,...]
+        --download-timeout #n
+        --exclude #<regex>        #-x #<regex>
+        --fastest #n        #-f= #n
         --help #-h
-        --include= #<regex>        #-i #<regex>
+        --include #<regex>        #-i #<regex>
         --info
         --ipv4
         --ipv6
         --isos
-        --latest= #n        #-l= #n
+        --latest #n        #-l= #n
         --list-countries
-        --number= #n        #-n= #n
-        --protocol= #<protocol>[,<protocol>,...]        #-p #<protocol>[,<protocol>,...]
-        --save= #<filepath>
-        --score= #n
-        --sort= #{age,rate,country,score,delay}
-        --url= #URL
+        --number #n        #-n= #n
+        --protocol #<protocol>[,<protocol>,...]        #-p #<protocol>[,<protocol>,...]
+        --save #<filepath>
+        --score #n
+        --sort #{age,rate,country,score,delay}
+        --url #URL
         --verbose
     )
     echo "${opts[*]}"
@@ -71,14 +55,20 @@ _reflectorext_()
     case "$prev" in
 
         # Reflector options.
-        --completion-percent) _my_complete_percent ;;
-        --country)            _my_complete "$(_ReflectorCountries)" ;;
-        --protocol)           _my_complete "https http rsync" ;;
-        --save)               _filedir ;;
-        --sort)               _my_complete "age rate country score delay" ;;
-        --age | --connection-timeout | --download-timeout | cache-timeout | --fastest | --latest | --score | --number)
-            _my_complete_int
+        --age | --cache-timeout | --connection-timeout | --download-timeout | --fastest | --latest | --score | --number)
+            COMPREPLY=($(compgen -P "$cur" -W "{0..9}"))
+            compopt -o nospace
             ;;
+        --completion-percent)
+            COMPREPLY=($(compgen -W "{0..100}" -- "$cur"))
+            compopt -o nosort
+            ;;
+        --country)   _my_complete "$(_ReflectorCountries)" ;;
+        --protocol)  _my_complete "https http rsync" ;;
+        --sort)      _my_complete "age rate country score delay" ;;
+        --save)      _filedir ;;
+        --url) ;;
+        --include | --exclude) ;;
 
         # Reflectorext options.
         --import) _filedir ;;
