@@ -5,12 +5,22 @@ _my_complete() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
 }
 
+_my_complete_countries() {
+    local country_names=()
+    _ReflectorCountries
+    local IFS=$'\n'
+    COMPREPLY=( $(compgen -S "'" -P "'" -W "$(printf "'%s'\n" "${country_names[@]}")" -- "$cur") )
+    # COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    # [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
 _ReflectorCountries() {
     # country codes:
-    /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|.*\([A-Z][A-Z]\).*|\1|'
+    # /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|.*\([A-Z][A-Z]\).*|\1|'
 
     # country names:
-    # /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|^\([A-Z][a-zA-Z ]*[a-z]\).*$|\1|'
+    readarray -t country_names <<< \
+              $(/usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|^\([A-Z][a-zA-Z ]*[a-z]\).*$|\1|')
 }
 _ReflectorOpts() {
     local opts=(
@@ -58,7 +68,7 @@ _reflector_()
             COMPREPLY=($(compgen -W "{0..100}" -- "$cur"))
             compopt -o nosort
             ;;
-        --country)   _my_complete "$(_ReflectorCountries)" ;;
+        --country)   _my_complete_countries ;;
         --protocol)  _my_complete "https http rsync" ;;
         --sort)      _my_complete "age rate country score delay" ;;
         --save)      _filedir ;;
