@@ -3,13 +3,14 @@
 _reflector_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
 }
 
 _reflector_complete_countries() {
     local country_names="$(/usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|^\([A-Z][a-zA-Z ]*[a-z]\).*$|\1|')"
     local IFS=$'\n'
     COMPREPLY=( $(compgen -S "'" -P "'" -W "$country_names" -- "$cur") )
-    # compopt -o nosort
+    compopt -o nosort
 }
 
 _reflector_options() {
