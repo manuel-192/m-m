@@ -4,7 +4,7 @@
 pkgname=reflector-completion-bash
 pkgdesc="Bash completion for reflector"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -12,7 +12,7 @@ depends=(reflector)
 source=(
     $url/reflector.completion
 )
-sha512sums=('58e133f048cbdb525c76ac306d2590d88a93a784370cf53bcb9b5df723b1cd0c28339527e0aebc5cacf06ce51da1404ae51c994a30f3d0f27f0c753b4732a5c6')
+sha512sums=('b5800d0ac62dccaaf8f9824554682c596d2eb5c66f52ba62d805032f2a37b69fd9a795acd2a7124f897364ffb85fcdf8e0397843a799ce4573f925808561d0d8')
 
 package() {
     install -Dm644 reflector.completion   $pkgdir/usr/share/bash-completion/completions/reflector

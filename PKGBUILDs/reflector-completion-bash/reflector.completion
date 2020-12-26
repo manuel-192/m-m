@@ -1,28 +1,18 @@
 # bash completion for reflector        -*- shell-script -*-
 
-_my_complete() {
+_reflector_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
 }
 
-_my_complete_countries() {
-    local country_names=()
-    _ReflectorCountries
+_reflector_complete_countries() {
+    local country_names="$(/usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|^\([A-Z][a-zA-Z ]*[a-z]\).*$|\1|')"
     local IFS=$'\n'
-    COMPREPLY=( $(compgen -S "'" -P "'" -W "$(printf "'%s'\n" "${country_names[@]}")" -- "$cur") )
-    # COMPREPLY=($(compgen -W "$1" -- "$cur"))
-    # [[ $COMPREPLY == *= ]] && compopt -o nospace
+    COMPREPLY=( $(compgen -S "'" -P "'" -W "$country_names" -- "$cur") )
+    # compopt -o nosort
 }
 
-_ReflectorCountries() {
-    # country codes:
-    # /usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|.*\([A-Z][A-Z]\).*|\1|'
-
-    # country names:
-    readarray -t country_names <<< \
-              $(/usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d' -e 's|^\([A-Z][a-zA-Z ]*[a-z]\).*$|\1|')
-}
-_ReflectorOpts() {
+_reflector_options() {
     local opts=(
         --age #n         #-a= #n
         --cache-timeout #n
@@ -68,9 +58,9 @@ _reflector_()
             COMPREPLY=($(compgen -W "{0..100}" -- "$cur"))
             compopt -o nosort
             ;;
-        --country)   _my_complete_countries ;;
-        --protocol)  _my_complete "https http rsync" ;;
-        --sort)      _my_complete "age rate country score delay" ;;
+        --country)   _reflector_complete_countries ;;
+        --protocol)  _reflector_complete "https http rsync" ;;
+        --sort)      _reflector_complete "age rate country score delay" ;;
         --save)      _filedir ;;
         --url) ;;
         --include | --exclude) ;;
@@ -80,7 +70,7 @@ _reflector_()
             case "$cur" in
                 -* | "")
                     # Any option or nothing yet.
-                    _my_complete "$(_ReflectorOpts)"
+                    _reflector_complete "$(_reflector_options)"
                     ;;
                 *)
                     # Non-option parameters.
