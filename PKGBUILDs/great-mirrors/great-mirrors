@@ -18,7 +18,7 @@ DIE() {
 WARN() { echo2 "    Warning: $1" ; }
 INFO() { echo2 "    Info: $1" ; }
 
-REFLECTOR_COUNTRIES="$(echo "Worldwide WW 0" ; reflector --list-countries)"
+REFLECTOR_COUNTRIES="$(echo "Worldwide WW 0" ; reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed '1d')"
 CodeToCountry() {  # convert country code to country name
     local code="$1"
     local country="$(echo "$REFLECTOR_COUNTRIES" | grep -w "$code" | sed 's|^\(.*[a-z]\)[ ]*[A-Z][A-Z].*$|\1|')"
@@ -114,7 +114,7 @@ GetTime() {
 }
 
 GetLatestMirrorlist() {
-    local latest="https://www.archlinux.org/mirrorlist/?country=all&protocol=http&protocol=https&ip_version=4"
+    local latest="https://archlinux.org/mirrorlist/?country=all&protocol=http&protocol=https&ip_version=4"
     local mlfile=$(mktemp)
     curl -s -m 10 "$latest" -o$mlfile
     echo $mlfile

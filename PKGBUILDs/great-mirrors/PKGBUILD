@@ -4,7 +4,7 @@
 pkgname=great-mirrors
 pkgdesc="Choose great upstream mirrors into /etc/pacman.d/mirrorlist"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.2.5
+pkgver=1.2.6
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -15,7 +15,7 @@ source=(
     "$url"/$pkgname
     "$url"/mirror-countries.conf
 )
-sha512sums=('b659d58292895162ffb32e4ffeebbfc7d6346fc78f26fb6a7991f80212edd5c52292d6f5879c738bf20e3a4c025c55e014f408971add10e76c3bed35eed247cc'
+sha512sums=('7dbd3e7c1c4eddb5e68b2211c4387e94d63c889b28c499e33487a42f62f9108616a05338c51c822495265a61c91e46cf77518a602823143cf28b4ba32a3807e4'
             '3168d6986fd003e0848dfcb6fdf3a88a00c7b7d739ff1eeed8e9aaaf3287629a248d9d7a6f1eeac277fcfb10417190d560d11b47b673becfe04c6a1e7aef3505')
 
 package() {
