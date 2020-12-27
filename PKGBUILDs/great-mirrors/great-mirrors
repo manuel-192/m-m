@@ -86,8 +86,9 @@ GetYourCountryCode() {
 GetTime() {
     local url="$1"           # input url
     local file="$2"          # output file
-    local MAX_TIME=5
-    local output
+    local MAX_TIME=10
+    local output=(99 99)
+    local result2=""
 
     IFS=' ' output=( $(curl -s -m $MAX_TIME -w "%{time_total} %{http_code}" "$url" -o$file) )
     if [ $? -eq 28 ] ; then
@@ -109,7 +110,13 @@ GetTime() {
     case "${output[0]}" in
         "")
             echo unreachable    ;;
-        *)  echo "${output[0]}" ;;
+        *)
+            # output was in seconds, now in microseconds?
+            # echo "${output[0]}"
+            result2="$(echo "scale=6; ${output[0]} / 1000000" | bc -l)"
+            [ "${result2::1}" = "." ] && result2="0$result2"
+            echo "$result2"
+            ;;
     esac
 }
 
