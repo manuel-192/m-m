@@ -1,0 +1,88 @@
+# bash completion for great-mirrors        -*- shell-script -*-
+
+_great-mirrors_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_great-mirrors_complete_country_names() {
+    local folder=$HOME/.config/great-mirrors-complete
+    local countrylist=$folder/countrylist
+    local date=$(date +%Y%V)                # updates countrylist weekly
+    local country_names
+    # local country_codes                   # for country codes; implementation not used because completion asks extra questions...
+    local countries
+    local ix
+    local clist
+    local opts
+
+    mkdir -p $folder
+
+    if [ -r $countrylist.$date ] ; then
+        countries="$(cat $countrylist.$date)"
+    else
+        rm -f $countrylist.*
+
+        opts=($(_great-mirrors_options))
+        for ((ix=0; ix < ${#opts[@]}; ix++)) ; do
+            printf "%s\n" "${opts[$ix]}" >> $countrylist.$date
+        done
+
+        clist="$(/usr/bin/reflector --list-countries 2>/dev/null | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed -e '1d')"
+        # readarray -t country_codes <<< $(echo "$clist" | /usr/bin/sed 's|.* \([A-Z][A-Z]\) .*|\1|')
+        readarray -t country_names <<< $(echo "$clist" | /usr/bin/sed 's|^\([A-Z][a-zA-Z ]*[a-z]\).*$|\1|')
+        for ((ix=0; ix < ${#country_names[@]}; ix++)) ; do
+            # printf "%s\n%s\n" "${country_names[$ix]}" "${country_codes[$ix]}" >> $countrylist.$date
+            printf "%s\n" "${country_names[$ix]}" >> $countrylist.$date
+        done
+
+        countries="$(cat $countrylist.$date)"
+    fi
+
+    local IFS=$'\n'
+    COMPREPLY=( $(compgen -W "$countries" -- "$cur") )
+    compopt -o nosort
+    compopt -o filenames
+}
+
+_great-mirrors_options() {
+    local opts=(
+        --help -h
+        --age -a
+        --one -1
+        --speed -s
+        --ls
+        --lu
+        --save
+        --show-codes
+        --show-config
+    )
+    echo "${opts[*]}"
+}
+
+_great-mirrors_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -*)
+                    # Any option or nothing yet.
+                    _great-mirrors_complete "$(_great-mirrors_options)"
+                    ;;
+                *)
+                    # Non-option parameters.
+                    _great-mirrors_complete_country_names
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _great-mirrors_ great-mirrors

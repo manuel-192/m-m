@@ -4,7 +4,7 @@
 pkgname=great-mirrors
 pkgdesc="Choose great upstream mirrors into /etc/pacman.d/mirrorlist"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.2.7
+pkgver=1.3
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -13,12 +13,15 @@ backup=(etc/mirror-countries.conf)
 
 source=(
     "$url"/$pkgname
+    "$url"/$pkgname.completion
     "$url"/mirror-countries.conf
 )
-sha512sums=('f631273e992ec4850963c18f7c5b5f298477fa860ff6096a0aab96c9811dc18a8db623ac1c88ca75675a798c5a9a33c6c576ba2ba51448dfd87ef2b9a017d27f'
+sha512sums=('738f8ec0c47b29e08e93c15d58dab2efc7262e5a80a7b0f372dad4294aba8e777256cc94cd10554ee1fa915b912a0c38c6296fe436e432db9d4dae769eb6e3ac'
+            'f68134ca571591de10f64abcc732941112ab10d076bfe9869ebd7f395037ed4d99ce163ba4a37c9e4ca2d7e15bae4c067128c3a12120ee86b3a60ba3375b67de'
             '3168d6986fd003e0848dfcb6fdf3a88a00c7b7d739ff1eeed8e9aaaf3287629a248d9d7a6f1eeac277fcfb10417190d560d11b47b673becfe04c6a1e7aef3505')
 
 package() {
   install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
+  install -Dm644 $pkgname.completion    $pkgdir/usr/share/bash-completion/completions/$pkgname
   install -Dm644 mirror-countries.conf  $pkgdir/etc/mirror-countries.conf
 }

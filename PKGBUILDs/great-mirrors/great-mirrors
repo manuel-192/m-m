@@ -29,7 +29,7 @@ ShowCountryCodes() {
     case "$1" in
         full)
             echo2 "Supported country names and country codes:"
-            reflector --list-countries | sed 's| [ ]*[0-9]*$||'
+            reflector --list-countries | sed 's| [ ]*[0-9]*$||' | /usr/bin/sed -n '/^-----/,//'p | /usr/bin/sed '1d'
             ;;
         simple)
             echo2 "Supported country codes:"
