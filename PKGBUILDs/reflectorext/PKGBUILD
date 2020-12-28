@@ -4,11 +4,12 @@
 pkgname=reflectorext
 pkgdesc="Reflector with extensions"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.2.2
+pkgver=0.2.3
 pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(reflector
+         reflector-bash-completion
          curl  # for eos-local-countrycode
         )
 
