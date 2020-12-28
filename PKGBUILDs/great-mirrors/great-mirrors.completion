@@ -40,6 +40,8 @@ _great-mirrors_complete_country_names() {
         countries="$(cat $countrylist.$date)"
     fi
 
+    # bind 'set completion-query-items 150'
+
     local IFS=$'\n'
     COMPREPLY=( $(compgen -W "$countries" -- "$cur") )
     compopt -o nosort
