@@ -1,0 +1,49 @@
+# Maintainer: Christian Hesse <mail@eworm.de>
+# Contributor: Aaron Fischer <mail@aaron-fischer.net>
+# Contributor: Steven Allen <steven@stebalien.com>
+# Contributor: trile7 at gmail dot com
+# Contributor: Ernia <monghitri@aruba.it>
+
+_pkgname=yad
+pkgname=${_pkgname}-latest
+pkgver=7.3.r18.g2bcfe60    # started from 7.3
+pkgrel=1
+pkgdesc='A fork of zenity - display graphical dialogs from shell scripts or command line'
+url=https://github.com/v1cont/$_pkgname
+arch=(x86_64)
+license=(GPL3)
+depends=(gtk3 webkit2gtk gtkspell3)
+makedepends=(autoconf automake intltool)
+source=(git+$url)
+md5sums=(SKIP)
+provides=($_pkgname)
+conflicts=($_pkgname ${_pkgname}-git)
+
+pkgver() {
+  cd $_pkgname
+  git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g' | cut -c2-48
+}
+
+build() {
+  cd $_pkgname
+
+  autoreconf -ivf
+  intltoolize
+  ./configure \
+    --prefix=/usr \
+    --enable-icon-browser \
+    --enable-html \
+    --enable-gio \
+    --enable-spell \
+    --enable-sourceview
+  make
+}
+
+package() {
+  cd $_pkgname
+  make DESTDIR="${pkgdir}" install
+
+  # cleanup
+  cd ../..
+  rm -rf $_pkgname
+}
