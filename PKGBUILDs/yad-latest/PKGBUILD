@@ -1,31 +1,32 @@
+# Maintainer: manuel at EOS
 # Maintainer: Christian Hesse <mail@eworm.de>
 # Contributor: Aaron Fischer <mail@aaron-fischer.net>
 # Contributor: Steven Allen <steven@stebalien.com>
 # Contributor: trile7 at gmail dot com
 # Contributor: Ernia <monghitri@aruba.it>
 
-_pkgname=yad
-pkgname=${_pkgname}-latest
+Pkgname=yad
+pkgname=${Pkgname}-latest
 pkgver=7.3.r18.g2bcfe60    # started from 7.3
 pkgrel=1
 pkgdesc='A fork of zenity - display graphical dialogs from shell scripts or command line'
-url=https://github.com/v1cont/$_pkgname
+url=https://github.com/v1cont/$Pkgname
 arch=(x86_64)
 license=(GPL3)
 depends=(gtk3 webkit2gtk gtkspell3)
 makedepends=(autoconf automake intltool)
-source=(git+$url)
-md5sums=(SKIP)
-provides=($_pkgname)
-conflicts=($_pkgname ${_pkgname}-git)
+source=(git+$url.git)
+md5sums=('SKIP')
+provides=($Pkgname)
+conflicts=($Pkgname ${Pkgname}-git)
 
 pkgver() {
-  cd $_pkgname
-  git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g' | cut -c2-48
+  cd $Pkgname
+  git describe --long --tags | sed 's|v\([0-9\.]*\)-\([0-9]*\)-\([0-9a-f]*\)|\1.r\2.\3|'
 }
 
 build() {
-  cd $_pkgname
+  cd $Pkgname
 
   autoreconf -ivf
   intltoolize
@@ -40,10 +41,10 @@ build() {
 }
 
 package() {
-  cd $_pkgname
+  cd $Pkgname
   make DESTDIR="${pkgdir}" install
 
   # cleanup
   cd ../..
-  rm -rf $_pkgname
+  rm -rf $Pkgname
 }
