@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#test
 echo2() { echo "$@" >&2 ; }
 
 DIE() {
