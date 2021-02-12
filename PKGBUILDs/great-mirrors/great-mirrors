@@ -1,6 +1,7 @@
 #!/bin/bash
 
-echo2() { echo "$@" >&2 ; }
+echo2()   { echo   "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
 
 DIE() {
     local msg="$1"
@@ -39,46 +40,18 @@ ShowCountryCodes() {
     esac
 }
 
-CCCheck() {   # check validity of country code
-    case "$1" in
-        [A-Z][A-Z]) test -n "$(CodeToCountry "$1")" && return 0 ;;
+GetYourCountryCode() {
+    local code="$(curl -s https://ipinfo.io/country)"
+
+    case "$code" in
+        [A-Z][A-Z])
+            if [ -n "$(CodeToCountry "$code")" ] ; then
+                echo "$code"
+                return 0                                   # country code is supported by reflector
+            fi
+            ;;
     esac
     return 1  # fail
-}
-
-GetYourCountryCode() {
-    local IP code
-
-    IP="$(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com | tr -d '"')"  # ipv4 address
-    code="$(geoiplookup "$IP" | sed 's|^.*: \([A-Z][A-Z]\),.*$|\1|')"
-    CCCheck "$code" && {
-        echo "$code" ; return
-    }
-    code="$(whois "$IP" | grep ^country: | awk '{print $NF}')"
-    CCCheck "$code" && {
-        echo "$code" ; return
-    }
-
-    IP="$(dig -6 TXT +short o-o.myaddr.l.google.com @ns1.google.com | tr -d '"')"  # ipv6 address
-    code="$(geoiplookup6 "$IP" | sed 's|^.*: \([A-Z][A-Z]\),.*$|\1|')"
-    CCCheck "$code" && {
-        echo "$code" ; return
-    }
-    code="$(whois "$IP" | grep ^country: | awk '{print $NF}')"
-    CCCheck "$code" && {
-        echo "$code" ; return
-    }
-
-    code="$(curl -s https://ipinfo.io/country)"
-    CCCheck "$code" && {
-        echo "$code" ; return
-    }
-
-    # net services failed, use local variables, but may be wrong
-    code="$(locale | grep ^LC_TIME | cut -d '"' -f 2 | sed 's|^.*_\([A-Z][A-Z]\)\..*$|\1|')"
-    CCCheck "$code" && {
-        echo "$code" ; return
-    }
 }
 
 # gettime fetchurl (e.g gettime http://foo.com/core/os/i686/core.db.tar.gz)
@@ -120,19 +93,31 @@ GetTime() {
     esac
 }
 
-GetLatestMirrorlist() {
+GetLatestMirrorlistFile() {
     local latest="https://archlinux.org/mirrorlist/?country=all&protocol=http&protocol=https&ip_version=4"
     local mlfile=$(mktemp)
     curl -s -m 10 "$latest" -o$mlfile
     echo $mlfile
 }
 
-Options() {
-    local arg
-    local country
-    # Use temporary variables because the Usage function shows defaults.
-    local sortbase1="$sortbase" savefile1="$savefile" save1="$save" bundle1="$bundle"
+AddToCountries() {
+    local arg="$1"
 
+    case "$arg" in
+        [A-Z][A-Z])
+            country="$(CodeToCountry "$arg")"
+            if [ -z "$country" ] ; then
+                DIE "country code '$arg' not supported." ShowCountryCodes simple
+            fi
+            countries+=("$country")
+            ;;
+        *)
+            countries+=("$arg")
+            ;;
+    esac
+}
+
+Options_help_old() {
     for arg in "$@" ; do
         cmdline+=" '$arg'"
         case "$arg" in
@@ -146,22 +131,53 @@ Options() {
             --show-codes)  ShowCountryCodes full ; exit 0 ;;
             --show-config) less $conffile ; exit 0 ;;
             -*)            DIE "unsupported option '$arg'" ;;
-            *)
-                case "$arg" in
-                    [A-Z][A-Z])
-                        country="$(CodeToCountry "$arg")"
-                        if [ -z "$country" ] ; then
-                            DIE "country code '$arg' not supported." ShowCountryCodes simple
-                        fi
-                        countries+=("$country")
-                        ;;
-                    *)
-                        countries+=("$arg")
-                        ;;
-                esac
-                ;;
+            *)             AddToCountries "$arg" ;;
         esac
     done
+}
+
+Options_help() {
+    local opts retcode
+
+    opts="$(getopt -o=ahs1 --longoptions age,speed,one,help,save,ls,lu,show-codes,show-config --name "$progname" -- "$@")"
+
+    retcode=$?
+    [ $retcode -eq 0 ] || Usage $retcode
+
+    eval set -- "$opts"
+
+    while true ; do
+        arg="$1"
+        cmdline+=" '$arg'"
+        case "$arg" in
+            --speed | -s)  sortbase1=speed ;;
+            --age   | -a)  sortbase1=age ;;
+            --one   | -1)  bundle1=yes ;;
+            --help  | -h)  Usage 0 ;;
+            --save)        save1=yes ;;
+            --ls)          savefile1=lastsync ;;
+            --lu)          savefile1=lastupdate ;;
+            --show-codes)  ShowCountryCodes full ; exit 0 ;;
+            --show-config) less $conffile ; exit 0 ;;
+            --) shift ; break ;;
+            -*) DIE "unsupported option '$arg'" ;;       # executed only if getopt params conflict with this while loop
+            *)  AddToCountries "$arg" ;;
+        esac
+        shift
+    done
+}
+
+Options() {
+    local arg
+    local country
+    # Use temporary variables because the Usage function shows defaults.
+    local sortbase1="$sortbase"
+    local savefile1="$savefile"
+    local save1="$save"
+    local bundle1="$bundle"
+
+    Options_help "$@"
+
     test -n "$countries" || DIE "country spec(s) required"
     save="$save1"
     bundle="$bundle1"
@@ -298,7 +314,7 @@ Main()
     Options "$@"
 
     local now=$(date +%s)             # date --date='@2147483647'
-    local mirrorlist=$(GetLatestMirrorlist)
+    local mirrorlist=$(GetLatestMirrorlistFile)
 
     case "$sortbase" in
         age)    sf1=2 ; sf2=3 ;;
