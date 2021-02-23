@@ -9,7 +9,7 @@
 
 # started from pkgver 7.3
 
-wget --timeout=10 -O PKGBUILD.yad \
+wget -q --timeout=10 -O PKGBUILD.yad \
      https://github.com/archlinux/svntogit-community/raw/packages/yad/trunk/PKGBUILD
 sed -i PKGBUILD.yad \
     -e 's|cd "${srcdir}/${pkgname}-${pkgver}"|cd yad|'
