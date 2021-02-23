@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Maintainer: manuel at EOS
 # Maintainer: Christian Hesse <mail@eworm.de>
 # Contributor: Aaron Fischer <mail@aaron-fischer.net>
@@ -5,46 +7,43 @@
 # Contributor: trile7 at gmail dot com
 # Contributor: Ernia <monghitri@aruba.it>
 
-Pkgname=yad
-pkgname=${Pkgname}-latest
-pkgver=7.3.r18.g2bcfe60    # started from 7.3
-pkgrel=1
-pkgdesc='A fork of zenity - display graphical dialogs from shell scripts or command line'
-url=https://github.com/v1cont/$Pkgname
-arch=(x86_64)
-license=(GPL3)
-depends=(gtk3 webkit2gtk gtkspell3)
-makedepends=(autoconf automake intltool)
+# started from pkgver 7.3
+
+wget --timeout=10 -O PKGBUILD.yad \
+     https://github.com/archlinux/svntogit-community/raw/packages/yad/trunk/PKGBUILD
+sed -i PKGBUILD.yad \
+    -e 's|cd "${srcdir}/${pkgname}-${pkgver}"|cd yad|'
+sed -i PKGBUILD.yad \
+    -e "/make DESTDIR=/a \  cd ../.. ; rm -rf yad"
+source PKGBUILD.yad
+rm -f PKGBUILD.yad
+
+pkgver=8.0.r1.g06d526a
+pkgname=yad-eos
 source=(git+$url.git)
-md5sums=('SKIP')
-provides=($Pkgname)
-conflicts=($Pkgname ${Pkgname}-git)
+sha256sums=('SKIP')
+provides=(yad)
+conflicts=(yad yad-git)
 
 pkgver() {
-  cd $Pkgname
+  cd yad
   git describe --long --tags | sed 's|v\([0-9\.]*\)-\([0-9]*\)-\([0-9a-f]*\)|\1.r\2.\3|'
 }
 
-build() {
-  cd $Pkgname
+prepare() {
+    if (! grep -r "if (options.data.width > 0) {" >& /dev/null) ; then
+        # patch 1 not found, so do it
 
-  autoreconf -ivf
-  intltoolize
-  ./configure \
-    --prefix=/usr \
-    --enable-icon-browser \
-    --enable-html \
-    --enable-gio \
-    --enable-spell \
-    --enable-sourceview
-  make
-}
+        local pp="\n"
 
-package() {
-  cd $Pkgname
-  make DESTDIR="${pkgdir}" install
-
-  # cleanup
-  cd ../..
-  rm -rf $Pkgname
+        pp+=" if (options.data.width > 0) {\n"
+        pp+="   gtk_widget_set_size_request (vbox, options.data.width, options.data.height);\n"
+        pp+=" } else {\n"
+        pp+="     gint mw, nw;\n"
+        pp+="     gtk_widget_get_preferred_width (vbox, &mw, &nw);\n"
+        pp+="     gtk_widget_set_size_request (vbox, nw, -1);\n"
+        pp+=" }\n"
+        sed -i yad/src/main.c \
+            -e "/gtk_widget_show_all (vbox);/a \ $pp"
+    fi
 }
