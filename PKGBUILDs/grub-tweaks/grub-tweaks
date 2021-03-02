@@ -65,6 +65,19 @@ _show_result() {
     fi
 }
 
+_grub_mod4() {
+    local file=/etc/grub.d/40_custom
+    _backup $file grub
+
+    if [ -z "$(grep "^menuentry 'Shutdown'" $file)" ] && [ -z "$(grep "^menuentry 'Restart'" $file)" ] ; then
+        cat <<EOF >> $file
+
+menuentry 'Shutdown' { halt ; }
+menuentry 'Restart'  { reboot ; }
+EOF
+    fi
+}
+
 _grub_mod3() {
     local file=/etc/grub.d/10_linux               # from package 'grub'
     _backup $file grub
@@ -107,6 +120,8 @@ _grub_mods() {
     _grub_mod1
     _grub_mod2
     _grub_mod3
+
+    _grub_mod4
 }
 
 Main() {

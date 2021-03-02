@@ -2,7 +2,7 @@
 
 pkgname=grub-tweaks
 pkgdesc="Fixes, additions and enhancements to grub."
-pkgver=1.1
+pkgver=1.2
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ source=(
   $url/$pkgname
   $url/$pkgname.hook
 )
-sha512sums=('9938f5cbf9a91a6721e0bb9c100d5b8d62635f206582fb1eca9ed09ce3d105441aad3de8cf794cd65556e5fb727a1c3be66a5716aa0fa3cc9a8d37a52d8a65ca'
+sha512sums=('4daf88033c63de475c908a2680720eeb0f876456eca49cdf3f6e0fdaa0e61f8b9f89f5f73fffc80be3c8dddca94f21b012693ce2c9a7b514c17ce8dbce154ebb'
             'c4385129b97f9ce2d92b095c1d87f0e10ed071ad04523106a08c0caffe5ef036a3ec2ce6d22610221b7bdbbd0334bf8baa6a536a9db8a6899fbdac44c615efd0')
 
 package() {
