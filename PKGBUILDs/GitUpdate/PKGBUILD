@@ -4,7 +4,7 @@
 pkgname=GitUpdate
 pkgdesc="Update special repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.5
+pkgver=1.5.1
 pkgrel=1
 arch=('any')
 license=('custom')
@@ -15,7 +15,7 @@ source=(
     ArmPkgCheck
     StateCheck
 )
-sha512sums=('85499908e53b8b9f0ffefe17a09cea06355f07ae1baa9f99206fc9bf1ac3a689aace5d3de515b8b22672214bb04422719502337d8c54021a61a8f255394bbf9d'
+sha512sums=('256beeb9cbdc17fe3b1e5f6f16b84bcd98201379e0d9310f81df365202c81e4a5830c6d7300dcda220ced52cc1273495c01b3142fe30e8e5d11e5a46a398bfd6'
             '072f026c8eefe932321d49b7d419a374b5127c30038f269f68d0e72fe39fbbf421c4e0de9a68fffc3578ff97dbef91060e9153f90ba0f6d37d521d496dd5dd07'
             'a29ea8698d86356b9ab8d30de933ce927090d94f6c4d720656e2c2d6a4c014611c1c141afb07c0ba63c8ec4db9d3f2b0d28cdf6e13ca8116f9c9400958f25aa4')
 

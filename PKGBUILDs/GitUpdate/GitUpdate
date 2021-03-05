@@ -20,7 +20,7 @@ StateUpdate() {
 
     echo $((stateval+1))                       > $statefile
     echo "$NEW_UUID"                          >> $statefile
-    LANG=C date -u +"%a %b %d %H:%M:%S %Z %Y" >> $statefile
+    LC_TIME=en_GB.UTF-8 date -u +"%a %b %d %H:%M:%S %Z %Y" >> $statefile
 }
 
 GetRepoName() {
