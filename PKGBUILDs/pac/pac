@@ -5,17 +5,28 @@
 # Wrapper for pacman. Knows when to have root permissions.
 # Usage: pacmanwrapper [pacman-parameters]
 
+_sudo() {
+    local sudo=""
+
+    if [ $EUID -eq 0 ] ; then
+        sudo=""
+    elif [ -n "$(/usr/bin/groups | /usr/bin/grep -w wheel)" ] ; then
+        sudo=/usr/bin/sudo
+    else
+        for xx in su-c_wrapper pkexec2 pkexec ; do
+            if [ -x /usr/bin/$xx ] ; then
+                sudo=/usr/bin/$xx
+                break
+            fi
+        done
+    fi
+    echo "$sudo"
+}
+
 _pac2()
 {
     local pacman=/usr/bin/pacman
-    local xx sudo
-
-    for xx in su-c_wrapper sudo ; do     # su-c_wrapper from EndeavourOS, the welcome app!
-        if [ -x /usr/bin/$xx ] ; then
-            sudo=$xx
-            break
-        fi
-    done
+    local xx sudo="$(_sudo)"
 
     case "$needs_privileges" in
         no) $pacman "$@" ; return $? ;;
@@ -99,7 +110,7 @@ _pac1() {
                 -Si* | -Sg* | -Sl* | -Ss* | -Dk* | -Fl*)
                     break
                     ;;
-                -U* | -S* | -R* | -D* | -y* | -u* | --refresh)
+                -U* | -S* | -R* | -D* | -y* | -u* | --refresh | -Fy*)
                     needs_privileges=yes
                     break
                     ;;
