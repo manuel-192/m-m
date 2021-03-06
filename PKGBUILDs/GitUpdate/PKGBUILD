@@ -4,7 +4,7 @@
 pkgname=GitUpdate
 pkgdesc="Update special repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.5.2
+pkgver=1.5.3
 pkgrel=1
 arch=('any')
 license=('custom')
@@ -14,13 +14,20 @@ source=(
     $pkgname
     ArmPkgCheck
     StateCheck
+    UpdatePackages
+    UpdateSources
 )
 sha512sums=('436c51431521ceae967155956803973a9195a737038d4900be8a2595ce083dd45bc873cbb269df968f9dea332b3e9009c52c497d69e9e02da6d258226f51cd07'
             '072f026c8eefe932321d49b7d419a374b5127c30038f269f68d0e72fe39fbbf421c4e0de9a68fffc3578ff97dbef91060e9153f90ba0f6d37d521d496dd5dd07'
-            'a29ea8698d86356b9ab8d30de933ce927090d94f6c4d720656e2c2d6a4c014611c1c141afb07c0ba63c8ec4db9d3f2b0d28cdf6e13ca8116f9c9400958f25aa4')
+            'a29ea8698d86356b9ab8d30de933ce927090d94f6c4d720656e2c2d6a4c014611c1c141afb07c0ba63c8ec4db9d3f2b0d28cdf6e13ca8116f9c9400958f25aa4'
+            'f8ef0fe79461b3f9cac4241b29e0570f8b3a06428f30cac3b13778006713b6132b517d2ad50814d291b82ec023e73c6011565a6af2fb41cf2aa237fb6d9fc09a'
+            '9adc330cd014095eb9a1b06705845346fd4a0c205bf9ddaf40318cd9c78c2de28757714eaa47b9b3852dec8247c96489bdf46005bb7b53a00c4b7ea735a7f443')
 
 package() {
-    install -Dm755 $pkgname     $pkgdir/usr/bin/$pkgname
-    install -Dm755 ArmPkgCheck  $pkgdir/usr/bin/ArmPkgCheck
-    install -Dm755 StateCheck   $pkgdir/usr/bin/StateCheck
+    install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
+    install -Dm755 ArmPkgCheck      $pkgdir/usr/bin/ArmPkgCheck
+    install -Dm755 StateCheck       $pkgdir/usr/bin/StateCheck
+
+    install -Dm755 UpdatePackages   $pkgdir/etc/skel/UpdatePackages
+    install -Dm755 UpdateSources    $pkgdir/etc/skel/UpdateSources
 }

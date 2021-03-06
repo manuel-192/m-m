@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# Check that all source folders are up to date.
+
+DIE() {
+    echo "$progname: error: $1"
+    exit 1
+}
+
+pushd() { command pushd "$@" >/dev/null || DIE "'pushd $*' failed." ; }
+popd()  { command popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
+
+_git_check1() {
+    local folder="$1"
+
+    if [ -n "$(/usr/bin/git fetch --dry-run 2>&1)" ] ; then
+        read -p "    $folder: 'git pull' now (Y/n)? " >&2
+        case "$REPLY" in
+            ""|[yY]*) /usr/bin/git pull ;;
+        esac
+    else
+        echo "    up to date: $folder"
+    fi
+}
+
+_git_check2() {
+    local folder="$1"
+
+    printf "%-20s: " "folder"
+    git pull
+}
+
+Main()
+{
+    local progname="$(basename "$0")"
+    local folder
+
+    for folder in $(/usr/bin/ls -1) ; do
+        [ -d $folder/.git ] || continue
+        [ -L $folder/.git ] && continue
+
+        if [ -e $folder/.no-auto-update ] ; then
+            read -p "want to check folder '$folder' (y/N)? " >&2
+            case "$REPLY" in
+                [yY]*) ;;
+                *) continue ;;
+            esac
+        fi
+
+        pushd "$folder"
+
+        _git_check2 "$folder"
+
+        popd
+    done
+}
+
+Main "$@"
