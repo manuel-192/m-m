@@ -62,7 +62,9 @@ NcdSelectFromList() {
     done
 }
 
-NcdRemoveComments() { /usr/bin/sed '/^[ ]*#.*$/d' ; }
+NcdRemoveComments() {
+    /usr/bin/sed -e '/^[ ]*#.*$/d' -e '/^[ \t]*$/d'
+}
 
 NcdCandidates() {
     local ncddir=$HOME/.config/ncd
@@ -91,7 +93,9 @@ NcdCandidates() {
     fi
     for ((ix=0; ix < ${#paths[@]}; ix++)) ; do
         xx="${paths[$ix]}"
-        [ "${xx: -1}" = "/" ] || paths[$ix]+="/"   # allow symlinks
+        if [ "$follow_symlinks" = "yes" ] ; then
+            [ "${xx: -1}" = "/" ] || paths[$ix]+="/"   # allow symlinks
+        fi
     done
 
     [ -n "$paths" ] || return 1
