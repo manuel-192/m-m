@@ -22,15 +22,6 @@ Main()
 
             assets.make -nn
 
-            if [ 0 -eq 1 ] ; then
-                # fix some package names if they have 'epoch=' in PKGBUILD
-
-                xx="$(/usr/bin/ls -1 vivaldi-widevine-now-[0-9].*.zst 2>/dev/null)"
-                if [ -n "$xx" ] ; then
-                    mv $xx     $(echo "$xx"     | sed 's|\(-now-[0-9]\)\.|\1:|')
-                    mv $xx.sig $(echo "$xx".sig | sed 's|\(-now-[0-9]\)\.|\1:|')
-                fi
-            fi
             popd
         fi
     done

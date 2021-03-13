@@ -4,7 +4,7 @@
 pkgname=GitUpdate
 pkgdesc="Update special repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.5.5
+pkgver=1.5.6
 pkgrel=1
 arch=('any')
 license=('custom')
@@ -20,8 +20,8 @@ source=(
 sha512sums=('436c51431521ceae967155956803973a9195a737038d4900be8a2595ce083dd45bc873cbb269df968f9dea332b3e9009c52c497d69e9e02da6d258226f51cd07'
             '072f026c8eefe932321d49b7d419a374b5127c30038f269f68d0e72fe39fbbf421c4e0de9a68fffc3578ff97dbef91060e9153f90ba0f6d37d521d496dd5dd07'
             'a29ea8698d86356b9ab8d30de933ce927090d94f6c4d720656e2c2d6a4c014611c1c141afb07c0ba63c8ec4db9d3f2b0d28cdf6e13ca8116f9c9400958f25aa4'
-            'f8ef0fe79461b3f9cac4241b29e0570f8b3a06428f30cac3b13778006713b6132b517d2ad50814d291b82ec023e73c6011565a6af2fb41cf2aa237fb6d9fc09a'
-            '7d2d377ed046106fcd6e641d9eef39497172cea982b000daeefeee47165caca9aaf132c98776c4f0f024be120655baa343bc11b8eabfff6cf4806bfba2142f36')
+            '3c5d90a4a07c313f914d855e089902079c46b8119e637efb8e12b72efa8d01330d5d523ced261f2b4115532234ce1c0999dffcf956b090a014261811331321df'
+            'e9bfdefbbf6c9c885f4ce7e7e5c168b87f6e9d67859dcc1da3f9e78b243441cf4e0b6b1490ecd5d0f4e7576315e1819a6020843725af6e9a2dd15f014c1ec831')
 
 package() {
     install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname

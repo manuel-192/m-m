@@ -26,7 +26,7 @@ _git_check1() {
 _git_check2() {
     local folder="$1"
 
-    printf "%-30s: " "$folder"
+    printf "====> %-30s: " "$folder"
     git pull
 }
 
