@@ -1,49 +1,31 @@
 #!/bin/bash
 
-# Maintainer: manuel at EOS
-# Maintainer: Christian Hesse <mail@eworm.de>
-# Contributor: Aaron Fischer <mail@aaron-fischer.net>
-# Contributor: Steven Allen <steven@stebalien.com>
-# Contributor: trile7 at gmail dot com
-# Contributor: Ernia <monghitri@aruba.it>
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
 
-# started from pkgver 7.3
+################## Fetch and source the upstream PKGBUILD:
 
-wget -q --timeout=10 -O PKGBUILD.yad \
-     https://github.com/archlinux/svntogit-community/raw/packages/yad/trunk/PKGBUILD
-sed -i PKGBUILD.yad \
-    -e 's|cd "${srcdir}/${pkgname}-${pkgver}"|cd yad|'
-sed -i PKGBUILD.yad \
-    -e "/make DESTDIR=/a \  cd ../.. ; rm -rf yad"
+curl -Lsm 10 -o PKGBUILD.yad https://github.com/archlinux/svntogit-community/raw/packages/yad/trunk/PKGBUILD || exit 1
+if [ -n "$(grep -w "^prepare" PKGBUILD.yad)" ] ; then
+    echo "Error: upstream yad PKGBUILD has function 'prepare'!!" >&2
+    exit 1
+fi
 source PKGBUILD.yad
 rm -f PKGBUILD.yad
 
-pkgver=8.0.r1.g06d526a
-pkgname=yad-eos
-source=(git+$url.git)
-sha256sums=('SKIP')
-provides=(yad)
-conflicts=(yad yad-git)
+################## Modifications to the upstream PKGBUILD:
 
-pkgver() {
-  cd yad
-  git describe --long --tags | sed 's|v\([0-9\.]*\)-\([0-9]*\)-\([0-9a-f]*\)|\1.r\2.\3|'
-}
+#conflicts=(yad yad-git)
+
+pkgrel+=".1"
 
 prepare() {
-    if (! grep -r "if (options.data.width > 0) {" >& /dev/null) ; then
-        # patch 1 not found, so do it
+    local file=${pkgname}-$pkgver/src/main.c
+    local add_before_this_line="parse_geometry ();"   # line number 567 in version 9.0!
+    local patch=""
 
-        local pp="\n"
+    patch+="     gint mw, nw;\n\n"
+    patch+="      gtk_widget_get_preferred_width (dlg, &mw, &nw);\n"
+    patch+="      gtk_widget_set_size_request (dlg, nw, -1);\n"
 
-        pp+=" if (options.data.width > 0) {\n"
-        pp+="   gtk_widget_set_size_request (vbox, options.data.width, options.data.height);\n"
-        pp+=" } else {\n"
-        pp+="     gint mw, nw;\n"
-        pp+="     gtk_widget_get_preferred_width (vbox, &mw, &nw);\n"
-        pp+="     gtk_widget_set_size_request (vbox, nw, -1);\n"
-        pp+=" }\n"
-        sed -i yad/src/main.c \
-            -e "/gtk_widget_show_all (vbox);/a \ $pp"
-    fi
+    sed -i $file -e "/$add_before_this_line/i \ $patch"
 }
