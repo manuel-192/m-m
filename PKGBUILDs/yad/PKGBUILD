@@ -14,8 +14,6 @@ rm -f PKGBUILD.yad
 
 ################## Modifications to the upstream PKGBUILD:
 
-#conflicts=(yad yad-git)
-
 pkgrel+=".1"
 
 prepare() {
