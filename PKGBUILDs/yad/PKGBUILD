@@ -12,27 +12,18 @@ if [ -n "$(grep -w "^prepare" PKGBUILD.yad)" ] ; then
     exit 1
 fi
 
-# Prepare for renaming the package
-sed -i PKGBUILD.yad -e "s|\${pkgname}|yad|"
-
 source PKGBUILD.yad
 
 rm -f PKGBUILD.yad
 
 ################## Modifications to the upstream PKGBUILD:
 
-# Rename package
-pkgname=yad-patched
-
-provides=(yad)
-conflicts=(yad yad-git yad-patched-git)
-
 # Mark this as patched
 pkgrel+=".1"
 
 # The patch
 prepare() {
-    local file=yad-$pkgver/src/main.c
+    local file=${pkgname}-$pkgver/src/main.c
     local add_before_this_line="parse_geometry ();"         # line number 567 in version 9.0!
     local pp="gtk_widget_set_size_request (dlg, nw, -1);"   # check with this string if this patch already exists
     local patch=""
