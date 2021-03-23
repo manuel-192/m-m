@@ -4,7 +4,7 @@
 pkgname=pac
 pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.6
+pkgver=1.7
 pkgrel=1
 
 arch=('any')
@@ -15,7 +15,7 @@ source=(
     "$url/$pkgname"
     "$url/pac.completion"
 )
-sha512sums=('ba24e18c1a3dce896caa7f4e11004a404c5abff76c4a2002a090897b566693c30ca11aaf51bee41140058f2f57e7a2a5a14f456026521c4afa3553a7197c9061'
+sha512sums=('0d0d70a5e80f7db59dd262cbea4cbe5220991d93c0dd7be1a6180026b63913248b74203d71a8a04c88be27fbf1df84006e97dea513a532d8db905487b9220839'
             'c70cae9b0f875934702950a1f46e5488d59c908a3fc5a72a394acf3c32e38a61416f2628c6f02a7b2ba799fef5ef047dc802e7c0050766c610b6a2033abb763b')
 
 package() {

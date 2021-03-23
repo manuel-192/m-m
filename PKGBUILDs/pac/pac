@@ -134,4 +134,25 @@ _pac1() {
     _pac2 $opt "$@"
 }
 
-_pac1 "$@"
+# _pac1 "$@"
+
+
+pac() {
+    local rooterror="error: you cannot perform this operation unless you are root."
+    local sudo=$(_sudo)
+    local errlog
+    local errfile=$(mktemp)
+
+    LANG=C pacman "$@" 2> "$errfile"
+
+    errlog="$(cat "$errfile")"
+    rm -f "$errfile"   # no more needed
+
+    case "$errlog" in
+        "$rooterror") sudo pacman "$@" ;;  # need elevated privileges
+        "") ;;                             # OK
+        *)  echo "$errlog" >&2 ;;          # some other error, show it
+    esac
+}
+
+pac "$@"
