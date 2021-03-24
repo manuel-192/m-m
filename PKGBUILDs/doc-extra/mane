@@ -1,0 +1,143 @@
+#!/bin/bash
+
+DIE() {
+    echo "$progname: error in function ${FUNCNAME[1]}: $1" >&2
+    exit 1
+}
+
+_browser() {
+    local browser
+    for browser in firefox-developer-edition exo-open xdg-open ; do
+        if [ -x /usr/bin/$browser ] ; then
+            $browser "$@" >& /dev/null &
+            return
+        fi
+    done
+    DIE "no browser found"
+}
+
+_pdf() {
+    local pdf
+    for pdf in atril exo-open xdg-open ; do
+        if [ -x /usr/bin/$pdf ] ; then
+            $pdf "$@" >& /dev/null &
+            return
+        fi
+    done
+    DIE "no pdf viewer found"
+}
+
+_usage() {
+            cat <<EOF >&2
+This program shows both the traditional 'man' pages and additional manual pages.
+Note that the additional manual pages may not be in the format of the
+traditional 'man' pages.
+
+Usage:
+    $progname {any-man-parameters}
+    $progname {eos-name | extra-name}
+    $progname [--help | -h | --additional-manuals]
+
+Paramemers:
+    any-man-parameters
+        Does the same as the 'man' command.
+        Run command 'man man' for all parameters and details.
+    eos-name
+        An EndeavourOS specific program or package name, e.g.
+            welcome              # package name
+            eos-welcome          # program name
+            eos-wallpaper-set    # program name
+            eos-update-notifier  # package and program name
+    extra-name
+        Some generally useful app, e.g.
+            grub
+            libreoffice
+            virtualbox
+    --additional-manuals
+        Show the supported eos-names and extra-names
+    --help | -h
+        This help.
+EOF
+}
+
+_local_manual() {
+    # better or correct manual
+
+    local dir=/usr/share/doc/doc-extra
+    local file
+
+    file="$(ls -1 $dir/$1.*)"
+    [ "$(echo "$file" | wc -l)" = "1" ] || DIE "too many files: '$file'"
+    case "$file" in
+        *.pdf)  _pdf     "$file" ;;
+        *.html) _browser "$file" ;;
+        *) DIE "unsupported file type in '$file'" ;;
+    esac
+
+    # show the upstream manual as well (if is exists)
+    /usr/bin/man "$1"
+}
+
+_additional_manuals() {
+    local pkgs="$(pacman -Slq endeavouros)"
+    local manuals="$(echo $pkgs)"              # all EOS packages
+
+    # add all EOS programs
+    manuals+=" $(echo $(pacman -Flq $pkgs | grep ^usr/bin/. | sed 's|usr/bin/||'))"
+
+    # add some general manuals
+    manuals+=" bashdb grub kaffeine virtualbox"
+    manuals+=" code libreoffice soffice reflector"
+
+    manuals="$(printf "%s\n" $manuals | sort | uniq)"
+    local xx count=0
+    for xx in $manuals ; do
+        printf "%s " "$xx"
+        if [ $((++count)) -eq 3 ] ; then
+            count=0
+            printf "\n"
+        fi
+    done | column -t
+}
+
+_man() {
+    local progname="$(basename "$0")"
+
+    case "$1" in
+        --help | -h | "")
+            _usage
+            ;;
+        --additional-manuals)
+            _additional_manuals
+            ;;
+        bashdb | grub | kaffeine | virtualbox)
+            _local_manual "$@"
+            ;;
+        code)
+            _browser https://code.visualstudio.com/docs
+            ;;
+        libreoffice | soffice)
+            _browser https://help.libreoffice.org
+            /usr/bin/man "$1"
+            ;;
+        reflector)
+            _browser https://xyne.archlinux.ca/projects/reflector
+            /usr/bin/man "$1"
+            ;;
+        *)
+            # try the "real" man command
+            /usr/bin/man "$@"
+            case "$?" in
+                16) # man page not found
+                    eos-pkginfo "$@"
+                    ;;
+                0)  # OK
+                    ;;
+                *)
+                    echo "Sorry, man failed." >&2
+                    ;;
+            esac
+    esac
+}
+
+_man "$@"

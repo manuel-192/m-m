@@ -1,0 +1,37 @@
+#!/bin/bash
+# bash completion for mane        -*- shell-script -*-
+
+_mane_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_mane_() {
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need values.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        --additional-manuals)
+            _mane_complete "$(mane --additional-manuals)"
+            ;;
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -*)
+                    # Any option.
+                    _mane_complete "--additional-manuals"
+                    ;;
+                *)
+                    # Non-option parameters.
+                    local man=$(/usr/bin/find $(manpath | tr ':' ' ') -name \*.1.gz | /usr/bin/sed -e 's|^/usr/share/man/.*/||' -e 's|\.1\.gz||')
+                    _mane_complete "$(mane --additional-manuals) $man"
+                    ;;
+            esac
+            ;;
+    esac
+} # &&
+complete -F _mane_ mane
