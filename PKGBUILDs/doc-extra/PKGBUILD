@@ -1,0 +1,57 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=doc-extra
+pkgdesc="Downloadable documents for various tools, like bashdb"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+
+source=(
+    http://bashdb.sourceforge.net/bashdb.html
+    https://www.gnu.org/software/grub/manual/grub/grub.html
+    https://docs.kde.org/trunk5/en/extragear-multimedia/kaffeine/kaffeine.pdf
+    virtualbox.html::https://www.virtualbox.org/manual/UserManual.html
+
+    ## Not so useful docs:
+    # code.html::https://code.visualstudio.com/docs
+    # kaffeine.html::https://docs.kde.org/trunk5/en/extragear-multimedia/kaffeine/index.html
+    # libreoffice.html::https://help.libreoffice.org
+    # reflector.html::https://xyne.archlinux.ca/projects/reflector
+)
+sha512sums=('3085f685e5e4268e913c2043ecabad050759dcc1aef9c895183825c2e911126a5360a31022b9493b8009dbac931f1f5712facd2cb35060ff209cedfcc7efcac1'
+            '8548e8211735f463361e567ef9ba16a80eb1ba9a0c82f755183fb50a4010a0ff4cd1433a36a129792aedf75edc1addf4653bb99e47ef1bc691366676710cfe2f'
+            '47d2214c94ecf831c4c65efa4055dcc85475111db82aa8a44b1c9baa5a820a0f880e44696b68f4e4f088fcd5f1355164e9537c600caea1602aa8c701db8bfe17'
+            'cd440f6e2d474d4fbee513d608edaba9130d82e3b17f86a2b16b86cc09020cd5348664897b296b8bd716373e4338e1cd64197e19cd974ffb377e0c58641b3cda')
+
+package() {
+    local path
+    local file
+    local destdir="$pkgdir/usr/share/doc/$pkgname"
+
+    for path in "${source[@]}" ; do
+        case "$path" in
+            *::*) file="${path%%::*}" ;;
+            *) file="$(basename "$path")" ;;
+        esac
+
+        # Possible adjustments:
+        case "$file" in
+            virtualbox.html)
+                # Change most hyperlinks from http to https.
+                # E.g. 'sourceforge' does not use https ...
+                sed -i "$file" \
+                    -e 's|http://|https://|g' \
+                    -e 's|https://\([^/]*\.sourceforge\.net/\)|http://\1|g'
+                ;;
+        esac
+
+        install -Dm644 "$file"  "$destdir/$file"
+
+        # cleanup:
+        #rm -f ../"$file"
+    done
+}
