@@ -10,7 +10,7 @@ DIE() {
 
 _browser() {
     local browser
-    for browser in firefox-developer-edition exo-open xdg-open ; do
+    for browser in "${MANE_BROWSERS[@]}" exo-open xdg-open ; do
         if [ -x /usr/bin/$browser ] ; then
             $browser "$@" >& /dev/null &
             return
@@ -21,7 +21,7 @@ _browser() {
 
 _pdf() {
     local pdf
-    for pdf in atril exo-open xdg-open ; do
+    for pdf in "${MANE_PDFS[@]}" exo-open xdg-open ; do
         if [ -x /usr/bin/$pdf ] ; then
             $pdf "$@" >& /dev/null &
             return
@@ -30,8 +30,8 @@ _pdf() {
     DIE "no pdf viewer found"
 }
 
-_usage() {
-            cat <<EOF >&2
+_eos_usage() {
+            cat <<EOF
 This program shows both the traditional 'man' pages and additional manual pages.
 Note that the additional manual pages may not be in the format of the
 traditional 'man' pages.
@@ -56,37 +56,65 @@ Paramemers:
             grub
             libreoffice
             virtualbox
+    --ending=X
+            Prefer ending X in file name if more than one manual with different
+            ending is available, for example: bashdb.html vs. bashdb.pdf.
     --additional-manuals
         Show the supported eos-names and extra-names
     --help | -h
         This help.
+
+File /etc/$progname.conf may include configurations for $progname, e.g.
+    MANE_PREFER_EXTENSION[bashdb]=pdf
+
+=========================================================================
+
 EOF
+}
+
+_usage() {
+    while true ; do
+        _eos_usage
+        /usr/bin/man --help
+        break
+    done | less -RF
 }
 
 _local_manual() {
     # better or correct manual
 
+    local appname="$1"
     local dir=/usr/share/doc/doc-extra
-    local file="$(ls -1 $dir/$1.*)"
+    local file="$(ls -1 $dir/$appname.*)"
+    local end
 
     case "$(echo "$file" | wc -l)" in
         1) ;;
         0) DIE "'$file': manual page not found" ;;
         *)
-            echo2 "Found manuals:"
-            echo2 "$file"
-            local endings=$(echo "$file" | sed 's|.*\.\([a-z][a-z]*\)$|\1|')
-            endings="$(echo $endings)"
-            read2 -p "Select ending to use [$endings]: "
-            file="$(echo "$file" | grep $REPLY$)"
-            case "$file" in
-                *.pdf | *.html) ;;
-                *) DIE "sorry, unsupported file ending in '$file'" ;;
-            esac
+            if [ -n "$ending" ] ; then
+                end="$ending"
+            else
+                end="${MANE_PREFER_EXTENSION[$appname]}"
+            fi
+            if [ -n "$end" ] ; then
+                file="$(echo "$file" | grep $end$)"
+            else
+                echo2 "Found manuals:"
+                echo2 "$file"
+                local endings=$(echo "$file" | sed 's|.*\.\([a-z][a-z]*\)$|\1|')
+                endings="$(echo $endings)"
+                read2 -p "Select ending to use [$endings]: "
+                file="$(echo "$file" | grep $REPLY$)"
+            fi
             case "$(echo "$file" | wc -l)" in
                 1) ;;
                 0) DIE "'$file': manual page not found" ;;
                 *) DIE "too many files: '$file'" ;;
+            esac
+            case "$file" in
+                *.pdf | *.html) ;;
+                *) DIE "sorry, unsupported file ending in '$file'" ;;
             esac
             ;;
     esac
@@ -98,7 +126,7 @@ _local_manual() {
     esac
 
     # show the upstream manual as well (if is exists)
-    /usr/bin/man "$1"
+    /usr/bin/man "$appname"
 }
 
 _additional_manuals() {
@@ -123,16 +151,8 @@ _additional_manuals() {
     done | column -t
 }
 
-_man() {
-    local progname="$(basename "$0")"
-
+_actual_man() {
     case "$1" in
-        --help | -h | "")
-            _usage
-            ;;
-        --additional-manuals)
-            _additional_manuals
-            ;;
         bashdb | grub | kaffeine | virtualbox)
             _local_manual "$@"
             ;;
@@ -161,6 +181,42 @@ _man() {
                     ;;
             esac
     esac
+}
+
+_man() {
+    local progname="$(basename "$0")"
+    declare -A MANE_PREFER_EXTENSION  # array to select file name endings
+    source /etc/mane.conf || DIE "reading /etc/mane.conf failed"
+    local ending=""
+    local arg
+
+    [ "$1" = "" ] && { _usage ; return ; }
+
+    while true ; do
+        arg="$1"
+        case "$arg" in
+            -h | --help)
+                _usage
+                return
+                ;;
+            --additional-manuals)
+                _additional_manuals
+                return
+                ;;
+            --ending=*)
+                ending="${arg#*=}"
+                ;;
+            -*)
+                DIE "unsupported option $arg"
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift
+    done
+
+    _actual_man "$@"
 }
 
 _man "$@"
