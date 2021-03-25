@@ -1,7 +1,10 @@
 #!/bin/bash
 
+echo2() { echo "$@" >&2 ; }
+read2() { read "$@" >&2 ; }
+
 DIE() {
-    echo "$progname: error in function ${FUNCNAME[1]}: $1" >&2
+    echo2 "$progname: error in function ${FUNCNAME[1]}: $1"
     exit 1
 }
 
@@ -64,10 +67,30 @@ _local_manual() {
     # better or correct manual
 
     local dir=/usr/share/doc/doc-extra
-    local file
+    local file="$(ls -1 $dir/$1.*)"
 
-    file="$(ls -1 $dir/$1.*)"
-    [ "$(echo "$file" | wc -l)" = "1" ] || DIE "too many files: '$file'"
+    case "$(echo "$file" | wc -l)" in
+        1) ;;
+        0) DIE "'$file': manual page not found" ;;
+        *)
+            echo2 "Found manuals:"
+            echo2 "$file"
+            local endings=$(echo "$file" | sed 's|.*\.\([a-z][a-z]*\)$|\1|')
+            endings="$(echo $endings)"
+            read2 -p "Select ending to use [$endings]: "
+            file="$(echo "$file" | grep $REPLY$)"
+            case "$file" in
+                *.pdf | *.html) ;;
+                *) DIE "sorry, unsupported file ending in '$file'" ;;
+            esac
+            case "$(echo "$file" | wc -l)" in
+                1) ;;
+                0) DIE "'$file': manual page not found" ;;
+                *) DIE "too many files: '$file'" ;;
+            esac
+            ;;
+    esac
+
     case "$file" in
         *.pdf)  _pdf     "$file" ;;
         *.html) _browser "$file" ;;

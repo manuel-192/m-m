@@ -4,11 +4,15 @@
 pkgname=doc-extra
 pkgdesc="Downloadable documents for various tools, like bashdb"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.1
+pkgver=1.2
 pkgrel=1
 
 arch=('any')
 license=('GPL')
+
+optdepends=(
+    "wkhtmltopdf: convert html pages to pdf"
+)
 
 source=(
     mane        # this program could replace 'man'
@@ -24,20 +28,34 @@ source=(
     # libreoffice.html::https://help.libreoffice.org
     # reflector.html::https://xyne.archlinux.ca/projects/reflector
 )
-sha512sums=('2f744326f66caa93115c6d40dabdbf479848565fddeb2b04ac0ea5251b1c0f8fbfb9d54fe344cd11c1d3763386bcb2e5e3382eecf20d446d8ced41b1d0f3d967'
+sha512sums=('72b6c5cbe994a82273f60e481779ec338bc3cad13daeac3d84a4899dedf3c364f34be773c7306ccbbc1041ca69e2920a32d91b4300114af5abb95b6b8b2480c6'
             'af67d6d135638cf7c420c4e88ce0e3b757aaaa52b3735bae18a4562628f03273762d35fd00b45d69952c2d7603259e1a10de0e0cdaa9782a8faa5afd6fa824c7'
             '3085f685e5e4268e913c2043ecabad050759dcc1aef9c895183825c2e911126a5360a31022b9493b8009dbac931f1f5712facd2cb35060ff209cedfcc7efcac1'
             '8548e8211735f463361e567ef9ba16a80eb1ba9a0c82f755183fb50a4010a0ff4cd1433a36a129792aedf75edc1addf4653bb99e47ef1bc691366676710cfe2f'
             '47d2214c94ecf831c4c65efa4055dcc85475111db82aa8a44b1c9baa5a820a0f880e44696b68f4e4f088fcd5f1355164e9537c600caea1602aa8c701db8bfe17'
             'cd440f6e2d474d4fbee513d608edaba9130d82e3b17f86a2b16b86cc09020cd5348664897b296b8bd716373e4338e1cd64197e19cd974ffb377e0c58641b3cda')
 
+_convert_html_to_pdf() {
+    local html="$1"
+    local pdf="$(basename "$html" .html).pdf"
+
+    if [ -x /usr/bin/wkhtmltopdf ] ; then
+        if (wkhtmltopdf "$html" "$pdf") ; then
+            install -Dm644 "$pdf"  "$destdir/$pdf"
+            #removable+=(../$pdf)
+        fi
+    fi
+}
+
 package() {
     local path
     local file
     local destdir="$pkgdir/usr/share/doc/$pkgname"
+    local removable=()
 
     for path in "${source[@]}" ; do
         case "$path" in
+            mane | mane.completion) continue ;;
             *::*) file="${path%%::*}" ;;
             *) file="$(basename "$path")" ;;
         esac
@@ -51,13 +69,17 @@ package() {
                     -e 's|http://|https://|g' \
                     -e 's|https://\([^/]*\.sourceforge\.net/\)|http://\1|g'
                 ;;
+            bashdb.html)
+                _convert_html_to_pdf $file
+                ;;
         esac
 
         install -Dm644 "$file"  "$destdir/$file"
 
         # cleanup:
-        #rm -f ../"$file"
+        rm -f ../"$file"
     done
+    unset -f _convert_html_to_pdf
 
     install -Dm755 "mane"            "$pkgdir/usr/bin/mane"
     install -Dm644 "mane.completion" "$pkgdir/usr/share/bash-completion/completions/mane"
