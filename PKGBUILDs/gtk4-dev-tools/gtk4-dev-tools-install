@@ -14,7 +14,7 @@ Main()
 {
     install "sudo pacman" gtk4
 
-    install "yay --noremovemake" glibmm268 libsigc++3 cairomm16 pangomm248
+    install "yay --noremovemake" glibmm268 libsigc++3 cairomm16 pangomm248 gtkmm4
 }
 
 Main "$@"

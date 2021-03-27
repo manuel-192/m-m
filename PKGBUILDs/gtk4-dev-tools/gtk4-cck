@@ -12,7 +12,7 @@
 # - glibmm268
 # - cairomm16
 # - pangomm248
-# - 
+# - gtkmm4
 
 DIE() {
     local progname="$(basename "$0")"

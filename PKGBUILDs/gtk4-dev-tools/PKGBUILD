@@ -5,7 +5,7 @@ pkgname=gtk4-dev-tools
 pkgdesc="gtk4 dev tools"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=1
+pkgrel=1.1
 
 arch=('any')
 
@@ -14,7 +14,7 @@ source=(
     $url/gtk4-ck
     $url/gtk4-cck
 )
-sha512sums=('3b792fe37545c12bd0553efe76930a3dcb0c695f28f7cc204b6d718778d95f4a315b22fccb97a6c584646a5cc4a239f8c94d48af3f86da669a5ac0b84ed5fb84'
+sha512sums=('c1f49d8655f7c0087d008d239405861ab6d7f44962ab761f3a4d9bf4854826a69317955d0a1711e899017965862fa4bc40565e3313eedcff66ef3220a751a8b6'
             '9b583d50c2bff46bd71cedc3df55c661f01e150119d63c5f936d145da4113fa3c512226ade6cd8352fc7cca38fadc50e0c5d0fa2caf984432fd39a09dd5428de'
             '919174d0cb47e72bf952a00c52aefaac4b0cf30106c1681525db4c96d565153743fcb1a1a609d6fcc58d4531d9cd298aa12bea04716c2430fc168c7357351fb4')
 
