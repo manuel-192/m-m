@@ -1,0 +1,20 @@
+#!/bin/bash
+
+install() {
+    local tool="$1"
+    shift
+    local pkg pkgs=()
+    for pkg in "$@" ; do
+        pacman -Q "$pkg" >& /dev/null || pkgs+=("$pkg")
+    done
+    [ -n "$pkgs" ] && $tool -S "${pkgs[@]}"
+}
+
+Main()
+{
+    install "sudo pacman" gtk4
+
+    install "yay --noremovemake" glibmm268 libsigc++3 cairomm16 pangomm248
+}
+
+Main "$@"

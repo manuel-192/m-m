@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Compile and link a GTK based C application.
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main() {
+    local name="$1"
+    case "$name" in
+        *.c) ;;
+        *) DIE "please give filename as 'filename.c'" ;;
+    esac
+    local nameout="$(dirname "$name")/$(basename "$name" .c)"
+    local cflags=$(pkg-config --cflags gtk+-3.0)
+    local libs=$(pkg-config --libs gtk+-3.0)
+    local result
+
+    gcc $cflags -o "$nameout" "$name" $libs
+    result=$?
+
+    case "$result" in
+        0) echo "Generated: $nameout"
+           strip "$nameout" || DIE "strip failed."
+           ;;
+        *) rm -f "$nameout"
+           return $result
+           ;;
+    esac
+}
+
+Main "$@"

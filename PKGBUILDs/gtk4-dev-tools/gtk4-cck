@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Compile and link a GTK based C application.
+
+# https://developer.gnome.org/gtkmm-tutorial/stable/sec-installation-dependencies.html.en
+# https://developer.gnome.org/gtkmm-tutorial/stable/sec-basics-simple-example.html.en
+#
+# pacman:
+# - gtk4
+# yay:
+# - libsigc++3
+# - glibmm268
+# - cairomm16
+# - pangomm248
+# - 
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main() {
+    local name="$1"
+    local end=".cc"
+    case "$name" in
+        *$end) ;;
+        *) DIE "please give filename as 'filename$end'" ;;
+    esac
+    local nameout="$(dirname "$name")/$(basename "$name" $end)"
+    local result
+
+    LANG=C g++ -std=c++17 -o "$nameout" "$name" $(pkg-config gtkmm-4.0 --cflags --libs)
+
+    result=$?
+
+    case "$result" in
+        0) echo "Generated: $nameout"
+           strip "$nameout" || DIE "strip failed."
+           ;;
+        *) rm -f "$nameout"
+           return $result
+           ;;
+    esac
+}
+
+Main "$@"
