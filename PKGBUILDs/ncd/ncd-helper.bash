@@ -108,7 +108,7 @@ NcdCandidates() {
     if [ -r "$excludes" ] ; then
         # filter excluded paths
         for xx in $(cat $excludes | NcdRemoveComments) ; do
-            treedata="$(echo "$treedata" | /usr/bin/grep -v "$xx")"
+            treedata="$(echo "$treedata" | /usr/bin/grep -v "$xx" 2>/dev/null)"
         done
     fi
 
@@ -136,10 +136,10 @@ NcdCandidates() {
 
     if [ "$whole_word_match" = "yes" ] ; then
         # find a "whole word" match (or many "whole word" matches)
-        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$path"$)"
+        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$path"$ 2>/dev/null)"
     else
         # find a "non-exact" match (or many non-exact matches)
-        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$path"[^/]*$)"
+        readarray -t newdir <<< "$(echo "$treedata" | /usr/bin/grep -P "/$path"[^/]*$ 2>/dev/null)"
     fi
 
     if [ "${newdir[0]}" != "" ] && [ "${newdir[1]}" != "" ] ; then
