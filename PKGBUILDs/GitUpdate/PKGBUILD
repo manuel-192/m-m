@@ -4,7 +4,7 @@
 pkgname=GitUpdate
 pkgdesc="Update special repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.5.7
+pkgver=1.5.8
 pkgrel=1
 arch=('any')
 license=('custom')
@@ -28,6 +28,6 @@ package() {
     install -Dm755 ArmPkgCheck      $pkgdir/usr/bin/ArmPkgCheck
     install -Dm755 StateCheck       $pkgdir/usr/bin/StateCheck
 
-    install -Dm755 UpdatePackages   $pkgdir/etc/skel/UpdatePackages
-    install -Dm755 UpdateSources    $pkgdir/etc/skel/UpdateSources
+    install -Dm755 UpdatePackages   $pkgdir/usr/bin/UpdatePackages
+    install -Dm755 UpdateSources    $pkgdir/usr/bin/UpdateSources
 }
