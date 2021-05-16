@@ -36,7 +36,7 @@ Variable | Description
 :--- | :---
 CDPATH_ARR | Same as CDPATH but as an array.
 CDPATH_EXCLUDE | Similar array but defines (absolute or relative) paths to be excluded.
-CDPATH_EXCLUDE_FILES | Names of files that make the folder excluded (example value: `.no-cd`).
+CDPATH_EXCLUDE_FILES | Names of files that make the folder excluded (example filename: `.no-cd`).
 CDOUT | Verbosity option. Supported values: `important` (default), and `all` (for additional debug info).
 
 Note that it is best to select carefully the values of the arrays, otherwise `cd` may not find the folders you are trying to go to or avoid.<br>
@@ -63,7 +63,7 @@ for i in ${CDPATH//:/$'\n'}; do
     done
 done
 ```
-#### to
+### to
 ```
 # we have a CDPATH, so loop on its contents
 # we also have arrays CDPATH_EXCLUDE and CDPATH_EXCLUDE_FILES, so take them into account too
@@ -155,8 +155,8 @@ Command | What happens
 :--- | :---
 `cd Work` | Go to `$HOME/Documents/Work`
 `cd School` | Goes to the first matched folder, and shows information about the other matches.<br>Running the same command again will go to the next match.
-`cd Foobar` | Nothing, because excluded by `CDPATH_EXCLUDE` value `Foobar`.<br>A small notification will explain the reason.
-`cd Private` | Nothing, because excluded by `$CDPATH_EXCLUDE_FILE` in that folder.<br>A small notification will explain the reason.
+`cd Foobar` | Nothing, because excluded by `CDPATH_EXCLUDE` value `Foobar`.<br>A small message will explain the reason.
+`cd Private` | Nothing, because excluded by `$CDPATH_EXCLUDE_FILE` in that folder.<br>A small message will explain the reason.
 `cd Bart ; cd Foobar` | First goes to `Bart`, then to `Foobar` even though Foobar was excluded above! See Note 2 below.
 
 <br>
