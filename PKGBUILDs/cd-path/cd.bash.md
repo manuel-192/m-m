@@ -30,7 +30,7 @@ and then copy file `/etc/skel/cd.conf` into your `$HOME/.config` folder:
 cp /etc/skel/cd.conf ~/.config/
 ```
 
-After the above, modify the configuration file `~/.config/cd.conf` containing the values for variables:
+After the above, modify the configuration file `~/.config/cd.conf` to contain *your* preferred values for variables:
 
 Variable | Description
 :--- | :---
