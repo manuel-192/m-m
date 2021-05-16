@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pkgname=cd.bash
+pkgname=cd-path
 pkgdesc="Extends the CDPATH feature of the 'cd' command by allowing exclusion of folders."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
@@ -9,13 +9,13 @@ arch=(any)
 license=(GPL)
 depends=(bash-completion)
 source=(
-    $pkgname
+    cd.bash
     cd.conf
 )
 sha512sums=('5ac74b2d4a77bc6017071a13fe902b53a3d8aced60a3eeeb01ae7125dc13554ccb2aebade554865f24d76852dc2cd90289a2cf3eba4cae82d07dd86bfa6c863f'
             '67a5e4f20650bb4e64c492deadef589b7a276b9bef8106ccb4605d52941fa1748f2cc100ed54354b41c4d0c8764b529244125ebe3351b2d2a77e34cc5f5c704c')
 
 package() {
-    install -Dm644 $pkgname    $pkgdir/etc/skel/$pkgname
-    install -Dm644 cd.conf     $pkgdir/etc/skel/cd.conf
+    install -Dm644 cd.bash    $pkgdir/etc/skel/cd.bash
+    install -Dm644 cd.conf    $pkgdir/etc/skel/cd.conf
 }
