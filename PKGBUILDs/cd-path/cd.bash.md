@@ -47,9 +47,9 @@ See also the examples below.
 ## Adding bash completion support
 
 You can make bash completion for the `cd` command to take folder exclusions into account by
-modifying file `/usr/share/bash-completion/bash_completion` as follows:
+modifying function `_cd()` in file `/usr/share/bash-completion/bash_completion` as follows:
 
-### From (lines 1829..1838)
+### From (around lines 1829..1838)
 ```
 # we have a CDPATH, so loop on its contents
 for i in ${CDPATH//:/$'\n'}; do
