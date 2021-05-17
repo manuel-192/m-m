@@ -111,7 +111,7 @@ Command | What happens
 
 <br>
 
-## Examples assuming configured variables in `~/.config/cd.conf`
+## Examples assuming configured variables in file<br>`~/.config/cd.conf`
 
 Assume the following folders exist:
 ```
