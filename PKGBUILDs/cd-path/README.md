@@ -44,7 +44,7 @@ See also the examples below.
 
 <br>
 
-## Adding bash completion support
+## Adding bash completion support (optional)
 
 You can make bash completion for the `cd` command to take folder exclusions into account by
 modifying function `_cd()` in file `/usr/share/bash-completion/bash_completion` as follows:
