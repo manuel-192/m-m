@@ -1,4 +1,4 @@
-# cd.bash
+# cd-path
 
 Another enhanced `cd` replacement, implemented as a bash *function*.
 
