@@ -163,7 +163,7 @@ Command | What happens
 
 # Notes
 
-1. If you have added the bash completion support as mentioned above, you can use bash completion (press the `tab` key to complete the word) while writing the folder names.
+1. To have full bash completion support (press the `tab` key to complete the word) while writing the folder names, add the bash completion support as described above.
 2. The `cd` function can go to given (and existing) absolute path even though it is excluded. The same is true for a *direct* relative path.<br>
 3. If you have an existing CDPATH value, it will be overwritten by the config file (by default).
 4. To make sure all CDPATH related variables get their proper values, it is recommended to re-login into the machine, or simply reboot.<br>The *minimum* is to start a new terminal instance because bash completion may not work with existing terminal instances.
