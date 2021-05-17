@@ -157,7 +157,7 @@ Command | What happens
 `cd School` | Goes to the first matched folder, and shows information about the other matches.<br>Running the same command again will go to the next match.
 `cd Foobar` | Nothing, because excluded by `CDPATH_EXCLUDE` value `Foobar`.<br>A small message will explain the reason.
 `cd Private` | Nothing, because excluded by `$CDPATH_EXCLUDE_FILE` in that folder.<br>A small message will explain the reason.
-<code>cd Bart <br>cd Foobar</code> | First goes to `Bart`, then to `Foobar` even though Foobar was excluded above!<br>See Note 2 below.
+<code>cd Bart <br> cd Foobar</code> | First goes to `Bart`, then to `Foobar` even though Foobar was excluded above!<br>See Note 2 below.
 
 <br>
 
