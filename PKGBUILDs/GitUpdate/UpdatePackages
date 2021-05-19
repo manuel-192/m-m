@@ -13,7 +13,7 @@ Main()
     local progname="$(basename "$0")"
     local folder xx
 
-    pushd _BUILD_
+    pushd ./_BUILD_    # NOTE: if $CDPATH has no '.', plain '_BUILD_' may go to wrong place!
 
     for folder in $(/usr/bin/ls -1) ; do
         if [ -r $folder/assets.conf ] ; then

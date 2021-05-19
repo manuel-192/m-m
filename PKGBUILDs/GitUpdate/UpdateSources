@@ -47,7 +47,7 @@ Main()
             esac
         fi
 
-        pushd "$folder"
+        pushd ./"$folder"   # warning: $CDPATH may mix up!
 
         _git_check2 "$folder"
 
