@@ -72,6 +72,10 @@ for i in ${CDPATH//:/$'\n'}; do
     # create an array of matched subdirs
     k="${#COMPREPLY[@]}"
     for j in $(compgen -d -- $i/$cur); do
+        if [ "$i" = "." ] && [ "${CDPATH_ARR[0]}" = "." ]; then
+            COMPREPLY[k++]=${j#$i/}  # prefer relative path if . is the first in CDPATH
+            break 2
+        fi
         if [ -n "$CDPATH_EXCLUDE" ]; then
             exclude=no
             for xx in "${CDPATH_EXCLUDE[@]}"; do
