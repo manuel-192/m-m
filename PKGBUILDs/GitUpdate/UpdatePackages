@@ -8,6 +8,8 @@ DIE() {
 pushd() { command pushd "$@" >/dev/null || DIE "'pushd $*' failed." ; }
 popd()  { command popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
 
+Logstuff() { which logstuff &> /dev/null && logstuff "$@" ; }
+
 Main()
 {
     local progname="$(basename "$0")"
@@ -15,16 +17,18 @@ Main()
 
     pushd ./_BUILD_    # NOTE: if $CDPATH has no '.', plain '_BUILD_' may go to wrong place!
 
+    Logstuff on
     for folder in $(/usr/bin/ls -1) ; do
         if [ -r $folder/assets.conf ] ; then
             pushd $folder
-            printf "\n====> $folder\n\n"
+            printf "\n===============> $folder <==================\n\n"
 
             assets.make -nn
 
             popd
         fi
     done
+    Logstuff off
     popd
 }
 
