@@ -150,7 +150,11 @@ cd() {
                     fi
                 done
                 if [ "$excluded" = "no" ] ; then
-                    dirs+=("$dir/$newdir")
+                    if [ "$dir" = "/" ] ; then
+                        dirs+=("/$newdir")      # avoid two slash names like //folder
+                    else
+                        dirs+=("$dir/$newdir")
+                    fi
                 fi
             fi
         fi
