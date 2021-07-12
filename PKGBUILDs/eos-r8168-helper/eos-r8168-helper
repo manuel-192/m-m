@@ -14,7 +14,7 @@ FindCard()  { echo "$lspci" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring"
 
 Options() {
     local opts
-    opts="$(getopt -o=dsh --longoptions debug,display,help,save,sendlog --name "$progname" -- "$@")" || exit 1
+    opts="$(getopt -o=dsh --longoptions check,debug,display,help,save,sendlog --name "$progname" -- "$@")" || exit 1
 
     eval set -- "$opts"
 
@@ -28,6 +28,14 @@ Options:
     --display -d   Display the known good driver name from the local system database.
     --sendlog      Send the stored temporary info to internet using eos-sendlog.
     --help    -h   Show this help and exit.
+
+Detected values:
+    Ethernet card id:        $id
+    Ethernet card driver:    $driver
+
+Database files:
+    System database file:    $database_sys
+    Temporary database file: $database_tmp
 EOF
                 exit 0
                 ;;
@@ -37,6 +45,7 @@ EOF
 
             # "hidden" options:
             --debug) debug=yes ;;
+            --check) mode=check ;;
 
             --) shift ; break ;;
         esac
@@ -54,24 +63,26 @@ Main()
     local devstring="Ethernet controller"  # device search string
     local debug=no
 
+    # Database variables
+    local database_sys=/usr/share/endeavouros/drivers_ethernet_r8168
+    local database_tmp=/tmp/drivers_ethernet_r8168.tmp
+
+    local lspci="$(lspci -vnn)"
+    local id=$(GetId)
+    local driver=$(GetDriver)
+
     Options "$@"
 
-    local id driver="" dbline=""
-    local database_sys=/usr/share/endeavouros/drivers_ethernet_r8168
-    local database_user=$HOME/.cache/drivers_ethernet_r8168
-    local lspci="$(lspci -vnn)"
-    local cardinfo=$(FindCard)
+    local dbline=""
+    local cardinfoline=$(FindCard)
 
     #if [ ! -r "$database" ] ; then
     #    touch "$database" || DIE "cannot create database file $database"
     #fi
 
-    id=$(GetId)
-
     case "$mode" in
         save)
             # It is possible that more than one driver is supported by the same id.
-            driver=$(GetDriver)
             if (! eos-connection-checker) ; then
                 DIE "Connection failure! Will not store driver '$driver' to database. Please check your connections."
             fi
@@ -79,26 +90,27 @@ Main()
                 dbline="$(grep "^$id $driver # " "$database_sys")"
             fi
             if [ -z "$dbline" ] ; then
-                if [ -r "$database_user" ] ; then
-                    dbline="$(grep "^$id $driver # " "$database_user")"
+                if [ -r "$database_tmp" ] ; then
+                    dbline="$(grep "^$id $driver # " "$database_tmp")"
                 fi
                 if [ -z "$dbline" ] ; then
-                    echo2 "Adding driver $driver with id $id."
-                    printf "%s %s # %s\n" "$id" "$driver" "$cardinfo" > "$database_user"
+                    echo2 "Adding driver '$driver' with id '$id' to the temporary database."
+                    printf "%s %s # %s\n" "$id" "$driver" "$cardinfoline" > "$database_tmp"
                 else
                     debug "user database has line: $dbline"
-                    echo2 "Driver $driver already added for sending. Now use option --sendlog."
+                    echo2 "Driver '$driver' already added to the temporary database."
                 fi
+                printf2 "Please run the following terminal command now:\n   %s\n" "$progname --sendlog"
             else
-                echo2 "Driver $driver already added, nothing to do."
+                echo2 "Info: driver $driver already exists in the database, nothing more to do."
                 debug "system database has line:"
                 debug "$dbline"
             fi
             ;;
         sendlog)
-            [ -r "$database_user" ] || DIE "file '$database_user' not found, use option '--save' first."
-            cat "$database_user" | eos-sendlog
-            rm -f "$database_user"               # this file not needed anymore
+            [ -r "$database_tmp" ] || DIE "file '$database_tmp' not found, use option '--save' first."
+            cat "$database_tmp" | eos-sendlog
+            rm -f "$database_tmp"               # this file not needed anymore
             ;;
 
         display)
@@ -109,6 +121,11 @@ Main()
             debug "Database has the following card info:"
             debug "$dbline"
             echo "$driver"
+            ;;
+        check)
+            local i1=$(echo "$id" | cut -d':' -f1)
+            local i2=$(echo "$id" | cut -d':' -f2)
+            cat /usr/share/hwdata/pci.ids | sed -n "/^$i1 /,/^[0-9a-f]/p" | sed '$d' | grep -P "^\t$i2 "
             ;;
     esac
 }
