@@ -12,9 +12,12 @@ depends=(bash)
 
 source=(
     "$url"/$pkgname
+    "$url"/drivers_ethernet_r8168
 )
-sha512sums=('635edd4fa84457c033419f146b27f7f9391f90a57da1c2cf8210b15831f7c958bf243017813feff8e1bb5df422f0e394f5b74ca23b4b8beed553942eed77d667')
+sha512sums=('22f125146a69d24a7c41a221ff81a0e9a300e516ae220a3144ade8fdad167c138554dfe07e698ff23b432fef467c8ef6a224b99c05c9cc42b9d97331f4f9cbd0'
+            'e217bf4d4250c4917b0efb8b9a947e40cf7d5825ea1af020c5d391d4eac494227dd3367076200b8d6ba846769f7b5f4acf6dba35fc1be450a4602f975548df10')
 
 package() {
-  install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
+  install -Dm755 $pkgname                 $pkgdir/usr/bin/$pkgname
+  install -Dm755 drivers_ethernet_r8168   $pkgdir/usr/share/endeavouros/drivers_ethernet_r8168
 }

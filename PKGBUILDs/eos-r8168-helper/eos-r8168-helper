@@ -14,7 +14,7 @@ FindCard()  { echo "$lspci" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring"
 
 Options() {
     local opts
-    opts="$(getopt -o=drsh --longoptions display,remove,save,log,help,debug --name "$progname" -- "$@")" || exit 1
+    opts="$(getopt -o=dsh --longoptions debug,display,help,save,sendlog --name "$progname" -- "$@")" || exit 1
 
     eval set -- "$opts"
 
@@ -24,9 +24,9 @@ Options() {
                 cat <<EOF
 Usage: $progname [options]
 Options:
-    --save    -s   Store your card and *working* driver info to a local database.
-    --display -d   Display the known good driver name from the local database.
-    --sendlog      Send the local database to internet using eos-sendlog.
+    --save    -s   Store your card and *working* driver info temporarily for --sendlog.
+    --display -d   Display the known good driver name from the local system database.
+    --sendlog      Send the stored temporary info to internet using eos-sendlog.
     --help    -h   Show this help and exit.
 EOF
                 exit 0
@@ -36,7 +36,6 @@ EOF
             --sendlog) mode=sendlog ;;
 
             # "hidden" options:
-            -r | --remove) mode=remove ;;
             --debug) debug=yes ;;
 
             --) shift ; break ;;
@@ -57,42 +56,59 @@ Main()
 
     Options "$@"
 
-    local id driver dbline
-    local database=/usr/share/endeavouros/drivers_known_good
-    database=$HOME/testing_ethernet_driver_database.txt                 # TESTING !!!
+    local id driver="" dbline=""
+    local database_sys=/usr/share/endeavouros/drivers_ethernet_r8168
+    local database_user=$HOME/.cache/drivers_ethernet_r8168
     local lspci="$(lspci -vnn)"
     local cardinfo=$(FindCard)
 
-    if [ ! -r "$database" ] ; then
-        touch "$database" || DIE "cannot create database file $database"
-    fi
+    #if [ ! -r "$database" ] ; then
+    #    touch "$database" || DIE "cannot create database file $database"
+    #fi
+
     id=$(GetId)
-    dbline="$(grep -w "^$id" "$database")"
+
     case "$mode" in
-        remove)
-            rm -i "$database"
+        save)
+            # It is possible that more than one driver is supported by the same id.
+            driver=$(GetDriver)
+            if (! eos-connection-checker) ; then
+                DIE "Connection failure! Will not store driver '$driver' to database. Please check your connections."
+            fi
+            if [ -r $database_sys ] ; then
+                dbline="$(grep "^$id $driver # " "$database_sys")"
+            fi
+            if [ -z "$dbline" ] ; then
+                if [ -r "$database_user" ] ; then
+                    dbline="$(grep "^$id $driver # " "$database_user")"
+                fi
+                if [ -z "$dbline" ] ; then
+                    echo2 "Adding driver $driver with id $id."
+                    printf "%s %s # %s\n" "$id" "$driver" "$cardinfo" > "$database_user"
+                else
+                    debug "user database has line: $dbline"
+                    echo2 "Driver $driver already added for sending. Now use option --sendlog."
+                fi
+            else
+                echo2 "Driver $driver already added, nothing to do."
+                debug "system database has line:"
+                debug "$dbline"
+            fi
             ;;
         sendlog)
-            cat "$database" | eos-sendlog
+            [ -r "$database_user" ] || DIE "file '$database_user' not found, use option '--save' first."
+            cat "$database_user" | eos-sendlog
+            rm -f "$database_user"               # this file not needed anymore
             ;;
-        save)
-            driver=$(GetDriver)
-            dbline="$(grep "^$id $driver # " "$database")"
-            if [ -z "$dbline" ] ; then
-                printf "%s %s # %s\n" "$id" "$driver" "$cardinfo" >> "$database"
-            else
-                echo2 "Cannot save, database already has '$dbline'"
-            fi
-            ;;
+
         display)
+            [ -r $database_sys ] || DIE "database '$database' does not exist."
+            dbline="$(grep -w "^$id" "$database_sys")"
             driver="$(echo "$dbline" | awk '{print $2}')"
-            if [ -n "$driver" ] ; then
-                debug "Database has the following card info:"
-                debug "$dbline"
-                echo "$driver"
-            else
-                echo2 "Database does not contain a driver for '$id'"
-            fi
+            [ -n "$driver" ] || DIE "database does not contain a driver for '$id'"
+            debug "Database has the following card info:"
+            debug "$dbline"
+            echo "$driver"
             ;;
     esac
 }
