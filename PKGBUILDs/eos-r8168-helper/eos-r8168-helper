@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# Use database to set the correct Ethernet driver.
+
+echo2()   { echo "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+DIE()     { echo2 "$progname: error: $1"; exit 1; }
+
+debug()   { [ "$debug" = "yes" ] && echo2 "$@" ; }
+
+GetId()     { echo "$lspci" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring" | sed 's|.*\[\([0-9a-f:]*\)\].*|\1|' ; }
+GetDriver() { echo "$lspci" | sed -n "/$devstring/,/^$/p" | grep 'Kernel driver in use' | awk '{print $NF}' ; }
+FindCard()  { echo "$lspci" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring" ; }
+
+Options() {
+    local opts
+    opts="$(getopt -o=drsh --longoptions display,remove,save,log,help,debug --name "$progname" -- "$@")" || exit 1
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -h | --help)
+                cat <<EOF
+Usage: $progname [options]
+Options:
+    --save    -s   Store your card and *working* driver info to a local database.
+    --display -d   Display the known good driver name from the local database.
+    --sendlog      Send the local database to internet using eos-sendlog.
+    --help    -h   Show this help and exit.
+EOF
+                exit 0
+                ;;
+            -s | --save) mode=save ;;
+            -d | --display) mode=display ;;
+            --sendlog) mode=sendlog ;;
+
+            # "hidden" options:
+            -r | --remove) mode=remove ;;
+            --debug) debug=yes ;;
+
+            --) shift ; break ;;
+        esac
+        shift
+    done
+    [ -n "$1" ] && devstring="$1"
+}
+
+Main()
+{
+    local progname="$(basename "$0")"
+
+    # Options may modify these variables:
+    local mode=display  # save or display
+    local devstring="Ethernet controller"  # device search string
+    local debug=no
+
+    Options "$@"
+
+    local id driver dbline
+    local database=/usr/share/endeavouros/drivers_known_good
+    database=$HOME/testing_ethernet_driver_database.txt                 # TESTING !!!
+    local lspci="$(lspci -vnn)"
+    local cardinfo=$(FindCard)
+
+    if [ ! -r "$database" ] ; then
+        touch "$database" || DIE "cannot create database file $database"
+    fi
+    id=$(GetId)
+    dbline="$(grep -w "^$id" "$database")"
+    case "$mode" in
+        remove)
+            rm -i "$database"
+            ;;
+        sendlog)
+            cat "$database" | eos-sendlog
+            ;;
+        save)
+            driver=$(GetDriver)
+            dbline="$(grep "^$id $driver # " "$database")"
+            if [ -z "$dbline" ] ; then
+                printf "%s %s # %s\n" "$id" "$driver" "$cardinfo" >> "$database"
+            else
+                echo2 "Cannot save, database already has '$dbline'"
+            fi
+            ;;
+        display)
+            driver="$(echo "$dbline" | awk '{print $2}')"
+            if [ -n "$driver" ] ; then
+                debug "Database has the following card info:"
+                debug "$dbline"
+                echo "$driver"
+            else
+                echo2 "Database does not contain a driver for '$id'"
+            fi
+            ;;
+    esac
+}
+
+Main "$@"
+

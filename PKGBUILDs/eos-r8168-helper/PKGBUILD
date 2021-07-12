@@ -1,0 +1,20 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-r8168-helper
+pkgdesc="Help with the Ethernet driver, especially with r8168"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash)
+
+source=(
+    "$url"/$pkgname
+)
+sha512sums=('635edd4fa84457c033419f146b27f7f9391f90a57da1c2cf8210b15831f7c958bf243017813feff8e1bb5df422f0e394f5b74ca23b4b8beed553942eed77d667')
+
+package() {
+  install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
+}
