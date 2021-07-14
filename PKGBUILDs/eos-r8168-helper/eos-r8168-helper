@@ -25,8 +25,8 @@ Options() {
 Usage: $progname [options]
 Options:
     --save    -s   Store your card and *working* driver info temporarily for --sendlog.
-    --display -d   Display the known good driver name from the local system database.
     --sendlog      Send the stored temporary info to internet using eos-sendlog.
+    --display -d   Display the known good driver name from the local system database.
     --help    -h   Show this help and exit.
 
 Detected values:
