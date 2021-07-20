@@ -4,7 +4,7 @@
 pkgname=eos-r8168-helper
 pkgdesc="Help with the Ethernet driver, especially with r8168"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 arch=('any')
 license=('GPL')
