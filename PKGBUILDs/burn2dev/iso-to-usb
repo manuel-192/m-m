@@ -1,0 +1,196 @@
+#!/bin/bash
+
+echo2()   { echo "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+read2()   { read "$@" >&2 ; }
+indentpipe() { /usr/bin/sed 's|^|    |' ; }
+indent2() { echo "$@" | indentpipe >&2 ; }
+error2()  { echo2 "  ==> $progname: error: $@" ; }
+warning2()  { echo2 "  ==> $progname: warning: $@" ; }
+
+DIE() {
+    if [ -n "$1" ] ; then
+        error2 "$1"
+    fi
+    Usage
+    exit 1
+}
+
+IsMounted() {
+    local dev="$1"
+    local xx
+
+    for xx in "${df[@]}" ; do
+        case "$xx" in
+            "$dev"*) return 0 ;;
+        esac
+    done
+    return 1
+}
+
+GetDf() {
+    local grep="$targetdisk"
+    if [ -z "$targetdisk" ] ; then
+        grep="/dev"
+    fi
+    readarray -t df <<< $(/usr/bin/df | /usr/bin/grep "^$grep" | /usr/bin/awk '{print $1}')
+}
+
+GetUsbDrives() {
+    if [ -z "$usb_drives" ] ; then
+        usb_drives="$(/usr/bin/find-usb-sticks)"
+    fi
+}
+
+ShowAvailableUsbDrives() {
+    GetUsbDrives
+    if [ -n "$usb_drives" ] ; then
+        echo2 "Plugged in USB drives:"
+        indent2 "$usb_drives"
+    else
+        warning2 "no USB drives available!"
+    fi
+}
+
+Options() {
+    local opts
+    opts="$(/usr/bin/getopt -o=ahu --longoptions help,list-all,list-unmounted --name "$progname" -- "$@")"
+    [ $? -eq 0 ] || exit 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -h | --help)
+                Usage
+                exit 0
+                ;;
+            --) shift
+                break
+                ;;
+            --list-all | -a)
+                ShowAvailableUsbDrives
+                exit 0
+                ;;
+            --list-unmounted | -u)
+                local sticks xx dev drives
+                GetDf
+                GetUsbDrives
+                readarray -t sticks <<< $(echo "$usb_drives")
+                drives=$(for xx in "${sticks[@]}" ; do
+                             dev=$(echo "$xx" | /usr/bin/awk '{print $1}' | /usr/bin/sed 's|:$||')
+                             if (! IsMounted "$dev") ; then
+                                 echo "$xx"
+                             fi
+                         done)
+                if [ -n "$drives" ] ; then
+                    echo "$drives" | indentpipe
+                else
+                    warning2 "no unmounted USB drives available."
+                fi
+                exit 0
+                ;;
+        esac
+        shift
+    done
+    iso="$1"
+    targetdisk="$2"
+    [ -n "$iso" ]        || DIE "no required parameters given"
+    [ -n "$targetdisk" ] || DIE "give target device"
+}
+
+Usage() {
+    cat <<EOF >&2
+
+Usage: $progname ISO-file target-USB-device
+       $progname [options]
+
+target-USB-device       USB drive device name, e.g. /dev/sde
+ISO-file                Path to ISO file to be burned to the USB drive
+
+Options:
+      --help     | -h   This help.
+      --list-all | -a   List all USB drives.
+      --list     | -l   List all unmounted USB drives.
+
+EOF
+    ShowAvailableUsbDrives
+}
+
+Main()
+{
+    local iso=""          # /path/to/endeavouros-x86_64.iso
+    local targetdisk=""   # /dev/sdX
+    local progname="$(/usr/bin/basename "$0")"
+    local commands=""
+    local df=""
+    local lsblk
+    local partition
+    local usb_drives=""
+
+    if [ ! -x /usr/bin/find-usb-sticks ] ; then
+        DIE "program 'find-usb-sticks' is required."
+    fi
+
+    Options "$@"
+
+    GetUsbDrives
+
+    if [ -z "$targetdisk" ] || [ -z "$iso" ] ; then
+        DIE ""
+    fi
+    if [ ! -f "$iso" ] ; then
+        DIE "File '$iso' is not found."
+    fi
+    case "$targetdisk" in
+        /dev/sd?) ;;
+        /dev/nvme*n*p*) DIE "Target disk '$targetdisk' is not valid." ;;
+        /dev/nvme*n*) ;;
+        *) DIE "Target disk '$targetdisk' is not valid." ;;
+    esac
+
+    lsblk="$(/usr/bin/lsblk -fmpl 2>/dev/null)"
+
+    if [ -z "$(echo "$lsblk" | /usr/bin/grep ^$targetdisk)" ] ; then
+        DIE "target disk '$targetdisk' is not available."
+    fi
+    if [ -z "$(echo "$usb_drives" | /usr/bin/grep ^$targetdisk)" ] ; then
+        DIE "target disk '$targetdisk' is not a USB drive!"
+    fi
+
+    # read mounted partition names to df
+    if [ -z "$df" ] ; then
+        GetDf
+    fi
+    if [ -n "$df" ] ; then
+        printf2 "\nWarning: target device partition(s) [${df[*]}] are currently mounted, will umount them when needed.\n"
+        read2 -p "Continue (Y/n)? "
+        case "$REPLY" in
+            [yY]|"") ;;
+            *) return ;;
+        esac
+        for partition in "${df[@]}" ; do
+            commands+="umount $partition && "
+        done
+    fi
+
+    commands+="dd status=progress oflag=sync bs=4M if=$iso of=$targetdisk && sync"
+    # oflag: can be one of: 'sync', 'direct', 'nocache'
+
+    printf2 "\nRunning the following commands as root:\n\n"
+    indent2 "$commands"
+    echo2 ""
+
+    if [ $(/usr/bin/id -u) -eq 0 ] ; then
+        read2 -p "Continue (y/N)? "
+        case "$REPLY" in
+            [yY]) ;;
+            *) return ;;
+        esac
+        $commands
+    else
+        printf "Root "
+        LANG=C /usr/bin/su -c "$commands"
+    fi
+}
+
+Main "$@"

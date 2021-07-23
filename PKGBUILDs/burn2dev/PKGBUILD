@@ -4,7 +4,7 @@
 pkgname=burn2dev
 pkgdesc="CLI burning ISO to USB stick with dd."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.2
+pkgver=1.3
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -13,11 +13,14 @@ depends=(bash)
 source=(
     $pkgname
     find-usb-sticks
+    iso-to-usb
 )
 sha512sums=('781542f4abb6746629833f779041102fdaf2f5bfc5cc607e2b3f9c06696a3443a32fa7f7ac85fc3bf363f064af682e33b2f30a72efa72ebdc62e583cbc97609d'
-            'c8b3b39494ffae1ad1cd2b5004b32cc466f66c804dca0aafefa07dc172bcf71e4bf0f8e6d88d63f98e828f6c211141d58a659910ff8639d2c83d6e3d3cd345cc')
+            'c8b3b39494ffae1ad1cd2b5004b32cc466f66c804dca0aafefa07dc172bcf71e4bf0f8e6d88d63f98e828f6c211141d58a659910ff8639d2c83d6e3d3cd345cc'
+            'd9515d713afa0a42f4c68f0e42b59415fbbfe7d69a58ab3cf84c30ff4a1afa9d5e921eba908a0a5aa741c9abdf0a13d175158b7d156f10180a7f37d6f903f88d')
 
 package() {
   install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
   install -Dm755 find-usb-sticks  $pkgdir/usr/bin/find-usb-sticks
+  install -Dm755 iso-to-usb       $pkgdir/usr/bin/iso-to-usb
 }
