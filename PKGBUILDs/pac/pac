@@ -2,7 +2,7 @@
 #
 # Wrapper for pacman:
 #   - Asks for root permissions only when needed.
-#   - Runs 'pacman -Syu' when parameters are not given.
+#   - Runs 'checkupdates && pacman -Syu' when parameters are not given.
 #
 # Author: manuel (see https://forum.endeavouros.com)
 
@@ -25,12 +25,18 @@ EOF
 }
 
 Options() {
-    # Handle: 1) empty params, 2) options help, quiet and verbose
+    # Handle: 1) empty parameters, 2) options help, quiet and verbose
     local opt ix
 
     if [ -z "$1" ] ; then
-        params="-Syu"
-        return
+        # No parameters ==> check updates and install them
+        if (/usr/bin/checkupdatesext) ; then
+            printf "Root "
+            LANG=C /usr/bin/su -c "LANG=C /usr/bin/pacman -Syu && sync"
+        else
+            echo "No updates available."
+        fi
+        exit 0
     fi
 
     for opt in "$@" ; do
@@ -52,7 +58,6 @@ Options() {
 }
 
 _pacman_wrapper() {
-    local params="$*"   # use this with pacman command
     local verbose=yes
     local help=no
     local par
@@ -62,19 +67,19 @@ _pacman_wrapper() {
     Options "$@"
 
     if [ "$verbose" = "yes" ] ; then
-        echo "===> pacman $params" >&2
+        echo "===> pacman $*" >&2
     fi
     if [ "$help" = "yes" ] ; then
         Usage "$@"
         exit 0
     fi
 
-    PacmanNoRoot $params
+    PacmanNoRoot "$@"
 
     case "$errlog" in
         "$rooterr")
             # We need root permissions.
-            /usr/bin/su -c "LANG=C /usr/bin/pacman $params && /usr/bin/sync"
+            /usr/bin/su -c "LANG=C /usr/bin/pacman $* && /usr/bin/sync"
             ;;
         "") # no error messages, so nothing more to do
             ;;
