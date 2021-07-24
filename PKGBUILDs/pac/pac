@@ -6,6 +6,18 @@
 #
 # Author: manuel (see https://forum.endeavouros.com)
 
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+AurHelper() {
+    for aur in paru yay ; do
+        [ -x /usr/bin/$aur ] && return
+    done
+    DIE "no AUR helper detected."
+}
+
 PacmanNoRoot() {
     # Try without root permissions first and save the error if any.
     local errfile=$(mktemp)
@@ -15,10 +27,16 @@ PacmanNoRoot() {
 }
 
 Usage() {
-    local progname="$(/usr/bin/basename "$0")"
     local pacman_help=$(LANG=C /usr/bin/pacman "$@" | sed -e "s|pacman |$progname |")
     cat <<EOF >&2
-$progname is a pacman wrapper - asks root permissions only when needed.
+$progname is a pacman wrapper.
+
+Changes/additions to pacman:
+  - Asks root permissions only when needed.
+  - If no parameters are given, updates are checked and installed if available.
+  - New options:
+      --aur | -a    Like with no parameters, but check also AUR updates.
+                    No other options can be used with this.
 
 $pacman_help
 EOF
@@ -28,16 +46,32 @@ Options() {
     # Handle: 1) empty parameters, 2) options help, quiet and verbose
     local opt ix
 
-    if [ -z "$1" ] ; then
-        # No parameters ==> check updates and install them
-        if (/usr/bin/checkupdatesext) ; then
-            printf "Root "
-            LANG=C /usr/bin/su -c "LANG=C /usr/bin/pacman -Syu && sync"
-        else
-            echo "No updates available."
-        fi
-        exit 0
-    fi
+    case "$1" in
+        "")
+            # No parameters ==> check updates and install them
+            if (/usr/bin/checkupdatesext) ; then
+                printf "Root "
+                LANG=C /usr/bin/su -c "LANG=C /usr/bin/pacman -Syu && sync"
+            else
+                echo "No updates available."
+            fi
+            exit
+            ;;
+        -a | --aur)
+            # Use AUR helper for all updates.
+            local aur
+            AurHelper
+            local updates=$($aur -Qua)
+
+            if [ -n "$updates" ] || (checkupdates) ; then
+                $aur -Syu --nocombinedupgrade
+                sync
+            else
+                echo "No updates available."
+            fi
+            exit
+            ;;
+    esac
 
     for opt in "$@" ; do
         case "$opt" in
@@ -58,7 +92,8 @@ Options() {
 }
 
 _pacman_wrapper() {
-    local verbose=yes
+    local progname="$(/usr/bin/basename "$0")"
+    local verbose=no
     local help=no
     local par
     local errlog
