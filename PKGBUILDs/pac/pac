@@ -1,44 +1,87 @@
 #!/bin/bash
 #
-# Author: manuel (see https://forum.endeavouros.com)
+# Wrapper for pacman:
+#   - Asks for root permissions only when needed.
+#   - Runs 'pacman -Syu' when parameters are not given.
 #
-# Wrapper for pacman. Knows when to have root permissions.
-# Usage: pacmanwrapper [pacman-parameters]
+# Author: manuel (see https://forum.endeavouros.com)
 
-_sudo() {
-    local sudo=""
-
-    if [ $EUID -eq 0 ] ; then
-        sudo=""
-    elif [ -n "$(/usr/bin/groups | /usr/bin/grep -w wheel)" ] ; then
-        sudo=/usr/bin/sudo
-    else
-        for xx in su-c_wrapper pkexec2 pkexec ; do
-            if [ -x /usr/bin/$xx ] ; then
-                sudo=/usr/bin/$xx
-                break
-            fi
-        done
-    fi
-    echo "$sudo"
+PacmanNoRoot() {
+    # Try without root permissions first and save the error if any.
+    local errfile=$(mktemp)
+    LANG=C /usr/bin/pacman "$@" 2> "$errfile"
+    errlog="$(/usr/bin/cat "$errfile")"
+    /usr/bin/rm -f "$errfile"
 }
 
-pac() {
-    local rooterror="error: you cannot perform this operation unless you are root."
-    local sudo=$(_sudo)
+Usage() {
+    local progname="$(/usr/bin/basename "$0")"
+    local pacman_help=$(LANG=C /usr/bin/pacman "$@" | sed -e "s|pacman |$progname |")
+    cat <<EOF >&2
+$progname is a pacman wrapper - asks root permissions only when needed.
+
+$pacman_help
+EOF
+}
+
+Options() {
+    # Handle: 1) empty params, 2) options help, quiet and verbose
+    local opt ix
+
+    if [ -z "$1" ] ; then
+        params="-Syu"
+        return
+    fi
+
+    for opt in "$@" ; do
+        case "$opt" in
+            --help)    help=yes ;;
+            --quiet)   verbose=no ;;
+            --verbose) verbose=yes ;;
+            --*) ;;
+            -*)  for ix in $(seq 2 ${#opt}) ; do  # iterate option letters
+                     case "${opt:ix-1:1}" in
+                         h) help=yes ;;
+                         q) verbose=no ;;
+                         v) verbose=yes ;;
+                     esac
+                 done
+                 ;;
+        esac
+    done
+}
+
+_pacman_wrapper() {
+    local params="$*"   # use this with pacman command
+    local verbose=yes
+    local help=no
+    local par
     local errlog
-    local errfile=$(mktemp)
+    local rooterr="error: you cannot perform this operation unless you are root."
 
-    LANG=C pacman "$@" 2> "$errfile"
+    Options "$@"
 
-    errlog="$(cat "$errfile")"
-    rm -f "$errfile"   # no more needed
+    if [ "$verbose" = "yes" ] ; then
+        echo "===> pacman $params" >&2
+    fi
+    if [ "$help" = "yes" ] ; then
+        Usage "$@"
+        exit 0
+    fi
+
+    PacmanNoRoot $params
 
     case "$errlog" in
-        "$rooterror") sudo pacman "$@" ;;  # need elevated privileges
-        "") ;;                             # OK
-        *)  echo "$errlog" >&2 ;;          # some other error, show it
+        "$rooterr")
+            # We need root permissions.
+            /usr/bin/su -c "LANG=C /usr/bin/pacman $params && /usr/bin/sync"
+            ;;
+        "") # no error messages, so nothing more to do
+            ;;
+        *)  # some other error, show it
+            echo "$errlog" >&2
+            ;;
     esac
 }
 
-pac "$@"
+_pacman_wrapper "$@"
