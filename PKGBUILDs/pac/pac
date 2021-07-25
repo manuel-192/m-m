@@ -12,8 +12,8 @@ DIE() {
 }
 
 AurHelper() {
-    for aur in paru yay ; do
-        [ -x /usr/bin/$aur ] && return
+    for aur in /usr/bin/paru /usr/bin/yay ; do
+        [ -x $aur ] && return
     done
     DIE "no AUR helper detected."
 }
@@ -45,11 +45,13 @@ EOF
 Options() {
     # Handle: 1) empty parameters, 2) options help, quiet and verbose
     local opt ix
+    local checkupdates=/usr/bin/checkupdatesext
+    [ -x $checkupdates ] || checkupdates=/usr/bin/checkupdates
 
     case "$1" in
         "")
             # No parameters ==> check updates and install them
-            if (/usr/bin/checkupdatesext) ; then
+            if ($checkupdates) ; then
                 printf "Root "
                 LANG=C /usr/bin/su -c "LANG=C /usr/bin/pacman -Syu && sync"
             else
@@ -63,7 +65,7 @@ Options() {
             AurHelper
             local updates=$($aur -Qua)
 
-            if [ -n "$updates" ] || (checkupdates) ; then
+            if [ -n "$updates" ] || ($checkupdates) ; then
                 $aur -Syu --nocombinedupgrade
                 sync
             else
