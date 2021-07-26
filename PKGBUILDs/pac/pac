@@ -3,126 +3,38 @@
 # Wrapper for pacman:
 #   - Asks for root permissions only when needed.
 #   - Runs 'checkupdates && pacman -Syu' when parameters are not given.
+#   - Supports updating from AUR too.
+#
+# Tip: make this an alias in your ~/.bashrc:
+#   alias pac=_pacman_wrapper
 #
 # Author: manuel (see https://forum.endeavouros.com)
 
-DIE() {
-    echo "$progname: error: $1" >&2
-    exit 1
-}
-
-AurHelper() {
-    for aur in /usr/bin/paru /usr/bin/yay ; do
-        [ -x $aur ] && return
-    done
-    DIE "no AUR helper detected."
-}
-
-PacmanNoRoot() {
-    # Try without root permissions first and save the error if any.
-    local errfile=$(mktemp)
-    LANG=C /usr/bin/pacman "$@" 2> "$errfile"
-    errlog="$(/usr/bin/cat "$errfile")"
-    /usr/bin/rm -f "$errfile"
-}
-
-Usage() {
-    local pacman_help=$(LANG=C /usr/bin/pacman "$@" | sed -e "s|pacman |$progname |")
-    cat <<EOF >&2
-$progname is a pacman wrapper.
-
-Changes/additions to pacman:
-  - Asks root permissions only when needed.
-  - If no parameters are given, updates are checked and installed if available.
-  - New options:
-      --aur | -a    Like with no parameters, but check also AUR updates.
-                    No other options can be used with this.
-
-$pacman_help
-EOF
-}
-
-Options() {
-    # Handle: 1) empty parameters, 2) options help, quiet and verbose
-    local opt ix
-    local checkupdates=/usr/bin/checkupdatesext
-    [ -x $checkupdates ] || checkupdates=/usr/bin/checkupdates
-
+_pacman_wrapper() {
     case "$1" in
         "")
-            # No parameters ==> check updates and install them
-            if ($checkupdates) ; then
-                printf "Root "
-                LANG=C /usr/bin/su -c "LANG=C /usr/bin/pacman -Syu && sync"
-            else
-                echo "No updates available."
-            fi
+            checkupdates && { printf "Root "; su -c "pacman -Syu && sync"; }
             exit
             ;;
         -a | --aur)
-            # Use AUR helper for all updates.
-            local aur
-            AurHelper
-            local updates=$($aur -Qua)
-
-            if [ -n "$updates" ] || ($checkupdates) ; then
-                $aur -Syu --nocombinedupgrade
-                sync
-            else
-                echo "No updates available."
+            if [ -n "$(yay -Qua)" ] || (checkupdates) ; then
+                yay -Syu --nocombinedupgrade && sync
             fi
             exit
             ;;
     esac
 
-    for opt in "$@" ; do
-        case "$opt" in
-            --help)    help=yes ;;
-            --quiet)   verbose=no ;;
-            --verbose) verbose=yes ;;
-            --*) ;;
-            -*)  for ix in $(seq 2 ${#opt}) ; do  # iterate option letters
-                     case "${opt:ix-1:1}" in
-                         h) help=yes ;;
-                         q) verbose=no ;;
-                         v) verbose=yes ;;
-                     esac
-                 done
-                 ;;
-        esac
-    done
-}
-
-_pacman_wrapper() {
-    local progname="$(/usr/bin/basename "$0")"
-    local verbose=no
-    local help=no
-    local par
-    local errlog
     local rooterr="error: you cannot perform this operation unless you are root."
+    local errfile=$(mktemp)
 
-    Options "$@"
-
-    if [ "$verbose" = "yes" ] ; then
-        echo "===> pacman $*" >&2
-    fi
-    if [ "$help" = "yes" ] ; then
-        Usage "$@"
-        exit 0
-    fi
-
-    PacmanNoRoot "$@"
+    LANG=C pacman "$@" 2> "$errfile"
+    errlog="$(cat "$errfile")"
+    rm -f "$errfile"
 
     case "$errlog" in
-        "$rooterr")
-            # We need root permissions.
-            /usr/bin/su -c "LANG=C /usr/bin/pacman $* && /usr/bin/sync"
-            ;;
-        "") # no error messages, so nothing more to do
-            ;;
-        *)  # some other error, show it
-            echo "$errlog" >&2
-            ;;
+        "$rooterr") su -c "LANG=C pacman $* && sync" ;;
+        "") ;;
+        *)  echo "$errlog" >&2 ;;
     esac
 }
 
