@@ -1,41 +1,68 @@
 #!/bin/bash
 #
-# Wrapper for pacman:
-#   - Asks for root permissions only when needed.
-#   - Runs 'checkupdates && pacman -Syu' when parameters are not given.
-#   - Supports updating from AUR too.
-#
-# Tip: make this an alias in your ~/.bashrc:
-#   alias pac=_pacman_wrapper
+# Wrapper for pacman with some new features.
+# Use option --help to see more.
 #
 # Author: manuel (see https://forum.endeavouros.com)
 
-_pacman_wrapper() {
+PacInfo() { echo "Option $1 detected, ignoring other options and parameters." >&2 ; }
+
+PacmanWrapper() {
     case "$1" in
         "")
             checkupdates && { printf "Root "; su -c "pacman -Syu && sync"; }
-            exit
             ;;
         -a | --aur)
             if [ -n "$(yay -Qua)" ] || (checkupdates) ; then
                 yay -Syu --nocombinedupgrade && sync
             fi
-            exit
             ;;
-    esac
+        -h | --help)
+            local progname="$(basename "$0")"
+            local pacman_help=$(LANG=C pacman "$@" | sed -e "s|pacman |$progname |")
 
-    local rooterr="error: you cannot perform this operation unless you are root."
-    local errfile=$(mktemp)
+            cat <<EOF >&2
+$progname is a pacman wrapper.
 
-    LANG=C pacman "$@" 2> "$errfile"
-    errlog="$(cat "$errfile")"
-    rm -f "$errfile"
+Changes/additions to pacman:
+  - Asks root permissions only when needed.
+  - If no parameters are given, updates will be installed if available.
+  - New options:
+      --aur | -a    Like with no parameters, but checks also AUR updates.
+                    If this option is used, other options and parameters will be ignored.
 
-    case "$errlog" in
-        "$rooterr") su -c "LANG=C pacman $* && sync" ;;
-        "") ;;
-        *)  echo "$errlog" >&2 ;;
+$pacman_help
+EOF
+            ;;
+        *)
+            local opt
+            for opt in "$@" ; do
+                case "$opt" in
+                    --help)
+                        $FUNCNAME --help "$@"; return ;;  # --help first prevents recursion here!
+                    --aur)
+                        PacInfo $opt; $FUNCNAME $opt; return ;;
+                    --*) ;;
+                    -h | -h* | -*h* | -*h)
+                        $FUNCNAME -h "$@"; return ;;
+                    -a | -a* | -*a* | -*a)
+                        PacInfo -a; $FUNCNAME -a; return ;;
+                esac
+            done
+            local rooterr="error: you cannot perform this operation unless you are root."
+            local errfile=$(mktemp)
+
+            LANG=C pacman "$@" 2> "$errfile"
+            errlog="$(cat "$errfile")"
+            rm -f "$errfile"
+
+            case "$errlog" in
+                "$rooterr") su -c "LANG=C pacman $* && sync" ;;
+                "") ;;
+                *)  echo "$errlog" >&2 ;;
+            esac
+            ;;
     esac
 }
 
-_pacman_wrapper "$@"
+PacmanWrapper "$@"
