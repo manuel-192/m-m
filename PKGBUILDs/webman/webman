@@ -1,0 +1,138 @@
+#!/bin/bash
+
+# Show man page from (Arch) web.
+# Additionally show info from names that have no man page.
+
+echo2() { echo "$@" >&2 ; }
+
+Usage() {
+    local progname="$(basename "$0")"
+    cat <<EOF >&2
+Usage: $progname [basic-options] name
+       $progname help-options
+
+Name:
+    The name for which the manual page or other info is searched.
+
+Basic-options:
+    --find-other-info   Find other info if man page doesn't exist.
+    --skip-other-info   Don't find other info if man page doesn't exist (default).
+
+Help-options:
+    -h | --help              This help.
+
+EOF
+}
+
+Manweb()
+{
+    local name=""
+    local find_other_info=no   # default: will not find other web info if $name has no man page
+
+    local section
+    local url=""
+    local br_default="/usr/bin/xdg-open"
+    local folder_default="/etc/webman"
+    local br="$br_default"
+    local folder="$folder_default"
+    local WEBMAN_BROWSER="" WEBMAN_FOLDER=""
+    local arg
+
+    # Handle paramaters
+    for arg in "$@" ; do
+        case "$arg" in
+            -h | --help)
+                Usage
+                return
+                ;;
+            --find-other-info)
+                find_other_info=yes
+                ;;
+            --skip-other-info)
+                find_other_info=no
+                ;;
+            -* )
+                echo "Sorry, option '$arg' is not supported."; return 1
+                ;;
+            *)
+                name="$arg"
+                ;;
+        esac
+    done
+
+    if [ -z "$name" ] ; then
+        echo2 "Error: give command name"
+        return 1
+    fi
+
+    # Get configured values
+    source /etc/webman.conf 2>/dev/null && {
+        if [ -n "$WEBMAN_BROWSER" ]; then
+            br="$WEBMAN_BROWSER"
+        fi
+        if [ -n "$WEBMAN_FOLDER" ]; then
+            folder="$WEBMAN_FOLDER"
+        fi
+    }
+
+    # Check validity of $br and $folder
+    if [ ! -d "$folder" ]; then
+        echo2 "Folder '$folder' was not found."
+        read -p "Do you want to create it now (Y/n)? "
+        case "$REPLY" in
+            "" | [yY]*)
+                if [ -w "$(dirname "$folder")" ] ; then
+                    mkdir -p "$folder"
+                    arg=$?
+                else
+                    pkexec mkdir -p "$folder"
+                    arg=$?
+                fi
+                if [ $arg -eq 0 ]; then
+                    echo2 "Folder $folder created."
+                else
+                    echo2 "Folder $folder not created."
+                fi
+                ;;
+            *) return ;;
+        esac
+    fi
+    if [ -z "$(which "$br" 2>/dev/null)" ]; then
+        echo2 "Browser '$br' not found, using default $br_default."
+        br="$br_default"
+    fi
+
+    # Find the section of the man page
+    section=$(/usr/bin/man -w "$name" 2>/dev/null | /usr/bin/cut -d '.' -f2)
+
+    # If section was found, show the man page from the Arch site.
+    # Otherwise look for other places if allowed.
+
+    if [ -n "$section" ] ; then
+        url="https://man.archlinux.org/man/$name.$section"
+    else
+        echo2 "Man page for '$name' was not found."
+        if [ "$find_other_info" = "no" ] ; then
+            echo2 "Consider using option --find-other-info"
+            return 1
+        fi
+        echo2 "Finding other info from the web..."
+        
+        local folder=/usr/man/webman
+
+        if [ -r "$folder/$name.url" ] ; then
+            url=$(cat "$folder/$name.url")
+        elif [ -x "$folder/$name.helpcmd" ] ; then
+            "$folder/$name.helpcmd"
+            return
+        elif (eos-pkginfo "$name"); then
+            return
+        else
+            echo2 "Sorry, other info not found."
+            return
+        fi
+    fi
+    /usr/bin/setsid $br "$url" 2>/dev/null
+}
+
+Manweb "$@"

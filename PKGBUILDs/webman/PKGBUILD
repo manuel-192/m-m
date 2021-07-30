@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=webman
+pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.9
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    "$url/$pkgname"
+    "$url/$pkgname.completion"
+)
+sha512sums=('04da8b890bcca40264b4e4eb12a4d645b2128804263d9245e80c6a5e5b813666402232f807d03966c1a4fa4a94abcf822af6ead5af635e3b30babcdf3a98a3f8'
+            '3ff932ce73a92dfd72226f414b6d220ebb0e8b953c5ed2cee2ebbe9152947505f4b274b7224278dce8a72d8a2ee76f11c9de886b1165c8e82f871c5a34e007c2')
+
+package() {
+    install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
+    install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
+}
