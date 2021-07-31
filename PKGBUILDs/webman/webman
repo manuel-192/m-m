@@ -21,6 +21,17 @@ Basic-options:
 Help-options:
     -h | --help              This help.
 
+Config file webman.conf is searched from the following folders in this order:
+    ~/.config/webman
+    /etc/webman
+Config file may contain variables:
+    WEBMAN_BROWSER=<name-of-web-browser>
+
+Web page infos can be written info folder 'pageinfo' under a config file folder (see above).
+Web page info files can be:
+    <name>.url          Contains one URL to the <name> info page.
+    <name>.helpcmd      Contains a command to show help for <name>.
+
 EOF
 }
 
@@ -29,14 +40,17 @@ Manweb()
     local name=""
     local find_other_info=no   # default: will not find other web info if $name has no man page
 
+    local folders=(
+        $HOME/.config/webman
+        /etc/webman
+    )
     local section
     local url=""
     local br_default="/usr/bin/xdg-open"
-    local folder_default="/etc/webman"
     local br="$br_default"
-    local folder="$folder_default"
-    local WEBMAN_BROWSER="" WEBMAN_FOLDER=""
-    local arg
+    local WEBMAN_BROWSER=""
+    local pageinfo_folder="pageinfo"   # under any of $folders
+    local arg dir
 
     # Handle paramaters
     for arg in "$@" ; do
@@ -66,37 +80,17 @@ Manweb()
     fi
 
     # Get configured values
-    source /etc/webman.conf 2>/dev/null && {
-        if [ -n "$WEBMAN_BROWSER" ]; then
-            br="$WEBMAN_BROWSER"
+    for folder in "${folders[@]}" ; do
+        if [ -r $folder/webman.conf ] ; then
+            source $folder/webman.conf 2>/dev/null && {
+                if [ -n "$WEBMAN_BROWSER" ]; then
+                    br="$WEBMAN_BROWSER"
+                fi
+            }
+            break
         fi
-        if [ -n "$WEBMAN_FOLDER" ]; then
-            folder="$WEBMAN_FOLDER"
-        fi
-    }
+    done
 
-    # Check validity of $br and $folder
-    if [ ! -d "$folder" ]; then
-        echo2 "Folder '$folder' was not found."
-        read -p "Do you want to create it now (Y/n)? "
-        case "$REPLY" in
-            "" | [yY]*)
-                if [ -w "$(dirname "$folder")" ] ; then
-                    mkdir -p "$folder"
-                    arg=$?
-                else
-                    pkexec mkdir -p "$folder"
-                    arg=$?
-                fi
-                if [ $arg -eq 0 ]; then
-                    echo2 "Folder $folder created."
-                else
-                    echo2 "Folder $folder not created."
-                fi
-                ;;
-            *) return ;;
-        esac
-    fi
     if [ -z "$(which "$br" 2>/dev/null)" ]; then
         echo2 "Browser '$br' not found, using default $br_default."
         br="$br_default"
@@ -111,28 +105,33 @@ Manweb()
     if [ -n "$section" ] ; then
         url="https://man.archlinux.org/man/$name.$section"
     else
-        echo2 "Man page for '$name' was not found."
+        #echo2 "Man page for '$name' was not found."
         if [ "$find_other_info" = "no" ] ; then
             echo2 "Consider using option --find-other-info"
             return 1
         fi
-        echo2 "Finding other info from the web..."
-        
-        local folder=/usr/man/webman
 
-        if [ -r "$folder/$name.url" ] ; then
-            url=$(cat "$folder/$name.url")
-        elif [ -x "$folder/$name.helpcmd" ] ; then
-            "$folder/$name.helpcmd"
-            return
-        elif (eos-pkginfo "$name"); then
-            return
-        else
-            echo2 "Sorry, other info not found."
-            return
-        fi
+        #echo2 "Finding other info from the web..."
+
+        for folder in "${folders[@]}" ; do
+            dir="$folder/pageinfo"
+            if [ -r "$dir/$name.url" ] ; then
+                url=$(cat "$dir/$name.url")
+                echo2 "==> '$url'"
+                break
+            elif [ -x "$dir/$name.helpcmd" ] ; then
+                "$dir/$name.helpcmd"
+                return
+            fi
+        done
     fi
-    /usr/bin/setsid $br "$url" 2>/dev/null &
+
+    if [ -n "$url" ] ; then
+        /usr/bin/setsid $br "$url" 2>/dev/null &
+    else
+        eos-pkginfo "$name" && return
+        echo2 "Sorry, no info found."
+    fi
 }
 
 Manweb "$@"
