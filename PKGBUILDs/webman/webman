@@ -132,7 +132,7 @@ Manweb()
             return
         fi
     fi
-    /usr/bin/setsid $br "$url" 2>/dev/null
+    /usr/bin/setsid $br "$url" 2>/dev/null &
 }
 
 Manweb "$@"
