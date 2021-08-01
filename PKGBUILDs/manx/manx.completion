@@ -1,8 +1,8 @@
-# webman(1) completion                                        -*- shell-script -*-
+# manx(1) completion                                        -*- shell-script -*-
 
 # modified for EndeavourOS from man
 
-_webman()
+_manx()
 {
     local cur prev words cword split
     _init_completion -s -n : || return
@@ -96,12 +96,13 @@ _webman()
         done
     fi
 
-    # Add EndeavourOS support
-    local eos=$(find /usr/man/web -type f | sed -e 's|^/usr/man/web/||' -e 's|\.url$||')
-    COMPREPLY+=($(compgen -W "$eos" -- "$cur"))
+    # Add manx support
+    local manxdir=$(/usr/bin/manx --show-system-folder)
+    local manxitems=$(find $manxdir -type f | sed -e "s|^$manxdir/||" -e 's|\.url$||' -e 's|\.helpcmd$||')
+    COMPREPLY+=($(compgen -W "$manxitems" -- "$cur"))
 
     __ltrim_colon_completions "$cur"
 } &&
-    complete -F _webman webman
+    complete -F _manx manx
 
 # ex: filetype=sh

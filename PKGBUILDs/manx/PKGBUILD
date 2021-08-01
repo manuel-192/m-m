@@ -1,18 +1,18 @@
 #!/bin/bash
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=webman
+pkgname=manx
 pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.7.31
-pkgrel=2
+pkgver=2021.08.01
+pkgrel=1
 
 arch=('any')
 license=('GPL')
 depends=('bash')
 
-_webmandir=etc/$pkgname
-backup=($_webmandir/$pkgname.conf)
+_manxdir=etc/$pkgname
+backup=($_manxdir/$pkgname.conf)
 
 source=(
     "$url/$pkgname"
@@ -20,9 +20,9 @@ source=(
     "$url/$pkgname.completion"
     "$url/${pkgname}-pageinfos.tar.gz"
 )
-sha512sums=('e50086ea02572b9d26a732d97b969070b25d9caeb9900c458e7e30d5391567d3f63971e68871859f03153dd1b077206d2fd2f4bd077ec7baa32338ba9b847769'
-            '1bbc39e6708c2c8120c4fe473c5880da664f10dcce9842e069ca52a14037b63c3f1c93539a2de69be0e564f74530b46ee445ff409b2108b67c19f7cef41470b2'
-            '3ff932ce73a92dfd72226f414b6d220ebb0e8b953c5ed2cee2ebbe9152947505f4b274b7224278dce8a72d8a2ee76f11c9de886b1165c8e82f871c5a34e007c2'
+sha512sums=('9cb82490f850520db3623732b8eb47358c96e1871fc5bc076e56b9dc31b5ecb17b27a219689a7d2148009d065c12e4ebd89c2bdbbe78265d55748817ad27ac26'
+            'ee3709c27b206855d005e9da17f741fe05b9eadbbc8ace9c089b296a6be678b71e4034fe6da40e2dd5e5314521a4767e33fc1c4a4c58587954fbdb0ef86de47d'
+            '4d5162472f3095387c036d0bcfa030e601155f6b5fc55db92990564bbcb88cb4b3ebb493c74ae123e8730c81b9787be2f8c013c9d000cec6b141c48682d259a2'
             '43f4bdad3622249eeb39f29d8ada8a97b322e688f6e4e055298c68019164a258e520338f12a2a32886d2ee5bb27b9d501d90e45f93c736ef5792f4bff0d6b8a2')
 
 package() {
@@ -30,15 +30,15 @@ package() {
 
     install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
     install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
-    install -Dm644 $pkgname.conf        $pkgdir/$_webmandir/$pkgname.conf
+    install -Dm644 $pkgname.conf        $pkgdir/$_manxdir/$pkgname.conf
 
-    install -d $pkgdir/$_webmandir
+    install -d $pkgdir/$_manxdir
     for xx in pageinfo/* ; do
         case "$xx" in
             *.helpcmd)
-                install -Dm755 "$xx" "$pkgdir/$_webmandir/$xx" ;;
+                install -Dm755 "$xx" "$pkgdir/$_manxdir/$xx" ;;
             *.url | *)
-                install -Dm644 "$xx" "$pkgdir/$_webmandir/$xx" ;;
+                install -Dm644 "$xx" "$pkgdir/$_manxdir/$xx" ;;
         esac
     done
 }
