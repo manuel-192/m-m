@@ -8,6 +8,10 @@
 PacInfo() { echo "Option $1 detected, ignoring other options and parameters." >&2 ; }
 
 PacmanWrapper() {
+    eos-connection-checker || {
+        echo "Internet connection is not available! Please check." >&2
+        return 1
+    }
     case "$1" in
         "")
             checkupdates && { printf "Root "; su -c "pacman -Syu && sync"; }
