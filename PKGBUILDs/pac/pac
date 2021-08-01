@@ -7,13 +7,17 @@
 
 PacInfo() { echo "Option $1 detected, ignoring other options and parameters." >&2 ; }
 
-PacmanWrapper() {
+CheckConnection() {
     eos-connection-checker || {
         echo "Internet connection is not available! Please check." >&2
-        return 1
+        exit 1
     }
+}
+
+PacmanWrapper() {
     case "$1" in
         "")
+            CheckConnection  # check only here, this is the most used oepration here
             checkupdates && { printf "Root "; su -c "pacman -Syu && sync"; }
             ;;
         -a | --aur)
@@ -37,6 +41,7 @@ Changes/additions to pacman:
 
 $pacman_help
 EOF
+            return
             ;;
         *)
             local opt
