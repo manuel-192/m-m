@@ -8,28 +8,37 @@
 PacInfo() { echo "Option $1 detected, ignoring other options and parameters." >&2 ; }
 
 CheckConnection() {
-    eos-connection-checker || {
+    /usr/bin/eos-connection-checker || {
         echo "Internet connection is not available! Please check." >&2
         exit 1
     }
 }
 
 PacmanWrapper() {
+    local sed=/usr/bin/sed
+    local pacman=/usr/bin/pacman
+    local checkupdates=/usr/bin/checkupdates
+    local sync=/usr/bin/sync
+    local yay=/usr/bin/yay
+    local basename=/usr/bin/basename
+    local cat=/usr/bin/cat
+    local su=/usr/bin/su
+
     case "$1" in
         "")
             CheckConnection  # check only here, this is the most used oepration here
-            checkupdates && { printf "Root "; su -c "pacman -Syu && sync"; }
+            $checkupdates && { printf "Root "; $su -c "$pacman -Syu && $sync"; }
             ;;
         -a | --aur)
-            if [ -n "$(yay -Qua)" ] || (checkupdates) ; then
-                yay -Syu --nocombinedupgrade && sync
+            if [ -n "$($yay -Qua)" ] || ($checkupdates) ; then
+                $yay -Syu --nocombinedupgrade && $sync
             fi
             ;;
         -h | --help)
-            local progname="$(basename "$0")"
-            local pacman_help=$(LANG=C pacman "$@" | sed -e "s|pacman |$progname |")
+            local progname="$($basename "$0")"
+            local pacman_help=$(LANG=C $pacman "$@" | $sed -e "s|pacman |$progname |")
 
-            cat <<EOF >&2
+            $cat <<EOF >&2
 $progname is a pacman wrapper.
 
 Changes/additions to pacman:
@@ -59,14 +68,14 @@ EOF
                 esac
             done
             local rooterr="error: you cannot perform this operation unless you are root."
-            local errfile=$(mktemp)
+            local errfile=$(/usr/bin/mktemp)
 
-            LANG=C pacman "$@" 2> "$errfile"
-            errlog="$(cat "$errfile")"
-            rm -f "$errfile"
+            LANG=C $pacman "$@" 2> "$errfile"
+            errlog="$($cat "$errfile")"
+            /usr/bin/rm -f "$errfile"
 
             case "$errlog" in
-                "$rooterr") su -c "LANG=C pacman $* && sync" ;;
+                "$rooterr") $su -c "LANG=C $pacman $* && $sync" ;;
                 "") ;;
                 *)  echo "$errlog" >&2 ;;
             esac
