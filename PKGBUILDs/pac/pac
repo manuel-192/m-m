@@ -26,7 +26,7 @@ PacmanWrapper() {
 
     case "$1" in
         "")
-            CheckConnection  # check only here, this is the most used oepration here
+            #CheckConnection  # check only here, this is the most used operation here
             $checkupdates && { printf "Root "; $su -c "$pacman -Syu && $sync"; }
             ;;
         -a | --aur)
