@@ -4,24 +4,27 @@
 pkgname=great-mirrors
 pkgdesc="Choose great upstream mirrors into /etc/pacman.d/mirrorlist"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.5.1.1
+pkgver=1.6
 pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(bash bc)
-backup=(etc/mirror-countries.conf)
+backup=(etc/mirror-countries.conf etc/offline-mirrors.conf)
 
 source=(
     "$url"/$pkgname
     "$url"/$pkgname.completion
     "$url"/mirror-countries.conf
+    "$url"/offline-mirrors.conf
 )
-sha512sums=('85d6f464c537d8ec3a2c9272ccbde7fab64eaaf93d914a011619ffd78e29e0a626dcd4fa9da0bbb99b1de30010c4f251fc391fffed4902173255d187d7a2022d'
+sha512sums=('ff0b0e2eb4ea7e5b147385f88f4526570606b3c2342c2681e49d643077b4780b52dedafa7ec67c8f155b0f1279f31411ce895eaffff7fdf4b85157b72ac45b20'
             'ab8f873f8f4d8858928190c2adb13ff189d4a8b8a11bd547fa5e7d32511530f05a5aceb0be958f33f63f733a1f3dd56c6ad92b58224173de984b2ff22fcfc47f'
-            'bac6aa287393855e708868651a95d8629511991b7ed304d65c83e4df4fecbdd4dfc40055446b9095eaf59aec842aa09b6457b9031a27145adfb7c507d925c2e9')
+            'bac6aa287393855e708868651a95d8629511991b7ed304d65c83e4df4fecbdd4dfc40055446b9095eaf59aec842aa09b6457b9031a27145adfb7c507d925c2e9'
+            '3a4d23f8f81524458e60d49457f07b870c511167e38def215d941d820da6009d4b1cf3d98827f30f8fa70ed53703eaf43aa3383fd7dc3a88a3dc49211b2a2924')
 
 package() {
   install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
   install -Dm644 $pkgname.completion    $pkgdir/usr/share/bash-completion/completions/$pkgname
   install -Dm644 mirror-countries.conf  $pkgdir/etc/mirror-countries.conf
+  install -Dm644 offline-mirrors.conf   $pkgdir/etc/offline-mirrors.conf
 }
