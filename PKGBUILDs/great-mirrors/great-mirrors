@@ -119,7 +119,7 @@ AddToCountries() {
 
     case "$arg" in
         [A-Z][A-Z])
-            country="$(CodeToCountry "$arg")"
+            local country="$(CodeToCountry "$arg")"
             if [ -z "$country" ] ; then
                 DIE "country code '$arg' not supported." ShowCountryCodes simple
             fi
@@ -151,9 +151,9 @@ Options_help_old() {
 }
 
 Options_help() {
-    local opts retcode
+    local opts retcode arg
 
-    opts="$(getopt -o=ahs1 --longoptions age,speed,one,help,save,ls,lu,show-codes,show-config --name "$progname" -- "$@")"
+    opts="$(getopt -o=abhs1 --longoptions age,both-protocols,speed,one,help,local,save,ls,lu,show-codes,show-config --name "$progname" -- "$@")"
 
     retcode=$?
     [ $retcode -eq 0 ] || Usage $retcode
@@ -171,13 +171,17 @@ Options_help() {
             --save)        save1=yes ;;
             --ls)          savefile1=lastsync ;;
             --lu)          savefile1=lastupdate ;;
+            --both-protocols | -b) use_both_protocols=yes ;;
+            --local)       use_local_country=yes ;;
             --show-codes)  ShowCountryCodes full ; exit 0 ;;
             --show-config) less $conffile ; exit 0 ;;
             --) shift ; break ;;
             -*) DIE "unsupported option '$arg'" ;;       # executed only if getopt params conflict with this while loop
-            *)  AddToCountries "$arg" ;;
         esac
         shift
+    done
+    for arg in "$@" ; do
+        AddToCountries "$arg"
     done
 }
 
@@ -207,17 +211,19 @@ Usage() {
     cat <<EOF >&2
 Usage: $progname [options] country-specs
 Options:
-    Long           Short  Active? Description
-    ====           =====  ======= ===========
-    --speed        -s     $(Default $sortbase speed) Sort output by speed
-    --age          -a     $(Default $sortbase age) Sort output by the time of latest updates
-    --one          -1     $(Default $bundle yes) List all mirrors in one list
-    --save                $(Default $save yes) Save file to \$HOME/mirrorlist
-    --lu                  $(Default $savefile lastupdate) Age: use lastupdate file
-    --ls                  $(Default $savefile lastsync) Age: use lastsync file
-    --show-codes                  Show available country names and country codes
-    --show-config                 Show the configuration file $conffile
-    --help         -h             This help
+    Long                Short  Active? Description
+    ====                =====  ======= ===========
+    --speed             -s     $(Default $sortbase speed) Sort output by speed
+    --age               -a     $(Default $sortbase age) Sort output by the time of latest updates
+    --one               -1     $(Default $bundle yes) List all mirrors in one list
+    --save                     $(Default $save yes) Save file to \$HOME/mirrorlist
+    --lu                       $(Default $savefile lastupdate) Age: use lastupdate file
+    --ls                       $(Default $savefile lastsync) Age: use lastsync file
+    --both-protocols    -b     no      Use both https and http. Default is https only.
+    --local                    no      Include local country automatically.
+    --show-codes                       Show available country names and country codes
+    --show-config                      Show the configuration file $conffile
+    --help              -h             This help
 
 Country-specs is a space separated list of country names or country codes.
 Use quotes with a name that contains spaces (e.g. "United Kingdom").
@@ -303,6 +309,8 @@ Main()
     local sf1=2                       # sort field, based on age
     local sf1=3                       # sort field, based on age
     local savefile=lastupdate         # lastupdate or lastsync (Arch says lastsync...)
+    local use_both_protocols=no       # no=only https, yes=both https and http
+    local use_local_country=no
     local mirror
     local country mirrors_of_country unsorted
     local countries=()
@@ -315,13 +323,16 @@ Main()
     local tmpfile=$(mktemp)
     local cmdline="$progname"
     local local_country_code="$(GetYourCountryCode)"
+    local local_country=""
 
     if [ -n "$local_country_code" ] ; then
         test -r $conffile && ReadConfig            # may not find anything here...
-        if [ -z "$countries" ] ; then
-            # make sure your country is included (provided it is supported by the Arch mirroring system)
-            local local_country="$(CodeToCountry $local_country_code)"
-            countries=("$local_country")
+        if [ "$use_local_country" = "yes" ] ; then
+            if [ ${#countries[@]} -eq 0 ] ; then
+                # make sure your country is included (provided it is supported by the Arch mirroring system)
+                local_country="$(CodeToCountry $local_country_code)"
+                countries=("$local_country")
+            fi
         fi
     fi
 
@@ -356,7 +367,11 @@ Main()
 
     for country in "${countries[@]}" ; do
         echo2 "$country"
-        mirrors_of_country=$(sed -n '/^## '"$country"'$/,/^$/p' $mirrorlist | sed '1d;$d' | grep "^#Server = https://" | awk '{print $3}' | sed 's|/$repo/os/$arch||')
+        if [ "$use_both_protocols" = "yes" ] ; then
+            mirrors_of_country=$(sed -n '/^## '"$country"'$/,/^$/p' $mirrorlist | sed '1d;$d' | grep -P "^#Server = https://|^#Server = http://" | awk '{print $3}' | sed 's|/$repo/os/$arch||')
+        else
+            mirrors_of_country=$(sed -n '/^## '"$country"'$/,/^$/p' $mirrorlist | sed '1d;$d' | grep "^#Server = https://" | awk '{print $3}' | sed 's|/$repo/os/$arch||')
+        fi
         unsorted=$(OneCountry)
         if [ "$bundle" = "yes" ] ; then
             all_results+="$unsorted"
