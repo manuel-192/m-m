@@ -8,14 +8,17 @@
 PacInfo() { echo "Option $1 detected, ignoring other options and parameters." >&2 ; }
 
 CheckConnection() {
-    /usr/bin/eos-connection-checker || {
-        echo "Internet connection is not available! Please check." >&2
-        exit 1
-    }
+    if [ "$EOS_USE_CONNECTION_CHECK" = "yes" ] ; then
+        /usr/bin/eos-connection-checker || {
+            echo "Internet connection is not available! Please check." >&2
+            exit 1
+        }
+    fi
 }
 
 PacmanWrapper() {
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
+    source /etc/eos-pac.conf || return 1
 
     local sed=/usr/bin/sed
     local pacman=/usr/bin/pacman
@@ -28,7 +31,7 @@ PacmanWrapper() {
 
     case "$1" in
         "")
-            # CheckConnection  # check only here, this is the most used operation here
+            CheckConnection  # check only here, this is the most used operation here
             $checkupdates && { printf "Root "; $su -c "$pacman -Syu && $sync"; }
             ;;
         -a | --aur)
