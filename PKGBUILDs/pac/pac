@@ -9,10 +9,13 @@ PacInfo() { echo "Option $1 detected, ignoring other options and parameters." >&
 
 CheckConnection() {
     if [ "$EOS_USE_CONNECTION_CHECK" = "yes" ] ; then
-        /usr/bin/eos-connection-checker || {
-            echo "Internet connection is not available! Please check." >&2
-            exit 1
-        }
+        /usr/bin/eos-connection-checker
+        case "$?" in
+            0) ;;
+            *) echo "Internet connection is not available! Please check." >&2
+               exit 1
+               ;;
+        esac
     fi
 }
 
