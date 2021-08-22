@@ -5,8 +5,6 @@
 #
 # Author: manuel (see https://forum.endeavouros.com)
 
-PacInfo() { echo "Option $1 detected, ignoring other options and parameters." >&2 ; }
-
 CheckConnection() {
     if [ "$EOS_USE_CONNECTION_CHECK" = "yes" ] ; then
         /usr/bin/eos-connection-checker
@@ -31,48 +29,50 @@ PacmanWrapper() {
     local basename=/usr/bin/basename
     local cat=/usr/bin/cat
     local su=/usr/bin/su
+    local opts_pacman="-Syu"
+    local opts_yay="-Syu --nocombinedupgrade"
 
     case "$1" in
         "")
             CheckConnection  # check only here, this is the most used operation here
-            $checkupdates && { printf "Root "; $su -c "$pacman -Syu && $sync"; }
-            ;;
-        -a | --aur)
-            if [ -n "$($yay -Qua)" ] || ($checkupdates) ; then
-                $yay -Syu --nocombinedupgrade && $sync
-            fi
-            ;;
-        -h | --help)
-            local progname="$($basename "$0")"
-            local pacman_help=$(LANG=C $pacman "$@" | $sed -e "s|pacman |$progname |")
-
-            $cat <<EOF >&2
-$progname is a pacman wrapper.
-
-Changes/additions to pacman:
-  - Asks root permissions only when needed.
-  - If no parameters are given, updates will be installed if available.
-  - New options:
-      --aur | -a    Like with no parameters, but checks also AUR updates.
-                    If this option is used, other options and parameters will be ignored.
-
-$pacman_help
-EOF
-            return
+            $checkupdates && {
+                echo "==> $(basename $pacman) $opts_pacman" >&2
+                printf "Root "
+                $su -c "$pacman $opts_pacman && $sync"
+            }
             ;;
         *)
             local opt
             for opt in "$@" ; do
                 case "$opt" in
                     --help)
-                        $FUNCNAME --help "$@"; return ;;  # --help first prevents recursion here!
+                        local progname="$($basename "$0")"
+                        local pacman_help=$(LANG=C $pacman "$@" | $sed -e "s|pacman |$progname |")
+                        $cat <<EOF >&2
+$progname is a pacman wrapper.
+
+Changes/additions to pacman:
+  - Asks root permissions only when needed.
+  - If no parameters are given, runs 'pacman -Syu'.
+  - New options:
+      --aur | -a    Like with no parameters, but runs 'yay -Syu'.
+                    If this option is used, other options and parameters will be ignored.
+
+$pacman_help
+EOF
+                        return
+                        ;;
                     --aur)
-                        PacInfo $opt; $FUNCNAME $opt; return ;;
+                        if [ -n "$($yay -Qua)" ] || ($checkupdates) ; then
+                            echo "==> option $opt detected, ignoring other options and parameters." >&2
+                            echo "==> $(basename $yay) $opts_yay" >&2
+                            $yay $opts_yay && $sync
+                        fi
+                        return
+                        ;;
                     --*) ;;
-                    -h | -h* | -*h* | -*h)
-                        $FUNCNAME -h "$@"; return ;;
-                    -a | -a* | -*a* | -*a)
-                        PacInfo -a; $FUNCNAME -a; return ;;
+                    -*h*) $FUNCNAME --help "$@"; return ;;
+                    -*a*) $FUNCNAME --aur ; return ;;
                 esac
             done
             local rooterr="error: you cannot perform this operation unless you are root."
