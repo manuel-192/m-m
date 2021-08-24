@@ -30,9 +30,10 @@ StateUpdate() {
 GetRepoName() {
     local xx
     reponame="$(basename "$PWD")"
-    if [ "$reponame" = "repo" ] ; then
-        reponame="$(/usr/bin/ls -1F | grep "/$" | tr -d '/')"
-    fi
+    case "$reponame" in
+        repo | eos-tools)
+            reponame="$(/usr/bin/ls -1F | grep "/$" | tr -d '/')" ;;
+    esac
     case "$(echo "$reponame" | wc -l)" in
         0) return 1 ;;
         1) echo1 "$reponame" ;;
@@ -77,10 +78,9 @@ CheckDiff() {
             dstdir="$PWD/$reponame/x86_64"
             git_adds="$reponame state"
             ;;
-        eos-tools)      # refers to [endeavouros-testing-dev]
-            DIE "sorry, $reponame is not currently supported!"
+        endeavouros-testing-dev)                           # was eos-tools
             srcdir="$PWD/../_BUILD_/repo-testing.x86_64"
-            dstdir="$PWD/endeavouros-pkgtools"
+            dstdir="$PWD/$reponame"                        # was endeavouros-pkgtools
             git_adds="$(basename "$dstdir")"
             ;;
         *)
