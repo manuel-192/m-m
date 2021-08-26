@@ -28,7 +28,6 @@ PacmanWrapper() {
     local yay=/usr/bin/yay
     local basename=/usr/bin/basename
     local cat=/usr/bin/cat
-    local su=/usr/bin/su
     local opts_pacman="-Syu"
     local opts_yay="-Syu --nocombinedupgrade"
 
@@ -37,8 +36,7 @@ PacmanWrapper() {
             CheckConnection  # check only here, this is the most used operation here
             $checkupdates && {
                 echo "==> $(basename $pacman) $opts_pacman" >&2
-                printf "Root "
-                $su -c "$pacman $opts_pacman && $sync"
+                $EOS_ROOTER "$pacman $opts_pacman && $sync"
             }
             ;;
         *)

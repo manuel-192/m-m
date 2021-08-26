@@ -4,7 +4,7 @@
 pkgname=pac
 pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.08.22
+pkgver=2021.08.26
 pkgrel=1
 
 arch=('any')
@@ -17,7 +17,7 @@ source=(
     "$url/pac.completion"
     "$url/eos-pac.conf"
 )
-sha512sums=('2ad6bb2362708fe17cbf7051d9a2e71f8e4de39f262293005a19b39059dea47f0a25d54763dc8ef02ae2f7b0c62626d7ad1aecd67357326576f5e725249a62e0'
+sha512sums=('0e0980944796188438ea8d5d9a7aa0505ac87ad9f8936db86d36c5fa21747e44e8792f425a28552a21b885138d76314e48f8fe087053fb01f32cd71cefa98622'
             'c70cae9b0f875934702950a1f46e5488d59c908a3fc5a72a394acf3c32e38a61416f2628c6f02a7b2ba799fef5ef047dc802e7c0050766c610b6a2033abb763b'
             'a62fc910cfc5f924493bfbb6a2376bbfc6cf650e2dad724738c0ce2657488e062a162edffcd43c3c2d8d259ef8af9481e128ca8270cc38030907c244dd125724')
 
