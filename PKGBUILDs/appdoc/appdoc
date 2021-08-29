@@ -130,7 +130,7 @@ Options() {
                 ;;
             --options)                    # useful for bash completion!
                 printf "%s " "$optnames_long"  | /usr/bin/sed -e 's|,| --|g' -e 's|^|--|' -e 's|:||g'
-                echo "$optnames_short" | /usr/bin/sed -e 's|,| -|g' -e 's|^|-|' -e 's|:||g'
+                echo "$optnames_short" | /usr/bin/sed -e 's|\([a-z]\)| -\1|g' -e 's|:||g'
                 exit 0
                 ;;
             --remote-first | -r)
