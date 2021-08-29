@@ -10,37 +10,6 @@
 #
 
 
-###### Database: ############
-
-
-# Collect all app names (or package names) in this list.
-Items=(
-    imagemagick
-    imagemagick_cli
-    pandoc
-    virtualbox
-)
-
-# Collect app specific *internet* URLs here.
-# If a local file is desired, add it as second.
-imagemagick=(
-    https://imagemagick.org
-)
-imagemagick_cli=(
-    https://imagemagick.org/script/command-line-options.php
-)
-pandoc=(
-    https://pandoc.org/MANUAL.html
-    /usr/share/doc/pandoc/MANUAL.html
-)
-virtualbox=(
-    https://www.virtualbox.org/manual/UserManual.html
-    /usr/share/doc/virtualbox/UserManual.html)
-
-
-
-###### Application: ############
-
 
 DIE() {
     echo "$progname: error: $1"
@@ -94,11 +63,11 @@ Fetch() {
 UpdateLocalDocs() {
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1  # for EOS_ROOTER
     local app url
-    local tmpdir=$(mktemp -d)
+    local tmpdir=$(/usr/bin/mktemp -d)
     local tmpfile
     local cmds=""
 
-    mkdir -p $tmpdir
+    /usr/bin/mkdir -p $tmpdir
 
     for app in "${Items[@]}" ; do
         local -n urls=$app
@@ -113,17 +82,33 @@ UpdateLocalDocs() {
             fi
         fi
     done
-    if [ -n "$cmds" ] ; then
-        #printf "Root "
-        $EOS_ROOTER "$cmds"
+    [ -n "$cmds" ] && $EOS_ROOTER "$cmds"
+
+    /usr/bin/rm -rf $tmpdir
+}
+
+Variables() {
+    # adjust variables if they are not OK
+
+    local xx
+
+    xx=$(echo "$browser" | /usr/bin/awk '{print $1}')
+    if [ -n "$(/usr/bin/which "$xx" 2>/dev/null)" ] ; then
+        return
     fi
 
-    rm -rf $tmpdir
+    for xx in /usr/bin/exo-open /usr/bin/xdg-open ; do
+        /usr/bin/which "$xx" >& /dev/null && {
+            browser="$xx"
+            return
+        }
+    done
+    DIE "no browser found."
 }
 
 Options() {
     local opts
-    local optnames_long=help,apps,options,remote-first,update
+    local optnames_long=apps,browser:,help,options,remote-first,update
     local optnames_short=hru
 
     opts="$(/usr/bin/getopt -o=$optnames_short --longoptions $optnames_long --name "$progname" -- "$@")" || {
@@ -138,6 +123,10 @@ Options() {
             --apps)                      # useful for bash completion!
                 printf "%s\n" "${Items[@]}"
                 exit 0
+                ;;
+            --browser)
+                browser="$2"
+                shift
                 ;;
             --options)                    # useful for bash completion!
                 printf "%s " "$optnames_long"  | /usr/bin/sed -e 's|,| --|g' -e 's|^|--|' -e 's|:||g'
@@ -183,11 +172,25 @@ Main() {
     local progname="$(/usr/bin/basename "$0")"
     local application=""
     local local_first=yes
+    local browser=xdg-open
+    local db=appdoc.data
+    local databases=(
+        "$HOME/.config/$db"
+        "/etc/$db"
+    )
+
+    for db in "${databases[@]}" ; do
+        if [ -r "$db" ] ; then
+            source "$db" || DIE "reading database file '$db' failed."
+            break
+        fi
+    done
 
     Options "$@"
+    Variables
 
     if [ -n "$application" ] ; then
-        exo-open $(ShowAppUrl "$application") 2>/dev/null
+        $browser $(ShowAppUrl "$application") 2>/dev/null
     else
         ShowAllItems
     fi

@@ -5,20 +5,24 @@ pkgname=appdoc
 pkgdesc="Show app documentation from the internet or a local file, based on a local database."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.08.29
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
 depends=('bash')
+backup=(etc/$pkgname.data)
 
 source=(
     "$url/$pkgname"
+    "$url/$pkgname.data"
     "$url/$pkgname.completion"
 )
-sha512sums=('e077a63d16b4c0a13b2cf3c9aa5aa4aa41667a80182cb3951548fd347a2aece5263e4c4e88b4b855bb8d98a4b1374d736584de32aa09f5d00f01646abe0f94d7'
-            '0ff6ade60a08e3afc39d0be984286f1f11d92c85ae3775c74d6c933d374f3fbd18b6c2d36b49bd8f6f6823f04b5656d9e7746d758e6048465f1935133057635a')
+sha512sums=('4a26e48d34242a01e3e02ba735d0e7a3b8d7646a280e556cf16873c8930d84e01584f29007fa0f8ed8ea6a6473b9d64d44bbd937b9e4d264f4c7fb4cf9364389'
+            '2f174cbd9ad9d53d0289f59b0d362f46adcd57a1f86b6b6d66ca898473f81b38e720f086ac3f478ecec3896e8d3903f9d4790737cdf5a127c743dafd5cd22e57'
+            '66b7358aaeb0333df3822de5b24102dad5fd92e46fe72d5950a5ca4268e4abb0890c2a94c97add93ec798cc3c6cfe98e93b925ff07a52bc8e9a1bf587fd9b8a8')
 
 package() {
   install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
+  install -Dm644 $pkgname.data        $pkgdir/etc/$pkgname.data
   install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
 }

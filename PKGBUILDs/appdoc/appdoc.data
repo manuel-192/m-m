@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Database file for appdoc.
+#
+
+# Collect all app names (or package names) in this list.
+
+Items=(
+    code
+    imagemagick
+    imagemagick_cli
+    libreoffice
+    pandoc
+    virtualbox
+)
+
+# Collect app specific URLs (local or remote) here.
+# If a local file is desired, add it as second.
+
+code=(
+    https://code.visualstudio.com/learn
+)
+imagemagick=(
+    https://imagemagick.org
+)
+imagemagick_cli=(
+    https://imagemagick.org/script/command-line-options.php
+)
+libreoffice=(
+    https://documentation.libreoffice.org/en/english-documentation
+)
+pandoc=(
+    https://pandoc.org/MANUAL.html
+    /usr/share/doc/pandoc/MANUAL.html
+)
+virtualbox=(
+    https://www.virtualbox.org/manual/UserManual.html
+    /usr/share/doc/virtualbox/UserManual.html
+)
+

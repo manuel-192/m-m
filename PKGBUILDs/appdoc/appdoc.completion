@@ -6,6 +6,25 @@ _appdoc_complete() {
     compopt -o nosort
 }
 
+_browsers_in_system_() {
+    local tmp=() br
+    local brs=(
+        firefox-developer-edition
+        firefox
+        vivaldi-stable
+        chromium
+        brave
+        exo-open
+        xdg-open
+    )
+    for br in "${brs[@]}" ; do
+        if [ -x /usr/bin/$br ] ; then
+            tmp+=($br)
+        fi
+    done
+    echo "${tmp[*]}"
+}
+
 _appdoc_() 
 {
     local cur prev #words cword split
@@ -15,8 +34,9 @@ _appdoc_()
     # Each option "case" should return immediately.
 
     case "$prev" in
-        # No sub-options
-        #-*) ;;
+        --browser)
+            _appdoc_complete "$(_browsers_in_system_)"
+            ;;
 
         *)
             # Handle all top-level parameters.
