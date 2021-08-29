@@ -1,0 +1,196 @@
+#!/bin/bash
+#
+# Retuns a URL for an app.
+# The URL contains information about the app.
+#
+# Examples:
+#    appinfourl                         # shows supported apps and URLs
+#    appinfourl virtualbox              # shows the URL where virtualbox info is found
+#    firefox $(appinfourl virtualbox)   # shows virtualbox manual
+#
+
+
+###### Database: ############
+
+
+# Collect all app names (or package names) in this list.
+Items=(
+    imagemagick
+    imagemagick_cli
+    pandoc
+    virtualbox
+)
+
+# Collect app specific *internet* URLs here.
+# If a local file is desired, add it as second.
+imagemagick=(
+    https://imagemagick.org
+)
+imagemagick_cli=(
+    https://imagemagick.org/script/command-line-options.php
+)
+pandoc=(
+    https://pandoc.org/MANUAL.html
+    /usr/share/doc/pandoc/MANUAL.html
+)
+virtualbox=(
+    https://www.virtualbox.org/manual/UserManual.html
+    /usr/share/doc/virtualbox/UserManual.html)
+
+
+
+###### Application: ############
+
+
+DIE() {
+    echo "$progname: error: $1"
+    exit 1
+}
+
+ShowAllItems() {
+    local app url
+    echo "Supported apps and related URLs"
+    for app in "${Items[@]}" ; do
+        local -n urls=$app
+        printf "    %s\n" "$app"
+        for url in "${urls[@]}" ; do
+            printf "        %s\n" "$url"
+        done
+    done | /usr/bin/less -RF
+}
+
+ShowAppUrl() {
+    local app2="$1"
+    local app url
+    for app in "${Items[@]}" ; do
+        if [ "$app" = "$app2" ] ; then
+            local -n urls=$app
+            if [ "$local_first" = "yes" ] ; then
+                url="${urls[1]}"
+                [ -r "$url" ] || url="${urls[0]}"
+            else
+                url="${urls[0]}"
+            fi
+            if [ -n "$url" ] ; then
+                echo "$url"
+            fi
+            return
+        fi
+    done
+}
+
+Fetch() {
+    local tmpfile="$1"
+    local url="$2"
+    local result=0
+
+    wget -q -O "$tmpfile" "$url"
+    result=$?
+    if [ $result -ne 0 ] ; then
+        DIE "wget $tmpfile failed, code $result."
+    fi
+}
+
+UpdateLocalDocs() {
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1  # for EOS_ROOTER
+    local app url
+    local tmpdir=$(mktemp -d)
+    local tmpfile
+    local cmds=""
+
+    mkdir -p $tmpdir
+
+    for app in "${Items[@]}" ; do
+        local -n urls=$app
+        if [ -n "${urls[1]}" ] || [[ "${urls[1]}" =~ \.html$ ]] ; then
+            echo "$app"
+            tmpfile="$tmpdir/$(basename "${urls[1]}")"
+            Fetch "$tmpfile" "${urls[0]}"
+            if [ -z "$cmds" ] ; then
+                cmds="mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
+            else
+                cmds+=" ; mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
+            fi
+        fi
+    done
+    if [ -n "$cmds" ] ; then
+        #printf "Root "
+        $EOS_ROOTER "$cmds"
+    fi
+
+    rm -rf $tmpdir
+}
+
+Options() {
+    local opts
+    local optnames_long=help,apps,options,remote-first,update
+    local optnames_short=hru
+
+    opts="$(/usr/bin/getopt -o=$optnames_short --longoptions $optnames_long --name "$progname" -- "$@")" || {
+        Options --help
+        exit 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --apps)                      # useful for bash completion!
+                printf "%s\n" "${Items[@]}"
+                exit 0
+                ;;
+            --options)                    # useful for bash completion!
+                printf "%s " "$optnames_long"  | /usr/bin/sed -e 's|,| --|g' -e 's|^|--|' -e 's|:||g'
+                echo "$optnames_short" | /usr/bin/sed -e 's|,| -|g' -e 's|^|-|' -e 's|:||g'
+                exit 0
+                ;;
+            --remote-first | -r)
+                local_first=no
+                ;;
+            --update | -u)
+                UpdateLocalDocs
+                exit 0
+                ;;
+
+            --help | -h)
+                cat <<EOF >&2
+Usage: $progname [options] [appname]
+Options:
+  --apps           Show supported app names. Helps bash completion.
+  --options        Show all options. Helps bash completion.
+  --update         Update local docs from the internet.
+  -u               -"-
+  --remote-first   Show Internet docs instead of local docs.
+  -r               -"-
+  --help           Show this help.
+  -h               -"-
+Params:
+  appname          Name of the application whose info URL shows.
+                   Without appname all supported apps and URLs will be shown.
+EOF
+                exit 0
+                ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+
+    application="$1"
+}
+
+Main() {
+    local progname="$(/usr/bin/basename "$0")"
+    local application=""
+    local local_first=yes
+
+    Options "$@"
+
+    if [ -n "$application" ] ; then
+        exo-open $(ShowAppUrl "$application") 2>/dev/null
+    else
+        ShowAllItems
+    fi
+}
+
+Main "$@"

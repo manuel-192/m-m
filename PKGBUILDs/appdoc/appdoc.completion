@@ -1,0 +1,40 @@
+# bash completion for appdoc        -*- shell-script -*-
+
+_appdoc_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_appdoc_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        # No sub-options
+        #-*) ;;
+
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                "")
+                    # Nothing yet.
+                    _appdoc_complete "$(appdoc --options; appdoc --apps)"
+                    ;;
+                -*)
+                    # Any option.
+                    _appdoc_complete "$(appdoc --options)"
+                    ;;
+                *)
+                    # Non-option parameters.
+                    _appdoc_complete "$(appdoc --apps)"
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _appdoc_ appdoc

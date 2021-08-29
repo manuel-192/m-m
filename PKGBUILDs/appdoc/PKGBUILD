@@ -1,0 +1,24 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=appdoc
+pkgdesc="Show app documentation from the internet or a local file, based on a local database."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=2021.08.29
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    "$url/$pkgname"
+    "$url/$pkgname.completion"
+)
+sha512sums=('e077a63d16b4c0a13b2cf3c9aa5aa4aa41667a80182cb3951548fd347a2aece5263e4c4e88b4b855bb8d98a4b1374d736584de32aa09f5d00f01646abe0f94d7'
+            '0ff6ade60a08e3afc39d0be984286f1f11d92c85ae3775c74d6c933d374f3fbd18b6c2d36b49bd8f6f6823f04b5656d9e7746d758e6048465f1935133057635a')
+
+package() {
+  install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
+  install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
+}
