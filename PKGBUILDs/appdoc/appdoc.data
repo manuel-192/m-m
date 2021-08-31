@@ -6,35 +6,47 @@
 # Collect all app names (or package names) in this list.
 
 Items=(
+    bash
+    bashref
     code
+    fox
+    geany
+    ghostscript
     imagemagick
-    imagemagick_cli
     libreoffice
+    lua
+    nano
+    nanorc
+    nvidia
     pandoc
+    qpdf
     virtualbox
 )
 
 # Collect app specific URLs (local or remote) here.
-# If a local file is desired, add it as second.
+# If both URLs exist, add the local URL as second.
 
-code=(
-    https://code.visualstudio.com/learn
-)
-imagemagick=(
-    https://imagemagick.org
-)
-imagemagick_cli=(
-    https://imagemagick.org/script/command-line-options.php
-)
+bash=(          /usr/share/doc/bash/bash.html)
+bashref=(       /usr/share/doc/bash/bashref.html)
+code=(          https://code.visualstudio.com/learn)
+fox=(           file:///usr/share/doc/fox-1.6/html/fox.html)
+geany=(         /usr/share/doc/geany/html/index.html)
+ghostscript=(   /usr/share/doc/ghostscript/9.54.0/index.html)
+imagemagick=(   /usr/share/doc/ImageMagick-7/www/index.html)
 libreoffice=(
-    https://documentation.libreoffice.org/en/english-documentation
+    #https://documentation.libreoffice.org/en/english-documentation
+    /usr/lib/libreoffice/help/index.html
 )
+lua=(           file:///usr/share/doc/lua52/manual.html)
+nano=(          file:///usr/share/doc/nano/nano.html)
+nanorc=(        file:///usr/share/doc/nano/nanorc.5.html)
+nvidia=(        /usr/share/doc/nvidia/html/index.html)
+qpdf=(          /usr/share/doc/qpdf/qpdf-manual.html)
 pandoc=(
     https://pandoc.org/MANUAL.html
-    /usr/share/doc/pandoc/MANUAL.html
+    #/usr/share/doc/pandoc/MANUAL.html
 )
 virtualbox=(
     https://www.virtualbox.org/manual/UserManual.html
     /usr/share/doc/virtualbox/UserManual.html
 )
-

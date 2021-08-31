@@ -36,7 +36,9 @@ ShowAppUrl() {
             local -n urls=$app
             if [ "$local_first" = "yes" ] ; then
                 url="${urls[1]}"
-                [ -r "$url" ] || url="${urls[0]}"
+                if [ ! -r "$url" ] ; then
+                    url="${urls[0]}"
+                fi
             else
                 url="${urls[0]}"
             fi
@@ -67,19 +69,18 @@ UpdateLocalDocs() {
     local tmpfile
     local cmds=""
 
+    echo "Updating local docs..." >&2
+
     /usr/bin/mkdir -p $tmpdir
 
     for app in "${Items[@]}" ; do
         local -n urls=$app
-        if [ -n "${urls[1]}" ] || [[ "${urls[1]}" =~ \.html$ ]] ; then
+        if [ -n "${urls[1]}" ] && [[ "${urls[1]}" =~ \.html$ ]] ; then
             echo "$app"
             tmpfile="$tmpdir/$(basename "${urls[1]}")"
             Fetch "$tmpfile" "${urls[0]}"
-            if [ -z "$cmds" ] ; then
-                cmds="mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
-            else
-                cmds+=" ; mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
-            fi
+            [ -n "$cmds" ] && cmds+="; "
+            cmds="mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
         fi
     done
     [ -n "$cmds" ] && $EOS_ROOTER "$cmds"
@@ -178,6 +179,7 @@ Main() {
         "$HOME/.config/$db"
         "/etc/$db"
     )
+    local url
 
     for db in "${databases[@]}" ; do
         if [ -r "$db" ] ; then
@@ -190,7 +192,8 @@ Main() {
     Variables
 
     if [ -n "$application" ] ; then
-        $browser $(ShowAppUrl "$application") 2>/dev/null
+        url="$(ShowAppUrl "$application")"
+        $browser $url 2>/dev/null &
     else
         ShowAllItems
     fi
