@@ -7,6 +7,7 @@
 
 Items=(
     bash
+    bashdb
     bashref
     code
     fox
@@ -27,6 +28,10 @@ Items=(
 # If both URLs exist, add the local URL as second.
 
 bash=(          /usr/share/doc/bash/bash.html)
+bashdb=(
+    http://bashdb.sourceforge.net/bashdb.html
+    /usr/share/doc/bashdb/bashdb.html
+)
 bashref=(       /usr/share/doc/bash/bashref.html)
 code=(          https://code.visualstudio.com/learn)
 fox=(           file:///usr/share/doc/fox-1.6/html/fox.html)

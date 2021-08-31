@@ -19,13 +19,19 @@ DIE() {
 ShowAllItems() {
     local app url
     echo "Supported apps and related URLs"
-    for app in "${Items[@]}" ; do
-        local -n urls=$app
-        printf "    %s\n" "$app"
-        for url in "${urls[@]}" ; do
-            printf "        %s\n" "$url"
+    while true ; do
+        echo "name URL URL2"
+        echo "~~~~ ~~~ ~~~~"
+        for app in "${Items[@]}" ; do
+            local -n urls=$app
+            printf "%s" "$app"
+            for url in "${urls[@]}" ; do
+                printf " %s" "$url"
+            done
+            printf "\n"
         done
-    done | /usr/bin/less -RF
+        break
+    done | column -t | sed 's|^|    |' | /usr/bin/less -RF
 }
 
 ShowAppUrl() {
@@ -80,7 +86,7 @@ UpdateLocalDocs() {
             tmpfile="$tmpdir/$(basename "${urls[1]}")"
             Fetch "$tmpfile" "${urls[0]}"
             [ -n "$cmds" ] && cmds+="; "
-            cmds="mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
+            cmds+="mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
         fi
     done
     [ -n "$cmds" ] && $EOS_ROOTER "$cmds"
