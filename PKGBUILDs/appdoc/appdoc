@@ -4,12 +4,10 @@
 # The URL contains information about the app.
 #
 # Examples:
-#    appinfourl                         # shows supported apps and URLs
+#    appinfourl                         # shows a GUI launcher for the supported apps
 #    appinfourl virtualbox              # shows the URL where virtualbox info is found
 #    firefox $(appinfourl virtualbox)   # shows virtualbox manual
 #
-
-
 
 DIE() {
     echo "$progname: error: $1"
@@ -69,20 +67,19 @@ Fetch() {
 }
 
 UpdateLocalDocs() {
-    source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1  # for EOS_ROOTER
     local app url
     local tmpdir=$(/usr/bin/mktemp -d)
     local tmpfile
     local cmds=""
 
-    echo "Updating local docs..." >&2
+    [ $quiet = no ] && echo "Updating local docs..." >&2
 
     /usr/bin/mkdir -p $tmpdir
 
     for app in "${Items[@]}" ; do
         local -n urls=$app
         if [ -n "${urls[1]}" ] && [[ "${urls[1]}" =~ \.html$ ]] ; then
-            echo "$app"
+            [ $quiet = no ] && echo "$app" >&2
             tmpfile="$tmpdir/$(basename "${urls[1]}")"
             Fetch "$tmpfile" "${urls[0]}"
             [ -n "$cmds" ] && cmds+="; "
@@ -115,8 +112,8 @@ Variables() {
 
 Options() {
     local opts
-    local optnames_long=apps,browser:,help,options,remote-first,update
-    local optnames_short=hru
+    local optnames_long=apps,browser:,help,options,quiet,remote-first,show-apps,update,verbose
+    local optnames_short=hqrsuv
 
     opts="$(/usr/bin/getopt -o=$optnames_short --longoptions $optnames_long --name "$progname" -- "$@")" || {
         Options --help
@@ -147,22 +144,48 @@ Options() {
                 UpdateLocalDocs
                 exit 0
                 ;;
+            --show-apps | -s)
+                ShowAllItems
+                exit 0
+                ;;
+            --quiet | -q)
+                quiet=yes
+                ;;
+            --verbose | -v)
+                quiet=no
+                ;;
 
             --help | -h)
                 cat <<EOF >&2
 Usage: $progname [options] [appname]
 Options:
   --apps           Show supported app names. Helps bash completion.
+  --show-apps      Show supported apps and respective URLs.
+  -s               -"-
+  --browser        Set the program that can show URLs. Default: $browser_def.
   --options        Show all options. Helps bash completion.
   --update         Update local docs from the internet.
   -u               -"-
   --remote-first   Show Internet docs instead of local docs.
   -r               -"-
+  --quiet          Don't show progress messages, but only error messages.
+  -q               -"-
+  --verbose        Show all messages (opposite of --quiet). This is the default.
+  -v               -"-
   --help           Show this help.
   -h               -"-
 Params:
   appname          Name of the application whose info URL shows.
                    Without appname all supported apps and URLs will be shown.
+
+Configuration file $conf2 currently supports
+the following variables (note: use 'bash' syntax):
+   APPDOC_WEB_BROWSER               # see option --browser
+   APPDOC_QUIET                     # see option --quiet
+
+   Example:
+     APPDOC_WEB_BROWSER=firefox   # set your preferred browser here
+     APPDOC_QUIET=yes             # prevent most messages
 EOF
                 exit 0
                 ;;
@@ -176,16 +199,27 @@ EOF
 }
 
 Main() {
+    # for EOS_ROOTER:
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1
+
     local progname="$(/usr/bin/basename "$0")"
+    local conf="$HOME/.config/$progname.conf"
+    local conf2="\$HOME/.config/$progname.conf"
     local application=""
     local local_first=yes
-    local browser=xdg-open
+    local quiet=no
+    local browser_def=xdg-open
+    local browser=$browser_def
     local db=appdoc.data
     local databases=(
         "$HOME/.config/$db"
         "/etc/$db"
     )
     local url
+    local args=()
+    local APPDOC_WEB_BROWSER=""   # potentially from config file
+    local APPDOC_QUIET=no
+    local config_file_read=no
 
     for db in "${databases[@]}" ; do
         if [ -r "$db" ] ; then
@@ -194,15 +228,49 @@ Main() {
         fi
     done
 
-    Options "$@"
+    # Get options from the config file
+    if [ -r "$conf" ] ; then
+        source "$conf" || DIE "reading config file '$conf' failed."
+        config_file_read=yes
+        if [ -n "$APPDOC_WEB_BROWSER" ] ; then
+            args+=(--browser="$APPDOC_WEB_BROWSER")
+        fi
+        if [ -n "$APPDOC_QUIET" ] ; then
+            quiet="$APPDOC_QUIET"
+        fi
+    fi
+
+    # Add command line options
+    args+=("$@")
+
+    Options "${args[@]}"
     Variables
+
+    if [ $config_file_read = yes ] ; then
+        # delayed info message...
+        [ $quiet = no ] && echo "Config file $conf2 read." >&2
+    fi
 
     if [ -n "$application" ] ; then
         url="$(ShowAppUrl "$application")"
         $browser $url 2>/dev/null &
     else
-        ShowAllItems
+        local cmd=(
+            eos_yad --form --title="$progname"
+            --text="Click an app button to see related documentation.\n"
+            --image=dialog-info --button=yad-quit:11 --align-buttons
+        )
+        local apps=$(Options --apps)
+        for application in $apps ; do
+            url="$(ShowAppUrl "$application")"
+            cmd+=(--field=" $application!document-open!$application documentation":fbtn "$browser $url")
+        done
+        local columns=$(echo "$apps" | /usr/bin/wc -l)
+        columns=$(echo "sqrt($columns)" | /usr/bin/bc)
+        cmd+=(--columns=$columns)
+        "${cmd[@]}" 2>/dev/null
     fi
+    return 0
 }
 
 Main "$@"
