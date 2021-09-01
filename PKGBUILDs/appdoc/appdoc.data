@@ -37,7 +37,10 @@ code=(          https://code.visualstudio.com/learn)
 fox=(           file:///usr/share/doc/fox-1.6/html/fox.html)
 geany=(         /usr/share/doc/geany/html/index.html)
 ghostscript=(   /usr/share/doc/ghostscript/9.54.0/index.html)
-imagemagick=(   /usr/share/doc/ImageMagick-7/www/index.html)
+imagemagick=(
+    https://imagemagick.org/index.php
+    /usr/share/doc/ImageMagick-7/www/index.html
+)
 libreoffice=(
     #https://documentation.libreoffice.org/en/english-documentation
     /usr/lib/libreoffice/help/index.html

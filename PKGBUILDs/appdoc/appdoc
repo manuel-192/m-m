@@ -10,8 +10,11 @@
 #
 
 DIE() {
-    echo "$progname: error: $1"
+    echo "==> $progname: error: $1" >&2
     exit 1
+}
+WARN() {
+    [ $quiet = no ] && echo "==> $progname: warning: $1" >&2
 }
 
 ShowAllItems() {
@@ -47,7 +50,15 @@ ShowAppUrl() {
                 url="${urls[0]}"
             fi
             if [ -n "$url" ] ; then
-                echo "$url"
+		case "$url" in
+		    http://* | https://*)
+			echo "$url"
+			;;
+		    /* | file://*)
+			url="${url#file://}"          # remove possible file:// prefix
+			[ -r "$url" ] && echo "$url"
+			;;
+		esac
             fi
             return
         fi
@@ -253,17 +264,25 @@ Main() {
 
     if [ -n "$application" ] ; then
         url="$(ShowAppUrl "$application")"
-        $browser $url 2>/dev/null &
+        if [ -n "$url" ] ; then
+	    $browser $url 2>/dev/null &
+	else
+	    WARN "local document for '$application' not found."
+	fi
     else
         local cmd=(
             eos_yad --form --title="$progname"
             --text="Click an app button to see related documentation.\n"
-            --image=dialog-info --button=yad-quit:11 --align-buttons
+            --image=web-browser --button=yad-quit:11 --align-buttons
         )
         local apps=$(Options --apps)
         for application in $apps ; do
             url="$(ShowAppUrl "$application")"
-            cmd+=(--field=" $application!document-open!$application documentation":fbtn "$browser $url")
+            if [ -n "$url" ] ; then
+                cmd+=(--field=" $application!document-open!$application documentation":fbtn "$browser $url")
+            else
+                WARN "local document for '$application' not found."
+            fi
         done
         local columns=$(echo "$apps" | /usr/bin/wc -l)
         columns=$(echo "sqrt($columns)" | /usr/bin/bc)
