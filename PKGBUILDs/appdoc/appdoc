@@ -123,7 +123,7 @@ Variables() {
 
 Options() {
     local opts
-    local optnames_long=apps,browser:,help,options,quiet,remote-first,show-apps,update,verbose
+    local optnames_long=apps,browser:,help,options,quiet,remote-first,show-apps,update,verbose,yad:
     local optnames_short=hqrsuv
 
     opts="$(/usr/bin/getopt -o=$optnames_short --longoptions $optnames_long --name "$progname" -- "$@")" || {
@@ -165,6 +165,10 @@ Options() {
             --verbose | -v)
                 quiet=no
                 ;;
+	    --yad)
+		yad_options="$2"
+		shift
+		;;
 
             --help | -h)
                 cat <<EOF >&2
@@ -177,7 +181,7 @@ Options:
   --options        Show all options. Helps bash completion.
   --update         Update local docs from the internet.
   -u               -"-
-  --remote-first   Show Internet docs instead of local docs.
+  --remote-first   Show Internet docs instead of local docs if both are available.
   -r               -"-
   --quiet          Don't show progress messages, but only error messages.
   -q               -"-
@@ -185,9 +189,12 @@ Options:
   -v               -"-
   --help           Show this help.
   -h               -"-
+  --yad            Give options for yad form dialog as a quoted string.
+  		   Will be used if appname is not given.
+
 Params:
-  appname          Name of the application whose info URL shows.
-                   Without appname all supported apps and URLs will be shown.
+  appname          Show documentation of an app related to this name.
+                   Without appname shows a GUI launcher for the supported apps
 
 Configuration file $conf2 currently supports
 the following variables (note: use 'bash' syntax):
@@ -197,6 +204,14 @@ the following variables (note: use 'bash' syntax):
    Example:
      APPDOC_WEB_BROWSER=firefox   # set your preferred browser here
      APPDOC_QUIET=yes             # prevent most messages
+
+Examples:
+  # Shows documentation about virtualbox:
+  appdoc virtualbox
+
+  # Sets a browser, shows a yad GUI window centered on the display:
+  appdoc --browser=firefox --yad='--center'
+
 EOF
                 exit 0
                 ;;
@@ -219,6 +234,7 @@ Main() {
     local application=""
     local local_first=yes
     local quiet=no
+    local yad_options=""
     local browser_def=xdg-open
     local browser=$browser_def
     local db=appdoc.data
@@ -273,7 +289,10 @@ Main() {
         local cmd=(
             eos_yad --form --title="$progname"
             --text="Click an app button to see related documentation.\n"
-            --image=web-browser --button=yad-quit:11 --align-buttons
+            --image=web-browser
+	    --align-buttons
+	    --button="yad info!user-info!":"eos-apps-info-helper yad"
+	    --button=yad-quit:11
         )
         local apps=$(Options --apps)
         for application in $apps ; do
@@ -287,6 +306,7 @@ Main() {
         local columns=$(echo "$apps" | /usr/bin/wc -l)
         columns=$(echo "sqrt($columns)" | /usr/bin/bc)
         cmd+=(--columns=$columns)
+	cmd+=($yad_options)
         "${cmd[@]}" 2>/dev/null
     fi
     return 0

@@ -4,12 +4,12 @@
 pkgname=appdoc
 pkgdesc="Show app documentation from the internet or a local file, based on a local database."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.09.01
-pkgrel=2
+pkgver=2021.09.02
+pkgrel=1
 
 arch=('any')
 license=('GPL')
-depends=('bash')
+depends=(bash yad bc eos-apps-info)
 backup=(etc/$pkgname.data)
 
 source=(
@@ -17,7 +17,7 @@ source=(
     "$url/$pkgname.data"
     "$url/$pkgname.completion"
 )
-sha512sums=('f422a63f4230c06f7b40ba994b8ed7ee333fc68993ab04dbe6c4d3b183d34e0f252765263cd9d1d45f471f2901c2dfe2b6ed79ada3082d6ab256195301eb74eb'
+sha512sums=('c28df100d4c1056775c8f90d6afc676c6be523c907996b2d404cb6c3e00dc6d11f23d9a000215ab7f03243cc6d268443ae624d5b32be2536269b6c235b164939'
             'e9cdb2fd9dddd48a70ac54faa4a2560e06d3d0d7c6a27f71e1c9ea4690b6c55be4fe89d1d9045b69c9aa16bec0b4d2fa9d7d62e1143396c6ec9ed3a52aebc434'
             '66b7358aaeb0333df3822de5b24102dad5fd92e46fe72d5950a5ca4268e4abb0890c2a94c97add93ec798cc3c6cfe98e93b925ff07a52bc8e9a1bf587fd9b8a8')
 
