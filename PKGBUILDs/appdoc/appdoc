@@ -65,7 +65,7 @@ ShowAppUrl() {
     done
 }
 
-Fetch() {
+AppdocFetch() {
     local tmpfile="$1"
     local url="$2"
     local result=0
@@ -76,12 +76,19 @@ Fetch() {
         DIE "wget $tmpfile failed, code $result."
     fi
 }
+export -f AppdocFetch
 
-UpdateLocalDocs() {
+UpdateLocalDocs() {  # quiet
+    local quiet="$1"
+    shift
     local app url
     local tmpdir=$(/usr/bin/mktemp -d)
     local tmpfile
     local cmds=""
+
+    if [ -z "$Items" ] ; then
+        ReadDatabase || return 1
+    fi
 
     [ $quiet = no ] && echo "Updating local docs..." >&2
 
@@ -92,15 +99,19 @@ UpdateLocalDocs() {
         if [ -n "${urls[1]}" ] && [[ "${urls[1]}" =~ \.html$ ]] ; then
             [ $quiet = no ] && echo "$app" >&2
             tmpfile="$tmpdir/$(basename "${urls[1]}")"
-            Fetch "$tmpfile" "${urls[0]}"
+            AppdocFetch "$tmpfile" "${urls[0]}"
             [ -n "$cmds" ] && cmds+="; "
             cmds+="mkdir -p /usr/share/doc/$app; cp $tmpfile /usr/share/doc/$app/"
         fi
     done
-    [ -n "$cmds" ] && $EOS_ROOTER "$cmds"
+    if [ -n "$cmds" ] ; then
+        #echo "$FUNCNAME: $EOS_ROOTER $cmds"
+        $EOS_ROOTER "$cmds"
+    fi
 
     /usr/bin/rm -rf $tmpdir
 }
+export -f UpdateLocalDocs
 
 Variables() {
     # adjust variables if they are not OK
@@ -152,7 +163,7 @@ Options() {
                 local_first=no
                 ;;
             --update | -u)
-                UpdateLocalDocs
+                UpdateLocalDocs $quiet
                 exit 0
                 ;;
             --show-apps | -s)
@@ -224,6 +235,22 @@ EOF
     application="$1"
 }
 
+ReadDatabase() {
+    local db=appdoc.data
+    local databases=(
+        "$HOME/.config/$db"
+        "/etc/$db"
+    )
+
+    for db in "${databases[@]}" ; do
+        if [ -r "$db" ] ; then
+            source "$db" || return 1   # DIE "reading database file '$db' failed."
+            break
+        fi
+    done
+}
+export -f ReadDatabase
+
 Main() {
     # for EOS_ROOTER:
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1
@@ -237,23 +264,13 @@ Main() {
     local yad_options=""
     local browser_def=xdg-open
     local browser=$browser_def
-    local db=appdoc.data
-    local databases=(
-        "$HOME/.config/$db"
-        "/etc/$db"
-    )
     local url
     local args=()
     local APPDOC_WEB_BROWSER=""   # potentially from config file
     local APPDOC_QUIET=no
     local config_file_read=no
 
-    for db in "${databases[@]}" ; do
-        if [ -r "$db" ] ; then
-            source "$db" || DIE "reading database file '$db' failed."
-            break
-        fi
-    done
+    ReadDatabase
 
     # Get options from the config file
     if [ -r "$conf" ] ; then
@@ -289,16 +306,17 @@ Main() {
         local cmd=(
             eos_yad --form --title="$progname"
             --text="Click an app button to see related documentation.\n"
-            --image=web-browser
+            --image=web-browser --use-interp
 	    --align-buttons
-	    --button="yad info!user-info!":"eos-apps-info-helper yad"
-	    --button=yad-quit:11
+	    --button=" Yad info!user-info!Advanced: show yad manual page":"eos-apps-info-helper yad"
+            --button=" Update!system-software-update!Update local docs from the Internet":"RunInTerminal UpdateLocalDocs $quiet"
+	    --button='yad-quit!!Quit this app':11
         )
         local apps=$(Options --apps)
         for application in $apps ; do
             url="$(ShowAppUrl "$application")"
             if [ -n "$url" ] ; then
-                cmd+=(--field=" $application!document-open!$application documentation":fbtn "$browser $url")
+                cmd+=(--field=" $application!document-open!$application":fbtn "$browser $url")
             else
                 INFO "local document for '$application' not found."
             fi
