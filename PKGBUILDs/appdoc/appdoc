@@ -13,8 +13,8 @@ DIE() {
     echo "==> $progname: error: $1" >&2
     exit 1
 }
-WARN() {
-    [ $quiet = no ] && echo "==> $progname: warning: $1" >&2
+INFO() {
+    [ $quiet = no ] && echo "==> $progname: info: $1" >&2
 }
 
 ShowAllItems() {
@@ -283,7 +283,7 @@ Main() {
         if [ -n "$url" ] ; then
 	    $browser $url 2>/dev/null &
 	else
-	    WARN "local document for '$application' not found."
+	    INFO "local document for '$application' not found."
 	fi
     else
         local cmd=(
@@ -300,7 +300,7 @@ Main() {
             if [ -n "$url" ] ; then
                 cmd+=(--field=" $application!document-open!$application documentation":fbtn "$browser $url")
             else
-                WARN "local document for '$application' not found."
+                INFO "local document for '$application' not found."
             fi
         done
         local columns=$(echo "$apps" | /usr/bin/wc -l)
