@@ -4,8 +4,8 @@
 pkgname=appdoc
 pkgdesc="Show app documentation from the internet or a local file, based on a local database."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.09.04
-pkgrel=2
+pkgver=2021.09.05
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -18,7 +18,7 @@ source=(
     "$url/$pkgname.completion"
 )
 sha512sums=('b3d1416017afa59bd14926d7b341f7a6665da28c1d02c9d0e29b7f4b0bdf0256bb41bee9af6a1cc29fb048b7195ffd9e45215b1d10763ff91a1812db245b0294'
-            'e9cdb2fd9dddd48a70ac54faa4a2560e06d3d0d7c6a27f71e1c9ea4690b6c55be4fe89d1d9045b69c9aa16bec0b4d2fa9d7d62e1143396c6ec9ed3a52aebc434'
+            '12c9dee106d81b9733ed8dd8b5f7b5ebe06189e8767435d401705349af208d783577939315ea07461ae2b9ac23df485252772a188ccebd2296128943282a52e5'
             '66b7358aaeb0333df3822de5b24102dad5fd92e46fe72d5950a5ca4268e4abb0890c2a94c97add93ec798cc3c6cfe98e93b925ff07a52bc8e9a1bf587fd9b8a8')
 
 package() {

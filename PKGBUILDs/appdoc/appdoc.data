@@ -22,6 +22,7 @@ Items=(
     pandoc
     qpdf
     virtualbox
+    yadTutorial
 )
 
 # Collect app specific URLs (local or remote) here.
@@ -57,4 +58,8 @@ pandoc=(
 virtualbox=(
     https://www.virtualbox.org/manual/UserManual.html
     /usr/share/doc/virtualbox/UserManual.html
+)
+yadTutorial=(
+    https://smokey01.com/yad/index.html
+    /usr/share/doc/yadTutorial/yadTutorial.html
 )
