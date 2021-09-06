@@ -13,6 +13,7 @@ Items=(
     fox
     geany
     ghostscript
+    grub
     imagemagick
     libreoffice
     lua
@@ -39,6 +40,9 @@ code=(          https://code.visualstudio.com/learn)
 fox=(           file:///usr/share/doc/fox-1.6/html/fox.html)
 geany=(         /usr/share/doc/geany/html/index.html)
 ghostscript=(   /usr/share/doc/ghostscript/9.54.0/index.html)
+grub=(
+    https://www.gnu.org/software/grub/manual/grub/grub.html
+)
 imagemagick=(
     https://imagemagick.org/index.php
     /usr/share/doc/ImageMagick-7/www/index.html
