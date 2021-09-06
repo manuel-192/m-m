@@ -21,6 +21,7 @@ Items=(
     nvidia
     pandoc
     qpdf
+    realgud
     virtualbox
     yadTutorial
 )
@@ -54,6 +55,9 @@ qpdf=(          /usr/share/doc/qpdf/qpdf-manual.html)
 pandoc=(
     https://pandoc.org/MANUAL.html
     #/usr/share/doc/pandoc/MANUAL.html
+)
+realgud=(
+    https://github.com/realgud/realgud
 )
 virtualbox=(
     https://www.virtualbox.org/manual/UserManual.html
