@@ -75,6 +75,7 @@ EOF
             done
             local rooterr="error: you cannot perform this operation unless you are root."
             local errfile=$(/usr/bin/mktemp)
+            local errlog
 
             LANG=C $pacman "$@" 2> "$errfile"
             errlog="$($cat "$errfile")"
