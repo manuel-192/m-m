@@ -22,47 +22,11 @@ CheckConnection() {
     fi
 }
 
-Check-kernel-nvidia() {
-    local targets="$*"
-    local target
-    local linux_lts=no
-    local linux=no
-    local nvidia_lts=no
-    local nvidia=no
-    local nvidia_pkgs
-
-    # stop if no nvidia package is already installed
-    nvidia_pkgs="$(/usr/bin/pacman -Qq nvidia-dkms nvidia nvidia-lts 2>/dev/null)"
-    [ -z "$nvidia_pkgs" ] && return
-
-    # stop if nvidia-dkms is already installed
-    [ -n "$(echo "$nvidia_pkgs" | /usr/bin/grep nvidia-dkms)" ] && return
-
-    # stop if kernel will not be updated
-    for target in $targets ; do
-        case "$target" in
-            linux)      linux=yes ;;
-            linux-lts)  linux_lts=yes ;;
-        esac
-    done
-    [ "$linux $linux_lts" = "no no" ] && return
-
-    # notify if kernel will be updated but corresponding nvidia driver not
-    for target in $targets ; do
-        case "$target" in
-            nvidia)     nvidia=yes ;;
-            nvidia-lts) nvidia_lts=yes ;;
-        esac
-    done
-    [ "$linux_lts $nvidia_lts" = "yes no" ] && DIE "linux-lts would be upgraded but nvidia-lts not."
-    [ "$linux $nvidia" = "yes no" ]         && DIE "linux would be upgraded but nvidia not."
-}
-
-
 PacmanWrapper() {
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
     source /etc/eos-pac.conf || return 1
 
+    local awk=/usr/bin/awk
     local sed=/usr/bin/sed
     local pacman=/usr/bin/pacman
     local checkupdates=/usr/bin/checkupdates
@@ -74,6 +38,7 @@ PacmanWrapper() {
     local opts_yay="-Syu --nocombinedupgrade"
     local updates
     local progname="$($basename "$0")"
+    local nvidia_checker=/usr/bin/kernel-nvidia-update-check
 
     case "$1" in
         "")
@@ -83,7 +48,7 @@ PacmanWrapper() {
 	    if [ -n "$updates" ] ; then
 		echo2 "$updates"
 		echo2 ""
-		Check-kernel-nvidia "$(echo "$updates" | awk '{print $1}')"
+		$nvidia_checker "$(echo "$updates" | $awk '{print $1}')" || exit 1
                 echo2 "==> $($basename $pacman) $opts_pacman"
                 $EOS_ROOTER "$pacman $opts_pacman && $sync"
             fi

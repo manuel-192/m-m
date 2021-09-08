@@ -5,7 +5,7 @@ pkgname=pac
 pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.09.08
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -13,16 +13,19 @@ depends=('bash')
 backup=(etc/eos-pac.conf)
 
 source=(
-    "$url/$pkgname"
-    "$url/pac.completion"
-    "$url/eos-pac.conf"
+    $url/$pkgname
+    $url/$pkgname.completion
+    $url/eos-$pkgname.conf
+    $url/kernel-nvidia-update-check
 )
-sha512sums=('9d16b8a1b74a10f56c85bcb7bb78883f85967db5f53daeb16df1626835884598f5e58ed2b8837ede508a9f7eaefbde091507a9dc504d8b383b2a0c61bcdefc17'
+sha512sums=('45757e303d47b06508e9b36a444bd88228dd09c1ac04f5e9a9e657d904e2e68cf99e3dcf73bf81ff3cd8c279e7e6c73a9448faa114a1e3c139147266d0b25506'
             'c70cae9b0f875934702950a1f46e5488d59c908a3fc5a72a394acf3c32e38a61416f2628c6f02a7b2ba799fef5ef047dc802e7c0050766c610b6a2033abb763b'
-            'a62fc910cfc5f924493bfbb6a2376bbfc6cf650e2dad724738c0ce2657488e062a162edffcd43c3c2d8d259ef8af9481e128ca8270cc38030907c244dd125724')
+            'a62fc910cfc5f924493bfbb6a2376bbfc6cf650e2dad724738c0ce2657488e062a162edffcd43c3c2d8d259ef8af9481e128ca8270cc38030907c244dd125724'
+            '8a318e553fcb8e9be8964dca21aadd37d488ae9afb4780c1cf3cfc2e0404b2e43cb5d6661b641ca254ed0351ed01e0487b600c2a4f79bd6f43e9dafa02a235c7')
 
 package() {
-  install -Dm755 $pkgname        $pkgdir/usr/bin/$pkgname
-  install -Dm644 pac.completion  $pkgdir/usr/share/bash-completion/completions/pac
-  install -Dm644 eos-pac.conf    $pkgdir/etc/eos-pac.conf
+  install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
+  install -Dm755 kernel-nvidia-update-check  $pkgdir/usr/bin/kernel-nvidia-update-check
+  install -Dm644 $pkgname.completion         $pkgdir/usr/share/bash-completion/completions/$pkgname
+  install -Dm644 eos-$pkgname.conf           $pkgdir/etc/eos-$pkgname.conf
 }
