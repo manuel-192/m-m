@@ -317,8 +317,8 @@ Main() {
             url="$(ShowAppUrl "$application")"
             if [ -n "$url" ] ; then
                 case "$url" in
-                    *.pdf) cmd+=(--field=" $application!document-open!$application":fbtn "/usr/bin/xdg-open $url") ;;
-                    *)     cmd+=(--field=" $application!document-open!$application":fbtn "$browser $url") ;;
+                    *.html) cmd+=(--field=" $application!document-open!$application":fbtn "$browser $url") ;;
+                    *)      cmd+=(--field=" $application!document-open!$application":fbtn "/usr/bin/xdg-open $url") ;;
                 esac
             else
                 INFO "local document for '$application' not found."
