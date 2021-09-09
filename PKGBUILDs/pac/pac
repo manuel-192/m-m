@@ -38,7 +38,7 @@ PacmanWrapper() {
     local opts_yay="-Syu --nocombinedupgrade"
     local updates
     local progname="$($basename "$0")"
-    local nvidia_checker=/usr/bin/kernel-nvidia-update-check
+    local nvidia_checker=/usr/bin/eos-kernel-nvidia-update-check
 
     case "$1" in
         "")
