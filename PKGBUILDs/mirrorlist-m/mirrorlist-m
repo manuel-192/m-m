@@ -1,3 +1,14 @@
 ### Manuel's mirror list ###
 
+# This works with
+#     pacman 6.0.1
+#     pacman 5.x
+# but fails with
+#     pacman 6.0.0
+#
+Server = https://github.com/manuel-192/$repo/releases/download/$arch
+
+
+# This works with all pacman versions, but will be deprecated later
+#
 Server = https://raw.githubusercontent.com/manuel-192/$repo/master/repo
