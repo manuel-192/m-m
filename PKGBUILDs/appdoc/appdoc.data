@@ -15,6 +15,7 @@ Items=(
     ghostscript
     grub
     imagemagick
+    kaffeine
     libreoffice
     lua
     nano
@@ -46,6 +47,9 @@ grub=(
 imagemagick=(
     https://imagemagick.org/index.php
     /usr/share/doc/ImageMagick-7/www/index.html
+)
+kaffeine=(
+    /usr/share/doc/kaffeine/kaffeine.pdf
 )
 libreoffice=(
     #https://documentation.libreoffice.org/en/english-documentation

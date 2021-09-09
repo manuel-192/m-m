@@ -194,9 +194,9 @@ Options:
   -u               -"-
   --remote-first   Show Internet docs instead of local docs if both are available.
   -r               -"-
-  --quiet          Don't show progress messages, but only error messages.
+  --quiet          Don't show progress messages, but only error messages. $( [ $quiet = yes ] && echo Actived.)
   -q               -"-
-  --verbose        Show all messages (opposite of --quiet). This is the default.
+  --verbose        Show all messages (opposite of --quiet). $( [ $quiet = no ] && echo Actived.)
   -v               -"-
   --help           Show this help.
   -h               -"-
@@ -316,7 +316,10 @@ Main() {
         for application in $apps ; do
             url="$(ShowAppUrl "$application")"
             if [ -n "$url" ] ; then
-                cmd+=(--field=" $application!document-open!$application":fbtn "$browser $url")
+                case "$url" in
+                    *.pdf) cmd+=(--field=" $application!document-open!$application":fbtn "/usr/bin/xdg-open $url") ;;
+                    *)     cmd+=(--field=" $application!document-open!$application":fbtn "$browser $url") ;;
+                esac
             else
                 INFO "local document for '$application' not found."
             fi
