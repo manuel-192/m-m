@@ -5,7 +5,7 @@ pkgname=pac
 pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.09.09
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')

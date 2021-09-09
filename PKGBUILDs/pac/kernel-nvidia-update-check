@@ -51,10 +51,7 @@ Main()
         for msg in "${msgs[@]}" ; do
             echo "$progname: error: $msg" >&2
         done
-        read -p "Stop upgrade (Y/n)? " >&2
-        case "$REPLY" in
-            "" | [Yy]*) exit 1 ;;
-        esac
+        exit 1
     fi
 }
 

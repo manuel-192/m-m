@@ -48,7 +48,12 @@ PacmanWrapper() {
 	    if [ -n "$updates" ] ; then
 		echo2 "$updates"
 		echo2 ""
-		$nvidia_checker "$(echo "$updates" | $awk '{print $1}')" || exit 1
+		$nvidia_checker "$(echo "$updates" | $awk '{print $1}')" || {
+                    read -p "Stop upgrade (Y/n)? " >&2
+                    case "$REPLY" in
+                        "" | [Yy]*) exit 1 ;;
+                    esac
+                }
                 echo2 "==> $($basename $pacman) $opts_pacman"
                 $EOS_ROOTER "$pacman $opts_pacman && $sync"
             fi
