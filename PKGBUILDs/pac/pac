@@ -30,6 +30,7 @@ PacmanWrapper() {
     local sed=/usr/bin/sed
     local pacman=/usr/bin/pacman
     local checkupdates=/usr/bin/checkupdates
+    local column=/usr/bin/column
     local sync=/usr/bin/sync
     local yay=/usr/bin/yay
     local basename=/usr/bin/basename
@@ -44,7 +45,7 @@ PacmanWrapper() {
         "")
             CheckConnection  # check only here, this is the most used operation here
 	    
-            updates=$($checkupdates)
+            updates=$($checkupdates | $column -t)
 	    if [ -n "$updates" ] ; then
 		echo2 "$updates"
 		echo2 ""
