@@ -70,9 +70,9 @@ $progname is a pacman wrapper.
 
 Changes/additions to pacman:
   - Asks root permissions only when needed.
-  - If no parameters are given, runs 'pacman -Syu'.
+  - If no parameters are given, installs updates only if available.
   - New options:
-      --aur | -a    Like with no parameters, but runs 'yay -Syu'.
+      --aur | -a    Like with no parameters, but checks also AUR updates.
                     If this option is used, other options and parameters will be ignored.
 
 $pacman_help
