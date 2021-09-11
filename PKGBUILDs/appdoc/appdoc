@@ -317,8 +317,10 @@ Main() {
             url="$(ShowAppUrl "$application")"
             if [ -n "$url" ] ; then
                 case "$url" in
-                    *.html) cmd+=(--field=" $application!document-open!$application":fbtn "$browser $url") ;;
-                    *)      cmd+=(--field=" $application!document-open!$application":fbtn "/usr/bin/xdg-open $url") ;;
+                    *.pdf)
+                        cmd+=(--field=" $application!document-open!$application":fbtn "/usr/bin/xdg-open $url") ;;
+                    *)
+                        cmd+=(--field=" $application!document-open!$application":fbtn "$browser $url") ;;
                 esac
             else
                 INFO "local document for '$application' not found."
@@ -328,7 +330,7 @@ Main() {
         columns=$(echo "sqrt($columns)" | /usr/bin/bc)
         cmd+=(--columns=$columns)
 	cmd+=($yad_options)
-        "${cmd[@]}" 2>/dev/null
+        "${cmd[@]}" 2>/dev/null &
     fi
     return 0
 }
