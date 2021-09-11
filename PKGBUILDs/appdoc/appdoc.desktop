@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=AppDoc
+Comment=Launcher for application docs
+Comment[fi]=Sovellusten dokumenttien näyttäjä
+Exec=appdoc
+Icon=endeavouros-icon
+Hidden=false
+Terminal=false
+StartupNotify=true
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel
+Categories=System

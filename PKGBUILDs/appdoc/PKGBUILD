@@ -5,7 +5,7 @@ pkgname=appdoc
 pkgdesc="Show app documentation from the internet or a local file, based on a local database."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.09.11
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -14,10 +14,12 @@ backup=(etc/$pkgname.data)
 
 source=(
     "$url/$pkgname"
+    "$url/$pkgname.desktop"
     "$url/$pkgname.data"
     "$url/$pkgname.completion"
 )
 sha512sums=('ded6fe7a0bbda18365328604b8c977729fb54d2ca4584ff5daf8733342eb9f2c2aa2e78a7f366b4a424b82c5121aca56cab5d672c5bb0e432c59f2fd419c00e2'
+            '2c07faf4f0cd8d708d2be6ab931e14e771ae903b71f72af55ce60fa23e041a555ed676defa025cd04ab72f335953d7d525ddd5e4bed1854fdb9dda2dbd91d824'
             '367552ff251914c7849ee8a9708d3480e9a7527e39b1cd2a80a81b35c86deef1cdb2abca81fcf256f968cce054049da2c2e98d440bc6bd159d730646d509c5d3'
             '66b7358aaeb0333df3822de5b24102dad5fd92e46fe72d5950a5ca4268e4abb0890c2a94c97add93ec798cc3c6cfe98e93b925ff07a52bc8e9a1bf587fd9b8a8')
 
@@ -25,4 +27,5 @@ package() {
   install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
   install -Dm644 $pkgname.data        $pkgdir/etc/$pkgname.data
   install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
+  install -Dm644 $pkgname.desktop     $pkgdir/usr/share/applications/$pkgname.desktop
 }
