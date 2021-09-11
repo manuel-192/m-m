@@ -3,7 +3,7 @@
 Show() {
     local name="$1"
     local value="$2"
-    printf "%-20s : %s\n" "$name" "$value"
+    printf "%-15s : %s\n" "$name" "$value"
 }
 
 Main()
