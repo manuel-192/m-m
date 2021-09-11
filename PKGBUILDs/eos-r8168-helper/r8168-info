@@ -1,0 +1,23 @@
+#!/bin/bash
+
+Show() {
+    local name="$1"
+    local value="$2"
+    printf "%-20s : %s\n" "$name" "$value"
+}
+
+Main()
+{
+    local devstring="Ethernet controller"
+    local data=$(lspci -vnn)
+
+    local id=$(echo "$data" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring" | sed 's|.*\[\([0-9a-f:]*\)\].*|\1|')
+    local driver=$(echo "$data" | sed -n "/$devstring/,/^$/p" | grep 'Kernel driver in use' | awk '{print $NF}')
+    local card=$(echo "$data" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring")
+
+    Show "card id"       "$id"
+    Show "driver in use" "$driver"
+    Show "card"          "$card"
+}
+
+Main "$@"

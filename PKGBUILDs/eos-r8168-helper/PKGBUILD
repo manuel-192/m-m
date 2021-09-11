@@ -4,7 +4,7 @@
 pkgname=eos-r8168-helper
 pkgdesc="Help with the Ethernet driver, especially with r8168"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.1.3
+pkgver=0.1.4
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -12,10 +12,12 @@ depends=(bash)
 
 source=(
     "$url"/$pkgname
+    "$url"/r8168-info
     "$url"/drivers_ethernet_r8168
 )
 sha512sums=('baba05616b1721133e889bab8338608928d0ca0cb90f1301a712dc2c771113540befd79ed15d4c378139f31faa68a57559fea7dd12326d2f6b390fd58c36a158'
-            '0f8e95606713843bf9d36703c1a1ed53f23820efeeeb3e11d9ea69fefa6e7ec74516b13a4e69cc1ab9a03a10fea19ce8a38df1f83bfdaf00ed733062cb17f732')
+            'cc7191b1a4531c9e1bdcf7fb61ae92dd3517a5ae60d52cd4a0cef6149e2b85b89c0e8bf2c15758f322da08d0191528808d494d194928d7e4dbb6e6caf2dd3392'
+            '506ab21dd2531300070527f33e1f77c2708752aae527708c633da761744ab8744d6368af8b730963eb94f1a88b4ae826dd4b7b714bd5aaa1023d8f01a53a3df4')
 
 package() {
   install -Dm755 $pkgname                 $pkgdir/usr/bin/$pkgname
