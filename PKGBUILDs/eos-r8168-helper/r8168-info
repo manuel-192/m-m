@@ -9,15 +9,15 @@ Show() {
 Main()
 {
     local devstring="Ethernet controller"
-    local data=$(lspci -vnn)
+    local data=$(lspci -vnn | sed -n "/$devstring/,/^$/p")
 
-    local id=$(echo "$data" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring" | sed 's|.*\[\([0-9a-f:]*\)\].*|\1|')
-    local driver=$(echo "$data" | sed -n "/$devstring/,/^$/p" | grep 'Kernel driver in use' | awk '{print $NF}')
-    local card=$(echo "$data" | sed -n "/$devstring/,/^$/p" | grep -w "$devstring")
+    local card=$(  echo "$data" | grep -w "$devstring")
+    local id=$(    echo "$card" | sed 's|.*\[\([0-9a-f:]*\)\].*|\1|')
+    local driver=$(echo "$data" | grep 'Kernel driver in use' | awk '{print $NF}')
 
     Show "card id"       "$id"
+    Show "card info"     "$card"
     Show "driver in use" "$driver"
-    Show "card"          "$card"
 }
 
 Main "$@"
