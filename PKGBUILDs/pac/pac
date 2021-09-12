@@ -23,6 +23,11 @@ CheckConnection() {
 }
 
 PacmanWrapper() {
+    local basename=/usr/bin/basename
+    local progname="$($basename "$0")"
+
+    [ $(id -u) -eq 0 ] && DIE "please don't run this as root!"
+
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
     source /etc/eos-pac.conf || return 1
 
@@ -33,12 +38,10 @@ PacmanWrapper() {
     local column=/usr/bin/column
     local sync=/usr/bin/sync
     local yay=/usr/bin/yay
-    local basename=/usr/bin/basename
     local cat=/usr/bin/cat
     local opts_pacman="-Syu"
     local opts_yay="-Syu --nocombinedupgrade"
     local updates
-    local progname="$($basename "$0")"
     local nvidia_checker=/usr/bin/eos-kernel-nvidia-update-check
 
     case "$1" in
