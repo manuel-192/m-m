@@ -27,8 +27,8 @@ source=(
 sha256sums=('5c7c7c68cbd9f5e45a099b119d347cff9d08f5002da551fe7e1c97de4cd244fe')
 
 _package_helper() {
-    local start="$1"                         # partial contents of the starting line in netinstall.yaml ( - name: $start )
-    local stop="$2"                          # partial contents of the stopping line in netinstall.yaml ( - name: $stop  )
+    local start="$1"         # partial contents of the starting line in netinstall.yaml
+    local stop="$2"          # partial contents of the stopping line in netinstall.yaml
 
     local netinstall_yaml=$(basename "${source[0]}")
 
@@ -40,36 +40,28 @@ _package_helper() {
 package_eos-de-xfce()   {
     _package_helper "EndeavourOS XFCE4 theming" "XFCE4 Desktop"
     _package_helper "XFCE4 Desktop" "KDE-Desktop"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 }
 package_eos-de-kde()    {
     _package_helper "KDE-Desktop" "GNOME-Desktop"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 }
 package_eos-de-gnome()  {
     _package_helper "GNOME-Desktop" "i3 Window Manager"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 }
 package_eos-de-i3()   {
     _package_helper "EndeavourOS i3 theming" "i3-wm packages"
     _package_helper "i3-wm packages" "MATE-Desktop"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 }
 package_eos-de-mate()  {
     _package_helper "MATE-Desktop" "Cinnamon-Desktop"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 }
 package_eos-de-cinnamon()  {
     _package_helper "Cinnamon-Desktop" "Budgie-Desktop"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 }
 package_eos-de-budgie()  {
     _package_helper "Budgie-Desktop" "LXQT-Desktop"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 }
 package_eos-de-lxqt()  {
     _package_helper "LXQT-Desktop" "Printing-Support"
-    echo "$FUNCNAME: ${depends[*]}" >&2
 
     # last but not least, cleanup
     rm -f ../$(basename "${source[0]}")
