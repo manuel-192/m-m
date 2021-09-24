@@ -12,9 +12,33 @@ DIE() {
     exit 1
 }
 
+WaitForConnection() {
+    local maxtime="$1"
+    local check_interval="$2"
+    [ -n "$maxtime" ]        || maxtime=10
+    [ -n "$check_interval" ] || check_interval=1
+    local checks=$((maxtime/check_interval + 1))
+    local retval
+    local xx=0
+
+    while true ; do
+        /usr/bin/eos-connection-checker
+        retval=$?
+        if [ $retval -eq 0 ] ; then
+            return $retval
+        fi
+        if [ $((++xx)) -ge $checks ] ; then
+            return $retval
+        fi
+        echo "waiting for connection ..."
+        sleep $check_interval
+    done
+}
+
 CheckConnection() {
     if [ "$EOS_USE_CONNECTION_CHECK" = "yes" ] ; then
-        /usr/bin/eos-connection-checker
+        # Potentially give network drivers some time to prepare.
+        WaitForConnection
         case "$?" in
             0) ;;
             *) DIE "Internet connection is not available! Please check." ;;
