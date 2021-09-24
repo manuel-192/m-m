@@ -1,0 +1,123 @@
+#!/bin/bash
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Options() {
+    local opts
+
+    opts="$(/usr/bin/getopt -o=b:h --longoptions branch:,des,help --name "$progname" -- "$@")" || {
+        Options -h
+        return 1
+    }
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -b | --branch) branch="$2"; shift  ;;
+            --des)
+                local xx
+                for xx in budgie cinnamon gnome i3 kde lxqt mate xfce ; do
+                    echo "    $xx"
+                done
+                exit 0
+                ;;
+
+            -h | --help)
+                cat <<EOF >&2
+Usage: $progname [options] desktop-name
+
+Options:
+    --help
+    -h             This help.
+
+    --branch X
+    -b X           Gives the name of the desired branch name X of the install-scripts-next repo
+                   at github, e.g. 08-2021.
+
+    --des          Show supported DE names.
+
+    desktop-name   Name of the desired desktop in lowercase letters, e.g. xfce.
+
+Supported desktop names:
+$($FUNCNAME --des)
+EOF
+                exit 0
+                ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+
+    de="$1"
+
+    [ -n "$de" ]     || DIE "'desktop-name' parameter missing"    # e.g. xfce
+    [ -n "$branch" ] || DIE "'branch-name' parameter missing."    # e.g. 08-2021
+}
+
+FindDePackages() {
+    local start="$1"         # partial contents of the starting line in netinstall.yaml
+    local stop="$2"          # partial contents of the stopping line in netinstall.yaml
+
+    local url="https://raw.githubusercontent.com/endeavouros-team/install-scripts-next/$branch/netinstall.yaml"
+    local netinstall_yaml=$(basename "$url")
+
+    if [ -z "$data" ] ; then
+        data="$(curl -Lsm 10 "$url")"
+        [ $? -eq 0 ]   || DIE "fetching '$url' failed."
+        [ -n "$data" ] || DIE "'$url' had no data."
+    fi
+
+    packages+=(
+	$(echo "$data" | sed -n "/$start/,/$stop/"p | grep "^[ ]*- " | grep -v : | awk '{print $NF}')
+    )
+}
+
+Main()
+{
+    local de=""
+    local branch="08-2021"
+    local progname="$(basename "$0")"
+    local packages=()
+    local data=""
+
+    Options "$@"
+
+    case "$de" in
+        xfce)
+            FindDePackages "EndeavourOS XFCE4 theming" "XFCE4 Desktop"
+            FindDePackages "XFCE4 Desktop"             "KDE-Desktop"
+            ;;
+        kde)
+            FindDePackages "KDE-Desktop" "GNOME-Desktop"
+            ;;
+        gnome)
+            FindDePackages "GNOME-Desktop" "i3 Window Manager"
+            ;;
+        i3)
+            FindDePackages "EndeavourOS i3 theming" "i3-wm packages"
+            FindDePackages "i3-wm packages" "MATE-Desktop"
+            ;;
+        mate)
+            FindDePackages "MATE-Desktop" "Cinnamon-Desktop"
+            ;;
+        cinnamon)
+            FindDePackages "Cinnamon-Desktop" "Budgie-Desktop"
+            ;;
+        budgie)
+            FindDePackages "Budgie-Desktop" "LXQT-Desktop"
+            ;;
+        lxqt)
+            FindDePackages "LXQT-Desktop" "Printing-Support"
+            ;;
+        *)
+            DIE "sorry, DE '$de' not supported."
+            ;;
+    esac
+    echo "${packages[*]}"
+}
+
+Main "$@"

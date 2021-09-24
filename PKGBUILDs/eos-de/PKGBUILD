@@ -13,7 +13,7 @@ pkgname=(
 )
 pkgdesc="Create EOS DE installer packages"
 pkgver=0.1
-pkgrel=1
+pkgrel=1.1
 arch=('any')
 license=("GPL")
 url=https://github.com/endeavouros-team
@@ -23,8 +23,10 @@ _branch="08-2021"
 
 source=(
     "https://raw.githubusercontent.com/endeavouros-team/install-scripts-next/$_branch/netinstall.yaml"
+    get-de-pkglist
 )
-sha256sums=('5c7c7c68cbd9f5e45a099b119d347cff9d08f5002da551fe7e1c97de4cd244fe')
+sha256sums=('5c7c7c68cbd9f5e45a099b119d347cff9d08f5002da551fe7e1c97de4cd244fe'
+            '7716bff94c3bf89c48863ac03df0325bc26d3451bf8351fb39ae7cfe8f50eccf')
 
 _package_helper() {
     local start="$1"         # partial contents of the starting line in netinstall.yaml
