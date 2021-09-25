@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Show time difference between the given time zone and 'here'.
+
+DIE() {
+    echo "Error: $1"
+    exit 1
+}
+
+Main() {
+    local tz_other="$1"
+    
+    [ -n "$tz_other" ] || DIE "give time zone"
+    local tz_here="$(curl -s https://ipinfo.io/timezone)"
+
+    {
+        echo "Time  Zone     Time-difference"
+        echo "----- -------- ---------------"
+        echo "$(date -u +%H:%M)           UTC-time  (+00:00)"
+        echo "$(date +%H:%M)              $tz_here  ($(LANG=C TZ="$tz_here"  date "+%:z"))"
+        echo "$(TZ=$tz_other date +%H:%M) $tz_other ($(LANG=C TZ="$tz_other" date "+%:z"))"
+    } | column -t
+}
+
+Main "$@"

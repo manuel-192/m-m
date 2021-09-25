@@ -1,0 +1,21 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-timediff
+pkgdesc="Simple app to show time difference"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=2021.09.25
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('abead97b06bdbbc9486e20918257347a2b2836fb6ff7eb4b51c8b014473e9589a095d8bc1f47ac1616141cae647adc490849700f3aac546a9605133e0aab92e9')
+
+package() {
+  install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
+}
