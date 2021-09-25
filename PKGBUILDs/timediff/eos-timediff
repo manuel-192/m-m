@@ -10,7 +10,7 @@ DIE() {
 Main() {
     local tz_other="$1"
     
-    [ -n "$tz_other" ] || DIE "give time zone"
+    [ -n "$tz_other" ] || DIE "give time zone, e.g. 'CET' or 'Europe/Berlin'"
     local tz_here="$(curl -s https://ipinfo.io/timezone)"
 
     {
