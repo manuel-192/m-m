@@ -1,0 +1,100 @@
+#!/bin/bash
+
+DIE() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+MainXbacklight()
+{
+    local esc="$(printf "\033")"
+
+    local right="$esc[C"
+    local left="$esc[D"
+    local up="$esc[A"
+    local down="$esc[B"
+    local ctrl_up="$esc[1;5A"
+    local ctrl_down="$esc[1;5B"
+    local alt_up="$esc[1;3A"
+    local alt_down="$esc[1;3B"
+
+    local longest_key_length=6  # see key values above
+    local key
+    local bright="$(bcround "$(xbacklight -get)" 0)"
+
+    while true ; do
+        read -s -n $longest_key_length -t 0.2 key
+        case "$key" in
+            $up)        ((bright += 1)) ;;
+            $down)      ((bright -= 1)) ;;
+            $alt_up)    ((bright += 5)) ;;
+            $alt_down)  ((bright -= 5)) ;;
+            $ctrl_up)   ((bright += 10)) ;;
+            $ctrl_down) ((bright -= 10)) ;;
+            $left)      bright=1 ;;
+            $right)     bright=100 ;;
+            q)
+                echo "quit"
+                break
+                ;;
+        esac
+        test $bright -le   1 && bright=1
+        test $bright -ge 100 && bright=100
+        test -n "$key" && echo "New brightness value: $bright"
+        xbacklight =$bright
+    done
+}
+
+CheckValue1() {
+    local min=5
+    local max=100
+    local supported_values="Supported percentage values: from $min to $max."
+
+    if [ -z "$brightness" ] || [ -n "$(echo "$brightness" | tr -d '0-9')" ] || [ $brightness -gt $max ] || [ $brightness -lt $min ]
+    then
+        DIE "value '$brightness' is not supported! $supported_values"
+    fi
+
+    brightness="$(echo $brightness*0.01 | bc)"
+}
+
+MainXrandr() {
+    local brightness=""
+    local conf="$HOME/.config/brightness.conf"
+
+    case "$1" in
+        "")
+            brightness="$(cat "$conf" 2>/dev/null)"
+            if [ -n "$brightness" ] ; then
+                echo "$brightness"
+            else
+                echo "Brightness not yet set." >&2
+                return 1
+            fi
+            return
+            ;;
+        -*) DIE "unsupported parameter '$1'" ;;
+        *) brightness="$1" ;;
+    esac
+    local storevalue="$brightness"
+
+    CheckValue1
+
+    local query="$(xrandr --query)"
+    local output="$(echo "$query" | grep -w connected | head -n 1 | awk '{print $1}')"
+
+    [ -n "$output" ] || DIE "no output device found!"
+
+    xrandr --output "$output" --brightness "$brightness" || DIE "xrandr failed."
+
+    echo "$storevalue" > "$conf"
+}
+
+Main() {
+    case "$(device-info --graphics)" in
+        NVIDIA*) MainXrandr     "$@" ;;
+        *)       MainXbacklight "$@" ;;
+    esac
+}
+
+Main "$@"

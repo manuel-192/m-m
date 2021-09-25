@@ -1,0 +1,25 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-brightness
+pkgdesc="Simple app to set the brightness level of the screen."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=2021.09.25
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(bash)
+optdepends=(
+    'xorg-xrandr: setting brightness on some machines'
+    'xorg-xbacklight: setting brightness on some machines'
+)
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('40387138f8b71f9695998807962914888d9d1e76f4a518b8b766869a8a789e0e6ff5c7a1214c91dd94da5f25cce7921c4612a93552a58153b31e6f1dcf0d6e8c')
+
+package() {
+  install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
+}
