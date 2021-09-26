@@ -23,7 +23,7 @@ customcfg | Creates a new file /boot/grub/custom.cfg containing boot menu entrie
 eat | An easy to use pastebin helper.<br>"Eat" file contents or command outputs and send them to pastebin.
 hwinfo-completion | Bash completion for the `hwinfo` command (experimental).
 mirrorlist-m | a mirrorlist package for all Manuel's repositories here
-pac | Pacman wrapper:<br>- knows when elevated privileges are needed<br>- checks kernel & nvidia driver updates<br>- can wait for the internet connection (a few seconds)<br>- supports bash command completion
+pac | Pacman wrapper:<br>- knows when elevated privileges are needed<br>- checks kernel & nvidia driver updates<br>- can *update* AUR packages<br>- can wait for the internet connection (a few seconds)<br>- supports bash command completion
 paccache-service-manager | (See EndeavourOS) Manages the systemd service that limits the number of packages in the package cache. | GUI
 pkexec2 | Wrapper for pkexec, retaining the current working directory instead of changing it to /root.
 remirror | Rank mirrors on Arch (used to do so also on Antergos).<br>See [changelog](PKGBUILDs/remirror)<br>
