@@ -1,0 +1,25 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=dvb-mn88473
+pkgdesc="Latest DVB mn88473 firmware."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+arch=('any')
+license=('GPL')
+depends=(bash p7zip wget)
+source=(
+    dvb-demod-mn88473-01.fw
+    $pkgname
+)
+sha512sums=('d7d71e06ad818031280ca481d2cfbaa31edec6f2f9ac378a314de3b3627ad0e633ac19edf8da5dc34a21dceeaa58c58280c5e213d699a408098f8f2107c693db'
+            '975dcf9777480eb58f6efda03434312c224de44ee806e2237555e7bc6ba316fa621d9bae85e0117ba41e2e58c47c1a0a1f4b0b30528bddc1f9d22ef5b8f9a7de')
+
+pkgver=1
+pkgrel=1
+
+package() {
+    local file=${source[0]}
+
+    ./$pkgname $file
+    install -Dm644 $file   $pkgdir/usr/lib/firmware/$file
+}

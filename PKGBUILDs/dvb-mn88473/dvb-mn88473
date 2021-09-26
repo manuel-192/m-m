@@ -1,0 +1,75 @@
+#!/bin/bash
+
+DIE() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+OD() {
+    /usr/bin/od -A x -t x1z "$@"
+}
+
+od_line() {
+    local current_fw="$1"
+    OD $current_fw | head -n1 | sed -e 's|^000000 ||' -e 's|  >.*<||'
+}
+
+fetch_driver() {
+    local driver_file=""
+    local driver_url=$(wget -q -O- --user-agent="" http://www.astrometa.com.tw/integrated_en.html | grep "Driver for Windows 10" | sed -e 's|.*</a><a href="||' -e 's|?dl=.*||')
+    [ -n "$driver_url" ] || DIE "fetching astrometa info failed."
+    driver_file=$(basename "$driver_url")
+
+    if [ ! -r "$current_fw" ] ; then
+        if [ "$driver_file" != "$supported_driver_file" ] ; then
+            DIE "sorry, '$driver_file' is not supported. Please update PKGBUILD."
+        fi
+    fi
+
+    wget -q "$driver_url" >& /dev/null || DIE "wget '$driver_url' failed."
+    [ -r "$driver_file" ] || DIE "driver file '$driver_file' not found."
+    7z x "$driver_file" >/dev/null || DIE "extracting driver file '$driver_file' failed."
+    [ -r "$sysfile" ] || DIE "cannot extract file '$sysfile'"
+
+    skip=$(OD "$sysfile" | grep "$searchline" | awk '{print $1}')
+    [ -n "$skip" ] || DIE "search line '$searchline' was not found."
+    skip=$(printf "%d" "0x$skip") || DIE "index '$skip' from line '$searchline' cannot be converted to decimal."
+
+    dd if="$sysfile" ibs=1 skip=$skip count=$count of="$new_fw" 2>/dev/null
+}
+
+Main()
+{
+    local firmware="$1"
+    [ -n "$firmware" ] || DIE "give firmware file name"
+
+    local new_fw="$PWD/$firmware".new
+    local current_fw="$PWD/$firmware"
+    local lib="/usr/lib/firmware/$firmware"
+
+    local searchline=$(od_line "$current_fw")
+    local supported_driver_file="AMDVBT2_Setup_200917.exe"
+    local skip=222384                                        # for $supported_driver_file
+    local count=2271                                         # for $supported_driver_file and probably others as well
+    local sysfile="X64/AMDVBT2BDA.sys"
+    local tmpdir=$(mktemp -d)
+
+    pushd $tmpdir >/dev/null
+
+    fetch_driver
+
+    popd >/dev/null
+    rm -rf $tmpdir
+
+    if [ ! -r "$lib" ] ; then
+        echo "====> New firmware found."
+    elif cmp "$new_fw" "$current_fw" ; then   # >& /dev/null ; then
+        echo "====> No update."
+    else
+        echo "====> Updated firmware found, please update PKGBUILD."
+        rm -f "$current_fw"
+        mv "$new_fw" "$current_fw"
+    fi
+}
+
+Main "$@"
