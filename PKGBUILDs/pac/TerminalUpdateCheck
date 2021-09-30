@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Check for available updates at most once an hour.
+# Add a call to this program into your ~/.bashrc.
+
+# Mutex: see https://stackoverflow.com/questions/6870221/is-there-any-mutex-semaphore-mechanism-in-shell-scripts
+
+Mutex_reserve() { /usr/bin/mkdir "$lockdir" 2>/dev/null ; }
+Mutex_release() { /usr/bin/rmdir "$lockdir" 2>/dev/null ; }
+
+Exit() { Mutex_release ; exit 0 ; }
+
+TerminalUpdateCheck() {
+    local lockdir="$HOME/.mutex.$FUNCNAME"
+    Mutex_reserve || return
+
+    local now=$(/usr/bin/date +%H)                                      # every hour
+    local last_check="$HOME/.$FUNCNAME.check_time"
+
+    [ "$now" = "$(/usr/bin/cat "$last_check" 2>/dev/null)" ] && Exit    # Is it already checked?
+
+    case "$DISPLAY" in
+        "" | ":0") Exit ;;                                              # Prevent running this too early at login!
+    esac
+
+    if /usr/bin/eos-connection-checker ; then
+        echo "$now" > "$last_check"
+        echo "Showing available updates if any:"
+        /usr/bin/checkupdates
+        /usr/bin/yay -Qua
+    else
+        echo "No internet connection!"
+    fi
+
+    Exit
+}
+
+TerminalUpdateCheck
