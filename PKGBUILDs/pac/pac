@@ -30,7 +30,7 @@ WaitForConnection() {
         if [ $((++xx)) -ge $checks ] ; then
             return $retval
         fi
-        echo "waiting for connection ..."
+        echo "$progname: waiting for connection ..."
         sleep $check_interval
     done
 }
