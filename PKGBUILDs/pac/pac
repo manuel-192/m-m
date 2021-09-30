@@ -46,6 +46,28 @@ CheckConnection() {
     fi
 }
 
+Help() {
+    local args=()
+    local arg
+
+    # remove options unsupported by pacman
+    for arg in "$@" ; do
+        case "$arg" in
+            --aur) ;;
+            --*)  args+=("$arg") ;;
+            -*a*) args+=("$(echo "$arg" | sed 's|a||g')") ;;
+            *)    args+=("$arg") ;;
+        esac
+    done
+
+    PacmanWrapper --help "${args[@]}"
+    exit 0
+}
+
+NoUpdates() {
+    echo2 "No updates."
+}
+
 PacmanWrapper() {
     local basename=/usr/bin/basename
     local progname="$($basename "$0")"
@@ -84,6 +106,8 @@ PacmanWrapper() {
                 }
                 echo2 "==> $($basename $pacman) $opts_pacman"
                 $EOS_ROOTER "$pacman $opts_pacman && $sync"
+            else
+                NoUpdates
             fi
             ;;
         *)
@@ -99,8 +123,14 @@ Changes/additions to pacman:
   - Asks root permissions only when needed.
   - If no parameters are given, installs updates only if available.
   - New options:
-      --aur | -a    Like with no parameters, but checks also AUR updates.
-                    If this option is used, other options and parameters will be ignored.
+      --aur, -a             Like with no parameters, but checks also AUR updates.
+                            If this option is used, all other options and parameters
+                            will be ignored.
+
+      --limited-check, -L   A variant for update checking: check/update will be done only
+                            once within an hour even if called more often.
+                            This is designed to be useful when a terminal is started
+                            often and $progname with this option is added to ~/.bashrc.
 
 $pacman_help
 EOF
@@ -111,11 +141,17 @@ EOF
                             echo2 "==> option $opt detected, ignoring other options and parameters."
                             echo2 "==> $($basename $yay) $opts_yay"
                             $yay $opts_yay && $sync
+                        else
+                            NoUpdates
                         fi
                         return
                         ;;
+                    --limited-check | -L)
+                        /usr/bin/TerminalUpdateCheck  # checks updates at most once per hour
+                        return
+                        ;;
                     --*) ;;
-                    -*h*) $FUNCNAME --help "$@"; return ;;
+                    -*h*) Help "$@" ;;  # $FUNCNAME --help "$@"; return ;;
                     -*a*) $FUNCNAME --aur ; return ;;
                 esac
             done
