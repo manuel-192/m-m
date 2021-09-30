@@ -5,7 +5,7 @@ pkgname=pac
 pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.09.30
-pkgrel=2
+pkgrel=3
 
 arch=('any')
 license=('GPL')
@@ -18,7 +18,7 @@ source=(
     $url/eos-$pkgname.conf
     $url/TerminalUpdateCheck
 )
-sha512sums=('e446b89c47f7ed680f850bc71ab35ca5b55b40bbeb93c54d4633fac87b3cce8f214969df720f3e3776cc97d3dc6927b92cb268b60c90d4b65534e83dc61198c4'
+sha512sums=('4290e7bc7407aa41926b94df92e09a2d60143a78074283cafbe288f7c6217193fd26976207fa37951a5ffbf9f86c9aad7532edb941a1d858fb1434f5c9f91c2b'
             'c70cae9b0f875934702950a1f46e5488d59c908a3fc5a72a394acf3c32e38a61416f2628c6f02a7b2ba799fef5ef047dc802e7c0050766c610b6a2033abb763b'
             'a62fc910cfc5f924493bfbb6a2376bbfc6cf650e2dad724738c0ce2657488e062a162edffcd43c3c2d8d259ef8af9481e128ca8270cc38030907c244dd125724'
             'c50ac7c2c726339ed515eb96986d133cabe47a5d9a7c6d0b7b9a39bc8ff1cdc6f15874542a74b2ce44bfbcae1f3ada076421f16b399a9014cfb387590c141068')

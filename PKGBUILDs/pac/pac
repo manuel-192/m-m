@@ -92,7 +92,7 @@ PacmanWrapper() {
 
     case "$1" in
         "")
-            CheckConnection  # check only here, this is the most used operation here
+            CheckConnection
 	    
             updates=$($checkupdates | $column -t)
 	    if [ -n "$updates" ] ; then
@@ -137,6 +137,7 @@ EOF
                         return
                         ;;
                     --aur)
+                        CheckConnection
                         if [ -n "$($yay -Qua)" ] || ($checkupdates) ; then
                             echo2 "==> option $opt detected, ignoring other options and parameters."
                             echo2 "==> $($basename $yay) $opts_yay"
@@ -147,6 +148,7 @@ EOF
                         return
                         ;;
                     --limited-check | -L)
+                        CheckConnection
                         /usr/bin/TerminalUpdateCheck  # checks updates at most once per hour
                         return
                         ;;
