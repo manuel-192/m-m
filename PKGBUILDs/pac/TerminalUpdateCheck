@@ -11,6 +11,9 @@ Mutex_release() { /usr/bin/rmdir "$lockdir" 2>/dev/null ; }
 Exit() { Mutex_release ; exit 0 ; }
 
 TerminalUpdateCheck() {
+    [ "$BASH" = "/bin/sh" ] && Exit
+    [ -z "$SESSION_MANAGER" ] && Exit
+
     local lockdir="$HOME/.mutex.$FUNCNAME"
     Mutex_reserve || return
 
@@ -18,10 +21,6 @@ TerminalUpdateCheck() {
     local last_check="$HOME/.$FUNCNAME.check_time"
 
     [ "$now" = "$(/usr/bin/cat "$last_check" 2>/dev/null)" ] && Exit    # Is it already checked?
-
-    case "$DISPLAY" in
-        "" | ":0") Exit ;;                                              # Prevent running this too early at login!
-    esac
 
     if /usr/bin/eos-connection-checker ; then
         echo "$now" > "$last_check"

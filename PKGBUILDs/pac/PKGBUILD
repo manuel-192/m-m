@@ -4,8 +4,8 @@
 pkgname=pac
 pkgdesc="Simple pacman wrapper, asks for elevated permissions only when needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.09.30
-pkgrel=4
+pkgver=2021.10.01
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -21,7 +21,7 @@ source=(
 sha512sums=('ab7fd2e7bd34b18af72c515ef7d495cb9cde2e8da6a309a99baf52e83a8d999c428ca6c89c0c8289124c302c077423d7952431bfa5b932eefa67a12e263c21b6'
             'c70cae9b0f875934702950a1f46e5488d59c908a3fc5a72a394acf3c32e38a61416f2628c6f02a7b2ba799fef5ef047dc802e7c0050766c610b6a2033abb763b'
             'a62fc910cfc5f924493bfbb6a2376bbfc6cf650e2dad724738c0ce2657488e062a162edffcd43c3c2d8d259ef8af9481e128ca8270cc38030907c244dd125724'
-            'c50ac7c2c726339ed515eb96986d133cabe47a5d9a7c6d0b7b9a39bc8ff1cdc6f15874542a74b2ce44bfbcae1f3ada076421f16b399a9014cfb387590c141068')
+            '24f534cbc12e159f693540dd597ac938b8820d156e56749e9dfb4cf8e478bfe4c1394d0b97c0e59ecd84cfe0fe0ec7680286bc8bbb4e489960a7cd55bff21a30')
 
 package() {
   install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
