@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Fix /usr/share/app-info/xmls/extra.xml.gz for pamac-manager.
+
+DIE() {
+    echo "Error: $@" >&2
+    exit 1
+}
+
+Exe() {
+    "$@" || DIE "$@ failed"
+}
+
+Main() {
+    [ $(id -u) -eq 0 ] || DIE "must run as root"
+
+    local dir=/usr/share/app-info/xmls
+    local file=extra.xml
+
+    Exe mkdir -p $dir/foobar
+    Exe cd $dir/foobar
+    Exe cp -a ../$file.gz .
+    Exe gunzip $file.gz
+    Exe cp $file $file.old
+    Exe sed -i $file -e "s|<code>|'|" -e "s|</code>|'|"
+    diff $file.old $file
+    Exe gzip $file
+    Exe cp -a $file.gz ..
+    Exe cd ..
+    Exe rm -rf $dir/foobar
+}
+
+Main

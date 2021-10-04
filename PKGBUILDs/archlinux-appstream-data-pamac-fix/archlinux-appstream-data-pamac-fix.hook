@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = archlinux-appstream-data-pamac
+
+[Action]
+Description = Fix an xml file for pamac
+When = PostTransaction
+Exec = /usr/bin/archlinux-appstream-data-pamac-fix
