@@ -5,19 +5,14 @@ pkgname=hlp
 pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.10.05
-pkgrel=2
+pkgrel=3
 
 arch=('any')
 license=('GPL')
 depends=(eos-apps-info)
 
 source=(more-man-pages)
-sha256sums=('8fa2c681b4672b2621c3a2e1d9ca1bc97406d5869352ab9fa90a6d8fe4df294a')
-
-prepare() {
-    echo "==> Updating package info database." >&2
-    sudo pacman -Fy
-}
+sha256sums=('7ab6264012a4b00c823b7cf10a7dec000c5c1641875afdda64395cf4acf3867c')
 
 package() {
     # Modify bash completion file of 'man' for $pkgname

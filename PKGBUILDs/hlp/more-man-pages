@@ -9,6 +9,9 @@ DIE() {
 Main() {
     local file="$1"
     [ -n "$file" ] || DIE "file missing!"
+
+    echo "==> Make sure you have executed 'pacman -Fy'." >&2
+
     local extraitems=$(pacman -Slq endeavouros | grep -Pv 'calamares|ckbcomp|keyring|mirrorlist|-skel-|themi|theme|-colors|-translations|keyserver|openswap|completion')
     local xx
 
