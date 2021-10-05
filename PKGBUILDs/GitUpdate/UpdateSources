@@ -38,8 +38,9 @@ Main()
     for folder in $(/usr/bin/ls -1) ; do
         [ -d $folder/.git ] || continue
         [ -L $folder/.git ] && continue
+        [ -e $folder/.skip-auto-update ] && continue
 
-        if [ -e $folder/.no-auto-update ] ; then
+        if [ -e $folder/.ask-auto-update ] ; then
             read -p "want to check folder '$folder' (y/N)? " >&2
             case "$REPLY" in
                 [yY]*) ;;
