@@ -1,0 +1,18 @@
+#!/bin/bash
+
+Main() {
+    local file="$1"
+    local extraitems=$(pacman -Slq endeavouros | grep -Pv 'calamares|ckbcomp|keyring|mirrorlist|-skel-|themi|theme|-colors|-translations|keyserver|openswap|completion')
+    local xx
+
+    while true ; do
+        for xx in $extraitems ; do
+            echo "pacman -Flq $xx ..." >&2
+            /usr/bin/pacman -Flq $xx | /usr/bin/grep -P ^usr/bin/[a-zA-Z] | /usr/bin/sed 's|^usr/bin/||'
+        done
+        echo $extraitems
+        break
+    done | sort | uniq > "$file"
+}
+
+Main "$@"

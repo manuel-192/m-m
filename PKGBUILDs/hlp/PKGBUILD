@@ -1,0 +1,40 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=hlp
+pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=2021.10.05
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(eos-apps-info)
+
+source=(more-man-pages)
+sha256sums=('f517a18565e873ee1c6a8d48bf724f34f083ef04dec2540767d471df74426d7d')
+
+prepare() {
+    sudo pacman -Fy
+}
+
+package() {
+    # Modify bash completion file of 'man' for $pkgname
+
+    cp /usr/share/bash-completion/completions/man $pkgname.completion || return 1
+
+    bash more-man-pages extra-man-pages.txt
+
+    sed -i $pkgname.completion \
+        -e "s|^# man(1) completion|# $pkgname completion|" \
+        -e "s|^_man()$|_man_${pkgname}_()|" \
+        -e "s|complete -F _man man apropos whatis|complete -F _man_${pkgname}_ $pkgname|" \
+        -e '/^[ ]*__ltrim_colon_completions/i \    COMPREPLY+=($(compgen -W "$(cat /etc/extra-man-pages.txt)" -- "$cur"))'
+
+    install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
+
+    install -Dm644 extra-man-pages.txt  $pkgdir/etc/extra-man-pages.txt
+
+    mkdir -p $pkgdir/usr/local/bin
+    ln -s /usr/bin/eos-apps-info-helper $pkgdir/usr/local/bin/$pkgname
+}
