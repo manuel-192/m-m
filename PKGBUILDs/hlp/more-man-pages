@@ -1,7 +1,14 @@
 #!/bin/bash
 
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
 Main() {
     local file="$1"
+    [ -n "$file" ] || DIE "file missing!"
     local extraitems=$(pacman -Slq endeavouros | grep -Pv 'calamares|ckbcomp|keyring|mirrorlist|-skel-|themi|theme|-colors|-translations|keyserver|openswap|completion')
     local xx
 
@@ -10,7 +17,7 @@ Main() {
             echo "pacman -Flq $xx ..." >&2
             /usr/bin/pacman -Flq $xx | /usr/bin/grep -P ^usr/bin/[a-zA-Z] | /usr/bin/sed 's|^usr/bin/||'
         done
-        echo $extraitems
+        echo "$extraitems"
         break
     done | sort | uniq > "$file"
 }

@@ -5,16 +5,17 @@ pkgname=hlp
 pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.10.05
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
 depends=(eos-apps-info)
 
 source=(more-man-pages)
-sha256sums=('f517a18565e873ee1c6a8d48bf724f34f083ef04dec2540767d471df74426d7d')
+sha256sums=('8fa2c681b4672b2621c3a2e1d9ca1bc97406d5869352ab9fa90a6d8fe4df294a')
 
 prepare() {
+    echo "==> Updating package info database." >&2
     sudo pacman -Fy
 }
 
@@ -23,18 +24,19 @@ package() {
 
     cp /usr/share/bash-completion/completions/man $pkgname.completion || return 1
 
-    bash more-man-pages extra-man-pages.txt
+    local extras=extra-man-pages.txt
+
+    bash more-man-pages $extras
+    install -Dm644 $extras  $pkgdir/etc/$extras
 
     sed -i $pkgname.completion \
         -e "s|^# man(1) completion|# $pkgname completion|" \
         -e "s|^_man()$|_man_${pkgname}_()|" \
         -e "s|complete -F _man man apropos whatis|complete -F _man_${pkgname}_ $pkgname|" \
-        -e '/^[ ]*__ltrim_colon_completions/i \    COMPREPLY+=($(compgen -W "$(cat /etc/extra-man-pages.txt)" -- "$cur"))'
+        -e "/^[ ]*__ltrim_colon_completions/i \    COMPREPLY+=(\$(compgen -W \"\$(cat /etc/$extras)\" -- \"\$cur\"))"
 
     install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
 
-    install -Dm644 extra-man-pages.txt  $pkgdir/etc/extra-man-pages.txt
-
-    mkdir -p $pkgdir/usr/local/bin
-    ln -s /usr/bin/eos-apps-info-helper $pkgdir/usr/local/bin/$pkgname
+    install -d $pkgdir/usr/local/bin
+    ln -s /usr/bin/eos-apps-info-helper  $pkgdir/usr/local/bin/$pkgname
 }
