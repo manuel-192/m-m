@@ -25,8 +25,10 @@ TerminalUpdateCheck() {
     if /usr/bin/eos-connection-checker ; then
         echo "$now" > "$last_check"
         echo "Showing available updates if any:"
-        /usr/bin/checkupdates
+        local updates=$(/usr/bin/checkupdates)
+        [ -n "$updates" ] && echo "$updates"
         /usr/bin/yay -Qua
+        [ -n "$updates" ] && /usr/bin/eos-kernel-nvidia-update-check $(echo "$updates" | awk '{print $1}')
     else
         echo "No internet connection!"
     fi
