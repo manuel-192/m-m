@@ -15,7 +15,7 @@ DIE() {
 WaitForConnection() {
     local maxtime="$1"
     local check_interval="$2"
-    [ -n "$maxtime" ]        || maxtime=10
+    [ -n "$maxtime" ]        || maxtime=15
     [ -n "$check_interval" ] || check_interval=1
     local checks=$((maxtime/check_interval + 1))
     local retval
