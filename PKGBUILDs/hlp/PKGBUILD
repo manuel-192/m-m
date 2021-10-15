@@ -4,15 +4,15 @@
 pkgname=hlp
 pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.10.05
-pkgrel=3
+pkgver=2021.10.15
+pkgrel=1
 
 arch=('any')
 license=('GPL')
 depends=(eos-apps-info)
 
 source=(more-man-pages)
-sha256sums=('7ab6264012a4b00c823b7cf10a7dec000c5c1641875afdda64395cf4acf3867c')
+sha256sums=('2d7454fbdbe00462c608cae821308a09a3bbdc6908e886866c500434e3ca1493')
 
 package() {
     # Modify bash completion file of 'man' for $pkgname
@@ -28,7 +28,7 @@ package() {
         -e "s|^# man(1) completion|# $pkgname completion|" \
         -e "s|^_man()$|_man_${pkgname}_()|" \
         -e "s|complete -F _man man apropos whatis|complete -F _man_${pkgname}_ $pkgname|" \
-        -e "/^[ ]*__ltrim_colon_completions/i \    COMPREPLY+=(\$(compgen -W \"\$(cat /etc/$extras)\" -- \"\$cur\"))"
+        -e "/^[ ]*__ltrim_colon_completions/i \    COMPREPLY+=(\$(compgen -W \"\$(cat /etc/$extras | grep \"\$cur\")\" -- \"\$cur\"))"
 
     install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
 
