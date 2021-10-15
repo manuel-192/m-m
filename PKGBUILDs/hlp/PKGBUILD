@@ -5,14 +5,14 @@ pkgname=hlp
 pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2021.10.15
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
 depends=(eos-apps-info)
 
 source=(more-man-pages)
-sha256sums=('2d7454fbdbe00462c608cae821308a09a3bbdc6908e886866c500434e3ca1493')
+sha256sums=('7ab6264012a4b00c823b7cf10a7dec000c5c1641875afdda64395cf4acf3867c')
 
 package() {
     # Modify bash completion file of 'man' for $pkgname
@@ -21,14 +21,33 @@ package() {
 
     local extras=extra-man-pages.txt
 
+    printf "" > $extras
     bash more-man-pages $extras
     install -Dm644 $extras  $pkgdir/etc/$extras
+
+    local aur_func=""
+    aur_func+="_hlp_aur_helper() {\n"
+    aur_func+="  local packages=/tmp/aur-packages-hlp\n"
+    aur_func+="  local filetime timediff\n\n"
+    aur_func+="  if [ -r \$packages ] ; then\n"
+    aur_func+="    filetime=\"\$(stat -c %Y \$packages 2>/dev/null)\"\n"
+    aur_func+="  else\n"
+    aur_func+="    filetime=0\n"
+    aur_func+="  fi\n"
+    aur_func+="  timediff=\$(( \$(date +%s) - \$filetime ))\n"
+    aur_func+="  if [ \$timediff -gt 3600 ] || [ ! -r \$packages ] ; then\n"
+    aur_func+="    curl --fail -Lsm 10 -o- https://aur.archlinux.org/packages.gz | gunzip | tail -n +2 > \$packages\n"
+    aur_func+="  fi\n"
+    aur_func+="  cat \$packages\n"
+    aur_func+="}\n"
 
     sed -i $pkgname.completion \
         -e "s|^# man(1) completion|# $pkgname completion|" \
         -e "s|^_man()$|_man_${pkgname}_()|" \
         -e "s|complete -F _man man apropos whatis|complete -F _man_${pkgname}_ $pkgname|" \
-        -e "/^[ ]*__ltrim_colon_completions/i \    COMPREPLY+=(\$(compgen -W \"\$(cat /etc/$extras | grep \"\$cur\")\" -- \"\$cur\"))"
+        -e '/^[ ]*__ltrim_colon_completions/i \    COMPREPLY+=($(compgen -W "$(_hlp_extras_ | grep "$cur")" -- "$cur"))' \
+        -e "/^_man_hlp_()/i \ \n_hlp_extras_() { cat /etc/$extras ; _hlp_aur_helper ; }\n" \
+        -e "/^_man_hlp_()/i \ \n$aur_func\n"
 
     install -Dm644 $pkgname.completion  $pkgdir/usr/share/bash-completion/completions/$pkgname
 

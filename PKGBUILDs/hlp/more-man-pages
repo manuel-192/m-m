@@ -6,11 +6,6 @@ DIE() {
     exit 1
 }
 
-AUR_helper() {
-    local packages=/tmp/aur-packages
-    curl --fail -Lsm 10 -o- https://aur.archlinux.org/packages.gz | gunzip | tail -n +2
-}
-
 Main() {
     local file="$1"
     [ -n "$file" ] || DIE "file missing!"
@@ -26,7 +21,6 @@ Main() {
             /usr/bin/pacman -Flq $xx | /usr/bin/grep -P ^usr/bin/[a-zA-Z] | /usr/bin/sed 's|^usr/bin/||'
         done
         echo "$extraitems"
-        AUR_helper
         break
     done | sort | uniq > "$file"
 }
