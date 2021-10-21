@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Simple but configurable repo cloner from github.
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main()
+{
+    local repo="$1"
+    [ -n "$repo" ] || DIE "give repo name"
+
+    local GLONE_SITE=https://github.com
+    local GLONE_ACCOUNT=endeavouros-team
+    [ -r /etc/glone.conf ] && source /etc/glone.conf
+
+    git clone "$GLONE_SITE/$GLONE_ACCOUNT/$repo".git
+}
+
+Main "$@"

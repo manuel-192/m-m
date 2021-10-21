@@ -1,0 +1,28 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=glone
+pkgdesc="Very simple github repo cloner."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+backup=(etc/glone.conf)
+
+source=(
+    $url/$pkgname
+    $url/$pkgname-completion
+    $url/$pkgname.conf
+)
+sha512sums=('4614ccc6ba371a67ffd931df4988a820fa42eb258a6416de685f46e9a9747c243ee697c1983c9108cb1f69a14b67d8280fb7e0ff7b0603e275e3ffe7ebce6ff3'
+            '28b797e5a5ac1db55cd3f07307d8019f7e5836ea38827bd24876a3f690b33abe9777d514853b2c8ab3db79d7451ecc4f949fb7bfa72c54a0d8290fff959c51e1'
+            'a4130f132718ead0dc2a347a9036e2839bd05525bb272058a4825acab1e3707100abb8e3ca94adbd87cdcd244d6b58a583043196d65ef37e1565e8e069e26d1a')
+
+package() {
+  install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
+  install -Dm644 $pkgname-completion         $pkgdir/usr/share/bash-completion/completions/$pkgname
+  install -Dm644 $pkgname.conf               $pkgdir/etc/$pkgname.conf
+}

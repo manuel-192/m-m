@@ -1,0 +1,60 @@
+# bash completion for glone        -*- shell-script -*-
+
+_glone_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+_fetch_glone_repo_names() {
+    local saved_repo_names_file="$HOME/.glone_saved-repos.txt"
+    if [ -r "$saved_repo_names_file" ] ; then
+        repo_names="$(cat "$saved_repo_names_file")"
+        return
+    fi
+    local GLONE_SITE=https://github.com
+    local GLONE_ACCOUNT=endeavouros-team
+
+    source /etc/glone.conf || return 1
+
+    local ix=1 xx
+    while true ; do
+        xx="$(curl -Lsm 10 "$GLONE_SITE/orgs/$GLONE_ACCOUNT/repositories?page=$ix" | grep 'data-hovercard-type' | awk '{print $6}' | sed 's|.*/\([^"]*\)"|\1|')"
+        [ -n "$xx" ] || break
+        repo_names+=" $xx"
+        ((ix++))
+    done
+    echo "$repo_names" > "$saved_repo_names_file"
+}
+
+_glone_complete_repos() {
+    local repo_names=""
+    _fetch_glone_repo_names
+    COMPREPLY=( $(compgen -W "$repo_names" -- "$cur") )
+}
+
+_glone_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        --account | -a)
+            _glone_complete_repos ;;
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -*)
+                    # Any option or nothing yet.
+                    ;;
+                *)
+                    # Non-option parameters.
+                    _glone_complete_repos
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _glone_ glone
