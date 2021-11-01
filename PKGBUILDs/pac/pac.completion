@@ -1,3 +1,16 @@
-source /usr/share/bash-completion/completions/pacman
+#!/bin/bash
 
-complete -F _pacman pac
+case "yay" in
+    pacman)
+        source /usr/share/bash-completion/completions/pacman
+        complete -F _pacman pac
+        ;;
+    paru)
+        source /usr/share/bash-completion/completions/paru.bash
+        complete -F _paru pac
+        ;;
+    yay)
+        source /usr/share/bash-completion/completions/yay
+        complete -F _yay pac
+        ;;
+esac
