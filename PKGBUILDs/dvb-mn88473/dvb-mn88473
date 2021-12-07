@@ -16,7 +16,8 @@ od_line() {
 
 fetch_driver() {
     local driver_file=""
-    local driver_url=$(wget -q -O- --user-agent="" http://www.astrometa.com.tw/integrated_en.html | grep "Driver for Windows 10" | sed -e 's|.*</a><a href="||' -e 's|?dl=.*||')
+    #local driver_url=$(wget -q -O- --user-agent="" http://www.astrometa.com.tw/integrated_en.html | grep "Driver for Windows 10" | sed -e 's|.*</a><a href="||' -e 's|?dl=.*||')
+    local driver_url=$(curl -Lsm 10 -o- --user-agent "" http://www.astrometa.com.tw/integrated_en.html | grep "Driver for Windows 10" | sed -e 's|.*</a><a href="||' -e 's|?dl=.*||')
     [ -n "$driver_url" ] || DIE "fetching astrometa info failed."
     driver_file=$(basename "$driver_url")
 
@@ -26,7 +27,8 @@ fetch_driver() {
         fi
     fi
 
-    wget -q "$driver_url" >& /dev/null || DIE "wget '$driver_url' failed."
+    #wget -q "$driver_url" >& /dev/null || DIE "wget '$driver_url' failed."
+    curl --fail -Lsm 10 -o "$driver_file" "$driver_url" >& /dev/null || DIE "curl '$driver_url' failed."
     [ -r "$driver_file" ] || DIE "driver file '$driver_file' not found."
     7z x "$driver_file" >/dev/null || DIE "extracting driver file '$driver_file' failed."
     [ -r "$sysfile" ] || DIE "cannot extract file '$sysfile'"
