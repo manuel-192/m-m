@@ -4,14 +4,14 @@
 pkgname=meta-general
 pkgdesc="Nice stuff meta."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.3
-pkgrel=1.1
+pkgver=0.3.1
+pkgrel=1
 arch=(any)
 license=(GPL)
 depends=(
     # upstream
     ccrypt
-    chromium
+    #chromium
     colordiff
     emacs
     exo
@@ -21,10 +21,10 @@ depends=(
     jq
     kaffeine
     libreoffice-fresh
-    linux linux-headers linux-lts linux-lts-headers
+    #linux linux-headers linux-lts linux-lts-headers
     meld
     most
-    orage
+    #orage
     pacutils
     rcs
     sddm
