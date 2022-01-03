@@ -160,17 +160,20 @@ EOF
             local rooterr="error: you cannot perform this operation unless you are root."
             local errfile=$(/usr/bin/mktemp)
             local errlog
+            local retval
 
             LANG=C $pacman "$@" 2> "$errfile"
+            retval=$?
             errlog="$($cat "$errfile")"
             /usr/bin/rm -f "$errfile"
 
             case "$errlog" in
-                "$rooterr")
-                    $EOS_ROOTER "LANG=C $pacman $* && $sync"
-                    ;;
-                "") ;;
-                *)  echo2 "$errlog" ;;
+                "$rooterr") $EOS_ROOTER "LANG=C $pacman $* && $sync"
+                            ;;
+                "")         return $retval
+                            ;;
+                *)          echo2 "$errlog" ; return $retval
+                            ;;
             esac
             ;;
     esac
