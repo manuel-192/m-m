@@ -19,7 +19,7 @@ Main()
 
     Logstuff on
     for folder in $(/usr/bin/ls -1) ; do
-        if [ -r $folder/assets.conf ] ; then
+        if [ "${folder::1}" != "_" ] && [ -r $folder/assets.conf ] ; then
             pushd $folder
             printf "\n===============> $folder <==================\n\n"
 
