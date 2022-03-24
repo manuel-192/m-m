@@ -161,7 +161,8 @@ GitUpdate() {
     echo2 ""
     # RunOnlyIfAllowed "git pull"
     git add $git_adds
-    git commit -m "."          # dummy commit message
+    #git commit -m "."          # dummy commit message
+    git commit -m "$*"
     echo2 ""
     git push || {
         echo2 "You should run commands 'cd $PWD ; git push'"
@@ -199,7 +200,7 @@ Main()
         RunOnlyIfAllowed "git pull"
         ReplaceAssets
         MirrorStateUpdate
-        GitUpdate
+        GitUpdate "$@"
     else
         echo2 "No changes."
     fi
