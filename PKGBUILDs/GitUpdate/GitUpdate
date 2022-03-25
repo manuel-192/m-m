@@ -155,6 +155,8 @@ RunOnlyIfAllowed() {
 }
 
 GitUpdate() {
+    local commit_msg="$1"
+
     cd "$gitdir"
     echo2 ""
     echo2 "Adding files to github."
@@ -162,7 +164,7 @@ GitUpdate() {
     # RunOnlyIfAllowed "git pull"
     git add $git_adds
     #git commit -m "."          # dummy commit message
-    git commit -m "$*"
+    git commit -m "$commit_msg"
     echo2 ""
     git push || {
         echo2 "You should run commands 'cd $PWD ; git push'"
@@ -171,6 +173,12 @@ GitUpdate() {
 
 Main()
 {
+    local commit_msg="$1"
+
+    if [ -z "$commit_msg" ] ; then
+        DIE "give commit message"
+    fi
+
     [ -f .GitUpdate ] || DIE "no .GitUpdate file in folder $PWD"
     [ -d .git ]       || DIE "no .git folder in $PWD"
     [ -L .git ]       && DIE ".git must not be symlink in $PWD"
@@ -200,7 +208,7 @@ Main()
         RunOnlyIfAllowed "git pull"
         ReplaceAssets
         MirrorStateUpdate
-        GitUpdate "$@"
+        GitUpdate "$commit_msg"
     else
         echo2 "No changes."
     fi
