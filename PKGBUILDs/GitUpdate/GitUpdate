@@ -171,13 +171,29 @@ GitUpdate() {
     }
 }
 
+GetArmCommitMessage() {
+    # Manually given Arm commits may not have the message, so get it from the github commit messages, or actual commits.
+
+    # Get commit message from github arm commit message.
+    local data=$(curl -Lsm 10 -o- https://github.com/endeavouros-arm/repo/commits/master/endeavouros)
+    local commit_msg=$(echo "$data" | grep -w "open markdown-title" | head -n1 | sed -e 's|.*">\([^<]*\)</a>|\1|')
+
+    if [ -z "$commit_msg" ] ; then
+        # Show actual committed packages from the github ARM page.
+        local commit=$(echo "$data" | grep -w "open markdown-title" | head -n1 | sed -e 's|.*/repo/commit/\(.*\)">.*|\1|')
+        data=$(curl -Lsm 10 -o- "https://github.com/endeavouros-arm/repo/commit/$commit")
+        readarray -t data <<< $(echo "$data" | grep "pkg.tar.zst<" | grep -w "a href" | sed 's|.*>endeavouros/\(.*\)</a>|\1|')
+        commit_msg="Updated"
+        for ((ix=1; ix < ${#data[@]}; ix=ix+2)) ; do
+            commit_msg+=" ${data[ix]}"
+        done
+    fi
+    echo "$commit_msg"
+}
+
 Main()
 {
     local commit_msg="$1"
-
-    if [ -z "$commit_msg" ] ; then
-        DIE "give commit message"
-    fi
 
     [ -f .GitUpdate ] || DIE "no .GitUpdate file in folder $PWD"
     [ -d .git ]       || DIE "no .git folder in $PWD"
@@ -201,6 +217,15 @@ Main()
     CheckDiff
 
     if [ $diff_x86_64 -ne 0 ] || [ $diff_arm -ne 0 ] ; then
+        # x86_64 always should have a commit message, but Arm may not have it.
+        if [ -z "$commit_msg" ] && [ $diff_arm -ne 0 ] ; then
+            read -p "A commit message for ARM changes is required. Get it automatically (Y/n)? " >&2
+            case "$REPLY" in
+                [Yy]* | "") commit_msg=$(GetArmCommitMessage) ;;
+                *)          DIE "no commit message for ARM changes." ;;
+            esac
+        fi
+
         echo2 ""
         echo "Changes detected. Will replace local assets after 'git pull', then sync all to github."
 
