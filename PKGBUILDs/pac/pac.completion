@@ -1,7 +1,7 @@
 #!/bin/bash
 
-case "yay" in
-    pacman)
+case "$PACMAN_BASH_COMPLETION_APP" in
+    pacman | "")
         source /usr/share/bash-completion/completions/pacman
         complete -F _pacman pac
         ;;
