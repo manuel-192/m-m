@@ -1,0 +1,20 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=m-common
+pkgdesc="Some common apps and libs."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1.0
+pkgrel=1
+arch=('any')
+license=('GPL')
+
+source=(
+    "$url/AA"
+)
+sha512sums=('c9cd04a7cb8d5d8a67e87ec1d6e8a1a416637613634a6fa9b663b83ca2fa6909c65f6b131c83d0c412060db9dee0274e388c4b7043355e042dbffd8898a17a77')
+
+package() {
+    cd $srcdir
+    install -Dm755 AA         $pkgdir/usr/bin/AA
+}
