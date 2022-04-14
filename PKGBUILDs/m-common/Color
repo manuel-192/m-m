@@ -1,0 +1,183 @@
+#!/bin/bash
+
+Color() {
+    # Set text color on the terminal with function _Color.
+    # Parameters: "color" "attribute"
+    # where
+    #    color         normal, reset, default,
+    #                  black, red, green, yellow, blue, purple, cyan, white, gray232..gray255,
+    #                  dark_gray, light_red, light_green, light_yellow, light_blue, light_magenta, light_cyan
+    #    attribute     regular, bold, underline, background
+    #
+    # Example:
+    #    red=$(Color red)
+    #    normal=$(Color normal)
+    #    cyanbg=$(Color cyan background)
+    #    echo ${red}${cyanbg}This text is red on cyan ${normal}and this is back to normal.
+    #
+    
+    local color="$1"       # normal, reset, default
+                           # black, red, green, yellow, blue, purple, cyan, white, gray232..gray255,
+                           # dark_gray, light_red, light_green, light_yellow, light_blue, light_magenta, light_cyan
+
+    local attr="$2"        # regular(=default), bold, underline, background
+
+    local retval=$'\e['
+    local graynr
+    local bright=yes       # yes=enable bright colors, no=disable them
+
+    case "$color" in
+        reset | normal | default)
+            retval+='0m'
+            ;;
+        *)
+            case "$attr" in
+                regular | "")
+                    case "$color" in
+                        black)  retval+='0;30m' ;;
+                        red)    retval+='0;31m' ;;
+                        green)  retval+='0;32m' ;;
+                        yellow) retval+='0;33m' ;;
+                        blue)   retval+='0;34m' ;;
+                        purple) retval+='0;35m' ;;
+                        cyan)   retval+='0;36m' ;;
+                        white)  retval+='0;37m' ;;
+                    esac
+                    if [ "$TERM" = "xterm-256color" ] ; then
+                        case "$color" in
+                            gray*)
+                                graynr=${color#gray}  # grey colors from dark (232) to light (255)
+                                if [ $graynr -ge 232 ] && [ $graynr -le 255 ] ; then
+                                    retval+="38;5;$graynr"m
+                                fi
+                                ;;
+                        esac
+
+                    fi
+                    if [ "$bright" = "yes" ] ; then
+                        case "$color" in
+                            dark_gray)     retval+='0;90m' ;;
+                            light_red)     retval+='0;91m' ;;
+                            light_green)   retval+='0;92m' ;;
+                            light_yellow)  retval+='0;93m' ;;
+                            light_blue)    retval+='0;94m' ;;
+                            light_magenta) retval+='0;95m' ;;
+                            light_cyan)    retval+='0;96m' ;;
+                        esac
+                    fi
+                    ;;
+                bold)
+                    case "$color" in
+                        black)  retval+='1;30m' ;;
+                        red)    retval+='1;31m' ;;
+                        green)  retval+='1;32m' ;;
+                        yellow) retval+='1;33m' ;;
+                        blue)   retval+='1;34m' ;;
+                        purple) retval+='1;35m' ;;
+                        cyan)   retval+='1;36m' ;;
+                        white)  retval+='1;37m' ;;
+                    esac
+                    ;;
+                underline)
+                    case "$color" in
+                        black)  retval+='4;30m' ;;
+                        red)    retval+='4;31m' ;;
+                        green)  retval+='4;32m' ;;
+                        yellow) retval+='4;33m' ;;
+                        blue)   retval+='4;34m' ;;
+                        purple) retval+='4;35m' ;;
+                        cyan)   retval+='4;36m' ;;
+                        white)  retval+='4;37m' ;;
+                    esac
+                    ;;
+                background)
+                    case "$color" in
+                        black)  retval+='40m' ;;
+                        red)    retval+='41m' ;;
+                        green)  retval+='42m' ;;
+                        yellow) retval+='43m' ;;
+                        blue)   retval+='44m' ;;
+                        purple) retval+='45m' ;;
+                        cyan)   retval+='46m' ;;
+                        white)  retval+='47m' ;;
+                    esac
+                    if [ "$TERM" = "xterm-256color" ] ; then
+                        case "$color" in
+                            gray*)
+                                graynr=${color#gray}  # grey colors from dark (232) to light (255)
+                                if [ $graynr -ge 232 ] && [ $graynr -le 255 ] ; then
+                                    retval+="48;5;$graynr"m
+                                fi
+                                ;;
+                        esac
+
+                    fi
+                    if [ "$bright" = "yes" ] ; then
+                        case "$color" in
+                            dark_gray)     retval+='100m' ;;
+                            light_red)     retval+='101m' ;;
+                            light_green)   retval+='102m' ;;
+                            light_yellow)  retval+='103m' ;;
+                            light_blue)    retval+='104m' ;;
+                            light_magenta) retval+='105m' ;;
+                            light_cyan)    retval+='106m' ;;
+                        esac
+                    fi
+                    ;;
+            esac
+            ;;
+    esac
+
+
+    printf "$retval"
+}
+
+Color "$@"
+
+
+
+
+
+
+
+if [ 0 -eq 1 ] ; then
+
+    if [ 0 -eq 1 ] ; then
+        # See: man tput, man terminfo
+        export BLUE=$(    tput setaf 4)
+        export YELLOW=$(  tput setaf 3)
+        export BOLD_ON=$( tput bold)
+        export ALL_OFF=$( tput sgr0)
+    fi
+
+    _ColAttr() {
+        case "$1" in
+            re|regular)
+                printf "regular" ;;
+            bd|bold)
+                printf "bold" ;;
+            bg|background)
+                printf "background" ;;
+            ul|underline)
+                printf "underline" ;;
+        esac
+    }
+
+    Col() {
+        # token examples:
+        #       white:ul red:bg :
+        #       white cyan:bg :
+    
+        local xx
+        for xx in "$@" ; do
+            case "$xx" in
+                ":")   Color normal ;;
+                *":")  Color ${xx%:*} ;;
+                ":"*)  Color $(_ColAttr ${xx#*:}) ;;
+                *":"*) Color ${xx%:*} $(_ColAttr ${xx#*:}) ;;
+                *)     Color ${xx}  ;;
+            esac
+        done
+}
+
+fi
