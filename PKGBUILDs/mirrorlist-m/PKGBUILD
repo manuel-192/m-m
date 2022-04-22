@@ -4,10 +4,10 @@ pkgname=mirrorlist-m
 pkgdesc="A mirror list for Manuel's packages at github."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=6
-pkgrel=1
+pkgrel=2
 arch=(any)
 license=(GPL)
-depends=(pacman)
+#depends=(pacman)
 source=(
     $pkgname
 )
