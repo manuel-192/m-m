@@ -1,0 +1,21 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=pactree-bash-completion
+pkgdesc="Bash completion for pactree"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=22.04.23                                                              # yy.mm.dd
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('bae02dc190539407f7429b18b15796a3a7b733898a090302600216d114623eb8f9875c6b9360b2525dba6e441b6e6f799c93d7ba92437d8759c6c62536de9426')
+
+package() {
+  install -Dm644 $pkgname    $pkgdir/usr/share/bash-completion/completions/${pkgname%-bash-completion}
+}
