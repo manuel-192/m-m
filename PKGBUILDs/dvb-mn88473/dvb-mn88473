@@ -16,8 +16,7 @@ od_line() {
 
 fetch_driver() {
     local driver_file=""
-    #local driver_url=$(wget -q -O- --user-agent="" http://www.astrometa.com.tw/integrated_en.html | grep "Driver for Windows 10" | sed -e 's|.*</a><a href="||' -e 's|?dl=.*||')
-    local driver_url=$(curl -Lsm 10 -o- --user-agent "" http://www.astrometa.com.tw/integrated_en.html | grep "Driver for Windows 10" | sed -e 's|.*</a><a href="||' -e 's|?dl=.*||')
+    local driver_url=$(curl -Lsm 10 -o- --user-agent "" http://www.astrometa.com.tw/integrated_en.html | grep "Certified Driver for Windows" | sed -e 's|.*<a href="||' -e 's|?dl=.*||')
     [ -n "$driver_url" ] || DIE "fetching astrometa info failed."
     driver_file=$(basename "$driver_url")
 
@@ -45,8 +44,8 @@ Main()
     local firmware="$1"
     [ -n "$firmware" ] || DIE "give firmware file name"
 
-    local new_fw="$PWD/$firmware".new
     local current_fw="$PWD/$firmware"
+    local new_fw="$current_fw".new
     local lib="/usr/lib/firmware/$firmware"
 
     local searchline=$(od_line "$current_fw")
@@ -69,7 +68,7 @@ Main()
         echo "====> No update."
     else
         echo "====> Updated firmware found, please update PKGBUILD."
-        rm -f "$current_fw"
+        mv "$current_fw" "$current_fw".$(date +%Y%m%d-%H%M)
         mv "$new_fw" "$current_fw"
     fi
 }
