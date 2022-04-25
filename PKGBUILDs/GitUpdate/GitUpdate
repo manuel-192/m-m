@@ -97,7 +97,7 @@ CheckDiff() {
     local excludes=""
     CreateExcludes
 
-    diff "$srcdir" "$dstdir" $excludes >/dev/null
+    diff "$srcdir" "$dstdir" $excludes > $file_x86_64_diff
     diff_x86_64=$?
     case "$diff_x86_64" in
         2) DIE "'diff $srcdir $dstdir' failed." ;;
@@ -105,7 +105,7 @@ CheckDiff() {
 
     # ARM news check!
     if [ "$reponame" = "endeavouros" ] ; then
-        ArmPkgCheck check
+        ArmPkgCheck check $file_arm_diff
         diff_arm=$?
         case "$diff_arm" in
             2) DIE "ArmPkgCheck check failed." ;;
@@ -208,10 +208,27 @@ Main()
     local statefile=""
     local diff_x86_64=0                     # 1 = has updates
     local diff_arm=0                        # 1 = has updates
+    local file_arm_diff=/tmp/diffs_arm.txt
+    local file_x86_64_diff=/tmp/diffs_x86_64.txt
 
     CheckDiff
 
+    if [ $diff_x86_64 -ne 0 ] ; then
+        echo2 "==> x86_64 diffs:"
+        cat $file_x86_64_diff >&2
+    fi
+    if [ $diff_arm -ne 0 ] ; then
+        echo2 "==> ARM diffs:"
+        cat $file_arm_diff >&2
+    fi
+
     if [ $diff_x86_64 -ne 0 ] || [ $diff_arm -ne 0 ] ; then
+        printf2 "\nChanges detected and shown above.\nWill replace local assets after 'git pull', then sync all to github.\n\n"
+        read2 -p "Continue (Y/n)? "
+        case "$REPLY" in
+            [nN]*) DIE "aborted!";;
+        esac
+
         # x86_64 always should have a commit message, but Arm may not have it.
         if [ -z "$commit_msg" ] && [ $diff_arm -ne 0 ] ; then
             read2 -p "A commit message for ARM changes is required. Get it automatically (Y/n)? "
@@ -229,9 +246,12 @@ Main()
                     ;;
             esac
         fi
-
-        echo2 ""
-        echo "Changes detected. Will replace local assets after 'git pull', then sync all to github."
+        if [ -z "$commit_msg" ] ; then
+            read2 -p "Commit message is still empty. Give it now: " commit_msg
+        fi
+        if [ -z "$commit_msg" ] ; then
+            DIE "cannot continue without a commit message!"
+        fi
 
         cd "$gitdir"
         RunOnlyIfAllowed "git pull"
