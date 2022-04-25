@@ -105,10 +105,10 @@ CheckDiff() {
 
     # ARM news check!
     if [ "$reponame" = "endeavouros" ] ; then
-        $ArmPkgCheck check
+        ArmPkgCheck check
         diff_arm=$?
         case "$diff_arm" in
-            2) DIE "$ArmPkgCheck check failed." ;;
+            2) DIE "ArmPkgCheck check failed." ;;
         esac
     fi
 }
@@ -117,7 +117,7 @@ ReplaceAssets() {
     case "$reponame" in
         endeavouros)
             if [ $diff_arm -eq 1 ] ; then
-                $ArmPkgCheck copy || DIE "$ArmPkgCheck copy failed."
+                ArmPkgCheck copy || DIE "ArmPkgCheck copy failed."
             fi
             if [ $diff_x86_64 -eq 1 ] ; then
                 rm -f "$dstdir"/*.{db,files,sig,xz,zst}
@@ -208,21 +208,25 @@ Main()
     local statefile=""
     local diff_x86_64=0                     # 1 = has updates
     local diff_arm=0                        # 1 = has updates
-    local ArmPkgCheck=/usr/bin/ArmPkgCheck
-
-    if [ "$reponame" = "endeavouros" ] ; then
-        [ -x $ArmPkgCheck ] || DIE "$ArmPkgCheck not found."
-    fi
 
     CheckDiff
 
     if [ $diff_x86_64 -ne 0 ] || [ $diff_arm -ne 0 ] ; then
         # x86_64 always should have a commit message, but Arm may not have it.
         if [ -z "$commit_msg" ] && [ $diff_arm -ne 0 ] ; then
-            read -p "A commit message for ARM changes is required. Get it automatically (Y/n)? " >&2
+            read2 -p "A commit message for ARM changes is required. Get it automatically (Y/n)? "
             case "$REPLY" in
-                [Yy]* | "") commit_msg=$(GetArmCommitMessage) ;;
-                *)          DIE "no commit message for ARM changes." ;;
+                [Yy]* | "")
+                    commit_msg=$(GetArmCommitMessage)
+                    printf2 "==> Commit message:\n    %s\n" "$commit_msg"
+                    read2 -p "OK to continue (Y/n)? "
+                    case "$REPLY" in
+                        [nN]*) DIE "aborted!" ;;
+                    esac
+                    ;;
+                *)
+                    DIE "no commit message for ARM changes."
+                    ;;
             esac
         fi
 
