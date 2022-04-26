@@ -4,10 +4,13 @@
 pkgname=m-common
 pkgdesc="Some common apps and libs."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.0.1
+pkgver=1.0.2
 pkgrel=1
 arch=('any')
 license=('GPL')
+depends=(
+    bat    # for AA
+)
 
 source=(
     $url/AA
