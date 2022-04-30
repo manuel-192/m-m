@@ -19,6 +19,9 @@ _date() {
 StateUpdate() {
     local statefile=state
     local stateval="$(head -n 1 $statefile)"
+    if [ -n "$(echo "$stateval" | awk '{print $2}')" ] ; then
+        DIE "file $PWD/state file is corrupted!"
+    fi
     #Random ID generator, because the incrementing value is predictable
     local NEW_UUID="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
 
@@ -255,8 +258,8 @@ Main()
 
         cd "$gitdir"
         RunOnlyIfAllowed "git pull"
-        ReplaceAssets
         MirrorStateUpdate
+        ReplaceAssets
         GitUpdate "$commit_msg"
     else
         echo2 "No changes."
