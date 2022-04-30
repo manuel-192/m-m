@@ -52,7 +52,7 @@ Main()
     for adir in "${armDirs[@]}" ; do
         case "$op" in
             check)
-                diff "$armDir/$adir" "$releaseDir/$adir" > $diff_file
+                LANG=C diff "$armDir/$adir" "$releaseDir/$adir" > $diff_file
                 case "$?" in
                     1) retval=1 ; printf "%s:\n  %s\n" "$adir" "$git_pull_log" >&2 ;;
                     2) DIE "'diff $armDir/$adir $releaseDir/$adir' failed." ;;

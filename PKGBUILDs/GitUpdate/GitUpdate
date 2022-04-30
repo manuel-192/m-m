@@ -100,7 +100,7 @@ CheckDiff() {
     local excludes=""
     CreateExcludes
 
-    diff "$srcdir" "$dstdir" $excludes > $file_x86_64_diff
+    LANG=C diff "$srcdir" "$dstdir" $excludes > $file_x86_64_diff
     diff_x86_64=$?
     case "$diff_x86_64" in
         2) DIE "'diff $srcdir $dstdir' failed." ;;
