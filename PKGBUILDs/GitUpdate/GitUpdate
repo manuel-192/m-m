@@ -259,7 +259,7 @@ Main()
         cd "$gitdir"
         RunOnlyIfAllowed "git pull"
         case "$reponame" in
-            endeavouros) MirrorStateUpdate ;;
+            endeavouros) [ $diff_x86_64 -ne 0 ] && MirrorStateUpdate ;;
         esac
         ReplaceAssets
         GitUpdate "$commit_msg"
