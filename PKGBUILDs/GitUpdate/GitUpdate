@@ -258,7 +258,9 @@ Main()
 
         cd "$gitdir"
         RunOnlyIfAllowed "git pull"
-        MirrorStateUpdate
+        case "$reponame" in
+            endeavouros) MirrorStateUpdate ;;
+        esac
         ReplaceAssets
         GitUpdate "$commit_msg"
     else
