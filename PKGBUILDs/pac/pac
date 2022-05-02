@@ -68,6 +68,44 @@ NoUpdates() {
     echo2 "No updates."
 }
 
+PacmanOptions() {
+    local opts
+
+    opts="$(/usr/bin/getopt -q -o=Syu --longoptions sync,refresh,sysupgrade --name "$progname" -- "$@")" || {
+        return 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -S | --sync)       o_sync=yes ;;
+            -y | --refresh)    o_refresh=yes  ;;
+            -u | --sysupgrade) o_sysupgrade=yes  ;;
+            --) shift ; break ;;
+        esac
+        shift
+    done
+}
+
+Pacman() {
+    local keyring="LANG=C pacman -Sy --needed --noconfirm archlinux-keyring"
+    local cmd
+
+    if [ -z "$1" ] ; then
+        cmd="$keyring && LANG=C pacman -Su && sync"
+    else
+        cmd="LANG=C pacman $* && sync"
+
+        local o_sync=no o_refresh=no o_sysupgrade=no
+        PacmanOptions "$@"
+        [ "$o_sync $o_sysupgrade" = "yes yes" ] && cmd="$keyring && $cmd"
+        
+    fi
+    echo "==> $cmd"
+    $EOS_ROOTER "$cmd"
+}
+
 PacmanWrapper() {
     local basename=/usr/bin/basename
     local progname="$($basename "$0")"
@@ -104,8 +142,7 @@ PacmanWrapper() {
                         "" | [Yy]*) exit 1 ;;
                     esac
                 }
-                echo2 "==> $($basename $pacman) $opts_pacman"
-                $EOS_ROOTER "$pacman $opts_pacman && $sync"
+                Pacman
             else
                 NoUpdates
             fi
@@ -115,7 +152,7 @@ PacmanWrapper() {
             for opt in "$@" ; do
                 case "$opt" in
                     --help)
-                        local pacman_help=$(LANG=C $pacman "$@" | $sed -e "s|pacman |$progname |")
+                        local pacman_help=$(LANG=C pacman "$@" | $sed -e "s|pacman |$progname |")
                         $cat <<EOF >&2
 $progname is a pacman wrapper.
 
@@ -162,18 +199,15 @@ EOF
             local errlog
             local retval
 
-            LANG=C $pacman "$@" 2> "$errfile"
+            LANG=C pacman "$@" 2> "$errfile"
             retval=$?
             errlog="$($cat "$errfile")"
             /usr/bin/rm -f "$errfile"
 
             case "$errlog" in
-                "$rooterr") $EOS_ROOTER "LANG=C $pacman $* && $sync"
-                            ;;
-                "")         return $retval
-                            ;;
-                *)          echo2 "$errlog" ; return $retval
-                            ;;
+                "$rooterr") Pacman "$@" ;;
+                "")         return $retval ;;
+                *)          echo2 "$errlog" ; return $retval ;;
             esac
             ;;
     esac
