@@ -99,7 +99,7 @@ Pacman() {
 
         local o_sync=no o_refresh=no o_sysupgrade=no
         PacmanOptions "$@"
-        [ "$o_sync $o_sysupgrade" = "yes yes" ] && cmd="$keyring && $cmd"
+        [ "$o_sync $o_refresh $o_sysupgrade" = "yes yes yes" ] && cmd="$keyring && $cmd"
         
     fi
     echo "==> $cmd"
