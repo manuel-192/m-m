@@ -99,7 +99,10 @@ Pacman() {
 
         local o_sync=no o_refresh=no o_sysupgrade=no
         PacmanOptions "$@"
-        [ "$o_sync $o_refresh $o_sysupgrade" = "yes yes yes" ] && cmd="$keyring && $cmd"
+        if [ "$o_sync $o_refresh $o_sysupgrade" = "yes yes yes" ] ; then
+            cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring does it
+            cmd="$keyring && $cmd"
+        fi
         
     fi
     echo "==> $cmd"
