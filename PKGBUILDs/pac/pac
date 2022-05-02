@@ -89,7 +89,7 @@ PacmanOptions() {
 }
 
 Pacman() {
-    local keyring="LANG=C pacman -Sy --needed --noconfirm archlinux-keyring"
+    local keyring="LANG=C pacman -Sy --needed --noconfirm archlinux-keyring >/dev/null"
     local cmd
 
     if [ -z "$1" ] ; then
