@@ -89,13 +89,14 @@ PacmanOptions() {
 }
 
 Pacman() {
-    local keyring="LANG=C pacman -Sy --needed --noconfirm archlinux-keyring >/dev/null"
+    local pkg=archlinux-keyring
+    local keyring="echo Checking $pkg ... ; pacman -Sy --needed --noconfirm $pkg >/dev/null"
     local cmd
 
     if [ -z "$1" ] ; then
-        cmd="$keyring && LANG=C pacman -Su && sync"
+        cmd="$keyring && pacman -Su && sync"
     else
-        cmd="LANG=C pacman $* && sync"
+        cmd="pacman $* && sync"
 
         local o_sync=no o_refresh=no o_sysupgrade=no
         PacmanOptions "$@"
@@ -106,7 +107,7 @@ Pacman() {
         
     fi
     echo "==> $cmd"
-    $EOS_ROOTER "$cmd"
+    LANG=C $EOS_ROOTER "$cmd"
 }
 
 PacmanWrapper() {
