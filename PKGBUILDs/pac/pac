@@ -90,19 +90,29 @@ PacmanOptions() {
 
 Pacman() {
     local pkg=archlinux-keyring
-    local keyring="echo Checking $pkg ... ; pacman -Sy --needed --noconfirm $pkg >/dev/null"
+    local keyring=""
     local cmd
 
+    if [ "$EOS_UPDATE_ARCH_KEYRING_FIRST" = "yes" ] ; then
+        keyring="echo Checking $pkg ... ; pacman -Sy --needed --noconfirm $pkg >/dev/null && "
+    fi
+
     if [ -z "$1" ] ; then
-        cmd="$keyring && pacman -Su && sync"
+        if [ -n "$keyring" ] ; then
+            cmd="${keyring}pacman -Su && sync"
+        else
+            cmd="pacman -Syu && sync"
+        fi
     else
         cmd="pacman $* && sync"
 
         local o_sync=no o_refresh=no o_sysupgrade=no
         PacmanOptions "$@"
         if [ "$o_sync $o_refresh $o_sysupgrade" = "yes yes yes" ] ; then
-            cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring does it
-            cmd="$keyring && $cmd"
+            if [ -n "$keyring" ] ; then
+                cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring does it
+            fi
+            cmd="${keyring}$cmd"
         fi
         
     fi
