@@ -4,12 +4,12 @@
 pkgname=appdoc
 pkgdesc="Show app documentation from the internet or a local file, based on a local database."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.09.11
-pkgrel=2
+pkgver=2022.05.03
+pkgrel=1
 
 arch=('any')
 license=('GPL')
-depends=(bash yad bc eos-apps-info)
+depends=(bash bc eos-apps-info)
 backup=(etc/$pkgname.data)
 
 source=(
