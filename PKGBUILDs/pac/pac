@@ -89,33 +89,29 @@ PacmanOptions() {
 }
 
 Pacman() {
-    local pkg=archlinux-keyring
-    local keyring=""
+    local keyring_pkg=archlinux-keyring
+    local keyring_update_cmd="echo Checking $keyring_pkg ... ; pacman -Sy --needed --noconfirm $keyring_pkg >/dev/null && "
     local cmd
+    local arg args=() keyring=""
 
-    if [ "$EOS_UPDATE_ARCH_KEYRING_FIRST" = "yes" ] ; then
-        keyring="echo Checking $pkg ... ; pacman -Sy --needed --noconfirm $pkg >/dev/null && "
-    fi
+    for arg in "$@" ; do
+        case "$arg" in
+            $keyring_arg) keyring="$arg" ;;
+            *)            args+=("$arg") ;;
+        esac
+    done
 
-    if [ -z "$1" ] ; then
-        if [ -n "$keyring" ] ; then
-            cmd="${keyring}pacman -Su && sync"
-        else
-            cmd="pacman -Syu && sync"
-        fi
-    else
-        cmd="pacman $* && sync"
+    cmd="pacman ${args[*]} && sync"
 
+    if [ -n "$keyring" ] ; then
         local o_sync=no o_refresh=no o_sysupgrade=no
         PacmanOptions "$@"
         if [ "$o_sync $o_refresh $o_sysupgrade" = "yes yes yes" ] ; then
-            if [ -n "$keyring" ] ; then
-                cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring does it
-            fi
-            cmd="${keyring}$cmd"
+            cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring_update_cmd does it
+            cmd="${keyring_update_cmd}$cmd"
         fi
-        
     fi
+        
     echo "==> $cmd"
     LANG=C $EOS_ROOTER "$cmd"
 }
@@ -150,13 +146,14 @@ PacmanWrapper() {
 	    if [ -n "$updates" ] ; then
 		echo2 "$updates"
 		echo2 ""
-		$nvidia_checker "$(echo "$updates" | $awk '{print $1}')" || {
+                updates="$(echo "$updates" | awk '{print $1}')"
+		if ! $nvidia_checker "$updates" ; then
                     read -p "Stop upgrade (Y/n)? " >&2
                     case "$REPLY" in
                         "" | [Yy]*) exit 1 ;;
                     esac
-                }
-                Pacman
+                fi
+                Pacman -Syu $updates
             else
                 NoUpdates
             fi
