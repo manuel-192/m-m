@@ -197,6 +197,7 @@ GetArmCommitMessage() {
 Main()
 {
     local commit_msg="$1"
+    local commit_msg_arm=""
 
     [ -f .GitUpdate ] || DIE "no .GitUpdate file in folder $PWD"
     [ -d .git ]       || DIE "no .git folder in $PWD"
@@ -233,12 +234,15 @@ Main()
         esac
 
         # x86_64 always should have a commit message, but Arm may not have it.
-        if [ -z "$commit_msg" ] && [ $diff_arm -ne 0 ] ; then
+        if [ $diff_arm -ne 0 ] ; then
+            if [ -n "$commit_msg" ] ; then
+                echo2 "Current commit message: '$commit_msg'"
+            fi
             read2 -p "A commit message for ARM changes is required. Get it automatically (Y/n)? "
             case "$REPLY" in
                 [Yy]* | "")
-                    commit_msg=$(GetArmCommitMessage)
-                    printf2 "==> Commit message:\n    %s\n" "$commit_msg"
+                    commit_msg_arm="ARM: $(GetArmCommitMessage)"
+                    printf2 "==> Commit message for ARM:\n    %s\n" "$commit_msg_arm"
                     read2 -p "OK to continue (Y/n)? "
                     case "$REPLY" in
                         [nN]*) DIE "aborted!" ;;
@@ -248,6 +252,11 @@ Main()
                     DIE "no commit message for ARM changes."
                     ;;
             esac
+            if [ -n "$commit_msg" ] ; then
+                commit_msg+=", $commit_msg_arm"
+            else
+                commit_msg="$commit_msg_arm"
+            fi
         fi
         if [ -z "$commit_msg" ] ; then
             read2 -p "Commit message is still empty. Give it now: " commit_msg
