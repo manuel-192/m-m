@@ -17,7 +17,8 @@ Popd()  { popd  "$@" >/dev/null || DIE "$FUNCNAME $* failed." ; }
 Main()
 {
     local op="$1"            # check or copy
-    local diff_file="$2"     # diff output file
+    local diff_file="$2"     # diff output file ; optional
+    local diff_opts="$3"     # options for the diff command; optional
     local progname=ArmPkgCheck
     local git_pull_log
 
@@ -52,7 +53,7 @@ Main()
     for adir in "${armDirs[@]}" ; do
         case "$op" in
             check)
-                LANG=C diff "$armDir/$adir" "$releaseDir/$adir" > $diff_file
+                LANG=C diff $diff_opts "$armDir/$adir" "$releaseDir/$adir" > $diff_file
                 case "$?" in
                     1) retval=1 ; printf "%s:\n  %s\n" "$adir" "$git_pull_log" >&2 ;;
                     2) DIE "'diff $armDir/$adir $releaseDir/$adir' failed." ;;
