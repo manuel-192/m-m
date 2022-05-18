@@ -89,7 +89,9 @@ cd() {
                     return 1
                 fi
                 newdir="$arg"                                       # this is where we want to go!
-                [ "${newdir: -1}" = "/" ] && newdir=${newdir:: -1}  # remove possible trailing slash
+                if [ "$newdir" != "/" ] && [ "${newdir: -1}" = "/" ] ; then
+                    newdir=${newdir:: -1}  # remove possible trailing slash
+                fi
                 ;;
         esac
     done
