@@ -1,0 +1,392 @@
+#!/bin/bash
+
+# Package builder for the EndeavourOS packages.
+# Requirements:
+#    paru
+
+# Common services
+pushd() { builtin pushd "$@" >/dev/null ; }
+popd()  { builtin popd  "$@" >/dev/null ; }
+cd()    { builtin cd "$@" || DIE "'cd $*' failed" ; }
+
+Message() {
+    local type="$1"
+    if [ "${MSG_ENABLE[$type]}" = "yes" ] ; then
+        shift
+        echo "==> $progname: $type: " "$@" >&2
+    fi
+}
+Info()  { Message info  "$@" ; }
+DebugLog() { Message debug "$@" 2>> "$debug_log" ; }
+
+Verbose() { return 1 ; }
+
+DIE() {
+    local msg="$1"                  # "required"
+    local exit_code="$2"            # optional
+    [ -n "$exit_code" ] || exit_code=1
+    Message error "$msg"
+    exit "$exit_code"
+}
+
+Options() {
+    local opts
+
+    opts="$(/usr/bin/getopt -o=c:dh --longoptions clean:,debug,help --name "$progname" -- "$@")" || {
+        Options --help
+        return 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -c | --clean)
+                wipe_time="$2"
+                shift
+                case "$wipe_time" in
+                    after | before | both) ;;
+                    *) DIE "sorry, values for option --clean: after before both" ;;
+                esac
+                ;;
+            -d | --debug)
+                MSG_ENABLE[debug]=yes
+                ;;
+
+            -h | --help)
+                cat <<EOF >&2
+Usage: $progname [options] params
+Options:
+  -c, --clean     Remove all local files at the given phase. Supported values: before after both.
+  -d, --debug     Create a log file for storing all available execution information.
+  -h, --help      This help.
+
+Examples:
+  $progname --help              # Shows this help.
+  $progname                     # Runs $progname normally.
+  $progname --clean before      # Removes local files before syncing with git, i.e. starts a fresh session.
+  $progname --clean both        # Removes local files before and after syncing with git.
+EOF
+                exit 0
+                ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+
+    DebugLog "Entering $FUNCNAME, params: $*"
+    DebugLog "Debug log file: $debug_log"
+}
+
+Main() {
+    # define "global" variables here
+
+    local progname="$(basename "$0")"  # program name for various things here
+    local specific_conf=assets.conf    # this file has all specific configurations
+    local debug_log=/tmp/${progname}-$(date +%s%N).debuglog
+
+    # variables for the $specific_conf
+    local PKGNAMES=()                  # names of packages to build
+    local REPONAME=""
+    local ARCHITECTURE=""
+    # local CLONE_URL_BASE=""
+    declare -A CLONE_URLS              # git URLs where stuff 'pkgrepo' and 'pkgbuilds' are synced
+    declare -A CLONE_FOLDERS
+    declare -A ASSET_PACKAGE_HOOKS
+
+    CLONE_URLS[pkgrepo]=""
+    CLONE_URLS[pkgbuilds]=""
+
+    # general stuff
+    declare -A MSG_ENABLE              # what output to show
+    local upgrades=0
+    local downgrades=0
+    local uptodates=0
+    Constructor1
+
+    source $specific_conf || return 1     # $specific_conf specifies all non-common details
+
+    ConfigChecks
+
+    declare -A VERSION_PKGBUILD_REPO VERSION_PKGBUILD_AUR
+
+    # clone_folders[pkgrepo]="$(GetCloneFolder pkgrepo)"
+    # clone_folders[pkgbuilds]="$(GetCloneFolder pkgbuilds)"
+    CLONE_FOLDERS[aur]="$REPONAME/AUR"
+
+    # options stuff
+    local wipe_time=""
+
+    # The workdir:
+    #  - local root folder that stores all git stuff
+    #  - takes lots of space (several gigabytes)
+    #  - a permanent place is fast
+    #  - a temporary place is *much* slower
+    #
+    local workdir="$HOME/.tmp.$progname"
+
+    Options "$@"
+
+    # now DebugLog is initialized properly
+    DebugLog "Entering $FUNCNAME, params: $*"
+
+    Constructor
+    Main2
+    Totals
+    Destructor
+}
+
+Totals() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    echo ""
+    echo "Up to date: $uptodates"
+    echo "Upgrades:   $upgrades"
+    echo "Downgrades: $downgrades"
+}
+
+MustHaveValue() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    if [ -z "$1" ] ; then
+        DIE "file $(basename ${BASH_SOURCE[1]}), line ${BASH_LINENO[0]}: check failed"
+    fi
+}
+
+Main2() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    # we are in $workdir
+
+    SyncLatestStuff
+
+    # Now $workdir has the latest git versions of stuff in folders like
+    #    repo
+    #    PKGBUILDS
+    #    AUR
+
+    # Compare versions in PKGBUILDs (PKGBUILDS and AUR) with versions of repo packages
+    local pkgdef pkgdirname pkgname PKGBUILD
+    local ver_pkgbuild ver_pkg
+    local hook
+    
+    # get PKGBUILD versions of repo and AUR packages
+    for pkgdef in "${PKGNAMES[@]}" ; do
+        hook=""
+        case "$pkgdef" in
+            aur/* | */aur)
+                case "$pkgdef" in
+                    aur/*) pkgdirname="${pkgdef:4}" ;;
+                    */aur) pkgdirname="${pkgdef:: -4}" ;;
+                esac
+                PKGBUILD="${CLONE_FOLDERS[aur]}/$pkgdirname/PKGBUILD"
+                MustHaveValue "$PKGBUILD"
+                ;;
+            *)
+                pkgdirname="$pkgdef"
+                PKGBUILD="${CLONE_FOLDERS[pkgbuilds]}/$pkgdirname/PKGBUILD"
+                MustHaveValue "$PKGBUILD"
+                ;;
+        esac
+        hook="${ASSET_PACKAGE_HOOKS[$pkgdirname]}"
+        [ -n "$hook" ] && $hook "$PKGBUILD"
+
+        ver_pkgbuild=$(Get_PKGBUILD_version "$PKGBUILD")
+        MustHaveValue "$ver_pkgbuild"
+        pkgname=$(     ExtractPBvar pkgname "$PKGBUILD")   # pkgname != pkgdirname (necessarily)
+        MustHaveValue "$pkgname"
+
+        if [ -n "$ARCHITECTURE" ] ; then
+            ver_pkg=$(Get_pkg_version "${CLONE_FOLDERS[pkgrepo]}/$REPONAME/$ARCHITECTURE/$pkgname")
+        else
+            ver_pkg=$(Get_pkg_version "${CLONE_FOLDERS[pkgrepo]}/$pkgname")
+        fi
+        MustHaveValue "$ver_pkg"
+        CompareResult
+    done
+}
+
+WipeLocals() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    cd
+    rm -rf "$workdir"
+}
+
+Constructor1() {
+    # DebugLog "Entering $FUNCNAME, params: $*"   # DebugLog not ready yet...
+    MSG_ENABLE[debug]=no
+    MSG_ENABLE[error]=yes
+    MSG_ENABLE[info]=yes
+}
+
+Constructor() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    case "$wipe_time" in
+        before | both) WipeLocals ;;
+    esac
+    mkdir -p "$workdir"
+    cd "$workdir"
+    DebugLog "cd $workdir"
+}
+
+Destructor() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    case "$wipe_time" in
+        after | both) WipeLocals ;;
+    esac
+}
+
+ExtractPBvar() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    local what="$1"
+    local PKGBUILD="$2"
+    source "$PKGBUILD" || return 1
+    echo "${!what}"
+}
+
+Get_PKGBUILD_version() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    local PKGBUILD="$1"
+    source "$PKGBUILD"
+    echo "${pkgver}-$pkgrel"
+}
+
+Get_pkg_version() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    local pkg="$1"     # e.g. $path/paper-icon-theme from $path/paper-icon-theme-1.5.0.832.aa3e8af-1-any.pkg.tar.zst
+    local candis
+    readarray -t candis <<< $(ls -1 "$pkg"*.{zst,xz} 2>/dev/null | sort -Vr)
+    case "${#candis[@]}" in
+        0) return 1 ;;
+        1) candis="${candis[0]}" ;;
+        *) candis="${candis[0]}" ;;    # TODO: check is this fails ever (e.g. different packages with the same head)
+    esac
+    local version=$(echo "${candis#${pkg}-}" | sed 's|\([^-]*\)-\([^-]*\).*|\1-\2|')
+    echo "$version"    # pkgver-pkgrel
+}
+
+CompareResult() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    local result=$(vercmp "$ver_pkgbuild" "$ver_pkg")
+    if [ $result -eq 0 ] ; then
+        result="OK ($ver_pkg)"
+        ((uptodates++))
+    elif [ $result -lt 0 ] ; then
+        result="DOWNGRADE ($ver_pkg ==> $ver_pkgbuild)"
+        ((downgrades++))
+    else
+        result="UPGRADE ($ver_pkg ==> $ver_pkgbuild)"
+        ((upgrades++))
+    fi
+    printf "%-40s: %s\n" "$pkgdirname" "$result" >&2
+}
+
+ConfigChecks() {
+    # DebugLog "Entering $FUNCNAME, params: $*"
+    local varname url folderspec
+    local type
+
+    for type in pkgrepo pkgbuilds
+    do
+        url="${CLONE_URLS[$type]}"
+        if [ "${url: -4}" != ".git" ] ; then
+            DIE "$specific_conf: value '$url' in 'CLONE_URLS' has no .git suffix"
+        fi
+        folderspec="${CLONE_FOLDERS[$type]}"
+        if [ -z "$folderspec" ] ; then
+            DIE "$specific_conf: 'CLONE_FOLDERS[$folderspec]' is empty"
+        fi
+    done
+    for varname in PKGNAMES REPONAME # ARCHITECTURE
+    do
+        [ -n "${!varname}" ] || DIE "$specific_conf does not set variable $varname"
+    done
+    case "$ARCHITECTURE" in
+        "" | x86_64 | aarch64 | armv7h) ;;
+        *) DIE "$specific_conf: unsupported ARCHITECTURE '$ARCHITECTURE'" ;;
+    esac
+}
+
+AURsync() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    # in: PKGNAMES array from $specific_conf
+    # out: updated AUR PKGBUILDs for packages under $workdir/$aur_root_folder
+
+    local aur_root_folder="$1"
+    local pkgname pkgdef
+    local in_aur=no
+
+    for pkgdef in "${PKGNAMES[@]}" ; do
+        case "$pkgdef" in
+            aur/*) pkgname="${pkgdef:4}" ;;
+            */aur) pkgname="${pkgdef:: -4}" ;;
+            *) continue ;;
+        esac
+        if [ "$in_aur" = "no" ] ; then
+            mkdir -p "$aur_root_folder"
+            pushd "$aur_root_folder"
+            in_aur=yes
+        fi
+        if [ -d "$pkgname" ] ; then
+            GitPull "$pkgname" "($aur_root_folder) "
+        else
+            DebugLog "Cloning AUR PKGBUILD of '$pkgname' ..."
+            /usr/bin/paru -Ga "$pkgname" || DIE "cloning AUR '$pkgname' failed"      # yay cannot be used because it never fails...
+        fi
+    done
+    if [ "$in_aur" = "yes" ] ; then
+        popd
+    fi
+}
+
+GitPull() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    local item="$1"
+    local extra="$2"    # optional
+    Verbose && Info "git pull: $extra$item"
+    pushd "$item"
+    git pull >/dev/null || DIE "'git pull' for '$item' failed"
+    popd
+}
+
+GitSync() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    local url="$1"
+    local folder="$2"
+    local parent=""
+    local dir_changed=no
+
+    case "$folder" in
+        ?*/?*)
+            if [ "$(basename "$url" .git)" != "$REPONAME" ] ; then
+                parent="${folder%/*}"              # dirname
+                folder="${folder##*/}"             # basename
+                mkdir -p "$parent"
+                pushd "$parent"
+                dir_changed=yes
+            fi
+            ;;
+    esac
+
+    if [ -d "$folder" ] ; then
+        GitPull "$folder"
+    else
+        DebugLog "Running git clone $url"
+        git clone "$url" || DIE "'git clone $url' failed"
+    fi
+    [ "$dir_changed" = "yes" ] && popd
+}
+
+SyncLatestStuff() {
+    DebugLog "Entering $FUNCNAME, params: $*"
+    # syncs all git stuff
+    # in: CLONE_URLS clone_folders
+
+    local ix
+    for ix in pkgrepo pkgbuilds ; do
+        GitSync "${CLONE_URLS[$ix]}" "${CLONE_FOLDERS[$ix]}"
+    done
+
+    AURsync "${CLONE_FOLDERS[aur]}"
+}
+
+
+Main "$@"
