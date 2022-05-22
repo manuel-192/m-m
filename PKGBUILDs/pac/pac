@@ -122,7 +122,7 @@ PacmanWrapper() {
 
     [ $(id -u) -eq 0 ] && DIE "please don't run this as root!"
 
-    source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad --limit-icons || return 1
     source /etc/eos-pac.conf || return 1
 
     local awk=/usr/bin/awk
