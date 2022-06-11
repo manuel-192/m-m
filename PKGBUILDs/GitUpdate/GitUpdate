@@ -107,7 +107,7 @@ CheckDiff() {
     esac
 
     # ARM news check!
-    if [ "$reponame" = "endeavouros" ] ; then
+    if [ "$reponame" = "endeavouros" ] && [ "$handle_also_arm" = "yes" ] ; then
         ArmPkgCheck check $file_arm_diff
         diff_arm=$?
         case "$diff_arm" in
@@ -196,6 +196,7 @@ GetArmCommitMessage() {
 
 Main()
 {
+    local handle_also_arm=yes          # yes or no; will be no later
     local commit_msg="$1"
     local commit_msg_arm=""
 
