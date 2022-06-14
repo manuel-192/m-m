@@ -196,7 +196,7 @@ GetArmCommitMessage() {
 
 Main()
 {
-    local handle_also_arm=yes          # yes or no; will be no later
+    local handle_also_arm=no          # yes or no; will be no later
     local commit_msg="$1"
     local commit_msg_arm=""
 
