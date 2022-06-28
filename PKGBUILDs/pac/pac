@@ -131,13 +131,18 @@ PacmanWrapper() {
     local checkupdates=/usr/bin/checkupdates
     local column=/usr/bin/column
     local sync=/usr/bin/sync
-    local yay=/usr/bin/yay
     local cat=/usr/bin/cat
     local opts_pacman="-Syu"
-    local opts_yay="-Syu --nocombinedupgrade"
     local updates
     local nvidia_checker=/usr/bin/eos-kernel-nvidia-update-check
     local retcode=0
+    local opts_aur_helper="-Syu --nocombinedupgrade"
+    local aur_helper
+
+    for aur_helper in /usr/bin/{paru,yay} ; do
+        [ -x $aur_helper ] && break
+    done
+    [ -x $aur_helper ] || DIE "no AUR helper"
 
     case "$1" in
         "")
@@ -193,10 +198,10 @@ EOF
                         ;;
                     --aur)
                         CheckConnection
-                        if [ -n "$($yay -Qua)" ] || ($checkupdates) ; then
+                        if [ -n "$($aur_helper -Qua)" ] || ($checkupdates) ; then
                             echo2 "==> option $opt detected, ignoring other options and parameters."
-                            echo2 "==> $($basename $yay) $opts_yay"
-                            $yay $opts_yay && $sync
+                            echo2 "==> $($basename $aur_helper) $opts_aur_helper"
+                            $aur_helper $opts_aur_helper && $sync
                         else
                             NoUpdates
                         fi
