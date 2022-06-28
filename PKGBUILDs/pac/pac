@@ -89,31 +89,51 @@ PacmanOptions() {
 }
 
 Pacman() {
-    local keyring_pkg=archlinux-keyring
-    local keyring_update_cmd="echo Checking $keyring_pkg ... ; pacman -Sy --needed --noconfirm $keyring_pkg >/dev/null && "
     local cmd
-    local arg args=() keyring=""
+    local arg args=() keyring=()
 
-    for arg in "$@" ; do
-        case "$arg" in
-            $keyring_arg) keyring="$arg" ;;
-            *)            args+=("$arg") ;;
-        esac
-    done
-
+    if [ "$EOS_CHECK_KEYRING" = "yes" ] ; then
+        for arg in "$@" ; do
+            case "$arg" in
+                archlinux-keyring | endeavouros-keyring)
+                    keyring+=($arg) ;;
+                *)
+                    args+=("$arg") ;;
+            esac
+        done
+    else
+        args=("$@")
+    fi
+    
     cmd="pacman ${args[*]} && sync"
 
-    if [ -n "$keyring" ] ; then
+    if [ ${#keyring} -gt 0 ] ; then
         local o_sync=no o_refresh=no o_sysupgrade=no
         PacmanOptions "$@"
         if [ "$o_sync $o_refresh $o_sysupgrade" = "yes yes yes" ] ; then
-            cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring_update_cmd does it
-            cmd="${keyring_update_cmd}$cmd"
+            cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring_update_cmd below does it
         fi
+        local keyring_update_cmd="echo Checking pkgs: ${keyring[*]} ... ; pacman -Sy --needed --noconfirm ${keyring[*]} >/dev/null && "
+        cmd="${keyring_update_cmd}$cmd"
     fi
         
     echo "==> $cmd"
     LANG=C $EOS_ROOTER "$cmd"
+}
+
+LockCheck() {
+    local lck=/var/lib/pacman/db.lck
+    if [ -e $lck ] ; then
+        echo2 "Pacman lock file $lck exists which means either another process is currently checking updates,"
+        echo2 "or the file is only a leftover of a failed attempt."
+        echo2 "If it is the latter, you may delete the file."
+
+        read -p "Delete $lck now (y/N)? " >&2
+        case "$REPLY" in
+            [yY]*) sudo rm -f $lck ;;
+            *) exit 0 ;;
+        esac
+    fi
 }
 
 PacmanWrapper() {
@@ -123,7 +143,16 @@ PacmanWrapper() {
     [ $(id -u) -eq 0 ] && DIE "please don't run this as root!"
 
     source /usr/share/endeavouros/scripts/eos-script-lib-yad --limit-icons || return 1
+
+    local EOS_USE_CONNECTION_CHECK=yes
+    local EOS_PAC_AUR_HELPER_OPTS="-Syu --nocombinedupgrade"
+    local EOS_PAC_AUR_HELPERS=(/usr/bin/yay /usr/bin/paru)
+    local EOS_CHECK_NVIDIA=yes              # yes only if Nvidia driver is used
+    local EOS_CHECK_KEYRING=yes
+
     source /etc/eos-pac.conf || return 1
+
+    LockCheck
 
     local awk=/usr/bin/awk
     local sed=/usr/bin/sed
@@ -136,13 +165,18 @@ PacmanWrapper() {
     local updates
     local nvidia_checker=/usr/bin/eos-kernel-nvidia-update-check
     local retcode=0
-    local opts_aur_helper="-Syu --nocombinedupgrade"
     local aur_helper
 
-    for aur_helper in /usr/bin/{paru,yay} ; do
-        [ -x $aur_helper ] && break
+    if [ "$EOS_CHECK_NVIDIA" = "yes" ] ; then
+        lsmod|grep nvidia && EOS_CHECK_NVIDIA=yes || EOS_CHECK_NVIDIA=no
+    fi
+
+    while true ; do
+        for aur_helper in "${EOS_PAC_AUR_HELPERS[@]}" ; do
+            [ -x $aur_helper ] && break 2
+        done
+        DIE "no AUR helper"
     done
-    [ -x $aur_helper ] || DIE "no AUR helper"
 
     case "$1" in
         "")
@@ -154,11 +188,13 @@ PacmanWrapper() {
 		   echo2 "$updates"
 		   echo2 ""
                    updates="$(echo "$updates" | awk '{print $1}')"
-		   if ! $nvidia_checker "$updates" ; then
-                       read -p "Stop upgrade (Y/n)? " >&2
-                       case "$REPLY" in
-                           "" | [Yy]*) exit 1 ;;
-                       esac
+                   if [ "$EOS_CHECK_NVIDIA" = "yes" ] ; then
+		       if ! $nvidia_checker "$updates" ; then
+                           read -p "Stop upgrade (Y/n)? " >&2
+                           case "$REPLY" in
+                               "" | [Yy]*) exit 1 ;;
+                           esac
+                       fi
                    fi
                    Pacman -Syu $updates
                    ;;
@@ -202,8 +238,8 @@ EOF
                             if [ -n "$2" ] ; then
                                 echo2 "==> option $opt detected, ignoring other options and parameters."
                             fi
-                            echo2 "==> $($basename $aur_helper) $opts_aur_helper"
-                            $aur_helper $opts_aur_helper && $sync
+                            echo2 "==> $($basename $aur_helper) $EOS_PAC_AUR_HELPER_OPTS"
+                            $aur_helper $EOS_PAC_AUR_HELPER_OPTS && $sync
                         else
                             NoUpdates
                         fi
