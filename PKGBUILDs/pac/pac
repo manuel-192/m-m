@@ -199,7 +199,9 @@ EOF
                     --aur)
                         CheckConnection
                         if [ -n "$($aur_helper -Qua)" ] || ($checkupdates) ; then
-                            echo2 "==> option $opt detected, ignoring other options and parameters."
+                            if [ -n "$2" ] ; then
+                                echo2 "==> option $opt detected, ignoring other options and parameters."
+                            fi
                             echo2 "==> $($basename $aur_helper) $opts_aur_helper"
                             $aur_helper $opts_aur_helper && $sync
                         else
