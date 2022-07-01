@@ -168,7 +168,7 @@ PacmanWrapper() {
     local aur_helper
 
     if [ "$EOS_CHECK_NVIDIA" = "yes" ] ; then
-        lsmod|grep nvidia && EOS_CHECK_NVIDIA=yes || EOS_CHECK_NVIDIA=no
+        lsmod|grep nvidia >/dev/null && EOS_CHECK_NVIDIA=yes || EOS_CHECK_NVIDIA=no
     fi
 
     while true ; do
