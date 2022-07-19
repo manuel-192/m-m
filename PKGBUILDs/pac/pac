@@ -177,6 +177,7 @@ PacmanWrapper() {
         done
         echo2 "==> Info: no AUR helper found."
         aur_helper=""
+        break
     done
 
     case "$1" in
