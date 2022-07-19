@@ -175,7 +175,8 @@ PacmanWrapper() {
         for aur_helper in "${EOS_PAC_AUR_HELPERS[@]}" ; do
             [ -x $aur_helper ] && break 2
         done
-        DIE "no AUR helper"
+        echo2 "==> Info: no AUR helper found."
+        aur_helper=""
     done
 
     case "$1" in
@@ -234,12 +235,18 @@ EOF
                         ;;
                     --aur)
                         CheckConnection
-                        if [ -n "$($aur_helper -Qua)" ] || ($checkupdates) ; then
+                        if [ -n "$aur_helper" ] && [ -n "$($aur_helper -Qua)" ] || ($checkupdates) ; then
                             if [ -n "$2" ] ; then
                                 echo2 "==> option $opt detected, ignoring other options and parameters."
                             fi
-                            echo2 "==> $($basename $aur_helper) $EOS_PAC_AUR_HELPER_OPTS"
-                            $aur_helper $EOS_PAC_AUR_HELPER_OPTS && $sync
+                            if [ -n "$aur_helper" ] ; then
+                                echo2 "==> $($basename $aur_helper) $EOS_PAC_AUR_HELPER_OPTS"
+                                $aur_helper $EOS_PAC_AUR_HELPER_OPTS && $sync
+                            else
+                                aur_helper="sudo pacman -Syu"
+                                echo2 "==> $aur_helper"
+                                $aur_helper && $sync
+                            fi
                         else
                             NoUpdates
                         fi
