@@ -138,6 +138,9 @@ LockCheck() {
             echo2 "Pacman lock file $lck exists but not used by another process."
             echo2 "Deleting $lck now:"
             sudo rm -i $lck
+            if [ -e $lck ] ; then
+                exit 1
+            fi
             echo2 "Checking for updates:"
         fi
     fi
