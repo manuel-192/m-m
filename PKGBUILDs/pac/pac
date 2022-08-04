@@ -121,18 +121,25 @@ Pacman() {
     LANG=C $EOS_ROOTER "$cmd"
 }
 
+Indent() {
+    sed 's|^|   |'
+}
+
 LockCheck() {
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
-        echo2 "Pacman lock file $lck exists which means either another process is currently checking updates,"
-        echo2 "or the file is only a leftover of a failed attempt."
-        echo2 "If it is the latter, you may delete the file."
-
-        read -p "Delete $lck now (y/N)? " >&2
-        case "$REPLY" in
-            [yY]*) sudo rm -f $lck ;;
-            *) exit 0 ;;
-        esac
+        local pid=$(LANG=C fuser "$lck" | awk '{print $NF}')
+        if [ -n "$pid" ] ; then
+            echo2 "Pacman lock file $lck is currently in use by another process:"
+            ps -ef | grep -w "$pid" | grep -v "grep -w $pid" | Indent
+            echo2 "Please wait until the process has ended (or kill that process if you can)."
+            exit 1
+        else
+            echo2 "Pacman lock file $lck exists but not used by another process."
+            echo2 "Deleting $lck now:"
+            sudo rm -i $lck
+            echo2 "Checking for updates:"
+        fi
     fi
 }
 
