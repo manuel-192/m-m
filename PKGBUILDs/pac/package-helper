@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# Helper for package managers.
+#
+# On update, check
+#   - nvidia/kernel updates
+#   - keyrings
+#
+# Tip: add these functions to your ~/.bashrc:
+#    yay()    { package-helper $FUNCNAME "$@" ; }
+#    paru()   { package-helper $FUNCNAME "$@" ; }
+#    pacman() { package-helper $FUNCNAME "$@" ; }
+#    pac()    { pacman "$@" ; }
+
+
+DIE() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+Pacman() {
+    local rooterr="error: you cannot perform this operation unless you are root."
+    local errfile=$(mktemp)
+    local errlog
+    local retval
+
+    LANG=C /usr/bin/pacman "$@" 2> "$errfile"
+    retval=$?
+    errlog="$(cat "$errfile")"
+    /usr/bin/rm -f "$errfile"
+
+    case "$errlog" in
+        "$rooterr") LANG=C su-c_wrapper bash -c "/usr/bin/pacman $*" ;;
+        "")         return $retval ;;
+        *)          echo2 "$errlog" ; return $retval ;;
+    esac
+}
+
+UpdateCheckKeyrings() {
+    local cmd1="/usr/bin/pacman -Sy --needed --noconfirm archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su"
+    local cmd2="/usr/bin/pacman -Syu"
+    local cmd="$cmd2"
+    local pkg
+
+    if [ -n "$1" ] ; then
+        for pkg in "$@" ; do
+            case "$pkg" in
+                archlinux-keyring | endeavouros-keyring)
+                    cmd="$cmd1"
+                    break
+                    ;;
+            esac
+        done
+    else
+        cmd="$cmd1"
+    fi
+    su-c_wrapper bash -c "$cmd"
+}
+
+LockCheck() {
+    local lck=/var/lib/pacman/db.lck
+    if [ -e $lck ] ; then
+        local pid=$(LANG=C fuser "$lck" | awk '{print $NF}')
+        if [ -n "$pid" ] ; then
+            echo2 "Pacman lock file $lck is currently in use by another process:"
+            ps -ef | grep -w "$pid" | grep -v "grep -w $pid" | Indent
+            echo2 "Please wait until the process has ended (or kill that process if you can)."
+            return 1
+        else
+            echo2 "Pacman lock file $lck exists but not used by another process."
+            echo2 "Deleting $lck now:"
+            sudo rm -i $lck
+            if [ -e $lck ] ; then
+                return 1
+            fi
+            echo2 "Checking for updates:"
+        fi
+    fi
+}
+
+Main() {
+    local helper="$1"
+    local updates=""
+
+    shift
+    case "$helper" in
+        pacman | paru | yay) ;;
+        *) DIE "helper '$helper' not supported." ;;
+    esac
+
+    LockCheck || return 1
+
+    if [ -n "$1" ] ; then
+        case "$helper" in
+            pacman) Pacman "$@" ;;                  # ask elevated privileges only if needed
+            *)      command $helper "$@" ;;         # AUR helper
+        esac
+    else
+        # Update all packages, including AUR.
+        # Make also various checks.
+
+        echo "==> Checking for repository updates..."
+        updates=$(checkupdates | awk '{print $1}')
+        if [ -n "$updates" ] ; then
+            if lsmod|grep nvidia ; then
+                eos-kernel-nvidia-update-check $updates || DIE "update failed"
+            fi
+            UpdateCheckKeyrings $updates
+        else
+            echo "==> No repository updates."
+        fi
+
+        if [ "$helper" != "pacman" ] ; then
+            echo "==> Checking for AUR updates..."
+            command $helper -Sua
+        fi
+    fi
+}
+
+Main "$@"
