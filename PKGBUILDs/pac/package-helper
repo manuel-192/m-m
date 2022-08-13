@@ -2,23 +2,39 @@
 
 # Helper for package managers.
 #
-# On update, check
-#   - nvidia/kernel updates
-#   - keyrings
+# Generally, check
+#   - pacman database lock
+#
+# For pacman operations
+#   - use elevated privileges only when needed
+#
+# On update, check that
+#   - nvidia vs.kernel updates
+#   - keyring packages will be updated before other packages
 #
 # Tip: add these functions to your ~/.bashrc:
 #    yay()    { package-helper $FUNCNAME "$@" ; }
 #    paru()   { package-helper $FUNCNAME "$@" ; }
 #    pacman() { package-helper $FUNCNAME "$@" ; }
-#    pac()    { pacman "$@" ; }
+#    pac()    { pacman "$@" ; }   # change 'pacman' to 'yay' or 'paru' if you want
 
 
 DIE() {
-    echo "Error: $1" >&2
+    echo "$progname: error: $1" >&2
+    Usage
     exit 1
 }
 
-Pacman() {
+Usage() {
+    cat <<EOF
+
+Usage: $progname helper [helper-options]
+  helper            One of: pacman paru yay
+  helper-options    Valid options for the given helper
+EOF
+}
+
+Pacman-CheckElevatedPrivileges() {
     local rooterr="error: you cannot perform this operation unless you are root."
     local errfile=$(mktemp)
     local errlog
@@ -62,7 +78,7 @@ LockCheck() {
     if [ -e $lck ] ; then
         local pid=$(LANG=C fuser "$lck" | awk '{print $NF}')
         if [ -n "$pid" ] ; then
-            echo2 "Pacman lock file $lck is currently in use by another process:"
+            echo2 "Pacman lock file $lck is currently used by another process:"
             ps -ef | grep -w "$pid" | grep -v "grep -w $pid" | Indent
             echo2 "Please wait until the process has ended (or kill that process if you can)."
             return 1
@@ -73,48 +89,56 @@ LockCheck() {
             if [ -e $lck ] ; then
                 return 1
             fi
-            echo2 "Checking for updates:"
         fi
     fi
 }
 
+Update-Syu() {
+    # Update all packages, including AUR.
+    # Make also various checks.
+
+    echo ":: Checking for repository updates..."
+    local updates=$(checkupdates | awk '{print $1}')
+
+    if [ -n "$updates" ] ; then
+        if lsmod|grep nvidia ; then
+            eos-kernel-nvidia-update-check $updates || DIE "update failed"
+        fi
+        UpdateCheckKeyrings $updates
+    else
+        echo " there is nothing to do"
+    fi
+
+    if [ "$helper" != "pacman" ] ; then
+        command $helper -Sua
+    fi
+}
+
+Main2() {
+    if [ -z "$2" ] ; then
+        case "$1" in
+            "" | -Syu) Update-Syu; return ;;
+        esac
+    fi
+    case "$helper" in
+        pacman) Pacman-CheckElevatedPrivileges "$@" ;;
+        *)      command $helper "$@" ;;                    # AUR helper
+    esac
+}
+
 Main() {
     local helper="$1"
-    local updates=""
-
     shift
+    local progname="$(basename "$0")"
+
     case "$helper" in
         pacman | paru | yay) ;;
-        *) DIE "helper '$helper' not supported." ;;
+        *) DIE "given helper '$helper' is not supported" ;;
     esac
 
     LockCheck || return 1
 
-    if [ -n "$1" ] ; then
-        case "$helper" in
-            pacman) Pacman "$@" ;;                  # ask elevated privileges only if needed
-            *)      command $helper "$@" ;;         # AUR helper
-        esac
-    else
-        # Update all packages, including AUR.
-        # Make also various checks.
-
-        echo "==> Checking for repository updates..."
-        updates=$(checkupdates | awk '{print $1}')
-        if [ -n "$updates" ] ; then
-            if lsmod|grep nvidia ; then
-                eos-kernel-nvidia-update-check $updates || DIE "update failed"
-            fi
-            UpdateCheckKeyrings $updates
-        else
-            echo "==> No repository updates."
-        fi
-
-        if [ "$helper" != "pacman" ] ; then
-            echo "==> Checking for AUR updates..."
-            command $helper -Sua
-        fi
-    fi
+    Main2 "$@"
 }
 
 Main "$@"
