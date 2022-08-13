@@ -2,14 +2,15 @@
 
 # Helper for package managers.
 #
-# Generally, check
-#   - pacman database lock
+# Generally,
+#   - check pacman database lock
+#   - sync after update
 #
 # For pacman operations
 #   - use elevated privileges only when needed
 #
 # On update, check that
-#   - nvidia vs.kernel updates
+#   - nvidia vs. kernel updates
 #   - keyring packages will be updated before other packages
 #
 # Tip: add these functions to your ~/.bashrc:
@@ -17,7 +18,6 @@
 #    paru()   { package-helper $FUNCNAME "$@" ; }
 #    pacman() { package-helper $FUNCNAME "$@" ; }
 #    pac()    { pacman "$@" ; }   # change 'pacman' to 'yay' or 'paru' if you want
-
 
 DIE() {
     echo "$progname: error: $1" >&2
@@ -34,6 +34,11 @@ Usage: $progname helper [helper-options]
 EOF
 }
 
+Cmd() {
+    echo "==>" "$@" >&2
+    "$@"
+}
+
 Pacman-CheckElevatedPrivileges() {
     local rooterr="error: you cannot perform this operation unless you are root."
     local errfile=$(mktemp)
@@ -46,7 +51,7 @@ Pacman-CheckElevatedPrivileges() {
     /usr/bin/rm -f "$errfile"
 
     case "$errlog" in
-        "$rooterr") LANG=C su-c_wrapper bash -c "/usr/bin/pacman $*" ;;
+        "$rooterr") Cmd su-c_wrapper bash -c "/usr/bin/pacman $* && sync" ;;
         "")         return $retval ;;
         *)          echo2 "$errlog" ; return $retval ;;
     esac
@@ -70,13 +75,14 @@ UpdateCheckKeyrings() {
     else
         cmd="$cmd1"
     fi
-    su-c_wrapper bash -c "$cmd"
+    Cmd su-c_wrapper bash -c "$cmd && sync"
 }
 
 LockCheck() {
+    echo ":: Checking pacman lock..."
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
-        local pid=$(LANG=C fuser "$lck" | awk '{print $NF}')
+        local pid=$(fuser "$lck" | awk '{print $NF}')
         if [ -n "$pid" ] ; then
             echo2 "Pacman lock file $lck is currently used by another process:"
             ps -ef | grep -w "$pid" | grep -v "grep -w $pid" | Indent
@@ -109,8 +115,9 @@ Update-Syu() {
         echo " there is nothing to do"
     fi
 
-    if [ "$helper" != "pacman" ] ; then
-        command $helper -Sua
+    if [ "$helper" != "/usr/bin/pacman" ] ; then
+        Cmd $helper -Sua
+        Cmd sync
     fi
 }
 
@@ -121,8 +128,12 @@ Main2() {
         esac
     fi
     case "$helper" in
-        pacman) Pacman-CheckElevatedPrivileges "$@" ;;
-        *)      command $helper "$@" ;;                    # AUR helper
+        /usr/bin/pacman)
+            Pacman-CheckElevatedPrivileges "$@"
+            ;;
+        *)  Cmd $helper "$@"                    # AUR helper
+            Cmd sync
+            ;;
     esac
 }
 
@@ -132,7 +143,7 @@ Main() {
     local progname="$(basename "$0")"
 
     case "$helper" in
-        pacman | paru | yay) ;;
+        pacman | paru | yay) helper=/usr/bin/$helper ;;
         *) DIE "given helper '$helper' is not supported" ;;
     esac
 
