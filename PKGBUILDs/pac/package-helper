@@ -25,6 +25,13 @@ DIE() {
     exit 1
 }
 
+Say1() {
+    printf ":: %-40s : " "$1"
+}
+Say2() {
+    echo "$1"
+}
+
 Usage() {
     cat <<EOF
 
@@ -87,22 +94,27 @@ UpdateCheckKeyrings() {
 }
 
 LockCheck() {
-    echo ":: Checking pacman lock..."
     local lck=/var/lib/pacman/db.lck
-    if [ -e $lck ] ; then
-        local pid=$(fuser "$lck" | awk '{print $NF}')
-        if [ -n "$pid" ] ; then
-            echo2 "Pacman lock file $lck is currently used by another process:"
-            ps -ef | grep -w "$pid" | grep -v "grep -w $pid" | Indent
-            echo2 "Please wait until the process has ended (or kill that process if you can)."
+
+    Say1 "Checking pacman db lock"
+    if [ ! -e $lck ] ; then
+        Say2 "not locked"
+        return
+    fi
+    Say2 "lock found"
+
+    local pid=$(fuser "$lck" | awk '{print $NF}')
+    if [ -n "$pid" ] ; then
+        echo2 "Pacman lock file $lck is currently used by another process:"
+        ps -ef | grep -w "$pid" | grep -v "grep -w $pid" | Indent
+        echo2 "Please wait until the process has ended (or kill that process if you can)."
+        return 1
+    else
+        echo2 "Pacman lock file $lck exists but not used by another process."
+        echo2 "Deleting $lck now:"
+        sudo rm -i $lck
+        if [ -e $lck ] ; then
             return 1
-        else
-            echo2 "Pacman lock file $lck exists but not used by another process."
-            echo2 "Deleting $lck now:"
-            sudo rm -i $lck
-            if [ -e $lck ] ; then
-                return 1
-            fi
         fi
     fi
 }
@@ -112,21 +124,28 @@ Update-Syu() {
     # Make also various checks.
 
     LockCheck || return 1
-    echo ":: Checking for repository updates..."
+    Say1 "Checking for repository updates"
     local updates=$(checkupdates | awk '{print $1}')
 
     if [ -n "$updates" ] ; then
-        if lsmod|grep nvidia ; then
-            eos-kernel-nvidia-update-check $updates || DIE "update failed"
+        #if lsmod|grep nvidia ; then
+        if [ 1 -eq 1 ]; then
+            if ! eos-kernel-nvidia-update-check $updates ; then
+                Say2 ""
+                DIE "update failed"
+            fi
         fi
+        Say2 "updates found"
         UpdateCheckKeyrings $updates
     else
-        echo " there is nothing to do"
+        Say2 "no updates"
     fi
 
     if [ "$helper" != "/usr/bin/pacman" ] ; then
-        Cmd $helper -Sua
-        Cmd sync
+        local tmpfile=$(mktemp)
+        LANG=C $helper -Sua | tee $tmpfile
+        grep " there is nothing to do" $tmpfile >&/dev/null || Cmd sync
+        rm -f $tmpfile
     fi
 }
 
