@@ -51,9 +51,17 @@ Pacman-CheckElevatedPrivileges() {
     /usr/bin/rm -f "$errfile"
 
     case "$errlog" in
-        "$rooterr") Cmd su-c_wrapper bash -c "/usr/bin/pacman $* && sync" ;;
-        "")         return $retval ;;
-        *)          echo2 "$errlog" ; return $retval ;;
+        "$rooterr")
+            LockCheck || return 1
+            Cmd su-c_wrapper bash -c "/usr/bin/pacman $* && sync"
+            ;;
+        "")
+            return $retval
+            ;;
+        *)
+            echo2 "$errlog"
+            return $retval
+            ;;
     esac
 }
 
@@ -103,6 +111,7 @@ Update-Syu() {
     # Update all packages, including AUR.
     # Make also various checks.
 
+    LockCheck || return 1
     echo ":: Checking for repository updates..."
     local updates=$(checkupdates | awk '{print $1}')
 
@@ -124,14 +133,19 @@ Update-Syu() {
 Main2() {
     if [ -z "$2" ] ; then
         case "$1" in
-            "" | -Syu) Update-Syu; return ;;
+            "" | -Syu)
+                Update-Syu
+                return
+                ;;
         esac
     fi
     case "$helper" in
         /usr/bin/pacman)
             Pacman-CheckElevatedPrivileges "$@"
             ;;
-        *)  Cmd $helper "$@"                    # AUR helper
+        *)
+            LockCheck || return 1
+            Cmd $helper "$@"                    # AUR helper
             Cmd sync
             ;;
     esac
@@ -146,8 +160,6 @@ Main() {
         pacman | paru | yay) helper=/usr/bin/$helper ;;
         *) DIE "given helper '$helper' is not supported" ;;
     esac
-
-    LockCheck || return 1
 
     Main2 "$@"
 }
