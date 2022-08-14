@@ -135,7 +135,8 @@ Update-Syu() {
                 DIE "update failed"
             fi
         fi
-        Say2 "updates found"
+        local count=$(echo "$updates" | wc -l)
+        Say2 "$count updates found"
         UpdateCheckKeyrings $updates
     else
         Say2 "no updates"
