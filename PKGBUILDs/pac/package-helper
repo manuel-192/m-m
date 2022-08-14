@@ -143,10 +143,8 @@ Update-Syu() {
     fi
 
     if [ "$helper" != "/usr/bin/pacman" ] ; then
-        local tmpfile=$(mktemp)
-        LANG=C $helper -Sua | tee $tmpfile
-        grep " there is nothing to do" $tmpfile >&/dev/null || Cmd sync
-        rm -f $tmpfile
+        local out=$(LANG=C $helper -Sua | tee /dev/stderr)
+        echo "$out" | grep "^ there is nothing to do$" >/dev/null || Cmd sync
     fi
 }
 
