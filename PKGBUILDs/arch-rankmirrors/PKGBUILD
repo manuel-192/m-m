@@ -15,7 +15,7 @@ depends=('bash')
 source=(
     $url/$pkgname
 )
-sha512sums=('f8ce2e2729069842190dc2566a389f8e2bb38cd84f8204689fce34108c9be9347c79cc6af437ff6656b3414281af22593fbc5f20cb374df36de919be0640b582')
+sha512sums=('5e0bda1a89d3a03218f81eaa73a030992c73912b0c01a25e785342574aca9dc65c44c441c277b921687f8be06d5dca908df4172acbe6323122f4a91e07bc2c7b')
 
 package() {
     install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
