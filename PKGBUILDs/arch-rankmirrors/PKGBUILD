@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=arch-rankmirrors
+pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('1b2e8686117823e4069cd4490d03154584bd292993f04ee2615f4d877e34854b542fb7f600cee8aaf6fa2ff7a9f15c8d4c455db379527709527f7b5846076972')
+
+package() {
+    install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
+}
