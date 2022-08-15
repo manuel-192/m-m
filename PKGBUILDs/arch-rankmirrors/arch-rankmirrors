@@ -43,9 +43,9 @@ Rank() {
                 else
                     printf "==> %s failed, reason:\n%s\n" "$url" "$(curl-exit-code-to-string $retcode)" > /dev/stderr
                 fi
-            done | LC_ALL=C sort -g -k2r,2 -k3,3
+            done | LC_ALL=C sort -g -k2r,2 -k3,3 | sed 's|[ \t]*$||'
         } )
-    echo "$ranked" | column -t -o" " | head -n$((max_mirrors_to_show+2)) > /dev/stderr
+    echo "$ranked" | column -t -o" " | head -n$((max_mirrors_to_show+2)) # > /dev/stderr
 
     if [ -n "$savefile" ] ; then
         echo "==> Saving mirrorlist to file $savefile"
