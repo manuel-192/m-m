@@ -6,7 +6,7 @@ pkgname=arch-rankmirrors
 pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -15,7 +15,7 @@ depends=('bash')
 source=(
     $url/$pkgname
 )
-sha512sums=('5e0bda1a89d3a03218f81eaa73a030992c73912b0c01a25e785342574aca9dc65c44c441c277b921687f8be06d5dca908df4172acbe6323122f4a91e07bc2c7b')
+sha512sums=('ba6f728774170d2cdbec9423a7ca5a9287650ce7360bec4f5671ef2ee863985c7552b03c2f9e6cdf146dee70061005bd42085222e7a0a78e9ee26763871d1446')
 
 package() {
     install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname

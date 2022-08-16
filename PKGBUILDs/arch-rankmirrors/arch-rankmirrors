@@ -1,11 +1,21 @@
 #!/bin/bash
 
+# Rank Arch mirrors.
+
+echo2()   { echo "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+Verbose() { [ "$verbose" = "yes" ] && echo2 "==>" "$@" ; }
 DIE() {
-    echo "==> $progname: error: $1"
+    echo2 "==> $progname: error: $1"
     [ "$2" != "stay" ] && exit 1
 }
+Indent() { sed 's|^|   |' ; }
 
 Rank() {
+
+    Verbose "Ranking, please wait ..."
+    rm -f "$errlog"
+
     local url="https://archlinux.org/mirrorlist/?use_mirror_status=on"
     local xx
 
@@ -21,61 +31,109 @@ Rank() {
     
     local data=$(wget -O- "$url" 2>/dev/null)
     local mirrors=$(echo "$data" | grep -Pv "^## |^##$|^$" | awk '{print $NF}')  # URLs of mirrors
-    local retcode
-    local result fetch_time lastupdate
-    local line url2
     local ranked
 
     ranked=$(
         {
+            local retcode result lastupdate fetch_time line url2
+
             echo "URL Last-update Fetch-time"
             echo "~~~ ~~~~~~~~~~~ ~~~~~~~~~~"
             for url in $mirrors ; do
-                url2=$(echo "$url" | sed 's|$repo/os/$arch|lastupdate|')
+                Verbose "$url"
+                # url2=$(echo "$url" | sed 's|$repo/os/$arch|lastupdate|')
+                url2=${url/'$repo/os/$arch'/lastupdate}
                 result=$(curl --fail -Lsm $download_timeout -w "%{time_total}" "$url2")  # fetch lastupdate, measure time
                 retcode=$?
                 if [ $retcode -eq 0 ] ; then
-                    lastupdate=$(echo "$result" | head -n1)     # lastupdate time stamp
+                    lastupdate=$(echo "$result" | head -n1)     # lastupdate time stamp as epoch
                     fetch_time=$(echo "$result" | tail -n1)     # fetch time
+                    if [ "$time_as_datetime" = "yes" ] ; then
+                        lastupdate=$(date --date="@$lastupdate" "+%Y%m%d-%H%M%S")
+                    fi
                     line="$url $lastupdate $fetch_time"
-                    CheckSuspiciousMirror "$url2"
-                    echo "$line"
+                    IsOkMirror "$url2" "$errlog" && echo "$line"
                 else
                     printf "==> %s failed, reason:\n%s\n" "$url" "$(curl-exit-code-to-string $retcode)" > /dev/stderr
                 fi
-            done | LC_ALL=C sort -g -k2r,2 -k3,3 | sed 's|[ \t]*$||'
+            done | LC_ALL=C sort -g -k2r,2 -k3,3 | head -n$((max_mirrors_to_show+2)) | sed 's|[ \t]*$||'
         } )
-    echo "$ranked" | column -t -o" " | head -n$((max_mirrors_to_show+2))
 
+    Verbose "Show ranking result"
+    echo "$ranked" | column -t >&2
+
+    SaveToFile
+}
+
+SaveToFile() {
     if [ -n "$savefile" ] ; then
-        echo "==> Saving mirrorlist to file $savefile"
-
         local mirrorlist=$(echo "$ranked" | grep -Pv '^URL|^~~~' | awk '{print $1}' | sed 's|^|Server = |')
 
         if touch "$savefile" 2>/dev/null ; then
             echo "$mirrorlist" > "$savefile"
         else
+            echo2 "==> Writing $savefile:"
             local tmpfile=$(mktemp)
             echo "$mirrorlist" > "$tmpfile"
-            echo "Writing $savefile:"
             su-c_wrapper bash -c "cp '$tmpfile' '$savefile' && chmod 0644 '$savefile'"
             rm -f "$tmpfile"
         fi
     fi
 }
 
-CheckSuspiciousMirror() {
+IsOkMirror() {
     local url="$1"
-    case "$url" in
-        https://mirror.jaime.sh/archlinux/*)  # this mirror copies lastsync to lastupdate!
-            line+=" (warning: suspicious Last-update !?)" ;;
-    esac
+    local errlog="$2"
+    local docheck=no
+
+    if [ "$detect_all_issues" = "yes" ] ; then
+        docheck=yes
+    else
+        case "$url" in
+            https://mirror.jaime.sh/archlinux/lastupdate) docheck=yes ;;
+        esac
+    fi
+    
+    if [ "$docheck" = "yes" ] ; then
+        Lastsync_lastupdate "$url" "$errlog"
+    fi
+}
+
+Lastsync_lastupdate() {
+    local url2=${url/lastupdate/lastsync}
+    local lastsync=$(curl --fail -Lsm $download_timeout -w "%{time_total}" "$url2" | head -n1)
+    local line=""
+
+    if [ "$time_as_datetime" = "yes" ] ; then
+        lastsync=$(date --date="@$lastsync" "+%Y%m%d-%H%M%S")
+    fi
+    if [ "$lastupdate" = "$lastsync" ] ; then
+        # echo "$url: is a copy of lastsync." >> "$errlog"
+        line="$url: is a copy of lastsync."
+    fi
+    [ "$skip_problematic_mirrors" = "yes" ] && line+=" Mirror not ranked."
+    echo "$line" >> "$errlog"
+    [ "$skip_problematic_mirrors" = "yes" ] && return 1
+}
+
+AddCountries() {
+    # Add countries. The list of names can be separated with commas and/or spaces.
+    # If a country name *includes* spaces, then add quotes around it.
+    local tail head
+    for tail in "$@" ; do
+        tail+=","
+        while [ -n "$tail" ] ; do
+            head=${tail%%,*}
+            tail=${tail#$head,}
+            [ -n "$head" ] && countries+=("$head")
+        done
+    done
 }
 
 Options() {
     local opts
-    local sopts="hp:c:d:n:s:46"
-    local lopts="help,protocol:,country:,download-timeout:,number:,save:,ipv4,ipv6"
+    local sopts="hp:c:d:n:s:46v"
+    local lopts="help,protocol:,country:,download-timeout:,number:,save:,ipv4,ipv6,verbose,issue-detect,issue-skip"
 
     opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || {
         Options -h
@@ -91,7 +149,7 @@ Options() {
                 shift
                 ;;
             -c | --country)
-                countries+=($(echo "$2" | tr ',' ' '))
+                AddCountries "$2"
                 shift
                 ;;
             -d | --download-timeout)
@@ -109,6 +167,15 @@ Options() {
             -4 | --ipv4) ip_versions+=(4) ;;
             -6 | --ipv6) ip_versions+=(6) ;;
 
+            -v | --verbose)
+                verbose=yes; Verbose "Handling options ..." ;;
+            --epoch)
+                time_as_datetime=no ;;
+            --issue-detect)
+                detect_all_issues=yes ;;           # will be slower, doubles the time!
+            --issue-skip)
+                skip_problematic_mirrors=yes ;;
+
             -h | --help)
                 Usage
                 exit 0
@@ -120,40 +187,76 @@ Options() {
     done
 
     # minimum defaults
-    [ ${#countries[@]} -eq 0 ]     && Usage "use option -c to give one or more countries"
     [ ${#protocols[@]} -eq 0 ]     && protocols=("${def_protocols[@]}")
     [ ${#ip_versions[@]} -eq 0 ]   && ip_versions=($def_ip_versions)
     [ -z "$download_timeout" ]     && download_timeout=$def_download_timeout
     [ -z "$max_mirrors_to_show" ]  && max_mirrors_to_show=$def_max_mirrors_to_show
     [ $max_mirrors_to_show -lt 1 ] && max_mirrors_to_show=$def_max_mirrors_to_show
+
+    if [ -n "$1" ] ; then
+        AddCountries "$@"
+    fi
+
+    if [ ${#countries[@]} -gt 0 ] ; then
+        # convert country names (any case!) to country codes (upper case)
+        local country_specs="$(LANG=C reflector --list-countries 2>/dev/null | grep -Pv '^-----|^Country ')"
+        local country ix=0
+        for country in "${countries[@]}" ; do
+            case "$country" in
+                [A-Z][A-Z]) ;;
+                [a-z][a-zA-Z] | [a-zA-Z][a-z])
+                    countries[$ix]="$(echo "$country" | tr '[:lower:]' '[:upper:]')"
+                    ;;
+                *)  countries[$ix]="$(echo "$country_specs" | grep -iw "^$country" | awk '{print $(NF-1)}')"
+                    if [ -z "${countries[$ix]}" ] ; then
+                        Fatal "unrecognized country '$country' (see 'reflector --list-countries')"
+                    fi
+                    ;;
+            esac
+            ((ix++))
+        done
+    else
+        Fatal "give one or more countries"
+    fi
+}
+
+Fatal() {
+    DIE "$1" stay
+    Usage
+    exit 1
 }
 
 Usage() {
-    if [ -n "$1" ] ; then
-        DIE "$1" stay
-    fi
     cat <<EOF >&2
 
-Usage: $progname [options] 
+Usage: $progname [options] [countries]
 Options:
   -c, --country             Rank mirrors from these countries (2 uppercase letters for a country, or 'all').
   -p, --protocol            Supported protocols (https, http). Default: "${def_protocols[@]}"
   -d, --download-timeout    Max time in seconds to rank a mirror. Default: $def_download_timeout
-  -n, --number              Max number of "best" mirrors to show after ranking. Default: $def_max_mirrors_to_show
+  -n, --number              Max number of the "best" mirrors to show after ranking. Default: $def_max_mirrors_to_show
   -s, --save                Save generated mirrorlist to this file.
   -4, --ipv4                Use IPv4 addresses. Default.
   -6, --ipv6                Use IPv6 addresses.
+  -v, --verbose             Show more details about the operation.
+      --epoch               Show the time of last update as seconds since the beginning of year 1970.
+      --issue-detect        Detect certain issues with all ranked mirrors.
+      --issue-skip          Skip a problematic mirror from ranking results.
   -h, --help                This help.
+
+Country list can be given also without option -c.
 
 Note: ranking mirrors of many countries will take lots of time.
 EOF
-    if [ -n "$1" ] ; then
-        exit 1
-    fi
 }
 
 Main() {
     local progname="$(/usr/bin/basename "$0")"
+    local verbose=no
+    local time_as_datetime=yes
+    local detect_all_issues=no
+    local skip_problematic_mirrors=no
+    local errlog="/tmp/$progname.errlog"
 
     local protocols=()              # https and/or http
     local countries=()              # list of countries or 'all'
@@ -170,6 +273,11 @@ Main() {
     Options "$@"
 
     Rank "$@"
+
+    if [ -e "$errlog" ] ; then
+        printf2 "\n==> Detected issues:\n"
+        cat "$errlog" | Indent >&2
+    fi
 }
 
 Main "$@"
