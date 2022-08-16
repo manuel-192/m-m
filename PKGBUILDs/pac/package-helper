@@ -125,7 +125,8 @@ Update-Syu() {
 
     LockCheck || return 1
     Say1 "Checking for repository updates"
-    local updates=$(checkupdates | awk '{print $1}')
+    local updates_info=$(checkupdates)
+    local updates=$(echo "$updates_info" | awk '{print $1}')
 
     if [ -n "$updates" ] ; then
         #if lsmod|grep nvidia ; then
@@ -137,6 +138,7 @@ Update-Syu() {
         fi
         local count=$(echo "$updates" | wc -l)
         Say2 "$count updates found"
+        echo "$updates_info" | column -t | sed 's|^|    ==> |'
         UpdateCheckKeyrings $updates
     else
         Say2 "no updates"
