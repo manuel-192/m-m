@@ -6,7 +6,7 @@ pkgname=pac
 pkgdesc="Package updater, with certain useful extra features."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=2022.08.19
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -15,7 +15,7 @@ depends=('bash')
 source=(
     $url/$pkgname
 )
-sha512sums=('0f4733304c895ddd89ff4f5b01abad65bce173634bed66c38448d93709234174b345cf20936c69140ad94247e9fb0986fb6cf1df445fa46997900a251bd5aece')
+sha512sums=('25c60804e86516fbc553fc8e5b0c84639f72a2cac3eb5eaeb906e70c3c8a6558b134c592cc897ca37abb3fcba471faa1ab05c85d8edeeb69fd91dae491d87f5c')
 
 package() {
     install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname

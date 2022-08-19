@@ -2,10 +2,10 @@
 
 Options() {
     local opts
-    local lopts="nvidia,helper,help"
+    local lopts="nvidia,helper:,paru,yay,help"
     local sopts="h"
 
-    opts="$(/usr/bin/getopt -o=h --longoptions help,nvidia,helper: --name "$progname" -- "$@")" || {
+    opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || {
         Options -h
         return 1
     }
@@ -15,6 +15,7 @@ Options() {
         case "$1" in
             --nvidia) nvidia=eos-kernel-nvidia-update-check ;;
             --helper) helper="$2" ; shift ;;
+            --paru | --yay) helper="${1/--/}" ;;
 
             -h | --help)
                 cat <<EOF >&2
@@ -22,7 +23,10 @@ Usage: $progname [options]
 Options:
   --help, -h         This help.
   --nvidia           Check also nvidia driver vs. kernel updates.
-  --helper           AUR helper name (supported: yay, paru).
+  --helper           AUR helper name. Supported: yay, paru.
+                     Others supporting option -Sua should work as well.
+  --paru             Same as --helper=paru.
+  --yay              Same as --helper=yay.
 EOF
                 exit 0
                 ;;
