@@ -1,295 +1,69 @@
 #!/bin/bash
-#
-# Wrapper for pacman with some new features.
-# Use option --help to see more.
-#
-# Author: manuel (see https://forum.endeavouros.com)
 
-echo2() { echo "$@" >&2 ; }
-
-DIE() {
-    echo2 "$progname: error: $1"
-    exit 1
-}
-
-WaitForConnection() {
-    local maxtime="$1"
-    local check_interval="$2"
-    [ -n "$maxtime" ]        || maxtime=15
-    [ -n "$check_interval" ] || check_interval=1
-    local checks=$((maxtime/check_interval + 1))
-    local retval
-    local xx=0
-
-    while true ; do
-        /usr/bin/eos-connection-checker
-        retval=$?
-        if [ $retval -eq 0 ] ; then
-            return $retval
-        fi
-        if [ $((++xx)) -ge $checks ] ; then
-            return $retval
-        fi
-        echo "$progname: waiting for connection ..."
-        sleep $check_interval
-    done
-}
-
-CheckConnection() {
-    if [ "$EOS_USE_CONNECTION_CHECK" = "yes" ] ; then
-        # Potentially give network drivers some time to prepare.
-        WaitForConnection
-        case "$?" in
-            0) ;;
-            *) DIE "Internet connection is not available! Please check." ;;
-        esac
-    fi
-}
-
-Help() {
-    local args=()
-    local arg
-
-    # remove options unsupported by pacman
-    for arg in "$@" ; do
-        case "$arg" in
-            --aur) ;;
-            --*)  args+=("$arg") ;;
-            -*a*) args+=("$(echo "$arg" | sed 's|a||g')") ;;
-            *)    args+=("$arg") ;;
-        esac
-    done
-
-    PacmanWrapper --help "${args[@]}"
-    exit 0
-}
-
-NoUpdates() {
-    echo2 "No updates."
-}
-
-PacmanOptions() {
+Options() {
     local opts
+    local lopts="nvidia,helper,help"
+    local sopts="h"
 
-    opts="$(/usr/bin/getopt -q -o=Syu --longoptions sync,refresh,sysupgrade --name "$progname" -- "$@")" || {
+    opts="$(/usr/bin/getopt -o=h --longoptions help,nvidia,helper: --name "$progname" -- "$@")" || {
+        Options -h
         return 1
     }
-
     eval set -- "$opts"
 
     while true ; do
         case "$1" in
-            -S | --sync)       o_sync=yes ;;
-            -y | --refresh)    o_refresh=yes  ;;
-            -u | --sysupgrade) o_sysupgrade=yes  ;;
+            --nvidia) nvidia=eos-kernel-nvidia-update-check ;;
+            --helper) helper="$2" ; shift ;;
+
+            -h | --help)
+                cat <<EOF >&2
+Usage: $progname [options]
+Options:
+  --help, -h         This help.
+  --nvidia           Check also nvidia driver vs. kernel updates.
+  --helper           AUR helper name (supported: yay, paru).
+EOF
+                exit 0
+                ;;
+            
             --) shift ; break ;;
         esac
         shift
     done
 }
 
-Pacman() {
-    local cmd
-    local arg args=() keyring=()
-
-    if [ "$EOS_CHECK_KEYRING" = "yes" ] ; then
-        for arg in "$@" ; do
-            case "$arg" in
-                archlinux-keyring | endeavouros-keyring)
-                    keyring+=($arg) ;;
-                *)
-                    args+=("$arg") ;;
-            esac
-        done
-    else
-        args=("$@")
-    fi
+Main() {
+    # Arch updater that handles lock file, keyrings, syncing, and optionally AUR with given AUR helper.
     
-    cmd="pacman ${args[*]} && sync"
+    ## Consider writing aliases to ~/.bashrc:
+    # alias up='up2 pacman'
+    # alias ur='up2 paru'
+    # alias uy='up2 yay'
 
-    if [ ${#keyring} -gt 0 ] ; then
-        local o_sync=no o_refresh=no o_sysupgrade=no
-        PacmanOptions "$@"
-        if [ "$o_sync $o_refresh $o_sysupgrade" = "yes yes yes" ] ; then
-            cmd=$(echo "$cmd" | sed -e 's|-Syu|-Su|' -e 's|-Suy|-Su|' -e 's|--refresh||g')    # remove -y since $keyring_update_cmd below does it
-        fi
-        local keyring_update_cmd="echo Checking pkgs: ${keyring[*]} ... ; pacman -Sy --needed --noconfirm ${keyring[*]} >/dev/null && "
-        cmd="${keyring_update_cmd}$cmd"
+    local progname="$(/usr/bin/basename "$0")"
+    local nvidia=":"
+    local helper="pacman"
+
+    local helper2=":"
+    local lock=/var/lib/pacman/db.lck
+    local rmopt=f
+
+    Options "$@"
+
+    echo "$helper update with additional and useful checks" >&2
+
+    if [ -e $lock ] && fuser $lock &>/dev/null ; then
+        rmopt=i
     fi
-        
-    echo "==> $cmd"
-    LANG=C $EOS_ROOTER "$cmd"
-}
-
-Indent() {
-    sed 's|^|   |'
-}
-
-LockCheck() {
-    local lck=/var/lib/pacman/db.lck
-    if [ -e $lck ] ; then
-        local pid=$(LANG=C fuser "$lck" | awk '{print $NF}')
-        if [ -n "$pid" ] ; then
-            echo2 "Pacman lock file $lck is currently in use by another process:"
-            ps -ef | grep -w "$pid" | grep -v "grep -w $pid" | Indent
-            echo2 "Please wait until the process has ended (or kill that process if you can)."
-            exit 1
-        else
-            echo2 "Pacman lock file $lck exists but not used by another process."
-            echo2 "Deleting $lck now:"
-            sudo rm -i $lck
-            if [ -e $lck ] ; then
-                exit 1
-            fi
-            echo2 "Checking for updates:"
-        fi
+    local keyrings=(archlinux-keyring
+                    endeavouros-keyring)
+    if [ "$helper" = "pacman" ] ; then
+        sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && pacman -Sy --noconfirm --needed ${keyrings[*]} && pacman -Su && sync ; }"
+    else
+        helper2="/usr/bin/sudo -u $LOGNAME $helper -Sua"
+        sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && pacman -Sy --noconfirm --needed ${keyrings[*]} && pacman -Su && $helper2 ; sync ; }"
     fi
 }
 
-PacmanWrapper() {
-    local basename=/usr/bin/basename
-    local progname="$($basename "$0")"
-
-    [ $(id -u) -eq 0 ] && DIE "please don't run this as root!"
-
-    source /usr/share/endeavouros/scripts/eos-script-lib-yad --limit-icons || return 1
-
-    local EOS_USE_CONNECTION_CHECK=yes
-    local EOS_PAC_AUR_HELPER_OPTS="-Syu --nocombinedupgrade"
-    local EOS_PAC_AUR_HELPERS=(/usr/bin/yay /usr/bin/paru)
-    local EOS_CHECK_NVIDIA=yes              # yes only if Nvidia driver is used
-    local EOS_CHECK_KEYRING=yes
-
-    source /etc/eos-pac.conf || return 1
-
-    LockCheck
-
-    local awk=/usr/bin/awk
-    local sed=/usr/bin/sed
-    local pacman=/usr/bin/pacman
-    local checkupdates=/usr/bin/checkupdates
-    local column=/usr/bin/column
-    local sync=/usr/bin/sync
-    local cat=/usr/bin/cat
-    local opts_pacman="-Syu"
-    local updates
-    local nvidia_checker=/usr/bin/eos-kernel-nvidia-update-check
-    local retcode=0
-    local aur_helper
-
-    if [ "$EOS_CHECK_NVIDIA" = "yes" ] ; then
-        lsmod|grep nvidia >/dev/null && EOS_CHECK_NVIDIA=yes || EOS_CHECK_NVIDIA=no
-    fi
-
-    while true ; do
-        for aur_helper in "${EOS_PAC_AUR_HELPERS[@]}" ; do
-            [ -x $aur_helper ] && break 2
-        done
-        echo2 "==> Info: no AUR helper found."
-        aur_helper=""
-        break
-    done
-
-    case "$1" in
-        "")
-            CheckConnection
-	    updates=$($checkupdates)
-            retcode=$?
-            case $retcode in
-                0) updates=$(echo "$updates" | $column -t)
-		   echo2 "$updates"
-		   echo2 ""
-                   updates="$(echo "$updates" | awk '{print $1}')"
-                   if [ "$EOS_CHECK_NVIDIA" = "yes" ] ; then
-		       if ! $nvidia_checker "$updates" ; then
-                           read -p "Stop upgrade (Y/n)? " >&2
-                           case "$REPLY" in
-                               "" | [Yy]*) exit 1 ;;
-                           esac
-                       fi
-                   fi
-                   Pacman -Syu $updates
-                   ;;
-                1) echo2 "Error: unknown cause of failure."
-                   ;;
-                2) NoUpdates
-                   ;;
-                *) echo2 "Error: checkupdates returned an unknown code."
-                   ;;
-            esac
-            ;;
-        *)
-            local opt
-            for opt in "$@" ; do
-                case "$opt" in
-                    --help)
-                        local pacman_help=$(LANG=C pacman "$@" | $sed -e "s|pacman |$progname |")
-                        $cat <<EOF >&2
-$progname is a pacman wrapper.
-
-Changes/additions to pacman:
-  - Asks root permissions only when needed.
-  - If no parameters are given, installs updates only if available.
-  - New options:
-      --aur, -a             Like with no parameters, but checks also AUR updates.
-                            If this option is used, all other options and parameters
-                            will be ignored.
-
-      --limited-check, -L   A variant for update checking: check/update will be done only
-                            once within an hour even if called more often.
-                            This is designed to be useful when a terminal is started
-                            often and $progname with this option is added to ~/.bashrc.
-
-$pacman_help
-EOF
-                        return
-                        ;;
-                    --aur)
-                        CheckConnection
-                        if [ -n "$aur_helper" ] && [ -n "$($aur_helper -Qua)" ] || ($checkupdates) ; then
-                            if [ -n "$2" ] ; then
-                                echo2 "==> option $opt detected, ignoring other options and parameters."
-                            fi
-                            if [ -n "$aur_helper" ] ; then
-                                echo2 "==> $($basename $aur_helper) $EOS_PAC_AUR_HELPER_OPTS"
-                                $aur_helper $EOS_PAC_AUR_HELPER_OPTS && $sync
-                            else
-                                aur_helper="sudo pacman -Syu"
-                                echo2 "==> $aur_helper"
-                                $aur_helper && $sync
-                            fi
-                        else
-                            NoUpdates
-                        fi
-                        return
-                        ;;
-                    --limited-check | -L)
-                        CheckConnection
-                        /usr/bin/TerminalUpdateCheck  # checks updates at most once per hour
-                        return
-                        ;;
-                    --*) ;;
-                    -*h*) Help "$@" ;;  # $FUNCNAME --help "$@"; return ;;
-                    -*a*) $FUNCNAME --aur ; return ;;
-                esac
-            done
-            local rooterr="error: you cannot perform this operation unless you are root."
-            local errfile=$(/usr/bin/mktemp)
-            local errlog
-            local retval
-
-            LANG=C pacman "$@" 2> "$errfile"
-            retval=$?
-            errlog="$($cat "$errfile")"
-            /usr/bin/rm -f "$errfile"
-
-            case "$errlog" in
-                "$rooterr") Pacman "$@" ;;
-                "")         return $retval ;;
-                *)          echo2 "$errlog" ; return $retval ;;
-            esac
-            ;;
-    esac
-}
-
-PacmanWrapper "$@"
+Main "$@"
