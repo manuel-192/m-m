@@ -23,7 +23,7 @@ Usage: $progname [options]
 Options:
   --help, -h         This help.
   --nvidia           Check also nvidia driver vs. kernel updates.
-  --helper           AUR helper name. Supported: yay, paru, pacman.
+  --helper           AUR helper name. Supported: yay, paru, pacman. Default: pacman.
                      Others supporting option -Sua should work as well.
   --paru             Same as --helper=paru.
   --yay              Same as --helper=yay.
