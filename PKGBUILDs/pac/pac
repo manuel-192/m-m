@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Package updater for EndeavourOS and Arch.
+# Handles lock file, keyrings, syncing, and optionally AUR with given AUR helper.
+
 Options() {
     local opts
     local lopts="nvidia,helper:,paru,yay,help"
@@ -19,6 +22,15 @@ Options() {
 
             -h | --help)
                 cat <<EOF >&2
+Package updater for EndeavourOS and Arch
+Handles:
+- db lock
+- keyrings
+- sync after update
+and optionally
+- AUR with given AUR helper
+- Nvidia driver vs. kernel updates
+
 Usage: $progname [options]
 Options:
   --help, -h         This help.
@@ -39,13 +51,7 @@ EOF
 }
 
 Main() {
-    # Arch updater that handles lock file, keyrings, syncing, and optionally AUR with given AUR helper.
     
-    ## Consider writing aliases to ~/.bashrc:
-    # alias up='up2 pacman'
-    # alias ur='up2 paru'
-    # alias uy='up2 yay'
-
     local progname="$(/usr/bin/basename "$0")"
     local nvidia=":"
     local helper="pacman"
@@ -61,8 +67,10 @@ Main() {
     if [ -e $lock ] && fuser $lock &>/dev/null ; then
         rmopt=i
     fi
-    local keyrings=(archlinux-keyring
-                    endeavouros-keyring)
+    local keyrings=(archlinux-keyring)
+    if [ -r /usr/lib/endeavouros-release ] || [ -n "$(grep -iw endeavouros /etc/*-release)" ] ; then
+        keyrings+=(endeavouros-keyring)
+    fi
     if [ "$helper" = "pacman" ] ; then
         sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && pacman -Sy --noconfirm --needed ${keyrings[*]} && pacman -Su && sync ; }"
     else
