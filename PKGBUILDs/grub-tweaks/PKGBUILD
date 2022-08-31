@@ -3,19 +3,23 @@
 pkgname=grub-tweaks
 pkgdesc="Fixes, additions and enhancements to grub."
 pkgver=1.2
-pkgrel=1
+pkgrel=1.1
 arch=('any')
 license=('GPL')
-depends=(grub)
+# depends=(grub)
 
-url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pkgname"
+url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
 
 source=(
-  $url/$pkgname
-  $url/$pkgname.hook
+  $url/${pkgname}
+  $url/${pkgname}.conf
+  $url/${pkgname}.hook
+  $url/${pkgname}-pre.hook
 )
-sha512sums=('4daf88033c63de475c908a2680720eeb0f876456eca49cdf3f6e0fdaa0e61f8b9f89f5f73fffc80be3c8dddca94f21b012693ce2c9a7b514c17ce8dbce154ebb'
-            'c4385129b97f9ce2d92b095c1d87f0e10ed071ad04523106a08c0caffe5ef036a3ec2ce6d22610221b7bdbbd0334bf8baa6a536a9db8a6899fbdac44c615efd0')
+sha512sums=('0b56102943d296b4d90fc333c53ff8eb97d44cfdb3d86d8e293478d4d9fb0a41e44b01f991bd36aa988ff4eab790f1052f3fc0b3d0b323f06e91a7aeb96560bb'
+            'fbcca01d0854940abb072224d82ecd4c7386343d95fcfef140916d3f5a0107d3628a586e03c7a99d30129e0c99d88afda0b2e8f55fa0ddbd1ccbfa4779723557'
+            'c4385129b97f9ce2d92b095c1d87f0e10ed071ad04523106a08c0caffe5ef036a3ec2ce6d22610221b7bdbbd0334bf8baa6a536a9db8a6899fbdac44c615efd0'
+            'b937b08358c3a7e7e9fd0696434dc3e97356bc0fb36b850f846bef48d4b8773d7a961051525e225058d005cb93ee339a1980f4dcc52daaafdb555dee96bbef23')
 
 package() {
   cd $srcdir
@@ -23,6 +27,10 @@ package() {
   install -d $pkgdir/etc/pacman.d/hooks
   install -d $pkgdir/usr/bin
 
-  install -Dm644 $pkgname.hook $pkgdir/etc/pacman.d/hooks/$pkgname.hook
-  install -Dm755 $pkgname      $pkgdir/usr/bin/$pkgname
+  install -Dm755 ${pkgname}          $pkgdir/usr/bin/${pkgname}
+
+  install -Dm644 ${pkgname}.hook     $pkgdir/etc/pacman.d/hooks/${pkgname}.hook
+  install -Dm644 ${pkgname}-pre.hook $pkgdir/etc/pacman.d/hooks/${pkgname}-pre.hook
+
+  install -Dm644 ${pkgname}.conf     $pkgdir/etc/${pkgname}.conf
 }

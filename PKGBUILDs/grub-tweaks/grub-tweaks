@@ -65,6 +65,28 @@ _show_result() {
     fi
 }
 
+_grub_mod5() {
+    local version=""
+    local GRUB_INSTALL_COMMAND=""
+    local conf=/etc/grub-tweaks.conf
+
+    [ -r "$tweaktmp" ] || return
+
+    version="$(cat "$tweaktmp")"
+    rm -f $tweaktmp
+
+    [ -n "$version" ]  || return
+    [ -r $conf ]       || return
+
+    if [ $(vercmp "$(pacman -Q grub | awk '{print $NF}')" "$version") -gt 0 ] ; then
+        source $conf
+        if [ -n "$GRUB_INSTALL_COMMAND" ] ; then
+            echo "==> running '$GRUB_INSTALL_COMMAND' ... "
+            $GRUB_INSTALL_COMMAND
+        fi
+    fi
+}
+
 _grub_mod4() {
     local file=/etc/grub.d/40_custom
     _backup $file grub
@@ -122,9 +144,17 @@ _grub_mods() {
     _grub_mod3
 
     _grub_mod4
+    _grub_mod5  # grub-install !!
 }
 
 Main() {
+    local tweaktmp="/tmp/tweaks-pre"
+    case "$1" in
+        --pre)
+            /usr/bin/pacman -Q grub | /usr/bin/awk '{print $NF}' > $tweaktmp
+            return
+            ;;
+    esac
     local progname=grub-tweaks
     local in_pkg=$progname
     local lock=/var/log/$progname.lck

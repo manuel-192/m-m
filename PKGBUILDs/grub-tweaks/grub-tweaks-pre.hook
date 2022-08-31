@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Type = Package
+Target = grub
+
+[Action]
+Description = Save grub's previous version id
+When = PreTransaction
+Depends = grub
+Exec = /usr/bin/grub-tweaks --pre
