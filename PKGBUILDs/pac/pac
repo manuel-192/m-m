@@ -89,7 +89,7 @@ DiskSpace() {
     fi
 }
 
-Main() {
+Main2() {
     local progname="$(/usr/bin/basename "$0")"
     local nvidia=":"
     local helper="pacman"
@@ -99,6 +99,7 @@ Main() {
     local lock=/var/lib/pacman/db.lck
     local rmopt=f
     local isEndeavourOS=""
+    local cmdkeyring="pacman -Sy --needed"   # --noconfirm
 
     Options "$@"
 
@@ -113,11 +114,19 @@ Main() {
     IsEndeavourOS && keyrings+=(endeavouros-keyring)
     echo "Updating..."
     if [ "$helper" = "pacman" ] ; then
-        sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && pacman -Sy --noconfirm --needed ${keyrings[*]} && pacman -Su && sync ; }"
+        sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && $cmdkeyring ${keyrings[*]} && pacman -Su && sync ; }"
     else
         helper2="/usr/bin/sudo -u $LOGNAME $helper -Sua"
-        sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && pacman -Sy --noconfirm --needed ${keyrings[*]} && pacman -Su && $helper2 ; sync ; }"
+        sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && $cmdkeyring ${keyrings[*]} && pacman -Su && $helper2 ; sync ; }"
     fi
+}
+
+Main() {
+    case "$1" in
+        "" | -Syu)  Main2 ;;
+        -a | --aur) Main2 --paru ;;
+        *)          paru "$@" ;;
+    esac
 }
 
 Main "$@"
