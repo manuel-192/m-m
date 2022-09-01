@@ -122,11 +122,13 @@ Main2() {
 }
 
 Main() {
-    case "$1" in
-        "" | -Syu)  Main2 ;;
-        -a | --aur) Main2 --paru ;;
-        *)          paru "$@" ;;
-    esac
+    if [ -z "$2" ] ; then
+        case "$1" in
+            "" | -Syu)  Main2 ; return ;;
+            -a | --aur) Main2 --paru ; return ;;
+        esac
+    fi
+    paru "$@"
 }
 
 Main "$@"
