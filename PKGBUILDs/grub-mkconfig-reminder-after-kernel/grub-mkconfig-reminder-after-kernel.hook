@@ -1,0 +1,18 @@
+[Trigger]
+Operation = Install
+Operation = Remove
+Type = Package
+Target = linux
+Target = linux-lts
+Target = linux-lts??
+Target = linux-lts???
+Target = linux-zen
+Target = linux-hardened
+Target = amd-ucode
+Target = intel-ucode
+
+[Action]
+Description = Reminder for running grub-mkconfig after installing or removing a kernel or microcode.
+When = PostTransaction
+Depends = grub
+Exec = /usr/bin/printf "\n--> You may need to run 'sudo grub-mkconfig -o /boot/grub/grub.cfg'\n\n"

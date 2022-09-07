@@ -1,0 +1,24 @@
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=grub-mkconfig-reminder-after-kernel
+pkgdesc="Reminder of running grub-mkconfig after (un)installing a kernel or microcode."
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+optdepends=(grub)
+conflicts=(grub-tools)
+
+url=https://github.com/endeavouros-team/PKGBUILDS/tree/master/$pkgname
+_url="https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/$pkgname"
+
+source=(
+  $_url/$pkgname.hook    # Automatically updates grub.cfg after a kernel is installed/uninstalled.
+)
+sha512sums=('c945ff705513604c5fd09544e945c1719b230cdb0bd88293b49a9101f692e02e241f5028dbeca98416a1dd50f44208f5dea10d23d827f36b2f833c06d5a09179')
+
+package() {
+  cd $srcdir
+
+  install -Dm644 $pkgname.hook   $pkgdir/usr/share/libalpm/hooks/$pkgname.hook
+}

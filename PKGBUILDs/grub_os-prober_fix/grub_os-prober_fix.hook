@@ -1,0 +1,13 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = grub          # now pacman informs after grub upgrade!
+Target = grub-silent
+Target = os-prober
+
+[Action]
+Description = Reminder of updating grub.cfg after upgrading 'grub' or 'os-prober'.
+When = PostTransaction
+Depends = grub
+NeedsTargets
+Exec = /usr/bin/grub_os-prober_fix

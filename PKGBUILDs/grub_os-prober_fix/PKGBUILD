@@ -1,0 +1,27 @@
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=grub_os-prober_fix
+pkgdesc="Fixes, additions and enhancements to grub and os-prober."
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+optdepends=(grub os-prober lsb-release checkbashisms)
+conflicts=(grub-tools)
+
+url=https://github.com/endeavouros-team/PKGBUILDS/tree/master/$pkgname
+_url="https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/$pkgname"
+
+source=(
+  $_url/$pkgname       # Command modifies os-prober and grub to fix 'initrd' line generation.
+  $_url/$pkgname.hook  # Calls the fixer after grub or os-prober upgrades.
+)
+sha512sums=('9154c96321f49751bcfd7726c8c4b5339db793e13d737063cab8010254f571e50190281d4f6f502bcedada78489e825d82acd6699ff71a6b245c9c43ad55f257'
+            '70c75aae6d223c55935a793b54abbc546773616939a059f64c8aa385aa02d1040e2bf48779e31ccf9d79c9ad932737bbb863bb700547be734344f7b9bb70502a')
+
+package() {
+  cd $srcdir
+
+  install -Dm644 $pkgname.hook $pkgdir/usr/share/libalpm/hooks/$pkgname.hook
+  install -Dm755 $pkgname      $pkgdir/usr/bin/$pkgname
+}
