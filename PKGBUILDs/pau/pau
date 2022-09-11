@@ -43,7 +43,7 @@ Usage: $progname [options]
 Options:
   --help, -h         This help.
   --nvidia           Check also nvidia driver vs. kernel updates.
-  --helper           AUR helper name. Supported: yay, paru, pacman. Default: pacman.
+  --helper           AUR helper to use. Supported: yay, paru, pacman (=no AUR update). Default: pacman.
                      Others supporting option -Sua should work as well.
   --paru             Same as --helper=paru.
   --yay              Same as --helper=yay.
@@ -61,13 +61,23 @@ EOF
     done
 }
 
-IsEndeavourOS() {
-    if [ "$isEndeavourOS" = "yes" ] || [ -r /usr/lib/endeavouros-release ] || [ -n "$(grep -iw endeavouros /etc/*-release)" ] ; then
-        isEndeavourOS=yes
-        return 0
-    fi
-    isEndeavourOS=no
-    return 1
+IsEndeavourOS() { [ -r /usr/lib/endeavouros-release ] || grep -iw endeavouros /etc/*-release &> /dev/null ; }
+
+IsEndeavourOSoptimized() {
+    case "$isEndeavourOS" in
+        "")  if IsEndeavourOS ; then
+                 isEndeavourOS=yes
+                 return 0    # or: $FUNCNAME
+             else
+                 isEndeavourOS=no
+                 return 1    # or: $FUNCNAME
+             fi
+             ;;
+        yes) return 0
+             ;;
+        no)  return 1
+             ;;
+    esac
 }
 
 DiskSpace() {
@@ -89,21 +99,20 @@ DiskSpace() {
     fi
 }
 
-Main2() {
+Main() {
     local progname="$(/usr/bin/basename "$0")"
     local nvidia=":"
     local helper="pacman"
     local min_free_bytes=$((1000 * 1000 * 1000))  # default: 1 GB
-
-    local helper2=":"
-    local lock=/var/lib/pacman/db.lck
-    local rmopt=f
     local isEndeavourOS=""
     local cmdkeyring="pacman -Sy --needed"   # --noconfirm
+    local rmopt=f
+    local lock=/var/lib/pacman/db.lck
+    local helper2=":"
+
+    #echo "$helper update with additional and useful checks" >&2
 
     Options "$@"
-
-    echo "$helper update with additional and useful checks" >&2
 
     DiskSpace
 
@@ -111,24 +120,15 @@ Main2() {
         rmopt=i
     fi
     local keyrings=(archlinux-keyring)
-    IsEndeavourOS && keyrings+=(endeavouros-keyring)
-    echo "Updating..."
+    IsEndeavourOSoptimized && keyrings+=(endeavouros-keyring)
+
+    echo "Updating with $helper ..."
     if [ "$helper" = "pacman" ] ; then
         sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && $cmdkeyring ${keyrings[*]} && pacman -Su && sync ; }"
     else
         helper2="/usr/bin/sudo -u $LOGNAME $helper -Sua"
         sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && $cmdkeyring ${keyrings[*]} && pacman -Su && $helper2 ; sync ; }"
     fi
-}
-
-Main() {
-    if [ -z "$2" ] ; then
-        case "$1" in
-            "" | -Syu)  Main2 ; return ;;
-            -a | --aur) Main2 --paru ; return ;;
-        esac
-    fi
-    paru "$@"
 }
 
 Main "$@"
