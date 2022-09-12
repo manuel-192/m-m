@@ -1,0 +1,18 @@
+#!/bin/bash
+
+Main() {
+    # pacman with additional features for
+    # - update and AUR (via pau)
+    # - avoiding sudo (via Pacman)
+
+    local helper=paru
+    [ -x /usr/bin/$helper ] || helper=yay
+
+    case "$1" in
+        -a | --aur) pau --$helper ;;  # ignores other parameters
+        "" | -Syu) pau ;;
+        *) Pacman "$@" ;;
+    esac
+}
+
+Main "$@"

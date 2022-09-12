@@ -1,0 +1,25 @@
+#!/bin/bash
+
+Main() {
+    # Like pacman, but use sudo only if needed.
+
+    # Bash completion: add the following lines (uncommented!) to
+    # file /usr/share/bash-completion/completions/Pacman:
+    #    source /usr/share/bash-completion/completions/pacman
+    #    complete -F _pacman Pacman
+
+    local root_needed="error: you cannot perform this operation unless you are root."
+    local out
+    local retval
+
+    out=$(LANG=C pacman "$@" 2>&1)
+    retval=$?
+
+    case "$out" in
+        "")             return $retval ;;
+        "$root_needed") sudo pacman "$@" ;;
+        *)              echo "$out" ; return $retval ;;
+    esac
+}
+
+Main "$@"
