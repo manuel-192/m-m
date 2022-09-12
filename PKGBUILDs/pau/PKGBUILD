@@ -5,8 +5,8 @@
 pkgname=pau
 pkgdesc="Package updater, with certain useful extra features."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2022.09.12
-pkgrel=3
+pkgver=22.9.1
+pkgrel=1
 
 arch=('any')
 license=('GPL')
