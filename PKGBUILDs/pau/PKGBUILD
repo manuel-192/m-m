@@ -5,7 +5,7 @@
 pkgname=pau
 pkgdesc="Package updater, with certain useful extra features."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=22.9.2
+pkgver=22.9.2  # next pkgver: 22.10 or similar!
 pkgrel=1
 
 arch=('any')
