@@ -1,0 +1,174 @@
+#!/bin/bash
+
+emacs_new_options()
+{
+    local arg="$1"
+    local outfile="$2"  # possible outputs go here
+
+    case "$arg" in
+        --bash=*)
+            local newfile="${arg:7}"
+            if [ ! -e "$newfile" ] ; then
+                /usr/bin/touch "$newfile"
+                /usr/bin/chmod +x "$newfile"
+                echo '#!/bin/bash' >> "$newfile"
+                echo ''            >> "$newfile"
+                echo 'Main()'      >> "$newfile"
+                echo '{'           >> "$newfile"
+                echo '}'           >> "$newfile"
+                echo ''            >> "$newfile"
+                echo 'Main "$@"'   >> "$newfile"
+
+                # return some new command line args:
+                echo '+4:2'     >> $outfile       # go to this line:column !
+            fi
+            echo "$newfile" >> $outfile
+            ;;
+
+        --help|-h)
+            # help only once
+            if [ $(stat -c %s "$helpfile") -eq 0 ] ; then
+                /usr/bin/cat <<EOF >> $outfile
+EXTERNAL options:
+
+--bash=<filename>    create a new bash script (or open existing)
+--help               this help
+--external=<ext-options>
+ext-options:
+    --bash=<filename>    same as above!
+    --help               same as above!
+
+EOF
+            fi
+            ;;
+    esac
+}
+
+_geometry() {
+    local w h wmax=200 wmin=80 hmax=60 hmin=35
+    local conf=~/.config/emacs-sizes.conf
+    if [ -r $conf ] ; then
+        source $conf
+        wmax=$((emacs_max_columns))  # why "/ 2" ??
+        hmax=$((emacs_max_lines))
+        #echo "wmax=$wmax hmax=$hmax"
+    fi
+
+    w=$(/usr/bin/cat "$arg" | wc -L)
+    # echo "w=$w" >&2
+    ((w+=7))                         # 5 is minimum
+    test $w -gt $wmax && w=$wmax
+    test $w -lt $wmin && w=$wmin
+
+    h=$(/usr/bin/cat "$arg" | wc -l)
+    test $h -gt $hmax && h=$hmax
+    test $h -lt $hmin && h=$hmin
+
+    #echo "w=$w h=$h"
+    args+=("--geometry=${w}x$h")
+    # echo "w=$w h=$h" >&2
+}
+
+_emacs()
+{
+    # Add new options to emacs.
+    # Also make help usage easier with a pager.
+    # See also emacs_new_options() above.
+    # And, added option -h (alias --help) for emacs. ;)
+
+    local arg args=()
+    local moreargs extarg
+    local helpfile=$(/usr/bin/mktemp)
+    local argfile=$(/usr/bin/mktemp)   # $argfile is used only for delivering new args, if they exist
+    local extopt
+
+    # this should be made better regarding DEs and themes...
+    extopt="--reverse-video"
+    if [ "$XDG_CURRENT_DESKTOP" = "KDE" ] ; then
+	if [ -r ~/.config/kdedefaults/kdeglobals ] ; then
+	    if [ -n "$(/usr/bin/grep "^ColorScheme=" ~/.config/kdedefaults/kdeglobals | /usr/bin/grep -i dark)" ] ; then
+		extopt=""
+	    fi
+	fi
+    fi
+
+    #args=(--reverse-video)
+
+#    case "$(uname -n)" in
+#        tykki2) args+=('--geometry=150x60') ;;
+#        *)      args+=('--geometry=150x50') ;;
+#    esac
+
+    #echo "args = ${args[*]}"
+
+    for arg in "$@"
+    do
+        case "$arg" in
+            --bash=*)
+                # assume editing a bash script
+                emacs_new_options "$arg" "$argfile"
+                if [ $(/usr/bin/stat -c %s "$argfile") -ne 0 ] ; then
+                    readarray -t moreargs < "$argfile"
+                    args+=("${moreargs[@]}")
+                    /usr/bin/rm -f "$argfile"
+                fi
+                ;;
+            --external=*)
+                extarg="${arg:11}"
+                case "$extarg" in
+                    --bash=*)
+                        emacs_new_options "$extarg" "$argfile"
+                        if [ $(stat -c %s "$argfile") -ne 0 ] ; then
+                            readarray -t moreargs < "$argfile"
+                            args+=("${moreargs[@]}")
+                            /usr/bin/rm -f "$argfile"
+                        fi
+                        ;;
+                    --help)
+                        emacs_new_options "$extarg" "$helpfile"
+                        ;;
+                    *)
+                        echo "Error: unsupported external option '$extarg'."
+                        /usr/bin/rm -f $helpfile $argfile
+                        return 1
+                        ;;
+                esac
+                ;;
+            --help|-h)  # show external help *and* usual emacs help
+                args+=("--help")
+                emacs_new_options "$arg" "$helpfile"
+                ;;
+            -*)
+                args+=("$arg")
+                ;;
+            *)
+                if [ -r "$arg" ] ; then
+                    _geometry
+                fi
+                args+=("$arg")
+                ;;
+        esac
+    done
+
+    if [ $(/usr/bin/stat -c %s "$helpfile") -ne 0 ] ; then
+        # don't run emacs in backgound
+        if [ -n "$args" ] ; then
+            /usr/bin/emacs "${args[@]}" >> $helpfile
+            local pager
+            for pager in "$PAGER" /usr/bin/most /usr/bin/less
+            do
+                test -x "$pager" && break
+            done
+            $pager $helpfile
+        else
+            /usr/bin/cat $helpfile
+        fi
+        /usr/bin/rm -f $helpfile
+    else
+        # Run emacs in backgound.
+        /usr/bin/emacs $extopt "${args[@]}" >& /dev/null &
+    fi
+    /usr/bin/rm -f $helpfile $argfile
+}
+
+_emacs "$@"
