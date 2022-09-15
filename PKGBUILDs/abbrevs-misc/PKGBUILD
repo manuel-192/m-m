@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=abbrevs-misc
+pkgdesc="Various short commands"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=22.9
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+
+source=(
+    $url/ncdu
+    $url/update-grub
+)
+sha512sums=('be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
+            '57b471678c9cc9e77636629b6ab66845657267380c1e5bd2f9fab97cfd72ed036b1152e7d9cc4c716e540023b206e9b4ad8d18651b507389381683974c90f524')
+
+package() {
+    local xx yy
+    for xx in $(echo "${source[@]}") ; do
+        yy=$(basename "$xx")
+        install -Dm755 $yy               $pkgdir/usr/local/bin/$yy
+    done
+}
