@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=abbrevs-ls
+pkgdesc="Various short commands related to ls"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=22.9
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+
+source=(
+    $url/l
+    $url/ll
+    $url/ls
+)
+sha512sums=('a92ec59e4b47a0564f575cce475070054bead309e412bd59c322b555b3e53459b11357d0d5ff6d6fcdb0956f7a73e0feeeac5c54684a1c502b27328a971b73a7'
+            'b204607fbea89ee4acf70bb1c624d38c2f3930ed6f3a4d6d8dbbf368917f0fbfafe0264c6b8fa6b11278d515741afccb404384f4c52969ede4482aca9927951f'
+            'a40d63323d3d6eb5e12a70b31ceb2ec85095492ee68ebd510fa8a52cc904541a9f27a624e0d047213e9f7f554b1973f9e2cc20077b5188203b27baad8227945f')
+
+package() {
+    local xx
+    for xx in l ll ls ; do
+        install -Dm755 $xx               $pkgdir/usr/local/bin/$xx
+    done
+}

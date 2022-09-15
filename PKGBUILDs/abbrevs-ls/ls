@@ -1,0 +1,2 @@
+#!/bin/bash
+/usr/bin/ls -v --group-directories-first --color=auto --time-style=long-iso "$@"
