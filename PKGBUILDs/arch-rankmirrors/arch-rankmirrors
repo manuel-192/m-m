@@ -2,21 +2,23 @@
 
 # Rank Arch mirrors.
 
-echo2()   { echo "$@" >&2 ; }
-printf2() { printf "$@" >&2 ; }
-Verbose() { [ "$verbose" = "yes" ] && echo2 "==>" "$@" ; }
+echo2()    { echo "$@" >&2 ; }
+echo2i()   { echo "$@" | Indent >&2 ; }
+printf2()  { printf "$@" >&2 ; }
+Verbose2() { [ "$verbose" = "yes" ] && echo2 "==>" "$@" ; }
+
 DIE() {
     echo2 "==> $progname: error: $1"
     [ "$2" != "stay" ] && exit 1
 }
-Indent() { sed 's|^|   |' ; }
+Indent() { sed 's|^|    |' ; }
 
 Rank() {
 
-    Verbose "Ranking, please wait ..."
-    rm -f "$errlog"
+    Verbose2 "Ranking, please wait ..."
 
     local url="https://archlinux.org/mirrorlist/?use_mirror_status=on"
+    local data retval=0
     local xx
 
     for xx in "${countries[@]}" ; do
@@ -28,8 +30,14 @@ Rank() {
     for xx in "${ip_versions[@]}" ; do
         url+="&ip_version=$xx"
     done
-    
-    local data=$(wget -O- "$url" 2>/dev/null)
+
+    data=$($fetchcmd "$url" 2>/dev/null)
+    retval=$?
+    case "$retval" in
+        0) ;;
+        *) DIE "'$fetchcmd $url' failed with code $retval" ;;
+    esac
+
     local mirrors=$(echo "$data" | grep -Pv "^## |^##$|^$" | awk '{print $NF}')  # URLs of mirrors
     local ranked
 
@@ -37,10 +45,10 @@ Rank() {
         {
             local retcode result lastupdate fetch_time line url2
 
-            echo "URL Last-update Fetch-time"
-            echo "~~~ ~~~~~~~~~~~ ~~~~~~~~~~"
+            echo "Mirror Last-update Fetch-time"
+            echo "~~~~~~ ~~~~~~~~~~~ ~~~~~~~~~~"
             for url in $mirrors ; do
-                Verbose "$url"
+                Verbose2 "$url"
                 # url2=$(echo "$url" | sed 's|$repo/os/$arch|lastupdate|')
                 url2=${url/'$repo/os/$arch'/lastupdate}
                 result=$(curl --fail -Lsm $download_timeout -w "%{time_total}" "$url2")  # fetch lastupdate, measure time
@@ -52,14 +60,14 @@ Rank() {
                         lastupdate=$(date --date="@$lastupdate" "+%Y%m%d-%H%M%S")
                     fi
                     line="$url $lastupdate $fetch_time"
-                    IsOkMirror "$url2" "$errlog" && echo "$line"
+                    IsOkMirror "$url2" && echo "$line"
                 else
                     printf "==> %s failed, reason:\n%s\n" "$url" "$(curl-exit-code-to-string $retcode)" > /dev/stderr
                 fi
             done | LC_ALL=C sort -g -k2r,2 -k3,3 | head -n$((max_mirrors_to_show+2)) | sed 's|[ \t]*$||'
         } )
 
-    Verbose "Show ranking result"
+    Verbose2 "Show ranking result"
     echo "$ranked" | column -t >&2
 
     SaveToFile
@@ -83,7 +91,6 @@ SaveToFile() {
 
 IsOkMirror() {
     local url="$1"
-    local errlog="$2"
     local docheck=no
 
     if [ "$detect_all_issues" = "yes" ] ; then
@@ -95,25 +102,29 @@ IsOkMirror() {
     fi
     
     if [ "$docheck" = "yes" ] ; then
-        Lastsync_lastupdate "$url" "$errlog"
+        Lastsync_lastupdate "$url"
     fi
 }
 
 Lastsync_lastupdate() {
+    local url="$1"
+
     local url2=${url/lastupdate/lastsync}
     local lastsync=$(curl --fail -Lsm $download_timeout -w "%{time_total}" "$url2" | head -n1)
-    local line=""
 
     if [ "$time_as_datetime" = "yes" ] ; then
         lastsync=$(date --date="@$lastsync" "+%Y%m%d-%H%M%S")
     fi
     if [ "$lastupdate" = "$lastsync" ] ; then
-        # echo "$url: is a copy of lastsync." >> "$errlog"
-        line="$url: is a copy of lastsync."
+        echo2i "==> $url: warning: lastupdate=$lastupdate lastsync=$lastsync"
+        if [ "$skip_problematic_mirrors" = "no" ] ; then
+            echo2i "==> Note: you can skip problematic mirrors with option: --issue-skip"
+        fi
     fi
-    [ "$skip_problematic_mirrors" = "yes" ] && line+=" Mirror not ranked."
-    echo "$line" >> "$errlog"
-    [ "$skip_problematic_mirrors" = "yes" ] && return 1
+    if [ "$skip_problematic_mirrors" = "yes" ] ; then
+        echo2i "==> $url: skipping"
+        return 1
+    fi
 }
 
 AddCountries() {
@@ -168,7 +179,7 @@ Options() {
             -6 | --ipv6) ip_versions+=(6) ;;
 
             -v | --verbose)
-                verbose=yes; Verbose "Handling options ..." ;;
+                verbose=yes; Verbose2 "Handling options ..." ;;
             --epoch)
                 time_as_datetime=no ;;
             --issue-detect)
@@ -256,7 +267,6 @@ Main() {
     local time_as_datetime=yes
     local detect_all_issues=no
     local skip_problematic_mirrors=no
-    local errlog="/tmp/$progname.errlog"
 
     local protocols=()              # https and/or http
     local countries=()              # list of countries or 'all'
@@ -270,14 +280,19 @@ Main() {
     local def_download_timeout=10       # for each mirror check
     local def_max_mirrors_to_show=15
 
+    local fetchcmd
+
+    if [ -x /usr/bin/curl ] ; then
+        fetchcmd="curl --fail -Lsm 10 -o-"
+    elif [ -x /usr/bin/wget ] ; then
+        fetchcmd="wget -O-"
+    else
+        DIE "neither 'curl' nor 'wget' was found!"
+    fi
+
     Options "$@"
 
     Rank "$@"
-
-    if [ -e "$errlog" ] ; then
-        printf2 "\n==> Detected issues:\n"
-        cat "$errlog" | Indent >&2
-    fi
 }
 
 Main "$@"
