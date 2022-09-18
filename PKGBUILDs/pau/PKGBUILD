@@ -5,7 +5,7 @@
 pkgname=pau
 pkgdesc="Package updater, with certain useful extra features."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=22.9.2  # next pkgver: 22.10 or similar!
+pkgver=22.9.3  # next pkgver: 22.10 or similar!
 pkgrel=1
 
 arch=('any')
@@ -18,7 +18,7 @@ conflicts=(pac)
 
 source=(
     $url/$pkgname
-    $url/$pkgname.completion
+    $url/pac.completion
     $url/pac
     $url/Pacman
 )
@@ -28,7 +28,7 @@ sha512sums=('a563ce8b15d80810778207bbb5c4ec8441974f4f0936fcb62bf4345778c808f9d9b
             'bc438759aeb1826236e127ebb836482fa6dbc1c04698fd5c0cb74a616c0241cbb155a597e16174a3b5062e4b0a3a30a7db02cff26c97e8aee453ca62e730227e')
 
 package() {
-    install -Dm644 $pkgname.completion    $pkgdir/usr/share/bash-completion/completions/$pkgname
+    install -Dm644 pac.completion         $pkgdir/usr/share/bash-completion/completions/pac
     install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
     install -Dm755 Pacman                 $pkgdir/usr/bin/Pacman
     install -Dm755 pac                    $pkgdir/usr/bin/pac
