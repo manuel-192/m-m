@@ -9,9 +9,22 @@ Main() {
     [ -x /usr/bin/$helper ] || helper=yay
 
     case "$1" in
-        -a | --aur) pau --$helper ;;  # ignores other parameters
-        "" | -Syu) pau ;;
-        *) Pacman "$@" ;;
+        -a | --aur)
+            pau --$helper  # ignores other parameters
+            ;;
+        "")
+            pau
+            ;;
+        -Syu)
+            if [ -n "$2" ] ; then
+                Pacman "$@"
+            else
+                pau
+            fi
+            ;;
+        *)
+            Pacman "$@"
+            ;;
     esac
 }
 
