@@ -18,7 +18,7 @@ Main() {
     case "$out" in
         "$root_needed") sudo pacman "$@" ;;
         "")             return $retval ;;
-        *)              printf "%s" "$out" ; return $retval ;;
+        *)              printf "%s\n" "$out" ; return $retval ;;
     esac
 }
 

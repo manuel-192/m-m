@@ -5,7 +5,7 @@
 pkgname=pau
 pkgdesc="Package updater, with certain useful extra features."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=22.9.4  # next pkgver: 22.10 or similar!
+pkgver=22.9.5  # next pkgver: 22.10 or similar!
 pkgrel=1
 
 arch=('any')
@@ -25,7 +25,7 @@ source=(
 sha512sums=('a563ce8b15d80810778207bbb5c4ec8441974f4f0936fcb62bf4345778c808f9d9bc856ab7ff3f9d6701d90bd35149f93519d01c9fdbbb927b068f6391293505'
             '1b3fd7f5779ada3c2f6f005f37fa538b5d0e91db5aebd6985e885d67ca73a0095102d910eb91d52de875d804d220a4985d4ded793b47042a10b518320d528fb9'
             'a8916b6a04b687c73e0a6c8d94ad2246094f54036f2e2b673d7eb73ac741f0717ab6f6bbf0d68ec575cc3508d488f649531ba7d08185d5f3078d0b1f50959c20'
-            'bc438759aeb1826236e127ebb836482fa6dbc1c04698fd5c0cb74a616c0241cbb155a597e16174a3b5062e4b0a3a30a7db02cff26c97e8aee453ca62e730227e')
+            '6fac42fadcf3fbc4cc7f82397bb4782ad8babb4f8b942efe16e7d4bdeb6bff99e528778b9f238eb0b3d2c7ca5c20657806afbbc1c124ab734b722fbbd93071a3')
 
 package() {
     install -Dm644 pac.completion         $pkgdir/usr/share/bash-completion/completions/pac
