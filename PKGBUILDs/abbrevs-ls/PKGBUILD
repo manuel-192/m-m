@@ -6,7 +6,7 @@ pkgname=abbrevs-ls
 pkgdesc="Various short commands related to ls"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=22.9
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -14,15 +14,15 @@ license=('GPL')
 source=(
     $url/l
     $url/ll
-    $url/ls
+#    $url/ls
 )
-sha512sums=('a92ec59e4b47a0564f575cce475070054bead309e412bd59c322b555b3e53459b11357d0d5ff6d6fcdb0956f7a73e0feeeac5c54684a1c502b27328a971b73a7'
-            'b204607fbea89ee4acf70bb1c624d38c2f3930ed6f3a4d6d8dbbf368917f0fbfafe0264c6b8fa6b11278d515741afccb404384f4c52969ede4482aca9927951f'
-            'f95ab0ae179d0fc58424e8fc189b6dedbf7df1d0e1ccba87cba934a5362bc54967fa3276f30adb6a939ff0bec0432da37269ce597cdc81cbccb513b54e2940cc')
+sha512sums=('c6cf05ae65b2886b9fc6c7412f62521bfcad4f0c48dabcc7e8b07c1173e81cdeb4777e44f4e88b8d0c63ef9f029a37dcb983267f38d815032190ae45843a3551'
+            '4a63ad8e485c8418a8db9e8c905893ef60edb12aa49f056894490c9cee12b8b889faf7eb4f412083df53b4dc353b361f7a01429b5220df92f73bf5666242ad47')
 
 package() {
     local xx
-    for xx in l ll ls ; do
+    for xx in l ll # ls
+    do
         install -Dm755 $xx               $pkgdir/usr/local/bin/$xx
     done
 }

@@ -1,2 +1,15 @@
 #!/bin/bash
-ls -la --ignore=.?* --file-type "$@"
+
+Main() {
+    local ls_opts=(
+        -v --group-directories-first --color=auto
+        --time-style=long-iso --file-type
+    )
+
+    case "$1" in
+        --get-ls-opts) echo "${ls_opts[*]}" ;;
+        *) ls ${ls_opts[*]} -la --ignore=.?* "$@" ;;
+    esac
+}
+
+Main "$@"
