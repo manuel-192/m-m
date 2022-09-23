@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# meld with RCS support (file has RCS/file,v):
+#     meld [-rX [-rY]] file
+# where
+#    X and Y are a normal revision numbers or a negative number: -1 = previous from HEAD, -2 = second previous, ...
+
+DIE() { echo "Error: $1" >&2 ; exit 1 ; }
+
+RCSdir() { echo "$(dirname "$1")"/RCS ; }
+
+FileHasRCS() {
+    local file="$1"
+    test -r "$(RCSdir "$file")"/"$(basename "$file")",v && return 0 || return 1
+}
+
+RevFix() {
+    # 3.45 + -1 = 3.44
+    local rev="$1"
+    local head="${HEAD##*.}"   # get the rightmost digit after dot
+}
+
+Main()
+{
+    local progname=meld-rcs-helper
+    local arg args=()
+    local revs=() rev1 rev2
+    local filepath rcsdir filename
+    local realmeld=/usr/bin/meld
+    #local HEAD1 HEAD2
+
+    # look for RCS related stuff
+    for arg in "$@" ; do
+        case "$arg" in
+            -r*)
+                revs+=("${arg:2}")      # -r is an rcsdiff option
+                ;;
+            *)
+                args+=("$arg")          # args may contain the file that has RCS
+                ;;
+        esac
+    done
+
+    # check if RCS stuff was found
+    if [ "${#args[@]}" = "1" ] ; then                    # only one file as arg?
+        filepath="$(realpath "${args[0]}")"              # absolute path
+        if [ -r "$filepath" ] ; then
+            if FileHasRCS "$filepath" ; then                  # is an RCS file?
+
+                # Yes, do rcsdiff stuff!
+
+                filename="$(basename "$filepath")"
+                mkdir -p "$HOME"/.cache/$progname
+                local tmpdir="$(mktemp -d "$HOME"/.cache/$progname/$filename.XXXXX)"
+
+                rcsdir="$(RCSdir "$filepath")"
+
+                pushd $tmpdir >/dev/null
+
+                ln -s $rcsdir
+
+                case "${#revs[@]}" in
+                    0)  # FORM: meld file
+                        co "$filename" 2>/dev/null                      # RCS head
+                        mv "$filename" "$filename".head
+                        $realmeld "$filepath" "$filename".head
+                        ;;
+                    1)  # FORM: meld -rX file
+                        # HEAD1=$(head -n1 "$rcsdir/$filename" | awk '{print $2}' | sed 's|;$||')
+                        rev1="${revs[0]}"
+                        co -r"$rev1" "$filename" 2>/dev/null
+                        mv "$filename" "$filename"."$rev1"
+                        $realmeld "$filepath" "$filename"."$rev1"
+                        ;;
+                    2)  # FORM: meld -rX -rY file
+                        rev1="${revs[0]}"
+                        rev2="${revs[1]}"
+                        co -r"$rev1" "$filename" 2>/dev/null
+                        mv "$filename" "$filename"."$rev1"
+                        co -r"$rev2" "$filename" 2>/dev/null
+                        mv "$filename" "$filename"."$rev2"
+                        $realmeld "$filename"."$rev1" "$filename"."$rev2"
+                        ;;
+                    *) DIE "there can be zero, one or two -r options" ;;
+                esac
+
+                popd >/dev/null
+                rm -rf $tmpdir
+                return                       # rcsdiff stuff is done now, nothing more to see here...
+            fi
+        fi
+    fi
+
+    # no RCS stuff, so continue as normal meld
+    $realmeld "$@"
+}
+
+Main "$@"
