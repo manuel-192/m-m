@@ -6,7 +6,7 @@ pkgname=pkgname-parts
 pkgdesc="Show parts of a package name."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1
-pkgrel=1
+pkgrel=1.1
 
 arch=('any')
 license=('GPL')
