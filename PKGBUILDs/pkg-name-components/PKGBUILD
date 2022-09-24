@@ -2,7 +2,7 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=pkgname-components
+pkgname=pkg-name-components
 pkgdesc="Show parts of a package name."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1
