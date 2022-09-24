@@ -44,7 +44,7 @@ Main() {
     local result=""
     local ix item
 
-    all=$(echo "$pkg" | sed -E 's/([a-zA-Z0-9]+[a-zA-Z0-9-]*[a-zA-Z0-9]+)-([0-9:.]+)-([0-9.]+)-([a-z0-9_]+)\.pkg\.tar\.([a-z0-9]+)$/\1 \2 \3 \4 \5/')
+    all=$(echo "$pkg" | sed -E 's/([a-zA-Z0-9@_+][a-zA-Z0-9@._+-]+[a-zA-Z0-9@_+-]*[a-zA-Z0-9@._+])-([0-9:]*[^:/\-\ \t]+)-([0-9.]+)-([a-z0-9_]+)\.pkg\.tar\.([a-z0-9]+)$/\1 \2 \3 \4 \5/')
 
     all=($(echo $all))
     N=${all[0]}
@@ -69,7 +69,7 @@ Main() {
             *) DIE "given parameter '$parts' includes an unsupported value '$item'." ;;
         esac
     done
-    [ -n "$result" ] && result=${result:: -1}
+    [ -n "$result" ] && result="${result:: -1}"
 
     echo "$result"
 }

@@ -6,7 +6,7 @@ pkgname=pkg-name-components
 pkgdesc="Show parts of a package name."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1
-pkgrel=1.1
+pkgrel=1.2
 
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ license=('GPL')
 source=(
     $url/$pkgname
 )
-sha512sums=('f22072daefd4dde6c3c538e0b7481e88de7517231feaca8808f8e9dfa8299c0a5c6192a50034ac04f7010ff34ee52706336f4eee65ecf045cc2ba63b86813ebc')
+sha512sums=('0c2c7b4bfa7f0ca065553c090babfb5617396e774be61fd5f8e4d6b5f7a8cc0e0a66a1d4e2b06299bba54140819283c7cc2f20dca44bde475a66ba666519af3b')
 
 package() {
     install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
