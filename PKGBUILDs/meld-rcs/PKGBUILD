@@ -6,7 +6,7 @@ pkgname=meld-rcs
 pkgdesc="Meld with RCS support and small UI changes"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -21,6 +21,6 @@ sha512sums=('4cd1419ac85d195558ffea2e36a5c567166e058da989ecf5533be76580b6f7042ab
 package() {
     local xx
     for xx in meld-rcs{,-helper} ; do
-        install -Dm755 $xx               $pkgdir/usr/local/bin/$xx
+        install -Dm755 $xx               $pkgdir/usr/bin/$xx
     done
 }
