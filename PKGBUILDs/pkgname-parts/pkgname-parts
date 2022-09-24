@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Show parts of a given package file name.
+
+DIE() {
+    echo "Error: $1" >&2
+    exit 0
+}
+
+Usage() {
+    cat <<EOF
+Usage: $progname parts package-file-name
+where
+  parts              A string of upper case characters consisting of: N V R A C E.
+                     N = pkgname
+                     E = epoch
+                     V = pkgver
+                     R = pkgrel
+                     A = arch
+                     C = compressor
+
+EOF
+}
+
+Main() {
+    # pactree-bash-completion-2:22.04.23-1-any.pkg.tar.zst
+    # parts:
+    #   N=pkgname     pactree-bash-completion
+    #   E=epoch       2
+    #   V=pkgver      22.04.23
+    #   R=pkgrel      1
+    #   A=arch        any
+    #   C=compressor  zst (needed?)
+    #
+    local parts="$1"
+    local pkg="$2"
+
+    local progname="$(basename "$0")"
+    local sep="|"      # output separator
+    local N="" V="" R="" A="" C=""
+    local E="0"                       # default (=unspecified) epoch is 0
+    local all=""
+    local result=""
+    local ix item
+
+    #pkg="pactree-bash-completion-2:22.04.23-1-any.pkg.tar.zst"   # TESTING !!
+    #pkg="pactree-bash-completion-22.04.23-1-any.pkg.tar.zst"   # TESTING !!
+
+    all=$(echo "$pkg" | sed -E 's/([a-zA-Z0-9]+[a-zA-Z0-9-]*[a-zA-Z0-9]+)-([0-9:.]+)-([0-9.]+)-([a-z0-9_]+)\.pkg\.tar\.([a-z0-9]+)$/\1 \2 \3 \4 \5/')
+
+    all=($(echo $all))
+    N=${all[0]}
+    V=${all[1]}   # may include epoch!
+    R=${all[2]}
+    A=${all[3]}
+    C=${all[4]}
+    if [ "${V%:*}" != "$V" ] ; then
+        E="${V%:*}"
+        V="${V#*:}"
+    fi
+
+    for ((ix=0; ix < ${#parts}; ix++)) ; do
+        item="${parts:$ix:1}"
+        case "$item" in
+            N) result+="$N|" ;;
+            V) result+="$V|" ;;
+            R) result+="$R|" ;;
+            A) result+="$A|" ;;
+            C) result+="$C|" ;;
+            E) result+="$E|" ;;
+            *) DIE "given parameter '$parts' includes an unsupported value '$item'." ;;
+        esac
+    done
+    [ -n "$result" ] && result=${result:: -1}
+
+    echo "$result"
+}
+
+Main "$@"
