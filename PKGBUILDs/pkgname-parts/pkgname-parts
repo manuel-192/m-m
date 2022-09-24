@@ -4,34 +4,35 @@
 
 DIE() {
     echo "Error: $1" >&2
+    Usage
     exit 0
 }
 
 Usage() {
     cat <<EOF
-Usage: $progname parts package-file-name
-where
-  parts              A string of upper case characters consisting of: N V R A C E.
-                     N = pkgname
-                     E = epoch
-                     V = pkgver
-                     R = pkgrel
-                     A = arch
-                     C = compressor
+
+Usage: $progname "parts" "package-file-name"
+  parts
+              A string of upper case letters consisting of: N V R A C E.
+              N = pkgname
+              E = epoch
+              V = pkgver
+              R = pkgrel
+              A = arch
+              C = compressor
+              These letters specify what the output will contain.
+              The output values are separated by the pipe '|' character.
+  package-file-name
+              Name of a package file.
+
+Example:
+  $ pkgname-parts NEVRAC foo-bar-2:22.04.23-1-any.pkg.tar.zst
+  foo-bar|2|22.04.23|1|any|zst
 
 EOF
 }
 
 Main() {
-    # pactree-bash-completion-2:22.04.23-1-any.pkg.tar.zst
-    # parts:
-    #   N=pkgname     pactree-bash-completion
-    #   E=epoch       2
-    #   V=pkgver      22.04.23
-    #   R=pkgrel      1
-    #   A=arch        any
-    #   C=compressor  zst (needed?)
-    #
     local parts="$1"
     local pkg="$2"
 
@@ -42,9 +43,6 @@ Main() {
     local all=""
     local result=""
     local ix item
-
-    #pkg="pactree-bash-completion-2:22.04.23-1-any.pkg.tar.zst"   # TESTING !!
-    #pkg="pactree-bash-completion-22.04.23-1-any.pkg.tar.zst"   # TESTING !!
 
     all=$(echo "$pkg" | sed -E 's/([a-zA-Z0-9]+[a-zA-Z0-9-]*[a-zA-Z0-9]+)-([0-9:.]+)-([0-9.]+)-([a-z0-9_]+)\.pkg\.tar\.([a-z0-9]+)$/\1 \2 \3 \4 \5/')
 

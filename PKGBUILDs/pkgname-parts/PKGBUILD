@@ -14,8 +14,7 @@ license=('GPL')
 source=(
     $url/$pkgname
 )
-sha512sums=('4cd1419ac85d195558ffea2e36a5c567166e058da989ecf5533be76580b6f7042abf905b5384d108eb83601350c695f687089c4ea58c905f254d0b175ff15434'
-            '0784f6c82724cc3cfb73a898f243b95225ea5fd1bae6f8e9dfa0d1177533a6e2eed6a0f61ff30422f146ebeb355ebb472b23ab5ecbc2aa56837c7f4236022a68')
+sha512sums=('f22072daefd4dde6c3c538e0b7481e88de7517231feaca8808f8e9dfa8299c0a5c6192a50034ac04f7010ff34ee52706336f4eee65ecf045cc2ba63b86813ebc')
 
 package() {
     install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
