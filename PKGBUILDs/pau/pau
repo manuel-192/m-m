@@ -99,7 +99,7 @@ DiskSpace() {
     fi
 }
 
-Main() {
+Pau() {
     local progname="$(/usr/bin/basename "$0")"
     local nvidia=":"
     local helper="pacman"
@@ -129,6 +129,34 @@ Main() {
         helper2="/usr/bin/sudo -u $LOGNAME $helper -Sua"
         sudo bash -c "rm -$rmopt $lock; [ -e $lock ] || { $nvidia && $cmdkeyring ${keyrings[*]} && pacman -Su && $helper2 ; sync ; }"
     fi
+}
+
+Main() {
+    # pacman with additional features for
+    # - update and AUR (via Pau)
+    # - avoiding sudo (via Pacman)
+
+    local helper=paru
+    [ -x /usr/bin/$helper ] || helper=yay
+
+    case "$1" in
+        -a | --aur)
+            Pau --$helper  # ignores other parameters
+            ;;
+        "")
+            Pau
+            ;;
+        -Syu)
+            if [ -n "$2" ] ; then
+                Pacman "$@"
+            else
+                Pau
+            fi
+            ;;
+        *)
+            Pacman "$@"
+            ;;
+    esac
 }
 
 Main "$@"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Main() {
+Main_old() {
     # pacman with additional features for
     # - update and AUR (via pau)
     # - avoiding sudo (via Pacman)
@@ -26,6 +26,10 @@ Main() {
             Pacman "$@"
             ;;
     esac
+}
+
+Main() {
+    pau "$@"
 }
 
 Main "$@"
