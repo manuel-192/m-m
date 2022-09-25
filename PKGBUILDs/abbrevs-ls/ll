@@ -1,3 +1,3 @@
 #!/bin/bash
 
-l -a --ignore=.. "$@"
+ls -la --ignore=.. "$@"
