@@ -6,7 +6,7 @@ pkgname=arch-rankmirrors
 pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=5
+pkgrel=6
 
 arch=('any')
 license=('GPL')
