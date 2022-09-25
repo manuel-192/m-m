@@ -6,7 +6,7 @@ pkgname=abbrevs-ls
 pkgdesc="Various short commands related to ls"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=22.9
-pkgrel=3
+pkgrel=4
 
 arch=('any')
 license=('GPL')
@@ -17,7 +17,7 @@ source=(
     $url/lt
 )
 sha512sums=('c6cf05ae65b2886b9fc6c7412f62521bfcad4f0c48dabcc7e8b07c1173e81cdeb4777e44f4e88b8d0c63ef9f029a37dcb983267f38d815032190ae45843a3551'
-            'd81471b1ec2522541584fb40b795f41d73a510d4583b71f1a5c80d21bd34b8097fe95351195447e5e5f7a8675775da3995b3d63f8b1de3f9ae848d8dc98f89eb'
+            'e43516117945c394221a79985a1c8d1357273e819c52f1d980e8b0a151c76a836c24438fda4f42bfcaaf05e0a881450757695c3cedc40f50993bdc545e0d9178'
             '067c2f51f2df8e56297d6294124b2460b27c263caff24ce58855913c0f0a2d8caa6c4369e50448731632406081ec55ed75251492e7550878ce32957ce8af41cb')
 
 package() {
