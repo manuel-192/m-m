@@ -108,21 +108,16 @@ IsOkMirror() {
 
 Lastsync_lastupdate() {
     local url="$1"
-
     local url2=${url/lastupdate/lastsync}
     local lastsync=$(curl --fail -Lsm $download_timeout -w "%{time_total}" "$url2" | head -n1)
+    local mirror=""
 
     if [ "$time_as_datetime" = "yes" ] ; then
         lastsync=$(date --date="@$lastsync" "+%Y%m%d-%H%M%S")
     fi
     if [ "$lastupdate" = "$lastsync" ] ; then
-        echo2i "==> $url: warning: lastupdate=$lastupdate lastsync=$lastsync"
-        if [ "$skip_problematic_mirrors" = "no" ] ; then
-            echo2i "==> Note: you can skip problematic mirrors with option: --issue-skip"
-        fi
-    fi
-    if [ "$skip_problematic_mirrors" = "yes" ] ; then
-        echo2i "==> $url: skipping"
+        mirror="${url/lastupdate}"'$repo/os/$arch'
+        printf2 "==> Warning: %s skipped because 'lastupdate' and 'lastsync' values are equal (%s)\n" "$mirror" "$lastupdate"
         return 1
     fi
 }
@@ -144,7 +139,7 @@ AddCountries() {
 Options() {
     local opts
     local sopts="hp:c:d:n:s:46v"
-    local lopts="help,protocol:,country:,download-timeout:,number:,save:,ipv4,ipv6,verbose,issue-detect,issue-skip"
+    local lopts="help,protocol:,country:,download-timeout:,number:,save:,ipv4,ipv6,verbose,issue-detect"
 
     opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || {
         Options -h
@@ -184,8 +179,6 @@ Options() {
                 time_as_datetime=no ;;
             --issue-detect)
                 detect_all_issues=yes ;;           # will be slower, doubles the time!
-            --issue-skip)
-                skip_problematic_mirrors=yes ;;
 
             -h | --help)
                 Usage
@@ -242,7 +235,12 @@ Usage() {
 
 Usage: $progname [options] [countries]
 Options:
-  -c, --country             Rank mirrors from these countries (2 uppercase letters for a country, or 'all').
+  -c, --country             Rank mirrors from a list of country specs.
+                            List items can be separated by commas.
+                            A country spec is either 2 letters (country code) or the name of a country.
+                            See also the output of command:
+                               reflector --list-countries
+                            Note that a country name including spaces must be quoted.
   -p, --protocol            Supported protocols (https, http). Default: "${def_protocols[@]}"
   -d, --download-timeout    Max time in seconds to rank a mirror. Default: $def_download_timeout
   -n, --number              Max number of the "best" mirrors to show after ranking. Default: $def_max_mirrors_to_show
@@ -251,14 +249,14 @@ Options:
   -6, --ipv6                Use IPv6 addresses.
   -v, --verbose             Show more details about the operation.
       --epoch               Show the time of last update as seconds since the beginning of year 1970.
-      --issue-detect        Detect certain issues with all ranked mirrors.
-      --issue-skip          Skip a problematic mirror from ranking results.
+      --issue-detect        Detect issues with all mirrors instead of only mirrors known to have problems.
   -h, --help                This help.
 
 Country list can be given also without option -c.
 
 Note: ranking mirrors of many countries will take lots of time.
 EOF
+#      --issue-skip          Skip a problematic mirror from ranking results.
 }
 
 Main() {
@@ -266,7 +264,7 @@ Main() {
     local verbose=no
     local time_as_datetime=yes
     local detect_all_issues=no
-    local skip_problematic_mirrors=no
+    local skip_problematic_mirrors=yes
 
     local protocols=()              # https and/or http
     local countries=()              # list of countries or 'all'
