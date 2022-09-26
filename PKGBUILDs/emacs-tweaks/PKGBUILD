@@ -1,0 +1,19 @@
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=emacs-tweaks
+pkgdesc="Simple help for starting emacs"
+pkgver=1
+pkgrel=1
+arch=('any')
+license=('GPL')
+
+url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
+
+source=(
+  $url/emacs
+)
+sha512sums=('3db46ab2194af68e9e64ff64a6eb13969fcee0d891d5ba18e1d781b30e70f7e25a4f9645128385ae1698151f5fae1aab46431dda9d896bc3dacba11ef3aa8d8e')
+
+package() {
+  install -Dm755 emacs          $pkgdir/usr/local/bin/emacs
+}
