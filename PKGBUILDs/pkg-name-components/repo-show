@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# Show packages and their versions in a repo db.
+
+Main()
+{
+    local dbpath="$1"
+    local dir="$2"
+
+    #local ending=db.tar.xz
+
+    test -n "$dir" || dir="."
+    test -n "$dbpath" || DIE "dbpath not given"
+    test -r "$dir/$dbpath" || DIE "==> ERROR: '$dir/$dbpath' does not have a valid database archive extension."
+
+    local xx data1
+    local N E V R
+    local data=$(tar --list --exclude */desc -f $dir/$dbpath | sed 's|/$||')
+
+    data=$(echo "$data" | sed -E 's|(.*)|\1-any.pkg.tar.zst|')     # add *fake* missing info!
+
+    for xx in $data ; do
+        data1=$(pkg-name-components NEVR "$xx")
+        N=$(echo "$data1" | cut -d'|' -f1)
+        E=$(echo "$data1" | cut -d'|' -f2)
+        V=$(echo "$data1" | cut -d'|' -f3)
+        R=$(echo "$data1" | cut -d'|' -f4)
+        if [ $E -eq 0 ] ; then
+            echo "$N ${V}-$R"
+        else
+            echo "$N ${E}:${V}-$R"
+        fi
+    done | column -t
+}
+
+DIE() {
+    local progname="$(basename "$0")"
+    local msg="$1"
+    echo "$msg" >&2
+    echo "Usage: $progname 'dbpath' [db-dir]" >&2
+    exit 1
+}
+
+Main "$@"

@@ -6,16 +6,22 @@ pkgname=pkg-name-components
 pkgdesc="Show parts of a package name."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1
-pkgrel=1.2
+pkgrel=1.3
 
 arch=('any')
 license=('GPL')
 
 source=(
-    $url/$pkgname
+    $url/pkg-name-components
+    $url/repo-show
 )
-sha512sums=('0c2c7b4bfa7f0ca065553c090babfb5617396e774be61fd5f8e4d6b5f7a8cc0e0a66a1d4e2b06299bba54140819283c7cc2f20dca44bde475a66ba666519af3b')
+sha512sums=('e47f63104c906a9915f3ac3b9a540dcd8888144a9db6b76f6b70152340dac26f41bfec0aed4c3c952f433778e85e431208bb95d9513cd064aeef9bcff65dba9e'
+            '05c320c52e6615812bc1ba897beb75d875d42d3a60dca7db19c54cdae37978c888772f222e5a2421f10f397251755f73ce5de2034af5867222744a5d4d2e4e73')
 
 package() {
-    install -Dm755 $pkgname   $pkgdir/usr/bin/$pkgname
+    local xx name
+    for xx in "${source[@]}" ; do
+        name=$(basename "$xx")
+        install -Dm755 $name   $pkgdir/usr/bin/$name
+    done
 }
