@@ -1,5 +1,11 @@
 #!/bin/bash
 
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
 _meld_do() {
     setsid /usr/bin/meld "$@" &> /dev/null
 }
@@ -42,6 +48,7 @@ meld() {
                 fi
             done
         fi
+        DIE "RCS comparison requires file parameters."
     fi
 
     if [ -n "$1" ] && [ -n "$2" ] && [ -z "$3" ] && [ -e "$1" ] && [ -e "$2" ] ; then
