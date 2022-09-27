@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=pkgurl
+pkgdesc="Show the URL or AUR URL of the package"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('18d200986e7ec9d579b5422d2dcb35a5016eb55a8ccadf2fd148602d4d411bbd58722f0baec9a941adcc15b8e0121871f73a325f3a7093910758fced92310ea8')
+
+package() {
+    local xx pkg
+    for xx in "${source[@]}" ; do
+        pkg=$(basename "$xx")
+        install -Dm755 "$pkg"               "$pkgdir/usr/bin/$pkg"
+    done
+}

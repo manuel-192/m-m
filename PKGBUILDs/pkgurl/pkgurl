@@ -1,0 +1,81 @@
+#!/bin/bash
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Options() {
+    local progname="$(/usr/bin/basename "$0")"
+    local opts
+
+    opts="$(/usr/bin/getopt -o=hf: --longoptions help,field: --name "$progname" -- "$@")" || {
+        Options -h
+        return 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -f | --field) field="$2"; shift  ;;
+
+            -h | --help)
+                cat <<EOF >&2
+
+$progname - Show the web page mentioned in the 'URL' or 'AUR URL' property of 'yay -Si pkgname'
+
+Usage: $progname [options] pkgname
+Pkgname               Name of the package for which the information will be fetched.
+Options:
+  -f, --field         Field of 'yay -Si pkgname' ('URL', 'AUR URL') page to fetch.
+  -h, --help          This help.
+
+Note: AUR helpers paru and yay are supported.
+
+EOF
+                exit 0
+                ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+
+    pkg="$1"
+
+    [ -n "$pkg" ] || DIE "give package name"
+
+    case "$field" in
+        URL | "AUR URL") ;;
+        *) DIE "unsupported field '$field'" ;;
+    esac
+}
+
+Main() {
+    local pkg=""
+    local helper=paru
+    [ -x /usr/bin/$helper ] || helper=yay
+    local field="URL"
+
+    Options "$@"
+
+    local data=$(LANG=C $helper -Si "$pkg")
+    [ -z "$data" ] && DIE "no data found for package '$pkg'"
+
+    local url=$(echo "$data" | grep "^$field" | awk '{print $NF}')
+    if [ -z "$url" ] ; then
+        case "$field" in
+            "AUR URL") field="URL" ;;
+            URL)       field="AUR URL" ;;
+        esac
+        echo "==> changed field to '$field'" >&2
+        url=$(echo "$data" | grep "^$field" | awk '{print $NF}')
+    fi
+    [ -z "$url" ] && DIE "package '$pkg' has no field '$field'"
+
+    setsid xdg-open "$url" &> /dev/null
+}
+
+Main "$@"
