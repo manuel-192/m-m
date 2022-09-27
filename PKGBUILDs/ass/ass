@@ -1,0 +1,106 @@
+#!/bin/bash
+
+Yad() {
+    GDK_BACKEND=x11 /usr/bin/yad --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png "$@"
+}
+
+yad_warn() {
+    local msg="$1"
+    shift
+    local cmd=(
+        Yad
+        --form
+        --title="Warning"
+        --text="$msg"
+        --button=yad-quit:1
+        --image=dialog-warning
+        --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png
+    )
+    "${cmd[@]}" "$@"
+}
+
+ass() {
+    local folders=(
+        mirrors.mirror1 #TRUE
+        m-m             #FALSE
+        m-aur           #FALSE
+    )
+    local machines=(                  # name "command-on-that-machine"
+        tilhi  "assets.make"
+        kuulas "assets.make -nn"
+    )
+    local ix
+    local machine="$(uname -n)"
+    local folder=""
+
+    # Validity checks.
+
+    if [ ${#machines[@]} -lt 1 ] ; then
+        yad_warn "Sorry, no machines added."
+        return 1
+    fi
+    if [ ${#folders[@]} -lt 1 ] ; then
+        yad_warn "Sorry, no folders added."
+        return 1
+    fi
+
+    for (( ix=0; ix<${#machines[@]}; ix+=2)) ; do
+        if [ "$machine" = "${machines[$ix]}" ] ; then
+            break
+        fi
+    done
+    if [ "$machine" != "${machines[$ix]}" ] ; then
+        yad_warn "Sorry, '$machine' not supported."
+        return 1
+    fi
+
+    # Ask for the folder to manage.
+
+    local cmd=( Yad
+                --list
+                --height=300
+                --title="Select folder"
+                --text="Select the folder to handle."
+                --image=dialog-question
+                --button=yad-ok:0
+                --button=yad-cancel:1
+                --column="Folder"
+              )
+
+    for ((ix=0; ix < ${#folders[@]}; ix++)) ; do
+        folder="${folders[$ix]}"
+        cmd+=("$folder")
+
+        # check that the folder exists
+        pushd "$folder" >/dev/null
+        if [ $? -ne 0 ] ; then
+            yad_warn "Sorry, folder '$folder' is unreachable."
+            return 1
+        fi
+        popd >/dev/null
+    done
+
+    folder="$("${cmd[@]}")"
+    folder="$(echo "$folder" | cut -d'|' -f1)"
+
+    [ -n "$folder" ] || {
+        # yad_warn "Sorry, failed to pick the folder."
+        return 1
+    }
+
+    # Goto the folder and run the proper command.
+
+    pushd "$folder" >/dev/null
+    echo "==> [$PWD]" >&2
+
+    for ((ix=0; ix < ${#machines[@]}; ix+=2)) ; do
+        if [ "$machine" = "${machines[$ix]}" ] ; then
+            ${machines[$(( ix+1 ))]}
+            break
+        fi
+    done
+
+    popd >/dev/null
+}
+
+ass "$@"

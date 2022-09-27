@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=assets
+pkgdesc="Some assets management stuff"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+
+source=(
+    $url/ass
+)
+sha512sums=('66317b727230a5273913fa38ec088aa97c6a3f36afacca7c8c72cd680deb154265dd4d4b363c3088106af07c4ba7c782fe5f5c77746c91673e95efbf6ff3b9ab')
+
+package() {
+    local xx pkg
+    for xx in "${source[@]}" ; do
+        pkg=$(basename "$xx")
+        install -Dm755 "$pkg"               "$pkgdir/usr/bin/$pkg"
+    done
+}
