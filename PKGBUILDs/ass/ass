@@ -26,8 +26,8 @@ ass() {
         m-aur           #FALSE
     )
     local machines=(                  # name "command-on-that-machine"
-        tilhi  "assets.make"
-        kuulas "assets.make -nn"
+        kuulas       "assets.make -nn"
+        manuel-pc15  "assets.make"
     )
     local ix
     local machine="$(uname -n)"
