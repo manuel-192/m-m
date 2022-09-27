@@ -13,13 +13,15 @@ license=('GPL')
 
 source=(
     $url/ass
+    $url/Build
 )
-sha512sums=('66317b727230a5273913fa38ec088aa97c6a3f36afacca7c8c72cd680deb154265dd4d4b363c3088106af07c4ba7c782fe5f5c77746c91673e95efbf6ff3b9ab')
+sha512sums=('66317b727230a5273913fa38ec088aa97c6a3f36afacca7c8c72cd680deb154265dd4d4b363c3088106af07c4ba7c782fe5f5c77746c91673e95efbf6ff3b9ab'
+            'ab89b9f36a778ba7d635916b71ed6eda2a6f57310f8fbcf2240982d0c7fe2bb980972cdcb2741222ea118f159f73afb8273fba392820c3107f7460aeebb3a29f')
 
 package() {
     local xx pkg
     for xx in "${source[@]}" ; do
         pkg=$(basename "$xx")
-        install -Dm755 "$pkg"               "$pkgdir/usr/bin/$pkg"
+        install -Dm755 "$pkg"               "$pkgdir/usr/local/bin/$pkg"
     done
 }
