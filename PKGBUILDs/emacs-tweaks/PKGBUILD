@@ -6,6 +6,7 @@ pkgver=1
 pkgrel=1
 arch=('any')
 license=('GPL')
+depends=(emacs)
 
 url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
 
