@@ -6,18 +6,20 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=22.9
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
+depends=(ncdu)
+optdepends=(
+    'grub: for updating grub.cfg'
+)
 
 source=(
-    $url/emacs
     $url/ncdu
     $url/update-grub
 )
-sha512sums=('830b4c00a47e735093935e4a58621f8925e7821f991a88803cbebb5b91b74c125d74a56053367fd517afb15db788c41c4a5379b2614e562b95bb2ec4ad0ed804'
-            'be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
+sha512sums=('be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
             '57b471678c9cc9e77636629b6ab66845657267380c1e5bd2f9fab97cfd72ed036b1152e7d9cc4c716e540023b206e9b4ad8d18651b507389381683974c90f524')
 
 package() {
