@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Package updater for EndeavourOS and Arch
+# Handles:
+# - same as: sudo pacman -Syu
+# - keyrings first
+# - pacman db lock
+# - disk space check (package cache may grow)
+# - sync after update
+# and optionally
+# - AUR packages (AUR helper ('paru' or 'yay') must be installed)
+
+pu() {
+    local progname="$(basename "$0")"
+    local available_space=$(LANG=C /usr/bin/df | grep -w "/" | awk '{print $4}')
+    local min=$(( 1000 * 1000 ))   # million in kilobytes!
+    local lock=/var/lib/pacman/db.lck
+    local helper=pacman
+
+    case "$1" in
+        -a | --aur)
+            helper=paru
+            [ -x /usr/bin/$helper ] || helper=yay
+            [ -x /usr/bin/$helper ] || return 1
+            ;;
+        -h | --help)
+            cat <<EOF
+$progname - update packages like pacman (and yay/paru) with additional features.
+
+Handles:
+- sudo pacman -Syu (or: yay/paru)
+- updates keyrings first
+- checks pacman db lock
+- checks disk space check (package cache may grow)
+- runs 'sync' after update
+and optionally
+- AUR packages (AUR helper ('paru' or 'yay') must be installed)
+
+Usage: $progname [options]
+Options:
+  -a. --aur    Update also AUR packages.
+  -h, --help   This help.
+EOF
+            return
+            ;;
+        "") ;;
+        *)  echo "Error: parameters not allowed except -a, --aur" >&2; return 1 ;;
+    esac
+
+    [ $available_space -lt $min ] && echo "Warning: root partition is low on space, please check." >&2
+    if [ -e $lock ] && fuser $lock &>/dev/null ; then
+        echo "Error: database lock file $lock is already in use." >&2
+        return 1
+    fi
+    sudo bash -c "rm -f $lock && pacman -Sy --needed archlinux-keyring endeavouros-keyring && $helper -Su ; sync"
+}
+
+
+pu "$@"
