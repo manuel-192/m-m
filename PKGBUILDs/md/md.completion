@@ -1,0 +1,40 @@
+# bash completion for md        -*- shell-script -*-
+
+_mylistselector() {
+    local elems=() word
+
+    for word in "${list_elems_all[@]}" ; do
+        case "$word" in
+            "$cur"*) elems+=("$word") ;;
+        esac
+    done
+    elems="$(printf "%s\n" "${elems[@]}")"
+
+    local ifs="$IFS"
+    local IFS=$'\n'
+    COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -- "$cur") )
+    IFS="$ifs"
+}
+
+_my_md_completion() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    local endings=(
+        md
+        # markdown
+    )
+    local files=""
+    local end
+
+    for end in "${endings[@]}" ; do
+        files="$([ -n "$files" ] && echo "$files" ; find . -maxdepth 1 -type f -iname "[a-z]*.$end")"
+    done
+
+    local list_elems_all=()
+    readarray -t list_elems_all <<< $(echo "$files")
+
+    _mylistselector
+} &&
+complete -F _my_md_completion md

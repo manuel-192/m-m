@@ -1,0 +1,16 @@
+#!/bin/bash
+
+md() {
+  local prog
+
+  for prog in /usr/bin/vscodium /usr/bin/code-oss /usr/bin/code
+  do
+    if [ -x $prog ] ; then
+       echo "$prog" "$@" >&2
+       $prog --new-window "$@"
+       break
+    fi
+  done
+}
+
+md "$@"
