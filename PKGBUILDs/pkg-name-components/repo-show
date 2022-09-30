@@ -2,24 +2,40 @@
 #
 # Show packages and their versions in a repo db.
 
-Main()
-{
+echo2()   { echo   "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+
+DIE() {
+    local progname="$(basename "$0")"
+    local msg="$1"
+    echo2 "==> Error: $msg"
+    echo2 "==> Usage: $progname $param1"
+    exit 1
+}
+
+Main() {
     local dbpath="$1"
-    local dir="$2"
+    local ending=".db.tar.xz"
+    local param1=database-file-name
 
-    #local ending=db.tar.xz
+    test -n "$dbpath" || DIE "$param1 not given"
 
-    test -n "$dir" || dir="."
-    test -n "$dbpath" || DIE "dbpath not given"
-    test -r "$dir/$dbpath" || DIE "==> ERROR: '$dir/$dbpath' does not have a valid database archive extension."
+    if [ ! -r "$dbpath" ] ; then
+        printf2 "==> Info: '%s' not found, trying '%s' instead.\n\n" "$dbpath" "$dbpath$ending"
+        dbpath+="$ending"
+        if [ ! -r "$dbpath" ] ; then
+            DIE "'$dbpath' not found."
+        fi
+    fi
 
     local xx data1
     local N E V R
-    local data=$(tar --list --exclude */desc -f $dir/$dbpath | sed 's|/$||')
+    local data
 
-    data=$(echo "$data" | sed -E 's|(.*)|\1-any.pkg.tar.zst|')     # add *fake* missing info!
+    # Last sed fakingly completes the package name.
+    readarray -t data <<< $(tar --list --exclude */desc -f $dbpath | sed 's|/$||' | sed -E 's|(.*)|\1-any.pkg.tar.zst|')
 
-    for xx in $data ; do
+    for xx in "${data[@]}" ; do
         data1=$(pkg-name-components NEVR "$xx")
         N=$(echo "$data1" | cut -d'|' -f1)
         E=$(echo "$data1" | cut -d'|' -f2)
@@ -31,14 +47,6 @@ Main()
             echo "$N ${E}:${V}-$R"
         fi
     done | column -t
-}
-
-DIE() {
-    local progname="$(basename "$0")"
-    local msg="$1"
-    echo "$msg" >&2
-    echo "Usage: $progname 'dbpath' [db-dir]" >&2
-    exit 1
 }
 
 Main "$@"
