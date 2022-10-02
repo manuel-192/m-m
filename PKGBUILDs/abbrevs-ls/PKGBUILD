@@ -11,19 +11,22 @@ pkgrel=4
 arch=('any')
 license=('GPL')
 
-source=(
+source=(       # don't include 'ls' !!
     $url/l
     $url/ll
+    $url/lss
     $url/lt
 )
 sha512sums=('c6cf05ae65b2886b9fc6c7412f62521bfcad4f0c48dabcc7e8b07c1173e81cdeb4777e44f4e88b8d0c63ef9f029a37dcb983267f38d815032190ae45843a3551'
             'fc6ea604d9e552c96c475c297ae3f3639fa91f4c740c9aea43abe02a0e3009d9cd5e50b4ff6e5fec1693749082aff4a01b1663751367a7557d4191991d8deb6d'
+            '389c7a86ab9235c435e8eb292144b09e88faed100ca0dea649ee7e256a9288edcd8181361ee31a01215b5f51c2a1af06f5693465b0bb29271e49815da100a73d'
             '067c2f51f2df8e56297d6294124b2460b27c263caff24ce58855913c0f0a2d8caa6c4369e50448731632406081ec55ed75251492e7550878ce32957ce8af41cb')
 
 package() {
-    local xx
-    for xx in l ll lt
-    do
-        install -Dm755 $xx               $pkgdir/usr/local/bin/$xx
+    local src app
+
+    for src in "${source[@]}" ; do
+        app="${src##*/}"
+        install -Dm755 "$app"    "$pkgdir/usr/local/bin/$app"
     done
 }
