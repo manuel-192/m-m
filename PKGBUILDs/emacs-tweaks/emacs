@@ -92,6 +92,7 @@ _geometry() {
     local file_lines=$(  /usr/bin/cat "$arg" | wc -l)
 
     ((file_columns += 7))  # extra space, minimum 5
+    ((file_lines += 5))
 
     local x=$file_columns
     local y=$file_lines
