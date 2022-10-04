@@ -6,7 +6,7 @@ pkgname=fzf-stuff
 pkgdesc="fzf stuff"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=1
+pkgrel=1.1
 
 arch=('any')
 license=('GPL')
@@ -16,8 +16,8 @@ source=(
     $url/fzf-pkg-description
     $url/mgr
 )
-sha512sums=('754bf4ca93703654336a140b835139897fe56239adf118e31a26882b9a7f475466341f7d887bfb5968cdcd348e42cd2b31aac65b3bce983a19bdebe4d2f5ab6d'
-            '2102a485087b705e9c6bdf0e5c4d99a68d6a7a20e41957bf05af4a7409ed34583b048904892a784cdea86ed23b0fc02be36e806bfc5d203b4069bba1357e4e83')
+sha512sums=('061b927bd3b9a39376e653dbd99d1913ae891c55cc1caccedc10137aef34a5f5f3cfb0dbef1aadfa82d27a54fe8d017537bb68e11b2b2e73ab99493d6284d4c6'
+            '1879821770ff048bac3f7405a84c6d5dbfcf06fb7df16ae529482b184640ea218a0e1ae2fa70c8249a59adc6a283c0763f148e2ed6e54d84ad6446a39bcc451f')
 
 package() {
     local src app

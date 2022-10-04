@@ -42,11 +42,18 @@ _FZF_Preview() {
     LANG=C $helper $opt "$pkg"
 }
 
+Execute() {
+    local mode="$1"
+    sort -u | fzf $fzf_opt "fzf-pkg-description show $mode {1}" |  awk '{print $1}'
+}
+
 SelectPackages() {
+    local mode="$1"
+    local install_source="$2"          # for install only
     local fzf_opt='-m -e  --preview'
 
-    case "$1" in
-        show) 
+    case "$mode" in
+        show)
             shift
             _FZF_Preview "$@"
             ;;
@@ -54,15 +61,16 @@ SelectPackages() {
             {
                 pacman -Qqn
                 pacman -Qqm | sed 's|^|AUR/|'
-            } | sort -u | fzf $fzf_opt "fzf-pkg-description show $1 {1}" |  awk '{print $1}'
+            } | Execute $mode
             ;;
         not-installed)
             {
-                #LANG=C pacman -Ss | grep -Pv "^ |\[installed\]$" | awk '{print $1}'
-                LANG=C pacman -Ss | grep -v "^ " | awk '{print $1}'
-                aur pkglist | sed 's|^|AUR/|'
-                #yay -Pc | awk '{print $2 "/" $1}'
-            } | sort -u | fzf $fzf_opt "fzf-pkg-description show $1 {1}" |  awk '{print $1}'
+                case "$install_source" in
+                    repos) LANG=C pacman -Ss | grep -Pv "^ |\[installed\]" | awk '{print $1}' ;;
+                    AUR)   aur pkglist | sed 's|^|AUR/|' ;;
+                    *) DIE "unsupported install source '$install_source', give 'repos' or 'AUR'" ;;
+                esac
+            } | Execute $mode
             ;;
         *)
             DIE "unsupported parameter '$1', give one of: 'installed' 'not-installed'"

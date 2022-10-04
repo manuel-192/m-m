@@ -6,10 +6,11 @@
 echo2() { echo "$@" >&2 ; }
 
 Install() {
-    RunInTerminal "fzf-pkg-description not-installed > '$MGR_OUT_FILE'"
+    local install_source="$1"
+    RunInTerminalOpt -E "fzf-pkg-description not-installed $install_source > '$MGR_OUT_FILE'"
     local size=$(stat -c %s "$MGR_OUT_FILE")
     if [ $size -le 1 ] ; then
-        echo2 "Canceled."
+        # echo2 "Canceled."
         return
     fi
     local pkgs="$(cat "$MGR_OUT_FILE")" pkgs2="" pkg
@@ -29,14 +30,13 @@ Install() {
     RunInTerminal "printf 'Installing:\n'; printf '   %s\n' $pkgs2 ; su-c_wrapper pacman -S $pkgs2"
 }
 
-#Update() { RunInTerminal pu ; }
 Update() { UpdateInTerminal --nt ; }
 
 Remove() {
-    RunInTerminal "fzf-pkg-description installed > '$MGR_OUT_FILE'"
+    RunInTerminalOpt -E "fzf-pkg-description installed > '$MGR_OUT_FILE'"
     local size=$(stat -c %s "$MGR_OUT_FILE")
     if [ $size -le 1 ] ; then
-        echo2 "Canceled."
+        # echo2 "Canceled."
         return
     fi
     local pkgs="$(echo $(cat "$MGR_OUT_FILE"))"  # remove newlines!
@@ -48,26 +48,21 @@ Remove() {
     RunInTerminal "printf 'Uninstalling:\n'; printf '   %s\n' $pkgs; su-c_wrapper pacman -Rs $pkgs"
 }
 
-SearchRepos() {
+Search() {
     local helper="$1"
-    [ -n "$helper" ] || helper=pacman
-
     local title="" opt="-Ss"
     case "$helper" in
         pacman)
             title="Search packages in repositories"
             ;;
-        yay)
+        yay | paru)
             title="Search packages in repositories and AUR"
-            opt+=" --aur"
+            opt="--aur $opt"
             ;;
     esac
     local words=$(yad --form --title="Stitle" --field="Search word(s)" "")
     words=${words:: -1}   # remove last char
     RunInTerminal "$helper $opt $words"  # | less -RF"
-}
-SearchAURtoo() {
-    SearchRepos yay
 }
 
 Browse() {
@@ -88,8 +83,11 @@ Main() {
     }
 
     export eos_yad
-    export -f Remove Install Update Browse SearchRepos SearchAURtoo
+    export -f Remove Install Update Browse Search
     export MGR_OUT_FILE=$(mktemp)
+
+    local browser=firefox #webbrowser-app  #xdg-browser-launcher #applications-webbrowsers  # web-browser
+    # Install repos ; rm -f $MGR_OUT_FILE ; return
 
     # Browse https://aur.archlinux.org/packages https://www.archlinux.org/packages
 
@@ -103,15 +101,16 @@ Main() {
         --text="Click a button on the bottom line, then the requested task\nwill be executed in new a terminal window."
 
         --columns=2
-        --field="Browse Arch packages!!See all Arch packages with an internet browser":fbtn                "Browse https://www.archlinux.org/packages"
-        --field="Browse AUR packages!!See all AUR packages with an internet browser":fbtn                  "Browse https://aur.archlinux.org/packages"
-        --field="Browse EndeavourOS packages!!See all EndeavourOS packages with an internet browser":fbtn  "Browse https://github.com/endeavouros-team/PKGBUILDS"    # TODO
+        --field="Browse Arch packages!$browser!See all Arch packages with an internet browser":fbtn                "Browse https://www.archlinux.org/packages"
+        --field="Browse AUR packages!$browser!See all AUR packages with an internet browser":fbtn                  "Browse https://aur.archlinux.org/packages"
+        --field="Browse EndeavourOS packages!$browser!See all EndeavourOS packages with an internet browser":fbtn  "Browse https://github.com/endeavouros-team/PKGBUILDS"    # TODO
 
-        --button="Update":"Update"
-        --button="Install":"Install"
-        --button="Remove":"Remove"
-        --button="Search!!Search packages in repositories":"SearchRepos"
-        --button="Search AUR!!Search packages in repositories and AUR":"SearchAURtoo"
+        --button="Update!update!Updates packages, including AUR":"Update"
+        --button="Install!package-install!Install from repositores":"Install repos"
+        --button="Install AUR!package-install!Install from AUR":"Install AUR"
+        --button="Remove!package-remove!Uninstalls selected packages":"Remove"
+        --button="Search!search!Search packages in repositories":"Search pacman"
+        --button="Search AUR!search!Search packages in repositories and AUR":"Search yay"
         --button=yad-quit:1
     )
 
