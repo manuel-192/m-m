@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=fzf-stuff
+pkgdesc="fzf stuff"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+
+source=(
+    $url/fzf-pkg-description
+    $url/mgr
+)
+sha512sums=('bc85ec5da0ab211879d03a1cf7c5d8c893a24d73fc58bed282e37a24882bcec8c8d65b8490f80b83ae96a1c3b29e9d4d56febc0896fb24654bf2ba22b394cb15'
+            '167e28aab0bcbdef93ddc77a870dbb08da44d073b632000163d7d59b09d239e45491032758b4369e5924f0c9e0f4e9588a09141ba1caa505c102a5778207b48f')
+
+package() {
+    local src app
+    for src in "${source[@]}" ; do
+        app="${src##*/}"
+        install -Dm755 $app               $pkgdir/usr/bin/$app
+    done
+}

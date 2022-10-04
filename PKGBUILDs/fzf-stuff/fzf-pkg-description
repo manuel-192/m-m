@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Return a package description of a package name.
+# Uses fzf.
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+_FZF_Preview() {
+    local mode="$1"
+    local pkg="$2"
+    local helper=pacman
+    local opt=""
+
+    case "$mode" in
+        not-installed)  opt="-Si" ;;
+        installed)      opt="-Qi" ;;
+        *)              DIE "$FUNCNAME called with unsupported mode '$mode'" ;;
+    esac
+
+    case "$pkg" in
+        AUR/*)
+            helper=paru
+            [ -x /usr/bin/$helper ] || helper=yay
+            pkg="${pkg##*/}"
+            ;;
+        "")
+            DIE "$FUNCNAME called without a package name"
+            ;;
+    esac
+
+    LANG=C $helper $opt "$pkg"
+    #if [ -n "$(pacman -Q "$pkg" 2>/dev/null)" ] ; then
+    if [ -x /usr/bin/$pkg  ] ; then
+        printf "INSTALLED\n"
+    fi
+}
+
+SelectPackages() {
+    local fzf_opt='-m -e --tac --preview'
+
+    case "$1" in
+        show) 
+            shift
+            _FZF_Preview "$@"
+            ;;
+        installed)
+            {
+                pacman -Qqn
+                pacman -Qqm | sed 's|^|AUR/|'
+            } | sort -u | fzf $fzf_opt "fzf-pkg-description show $1 {1}" |  awk '{print $1}'
+            ;;
+        not-installed)
+            {
+                #LANG=C pacman -Ss | grep -Pv "^ |\[installed\]$" | awk '{print $1}'
+                LANG=C pacman -Ss | grep -v "^ " | awk '{print $1}'
+                # yay -Pc | awk '{print $2 "/" $1}'
+            } | sort -u | fzf $fzf_opt "fzf-pkg-description show $1 {1}" |  awk '{print $1}'
+            ;;
+        *)
+            DIE "unsupported parameter '$1', give one of: 'installed' 'not-installed'"
+            ;;
+    esac
+}
+
+SelectPackages "$@"

@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# Update, install, and sparingly remove packages.
+# Add extra params if needed.
+
+echo2() { echo "$@" >&2 ; }
+
+Install() {
+    RunInTerminal "fzf-pkg-description not-installed > '$MGR_OUT_FILE'"
+    local size=$(stat -c %s "$MGR_OUT_FILE")
+    if [ $size -le 1 ] ; then
+        echo2 "Canceled."
+        return
+    fi
+    local pkgs="$(cat "$MGR_OUT_FILE")" pkgs2="" pkg
+    printf "" > "$MGR_OUT_FILE"
+    if [ -z "$pkgs" ] ; then
+        echo2 "Nothing to install."
+        return
+    fi
+    for pkg in $pkgs ; do
+        pkg="${pkg##*/}"
+        pacman -Q "$pkg" &>/dev/null || pkgs2+="$pkg "
+    done
+    if [ -z "$pkgs2" ] ; then
+        echo2 "Already installed."
+        return
+    fi
+    RunInTerminal "printf 'Installing:\n'; printf '   %s\n' $pkgs2 ; su-c_wrapper pacman -S $pkgs2"
+}
+
+#Update() { RunInTerminal pu ; }
+Update() { UpdateInTerminal --nt ; }
+
+Remove() {
+    RunInTerminal "fzf-pkg-description installed > '$MGR_OUT_FILE'"
+    local size=$(stat -c %s "$MGR_OUT_FILE")
+    if [ $size -le 1 ] ; then
+        echo2 "Canceled."
+        return
+    fi
+    local pkgs="$(echo $(cat "$MGR_OUT_FILE"))"  # remove newlines!
+    printf "" > "$MGR_OUT_FILE"
+    if [ -z "$pkgs" ] ; then
+        echo2 "Nothing to uninstall."
+        return
+    fi
+    RunInTerminal "printf 'Uninstalling:\n'; printf '   %s\n' $pkgs; su-c_wrapper pacman -Rs $pkgs"
+}
+
+SearchRepos() {
+    local helper="$1"
+    [ -n "$helper" ] || helper=pacman
+
+    local title="" opt="-Ss"
+    case "$helper" in
+        pacman)
+            title="Search packages in repositories"
+            ;;
+        yay)
+            title="Search packages in repositories and AUR"
+            opt+=" --aur"
+            ;;
+    esac
+    local words=$(yad --form --title="Stitle" --field="Search word(s)" "")
+    words=${words:: -1}   # remove last char
+    RunInTerminal "$helper $opt $words"  # | less -RF"
+}
+SearchAURtoo() {
+    SearchRepos yay
+}
+
+Browse() {
+    local url urls=("$@")
+
+    for url in "$@" ; do
+        xdg-open "$url" &>/dev/null
+        if [ "$url" != "${urls[$(( $# - 1 ))]}" ] ; then
+            sleep 2
+        fi
+    done
+}
+
+Main() {
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || {
+        echo "ERROR: lib file not found."
+        return 1
+    }
+
+    export eos_yad
+    export -f Remove Install Update Browse SearchRepos SearchAURtoo
+    export MGR_OUT_FILE=$(mktemp)
+
+    # Browse https://aur.archlinux.org/packages https://www.archlinux.org/packages
+
+    local cmd=(
+        eos_yad
+        --form
+        --align-buttons
+        --use-interp
+        --image=applications-system   # $WELCOME_ICON_INSTALL_TAB # $EOS_WICON
+        --title="Simple Package Manager"
+        --text="Click a button below, then the requested task\nwill be executed in new a terminal window."
+
+        --columns=2
+        --field="Browse Arch packages!!See all Arch packages with an internet browser":fbtn                "Browse https://www.archlinux.org/packages"
+        --field="Browse AUR packages!!See all AUR packages with an internet browser":fbtn                  "Browse https://aur.archlinux.org/packages"
+        --field="Browse EndeavourOS packages!!See all EndeavourOS packages with an internet browser":fbtn  "Browse https://github.com/endeavouros-team/PKGBUILDS"    # TODO
+
+        --button="Update":"Update"
+        --button="Install":"Install"
+        --button="Remove":"Remove"
+        --button="Search!!Search packages in repositories":"SearchRepos"
+        --button="Search AUR!!Search packages in repositories and AUR":"SearchAURtoo"
+        --button=yad-quit:1
+    )
+
+    "${cmd[@]}"
+
+    rm -f $MGR_OUT_FILE
+}
+
+Main "$@"
