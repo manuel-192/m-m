@@ -100,7 +100,7 @@ Main() {
         --use-interp
         --image=applications-system   # $WELCOME_ICON_INSTALL_TAB # $EOS_WICON
         --title="Simple Package Manager"
-        --text="Click a button below, then the requested task\nwill be executed in new a terminal window."
+        --text="Click a button on the bottom line, then the requested task\nwill be executed in new a terminal window."
 
         --columns=2
         --field="Browse Arch packages!!See all Arch packages with an internet browser":fbtn                "Browse https://www.archlinux.org/packages"

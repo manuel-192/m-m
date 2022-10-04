@@ -14,6 +14,7 @@ _FZF_Preview() {
     local pkg="$2"
     local helper=pacman
     local opt=""
+    local cmd=()
 
     case "$mode" in
         not-installed)  opt="-Si" ;;
@@ -23,7 +24,13 @@ _FZF_Preview() {
 
     case "$pkg" in
         AUR/*)
-            helper=paru
+            
+            if [ 1 -eq 1 ] && [ "$mode" = "not-installed" ] && [ -x /usr/bin/aur ] ; then
+                helper=aur
+                opt="search -vi"
+            else
+                helper=paru
+            fi
             [ -x /usr/bin/$helper ] || helper=yay
             pkg="${pkg##*/}"
             ;;
@@ -33,14 +40,10 @@ _FZF_Preview() {
     esac
 
     LANG=C $helper $opt "$pkg"
-    #if [ -n "$(pacman -Q "$pkg" 2>/dev/null)" ] ; then
-    if [ -x /usr/bin/$pkg  ] ; then
-        printf "INSTALLED\n"
-    fi
 }
 
 SelectPackages() {
-    local fzf_opt='-m -e --tac --preview'
+    local fzf_opt='-m -e  --preview'
 
     case "$1" in
         show) 
@@ -57,7 +60,8 @@ SelectPackages() {
             {
                 #LANG=C pacman -Ss | grep -Pv "^ |\[installed\]$" | awk '{print $1}'
                 LANG=C pacman -Ss | grep -v "^ " | awk '{print $1}'
-                # yay -Pc | awk '{print $2 "/" $1}'
+                aur pkglist | sed 's|^|AUR/|'
+                #yay -Pc | awk '{print $2 "/" $1}'
             } | sort -u | fzf $fzf_opt "fzf-pkg-description show $1 {1}" |  awk '{print $1}'
             ;;
         *)
