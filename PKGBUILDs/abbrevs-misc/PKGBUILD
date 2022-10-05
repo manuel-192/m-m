@@ -5,8 +5,8 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=22.9
-pkgrel=2
+pkgver=22.10
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -16,10 +16,14 @@ optdepends=(
 )
 
 source=(
+    $url/echo2
     $url/ncdu
+    $url/printf2
     $url/update-grub
 )
-sha512sums=('be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
+sha512sums=('9efae914b6a100cf41f30a554ff83592e0805e040f8167d3cc8bf3d049a247bd2166013f8a3a52d9fdde070bd485ba8bccf2fcbcc76ffdfeaf2a1d405ee64e05'
+            'be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
+            'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
             '57b471678c9cc9e77636629b6ab66845657267380c1e5bd2f9fab97cfd72ed036b1152e7d9cc4c716e540023b206e9b4ad8d18651b507389381683974c90f524')
 
 package() {
