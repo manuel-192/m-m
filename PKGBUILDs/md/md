@@ -3,9 +3,9 @@
 md() {
   local prog
 
-  for prog in /usr/bin/vscodium /usr/bin/code-oss /usr/bin/code
+  for prog in vscodium code-oss code
   do
-    if [ -x $prog ] ; then
+    if [ -x /usr/bin/$prog ] ; then
        echo "$prog" "$@" >&2
        $prog --new-window "$@"
        break

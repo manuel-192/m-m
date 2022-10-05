@@ -12,15 +12,12 @@ _mylistselector() {
 
     local ifs="$IFS"
     local IFS=$'\n'
-    COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -- "$cur") )
+    COMPREPLY=( $(compgen -W "$elems" -- "$cur") )
     IFS="$ifs"
 }
 
-_my_md_completion() 
-{
-    local cur prev #words cword split
-    _init_completion -s || return
 
+_my_md_completion_helper() {
     local endings=(
         md
         # markdown
@@ -29,12 +26,22 @@ _my_md_completion()
     local end
 
     for end in "${endings[@]}" ; do
-        files="$([ -n "$files" ] && echo "$files" ; find . -maxdepth 1 -type f -iname "[a-z]*.$end")"
+        files="$([ -n "$files" ] && echo "$files" ; find . -maxdepth 1 -type f -iname "[a-z]*.$end" | sed 's|^\./||')"
     done
 
     local list_elems_all=()
     readarray -t list_elems_all <<< $(echo "$files")
 
     _mylistselector
-} &&
+}
+
+_my_md_completion() {
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    _my_md_completion_helper
+
+} # &&
 complete -F _my_md_completion md
+
+# _my_md_completion_helper "$@"    # TESTING !!
