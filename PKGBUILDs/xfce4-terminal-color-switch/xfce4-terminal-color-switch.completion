@@ -1,0 +1,37 @@
+# bash completion for xfce4-terminal-color-switch        -*- shell-script -*-
+
+_mylistselector() {
+    local elems=() word
+
+    for word in "${list_elems_all[@]}" ; do
+        case "$word" in
+            "$cur"*) elems+=("$word") ;;
+        esac
+    done
+    elems="$(printf "%s\n" "${elems[@]}")"
+
+    local ifs="$IFS"
+    local IFS=$'\n'
+    COMPREPLY=( $(compgen -W "$elems" -- "$cur") )
+    IFS="$ifs"
+}
+
+
+_my_xfce4-terminal-color-switch_completion_helper() {
+    local files="$(ls -1 /usr/share/xfce4/terminal/colorschemes/*.theme)"
+    [ -z "$files" ] && return
+
+    local list_elems_all=()
+    readarray -t list_elems_all <<< $(echo "$files" | sed -e 's|.*/||' -e 's|\.theme$||')
+
+    _mylistselector
+}
+
+_my_xfce4-terminal-color-switch_completion() {
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    _my_xfce4-terminal-color-switch_completion_helper
+
+}
+complete -F _my_xfce4-terminal-color-switch_completion xfce4-terminal-color-switch

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main() {
+    local theme_name="$1"
+    local theme_file="/usr/share/xfce4/terminal/colorschemes/$theme_name.theme"
+    local target_file="$HOME/.config/xfce4/terminal/terminalrc"
+
+    [ -r "$theme_file" ]  || DIE "No such colorscheme file: '$theme_file'"
+    [ -r "$target_file" ] || DIE "No such theme config file: '$target_file'"
+
+    # backup current file
+    cp "$target_file" "$target_file".bak.$(date +%Y%m%d-%H%M) || DIE "could not backup '$target_file'"
+
+    # remove lines with string "Color" in them from the current config file
+    local current=$(cat "$target_file" | grep -v Color)
+    echo "$current" > "$target_file"
+
+    # add colors from the theme file
+    cat "$theme_file" | grep Color >> "$target_file"
+}
+
+Main "$@"

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=xfce4-terminal-color-switch
+pkgdesc="Switch xfce4-terminal colors including bash completion"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+optdepends=(
+    "endeavouros-xfce4-terminal-colors: nice terminal colors for xfce4-terminal"
+)
+
+source=(
+    $url/xfce4-terminal-color-switch
+    $url/xfce4-terminal-color-switch.completion
+)
+sha256sums=('d6ff68cc79560949a92bb318a7df4f73e98b8c64bcd08b069e74e5a083706406'
+            '3fec0b829c5626f40ea53c70894c8d8f6389f39128dc55fc2b5355e14e323be1')
+
+package() {
+    install -Dm755 $pkgname               $pkgdir/usr/bin/$pkgname
+    install -Dm644 $pkgname.completion    $pkgdir/usr/share/bash-completion/completions/$pkgname
+}
