@@ -1,0 +1,16 @@
+#!/bin/bash
+
+Main() {
+    local db=(
+        "0bda:c811|rtl8821cu-dkms-git|wifi usb"                       # ???
+        "2357:0120|rtl88xxau-aircrack-dkms-git|wifi usb, tp-link"
+        "10ec:8852|rtw89-dkms-git|wifi"
+        "0bda:8179|8188eu-dkms-git/8188eu-dkms|wifi usb"              # ?
+
+        "1969:1083|[kernel]|ethernet, Atheros AR8151, atl1c"
+        # "10ec:c821|rtl8821ce-dkms-git|wifi"                         # [kernel] ???
+    )
+    driver-db-common network "${db[@]}"
+}
+
+Main "$@"

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Graphics drivers database.
+
+Main() {
+    local db=(
+        "10de:1d01|nvidia-dkms|GeForce 1030"
+    )
+    driver-db-common graphics "${db[@]}"
+}
+
+Main "$@"

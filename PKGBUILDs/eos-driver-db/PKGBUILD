@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-driver-db
+pkgdesc="Database for some network and graphics drivers for EndeavourOS."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(inxi)
+
+source=(
+    $url/driver-db-{common,graphics,network}
+)
+sha256sums=('6a155a25469d3059c6d504deb5e1023f194e56776c234ef4585b267435db65e5'
+            'b6944814b172d8a9c0cf7eb437747162eff39492047457638f6c1cc653fdeaa0'
+            '7ed072d4a2d55ab9ca9910aa0b0c0c06cddee528e3e1b00886926fc006cfabd5')
+
+package() {
+    local app url
+    for url in "${source[@]}" ; do
+        app=${url##*/}
+        install -Dm755 $app               $pkgdir/usr/bin/$app
+    done
+}

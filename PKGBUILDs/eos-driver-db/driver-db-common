@@ -1,0 +1,81 @@
+#!/bin/bash
+
+echo2() { echo "$@" >&2 ; }
+
+DIE() {
+    echo2 "$progname: error: $1"
+    exit 1
+}
+
+INFO() {
+    echo2 "$progname: info: $1"
+}
+
+#DB_common_info=(
+#    "Known to work drivers based on '$1'."
+#    "Lines of: chip-ID|where/package alternatives (current)|comment"
+#    "2nd field: separate alternatives with a '/'; kernel driver with '[kernel]'."
+#)
+
+get_real_chip_ids() {
+    local device_type="$1"
+    local cmd=""
+    case "$device_type" in
+        graphics) cmd="inxi -Gza" ;;
+        network)  cmd="inxi -nza" ;;
+        *) return 1 ;;
+    esac
+    $cmd | grep -w "chip-ID:" | sed -E 's|.*chip-ID: ([0-9a-f]+:[0-9a-f]+).*|\1|'
+}
+
+DB_manage() {
+    local progname="$(basename "$0")"
+
+    local device_type="$1"    # 'graphics' or 'network'
+    local real_chip_id        # the real chip id of an existing device
+    local db_entry            # a line from the db
+    local db_chip_id          # the id of the device from the db
+    local db_drivers          # drivers from the db
+    local db_comment          # a comment from the db
+    local driver              # a candidate driver
+    local real_chip_ids="$(get_real_chip_ids "$device_type")"
+    local found_in_db=no
+
+    [ -n "$real_chip_ids" ] || DIE "no $device_type chip ids found!"
+
+    shift                     # Skip device_type.
+                              # Other params are the database entries.
+
+    for real_chip_id in $(get_real_chip_ids "$device_type") ; do
+        for db_entry in "$@" ; do
+            db_chip_id=$(echo "$db_entry" | cut -d'|' -f1)
+            if [ "$real_chip_id" = "$db_chip_id" ] ; then
+                found_in_db=yes
+                db_drivers=$(echo "$db_entry" | cut -d'|' -f2)
+                db_comment=$(echo "$db_entry" | cut -d'|' -f3)
+
+                echo2 "Suggested driver(s) for chip-ID $real_chip_id ($db_comment):"
+                for driver in $(echo "$db_drivers" | tr '/' ' ') ; do
+                    case "$driver" in
+                        "[kernel]")
+                            echo2 "   the driver module is already in the kernel" ;;
+                        *)
+                            echo  "   $driver" ;;
+                    esac
+                done
+            fi
+        done
+    done
+
+    if [ "$found_in_db" = "no" ] ; then
+        local msg=(
+            "the database did not include any entry for devices:"
+            $real_chip_ids
+        )
+        printf -v msg "%s\n" "${msg[@]}"
+               
+        INFO "$msg"
+    fi
+}
+
+DB_manage "$@"
