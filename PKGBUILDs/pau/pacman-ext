@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# Pacman with additional update features.
+
+echo2() { echo "$@" >&2 ; }
+DIE()   { echo2 "$progname: error: $1" ; Usage 1 ; }
+WARN()  { echo2 "$progname: warning: $1" ; MayExit "$2" ; }
+MayExit() { [ -n "$1" ] && exit $1 ; }
+
+Usage() {
+    cat <<EOF
+
+Usage:
+   $progname
+   $progname <one-param>
+   $progname <pacman-options>
+Options:
+   no options        Update packages with additional features.
+   -Syu, -Syyu       Same as above.
+   --paru            Same as with -Syu, also updates AUR packages using paru.
+   --yay             Same as with -Syu, also updates AUR packages using yay.
+   -a, --aur         Same as with -Syu, also updates AUR packages using paru or yay.
+
+Options must be used as the *only* parameter.
+Otherwise a normal pacman operation is performed, i.e. without the additional features.
+
+EOF
+    MayExit "$1"
+}
+
+normal_pacman() { /usr/bin/Pacman "$@" ; exit $? ; }
+helper_f()      { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_update ; }
+
+special_update() {
+    cat <<EOF
+A pacman wrapper with additions to package updates.
+Additions:
+   - db lock file check
+   - nvidia & kernel update check
+   - update keyrings first
+   - 'sync' at end
+
+EOF
+    local -r lockfile=/var/lib/pacman/db.lck
+    if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
+        WARN "$lockfile is in use." 1
+    fi
+    local sudo_cmd=( "rm -f $lockfile"
+                     "eos-kernel-nvidia-update-check"
+                     "/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring"
+                     "/usr/bin/pacman -Su"
+                     "$helper -Sua"
+                     "sync" )
+    local -r last_cmd="${sudo_cmd[@]: -1}"
+    sudo_cmd=($(printf "%s\n" "${sudo_cmd[@]}" | sed "/^$last_cmd$/!s/$/ \&\&/" ))  # see 'info sed', chapter 6.4 for details!
+    echo2 "==> ${sudo_cmd[@]}"
+    sudo bash -c "${sudo_cmd[*]}"
+    exit $?
+}
+
+pacman_ext() {
+    local -r progname="$(basename "$0")"   # $progname used by various functions here
+    local helper=/usr/bin/pacman           # $helper used by special_update()
+    local db_opt="-Sy"                     # $db_opt used by special_update()
+    local opt
+    case "$2" in
+        "") # additional features
+            case "$1" in
+                -[Syu][Syu][Syu] | "")
+                    special_update
+                    ;;
+                -Syyu)
+                    db_opt="-Syy"
+                    special_update
+                    ;;
+                -a | --aur)
+                    helper=/usr/bin/paru
+                    [ -x $helper ] || helper=/usr/bin/yay
+                    [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
+                    helper_f
+                    ;;
+                --paru | --yay)
+                    helper=/usr/bin/${1#*--}
+                    [ -x $helper ] || DIE "AUR helper '$helper' not found."
+                    helper_f
+                    ;;
+            esac
+            ;;
+    esac
+    for opt in "$@" ; do
+        case "$opt" in
+            -a | --aur | --paru | --yay) DIE "additional options cannot be used with pacman options." ;;
+        esac
+    done
+    normal_pacman "$@"
+}
+
+pacman_ext "$@"
