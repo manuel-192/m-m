@@ -12,17 +12,18 @@ Usage() {
 
 Usage:
    $progname
-   $progname <one-param>
+   $progname <one-additional-option>
    $progname <pacman-options>
-Options:
-   no options        Update packages with additional features.
-   -Syu, -Syyu       Same as above.
+
+<one-additional-option>:
+   -Syu, -Syyu       Updates packages with additional features.
    --paru            Same as with -Syu, also updates AUR packages using paru.
    --yay             Same as with -Syu, also updates AUR packages using yay.
    -a, --aur         Same as with -Syu, also updates AUR packages using paru or yay.
 
-Options must be used as the *only* parameter.
-Otherwise a normal pacman operation is performed, i.e. without the additional features.
+Without options command updates packages with additional features.
+The <one-additional-option> must be used as the *only* parameter on the command line.
+Otherwise a normal *pacman* operation is performed *without* the additional features.
 
 EOF
     MayExit "$1"
