@@ -54,7 +54,7 @@ EOF
     [ -n "$(lsmod|grep nvidia)" ] && sudo_cmd=("eos-kernel-nvidia-update-check" "${sudo_cmd[@]}")
     local -r last_cmd="${sudo_cmd[@]: -1}"
     sudo_cmd=($(printf "%s\n" "${sudo_cmd[@]}" | sed "/^$last_cmd$/!s/$/ \&\&/" ))  # see 'info sed', chapter 6.4 for details!
-    echo2 "==> ${sudo_cmd[@]}"
+    # echo2 "==> ${sudo_cmd[@]}"
     sudo bash -c "${sudo_cmd[*]}"
     exit $?
 }
