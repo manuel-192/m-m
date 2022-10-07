@@ -3,7 +3,7 @@
 case "$PACMAN_BASH_COMPLETION_APP" in
     pacman | "")
         source /usr/share/bash-completion/completions/pacman
-        complete -F _pacman pac
+        complete -F _pacman pac pu
         ;;
     paru)
         source /usr/share/bash-completion/completions/paru.bash
