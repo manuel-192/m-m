@@ -12,49 +12,55 @@ Usage() {
 
 Usage:
    $progname
-   $progname <one-additional-option>
+   $progname <special-option>
    $progname <pacman-options>
 
-<one-additional-option>:
-   -Syu, -Syyu       Updates packages with additional features.
-   --paru            Same as with -Syu, also updates AUR packages using paru.
-   --yay             Same as with -Syu, also updates AUR packages using yay.
-   -a, --aur         Same as with -Syu, also updates AUR packages using paru or yay.
+<special-option>:
+   -Syu              Updates packages with additional features.
+   -Syyu             Like -Syu, with extra --refresh (see 'man pacman').
+   --paru            Like -Syu, also updates AUR packages using paru.
+   --yay             Like -Syu, also updates AUR packages using yay.
+   --aur             Like --paru or --yay (tried in this order).
 
-Without options command updates packages with additional features.
-The <one-additional-option> must be used as the *only* parameter on the command line.
-Otherwise a normal *pacman* operation is performed *without* the additional features.
+Notes:
+   - If no arguments are provided, -Syu is assumed.
+   - The <special-option> $msgtail
+   - Otherwise works like 'pacman <pacman-options>' *without* any additional features.
 
 EOF
     MayExit "$1"
 }
 
-normal_pacman() { /usr/bin/Pacman "$@" ; exit $? ; }
-helper_f()      { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_update ; }
+normal_pacman_cmd()      { /usr/bin/Pacman "$@" ; exit $? ; }
+special_update_helper()  { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_update ; }
 
 special_update() {
     cat <<EOF
-A pacman wrapper with additions to package updates.
-Additions:
+A pacman wrapper with additional package update features.
+
+Additional features:
    - db lock file check
    - nvidia & kernel update check
    - update keyrings first
    - 'sync' at end
 
 EOF
-    local -r lockfile=/var/lib/pacman/db.lck
+    local -r lockfile=/var/lib/pacman/db.lck logfile="$HOME/.cache/$progname.log"
     if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
         WARN "$lockfile is in use." 1
     fi
-    local sudo_cmd=( "rm -f $lockfile"
-                     "/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring"
-                     "/usr/bin/pacman -Su" )
+    # Build the command for sudo:
+    local sudo_cmd
+    [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
+    eos-kernel-nvidia-update-check --needed
+    [ $? -eq 2 ] && sudo_cmd=("eos-kernel-nvidia-update-check")
+    sudo_cmd+=("/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")   # the main stuff
     [ "$helper" != "/usr/bin/pacman" ] && sudo_cmd+=("$helper -Sua")
     sudo_cmd+=("sync")
-    [ -n "$(lsmod|grep nvidia)" ] && sudo_cmd=("eos-kernel-nvidia-update-check" "${sudo_cmd[@]}")
+    # Handle the sudo command:
     local -r last_cmd="${sudo_cmd[@]: -1}"
     sudo_cmd=($(printf "%s\n" "${sudo_cmd[@]}" | sed "/^$last_cmd$/!s/$/ \&\&/" ))  # see 'info sed', chapter 6.4 for details!
-    # echo2 "==> ${sudo_cmd[@]}"
+    echo "$(date +%Y%m%d-%H%M): ${sudo_cmd[@]}" >> "$logfile"
     sudo bash -c "${sudo_cmd[*]}"
     exit $?
 }
@@ -64,36 +70,29 @@ pacman_ext() {
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local db_opt="-Sy"                     # $db_opt used by special_update()
     local opt
+    local -r msgtail="must be used as the *only* parameter on the command line."
     case "$2" in
-        "") # additional features
-            case "$1" in
-                -[Syu][Syu][Syu] | "")
-                    special_update
-                    ;;
-                -Syyu)
-                    db_opt="-Syy"
-                    special_update
-                    ;;
-                -a | --aur)
-                    helper=/usr/bin/paru
-                    [ -x $helper ] || helper=/usr/bin/yay
-                    [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
-                    helper_f
-                    ;;
-                --paru | --yay)
-                    helper=/usr/bin/${1#*--}
-                    [ -x $helper ] || DIE "AUR helper '$helper' not found."
-                    helper_f
-                    ;;
+        "") case "$1" in    # additional features
+                --aur)                            helper=/usr/bin/paru
+                                                  [ -x $helper ] || helper=/usr/bin/yay
+                                                  [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
+                                                  special_update_helper
+                                                  ;;
+                --paru | --yay)                   helper=/usr/bin/${1#*--}
+                                                  [ -x $helper ] || DIE "AUR helper '$helper' not found."
+                                                  special_update_helper
+                                                  ;;
+                -Syu|-Suy|-ySu|-yuS|-uSy|-uyS|"") special_update ;;
+                -Syyu)                            db_opt="-Syy" ; special_update ;;
             esac
             ;;
     esac
     for opt in "$@" ; do
         case "$opt" in
-            -a | --aur | --paru | --yay) DIE "additional options cannot be used with pacman options." ;;
+            --aur | --paru | --yay) DIE "special option '$opt' $msgtail" ;;  # should have been handled above!
         esac
     done
-    normal_pacman "$@"
+    normal_pacman_cmd "$@"
 }
 
 pacman_ext "$@"
