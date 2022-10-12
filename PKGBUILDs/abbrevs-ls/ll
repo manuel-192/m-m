@@ -1,3 +1,3 @@
 #!/bin/bash
 
-ls -la --ignore=.. "$@"
+ls $(l --get-ls-opts) -la --ignore=.. "$@"
