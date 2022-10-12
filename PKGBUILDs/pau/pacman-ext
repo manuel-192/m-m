@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pacman with additional update features.
+# Pacman with additionalfeatures for update, and downgrade support.
 
 echo2() { echo "$@" >&2 ; }
 DIE()   { echo2 "$progname: error: $1" ; Usage 1 ; }
