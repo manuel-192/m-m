@@ -13,25 +13,33 @@ Usage() {
 Usage:
    $progname
    $progname <special-option>
+   $progname <special-option2>
    $progname <pacman-options>
 
 <special-option>:
-   -Syu              Updates packages with additional features.
-   -Syyu             Like -Syu, with extra --refresh (see 'man pacman').
-   --paru            Like -Syu, also updates AUR packages using paru.
-   --yay             Like -Syu, also updates AUR packages using yay.
-   --aur             Like --paru or --yay (tried in this order).
+   -Syu                Updates packages with additional features.
+   -Syyu               Like -Syu, with extra --refresh (see 'man pacman').
+   --paru              Like -Syu, also updates AUR packages using paru.
+   --yay               Like -Syu, also updates AUR packages using yay.
+   --aur               Like --paru or --yay (tried in this order).
 
 Notes:
    - If no arguments are provided, -Syu is assumed.
    - The <special-option> $msgtail
    - Otherwise works like 'pacman <pacman-options>' *without* any additional features.
 
+<special-option2>:
+   --wait-enter        Waits for user to press the Enter key to continue.
+   --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
+
+Notes2:
+   - Options --downgrade and --dg require one or more package names.
+
 EOF
     MayExit "$1"
 }
 
-normal_pacman_cmd()      { /usr/bin/Pacman "$@" ; exit $? ; }
+normal_pacman_cmd()      { /usr/bin/Pacman "$@" ; }
 special_update_helper()  { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_update ; }
 
 special_update() {
@@ -61,8 +69,9 @@ EOF
     local -r last_cmd="${sudo_cmd[@]: -1}"
     sudo_cmd=($(printf "%s\n" "${sudo_cmd[@]}" | sed "/^$last_cmd$/!s/$/ \&\&/" ))  # see 'info sed', chapter 6.4 for details!
     echo "$(date +%Y%m%d-%H%M): ${sudo_cmd[@]}" >> "$logfile"
+    [ "$show_cmd" = "yes" ] && echo "sudo bash -c \"${sudo_cmd[*]}\""
     sudo bash -c "${sudo_cmd[*]}"
-    exit $?
+    return $?
 }
 
 pacman_ext() {
@@ -77,22 +86,54 @@ pacman_ext() {
                                                   [ -x $helper ] || helper=/usr/bin/yay
                                                   [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
                                                   special_update_helper
+                                                  return $?
                                                   ;;
                 --paru | --yay)                   helper=/usr/bin/${1#*--}
                                                   [ -x $helper ] || DIE "AUR helper '$helper' not found."
                                                   special_update_helper
+                                                  return $?
                                                   ;;
-                -Syu|-Suy|-ySu|-yuS|-uSy|-uyS|"") special_update ;;
-                -Syyu)                            db_opt="-Syy" ; special_update ;;
+                -Syu|-Suy|-ySu|-yuS|-uSy|-uyS|"") special_update
+                                                  return $?
+                                                  ;;
+                -Syyu)                            db_opt="-Syy"
+                                                  special_update
+                                                  return $?
+                                                  ;;
+            esac
+            ;;
+        *)  case "$1" in
+                --dg | --downgrade) shift ; eos-downgrade "$@" ; return $? ;;
             esac
             ;;
     esac
     for opt in "$@" ; do
         case "$opt" in
             --aur | --paru | --yay) DIE "special option '$opt' $msgtail" ;;  # should have been handled above!
+            -h | --help) Usage 0 ;;
         esac
     done
     normal_pacman_cmd "$@"
 }
 
-pacman_ext "$@"
+Main() {
+    local wait_enter=no
+    local show_cmd=no
+    local retval
+
+    while true ; do
+        case "$1" in
+            --wait-enter) wait_enter=yes ; shift ;;  # e.g. for pacseek
+            --show-cmd)  show_cmd=yes ; shift ;;
+            *) break ;;
+        esac
+    done
+
+    pacman_ext "$@"
+    retval=$?
+
+    [ "$wait_enter" = "yes" ] && read -p "Press ENTER: " >&2
+
+    return $retval
+}
+Main "$@"

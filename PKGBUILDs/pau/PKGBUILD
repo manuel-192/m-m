@@ -6,7 +6,7 @@ pkgname=pau
 pkgdesc="Package updater, with certain useful extra features."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=22.10
-pkgrel=5
+pkgrel=6
 
 arch=('any')
 license=('GPL')
@@ -31,7 +31,7 @@ sha512sums=('89a99213723bdbf401b9e93b0bbdb95c33ae527dab223a06dacee1a6baf4e651f4a
             'ef3122cbcaceb8c1ce3c0a9ec9023bc90b70b2729de1f673bd8f3a4ce1bd867dfb294a34aca8ff9acee189c58624f02d704594f47b81b4952d952fce314978ce'
             '6fac42fadcf3fbc4cc7f82397bb4782ad8babb4f8b942efe16e7d4bdeb6bff99e528778b9f238eb0b3d2c7ca5c20657806afbbc1c124ab734b722fbbd93071a3'
             '60c2cdb85a24d64480fb971e1269fb4e4cff57daed22219dcbdd496c127b839329fcc59651968ae0622568e6d349501974ae0831a62ec842ddd214e1a03b3088'
-            '1fa76ea94e6994fa7c75269fae173150f2a7e6ac789e47946daa77096cbef277aadb2f6f5b21a51a13d123a068f9f9d475614cb074b4eef865aa89ca9fcb40a7')
+            'a5a4e25e549dd26ba656d24304ad13960f30369579045c0d14a0d8ed33e0db4b86bc2db0ee3c34495edc018954ce6aa000312eaa4d3561d96ea6bd75068f6b88')
 
 package() {
     local item src
