@@ -3,14 +3,18 @@
 case "$PACMAN_BASH_COMPLETION_APP" in
     pacman | "")
         source /usr/share/bash-completion/completions/pacman
-        complete -F _pacman pac pu
+        complete -F _pacman pac
+        [ -n "$(type p  | grep -w pacman-ext)" ] && complete -F _pacman p
         ;;
     paru)
         source /usr/share/bash-completion/completions/paru.bash
         complete -F _paru pac
+        [ -n "$(type pa | grep "pacman-ext --paru")" ] && complete -F _pacman pa
+        [ -n "$(type pa | grep "pacman-ext --aur")" ]  && complete -F _pacman pa
         ;;
     yay)
         source /usr/share/bash-completion/completions/yay
         complete -F _yay pac
+        [ -n "$(type pa | grep "pacman-ext --yay")" ] && complete -F _pacman pa
         ;;
 esac
