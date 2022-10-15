@@ -1,5 +1,6 @@
 #!/bin/bash
 
+if [ 0 -eq 1 ] ; then                    # add this stuff to ~/.bashrc instead
 case "$PACMAN_BASH_COMPLETION_APP" in
     pacman | "")
         source /usr/share/bash-completion/completions/pacman
@@ -7,14 +8,15 @@ case "$PACMAN_BASH_COMPLETION_APP" in
         [ -n "$(type p  | grep -w pacman-ext)" ] && complete -F _pacman p
         ;;
     paru)
-        source /usr/share/bash-completion/completions/paru.bash
+        source /usr/share/bash-completion/completions/paru.bash || return
         complete -F _paru pac
-        [ -n "$(type pa | grep "pacman-ext --paru")" ] && complete -F _pacman pa
-        [ -n "$(type pa | grep "pacman-ext --aur")" ]  && complete -F _pacman pa
+        [ -n "$(type pa | grep "pacman-ext --paru")" ] && complete -F _paru pa
+        [ -n "$(type pa | grep "pacman-ext --aur")" ]  && complete -F _paru pa
         ;;
     yay)
-        source /usr/share/bash-completion/completions/yay
+        source /usr/share/bash-completion/completions/yay || return
         complete -F _yay pac
-        [ -n "$(type pa | grep "pacman-ext --yay")" ] && complete -F _pacman pa
+        [ -n "$(type pa | grep "pacman-ext --yay")" ] && complete -F _yay pa
         ;;
 esac
+fi

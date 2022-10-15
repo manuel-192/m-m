@@ -4,9 +4,9 @@ Main() {
     # Like pacman, but use sudo only if needed.
 
     # Bash completion: add the following lines (uncommented!) to
-    # file /usr/share/bash-completion/completions/Pacman:
+    # file /usr/share/bash-completion/completions/pacman-sudo-internal:
     #    source /usr/share/bash-completion/completions/pacman
-    #    complete -F _pacman Pacman
+    #    complete -F _pacman pacman-sudo-internal
 
     local root_needed="error: you cannot perform this operation unless you are root."
     local out

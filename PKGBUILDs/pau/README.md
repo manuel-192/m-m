@@ -26,5 +26,5 @@ pau -h
 
 App | Description
 :--- | :---
-pac | pacman with additional features for<br>- update and AUR (via pau)<br>- avoiding sudo (via Pacman)
-Pacman | Like pacman, but use sudo only if needed.
+pac | pacman with additional features for<br>- update and AUR (via pau)<br>- avoiding sudo (via pacman-sudo-internal)
+pacman-sudo-internal | Like pacman, but use sudo only if needed.

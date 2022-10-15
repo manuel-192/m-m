@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pacman with additionalfeatures for update, and downgrade support.
+# A pacman with additionalfeatures for update, and downgrade support.
 
 echo2() { echo "$@" >&2 ; }
 DIE()   { echo2 "$progname: error: $1" ; Usage 1 ; }
@@ -39,7 +39,7 @@ EOF
     MayExit "$1"
 }
 
-normal_pacman_cmd()      { /usr/bin/Pacman "$@" ; }
+normal_pacman_cmd()      { /usr/bin/pacman-sudo-internal "$@" ; }
 special_update_helper()  { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_update ; }
 
 special_update() {

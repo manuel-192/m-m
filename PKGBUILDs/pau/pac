@@ -1,35 +1,3 @@
 #!/bin/bash
 
-Main_old() {
-    # pacman with additional features for
-    # - update and AUR (via pau)
-    # - avoiding sudo (via Pacman)
-
-    local helper=paru
-    [ -x /usr/bin/$helper ] || helper=yay
-
-    case "$1" in
-        -a | --aur)
-            pau --$helper  # ignores other parameters
-            ;;
-        "")
-            pau
-            ;;
-        -Syu)
-            if [ -n "$2" ] ; then
-                Pacman "$@"
-            else
-                pau
-            fi
-            ;;
-        *)
-            Pacman "$@"
-            ;;
-    esac
-}
-
-Main() {
-    pau "$@"
-}
-
-Main "$@"
+pau "$@"  # remove this file, make alias in .bashrc

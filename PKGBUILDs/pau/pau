@@ -134,12 +134,15 @@ Pau() {
 Main() {
     # pacman with additional features for
     # - update and AUR (via Pau)
-    # - avoiding sudo (via Pacman)
+    # - avoiding sudo (via pacman-sudo-internal)
 
     local helper=paru
     [ -x /usr/bin/$helper ] || helper=yay
 
     case "$1" in
+        -h | --help)
+            Options -h
+            ;;
         -a | --aur)
             Pau --$helper  # ignores other parameters
             ;;
@@ -148,13 +151,13 @@ Main() {
             ;;
         -Syu)
             if [ -n "$2" ] ; then
-                Pacman "$@"
+                pacman-sudo-internal "$@"
             else
                 Pau
             fi
             ;;
         *)
-            Pacman "$@"
+            pacman-sudo-internal "$@"
             ;;
     esac
 }
