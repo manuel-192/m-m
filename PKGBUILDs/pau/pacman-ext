@@ -2,9 +2,10 @@
 
 # A pacman with additionalfeatures for update, and downgrade support.
 
-echo2() { echo "$@" >&2 ; }
-DIE()   { echo2 "$progname: error: $1" ; Usage 1 ; }
-WARN()  { echo2 "$progname: warning: $1" ; MayExit "$2" ; }
+echo2()   { echo "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+DIE()     { echo2 "$progname: error: $1" ; Usage 1 ; }
+WARN()    { echo2 "$progname: warning: $1" ; MayExit "$2" ; }
 MayExit() { [ -n "$1" ] && exit $1 ; }
 
 Usage() {
@@ -44,15 +45,20 @@ special_update_helper()  { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_
 
 eos-virtualbox-check() {
     # if installed, check versions of virtualbox-ext-oracle vs. virtualbox
-    local versions ver_app ver_ext
-    readarray -t versions <<< $(LANG=C paru -Si virtualbox virtualbox-ext-oracle | grep "^Version" | awk '{print $NF}')
-    if [ ${#versions[@]} -eq 2 ] ; then
-        ver_app=${versions[0]%-*}
-        ver_ext=${versions[1]%-*}
-        if [ "$ver_app" != "$ver_ext" ] ; then
-            ignore_aur="--ignore virtualbox-ext-oracle"
-            WARN "virtualbox $ver_app and virtualbox-ext-oracle $ver_ext: no version match."
-            echo2 ""
+    if [ -x /usr/bin/virtualbox ] && [ -r /usr/share/virtualbox/extensions/Oracle_VM_VirtualBox_Extension_Pack-*.vbox-extpack ] ; then
+        local versions ver_app ver_ext
+        case "$helper" in
+            /usr/bin/paru) readarray -t versions <<< $(LANG=C paru -Si virtualbox virtualbox-ext-oracle | grep "^Version" | awk '{print $NF}') ;;
+            *)             # bug: yay does not find virtualbox-ext-oracle together with virtualbox!
+                           readarray -t versions <<< $( { LANG=C pacman -Si virtualbox; LANG=C yay -Si virtualbox-ext-oracle; } | grep "^Version" | awk '{print $NF}') ;;
+        esac
+        if [ ${#versions[@]} -eq 2 ] ; then
+            ver_app=${versions[0]%-*}
+            ver_ext=${versions[1]%-*}
+            if [ "$ver_app" != "$ver_ext" ] ; then
+                ignore_aur_pkgs="--ignore virtualbox-ext-oracle"
+                # printf2 "warning: ignoring virtualbox-ext-oracle update due to incompatible versions.\n"
+            fi
         fi
     fi
 }
@@ -64,13 +70,12 @@ A pacman wrapper with additional package update features.
 Additional features:
    - db lock file check
    - nvidia & kernel update check
-   - virtualbox vs. virtualbox-ext-oracle version macth check
+   - check virtualbox vs. virtualbox-ext-oracle version compatibility
    - update keyrings first
    - 'sync' at end
 
 EOF
-    local ignore_aur=""
-    eos-virtualbox-check
+    local ignore_aur_pkgs=""
     local -r lockfile=/var/lib/pacman/db.lck logfile="$HOME/.cache/$progname.log"
     if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
         WARN "$lockfile is in use." 1
@@ -81,7 +86,10 @@ EOF
     eos-kernel-nvidia-update-check --needed
     [ $? -eq 2 ] && sudo_cmd=("eos-kernel-nvidia-update-check")
     sudo_cmd+=("/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")   # the main stuff
-    [ "$helper" != "/usr/bin/pacman" ] && sudo_cmd+=("$helper -Sua $ignore_aur")
+    if [ "$helper" != "/usr/bin/pacman" ] ; then
+        eos-virtualbox-check
+        sudo_cmd+=("$helper -Sua $ignore_aur_pkgs")
+    fi
     sudo_cmd+=("sync")
     # Handle the sudo command:
     local -r last_cmd="${sudo_cmd[@]: -1}"
