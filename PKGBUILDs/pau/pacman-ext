@@ -42,6 +42,21 @@ EOF
 normal_pacman_cmd()      { /usr/bin/pacman-sudo-internal "$@" ; }
 special_update_helper()  { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_update ; }
 
+eos-virtualbox-check() {
+    # if installed, check versions of virtualbox-ext-oracle vs. virtualbox
+    local versions ver_app ver_ext
+    readarray -t versions <<< $(LANG=C paru -Si virtualbox virtualbox-ext-oracle | grep "^Version" | awk '{print $NF}')
+    if [ ${#versions[@]} -eq 2 ] ; then
+        ver_app=${versions[0]%-*}
+        ver_ext=${versions[1]%-*}
+        if [ "$ver_app" != "$ver_ext" ] ; then
+            ignore_aur="--ignore virtualbox-ext-oracle"
+            WARN "virtualbox $ver_app and virtualbox-ext-oracle $ver_ext: no version match."
+            echo2 ""
+        fi
+    fi
+}
+
 special_update() {
     cat <<EOF
 A pacman wrapper with additional package update features.
@@ -49,10 +64,13 @@ A pacman wrapper with additional package update features.
 Additional features:
    - db lock file check
    - nvidia & kernel update check
+   - virtualbox vs. virtualbox-ext-oracle version macth check
    - update keyrings first
    - 'sync' at end
 
 EOF
+    local ignore_aur=""
+    eos-virtualbox-check
     local -r lockfile=/var/lib/pacman/db.lck logfile="$HOME/.cache/$progname.log"
     if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
         WARN "$lockfile is in use." 1
@@ -63,7 +81,7 @@ EOF
     eos-kernel-nvidia-update-check --needed
     [ $? -eq 2 ] && sudo_cmd=("eos-kernel-nvidia-update-check")
     sudo_cmd+=("/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")   # the main stuff
-    [ "$helper" != "/usr/bin/pacman" ] && sudo_cmd+=("$helper -Sua")
+    [ "$helper" != "/usr/bin/pacman" ] && sudo_cmd+=("$helper -Sua $ignore_aur")
     sudo_cmd+=("sync")
     # Handle the sudo command:
     local -r last_cmd="${sudo_cmd[@]: -1}"
