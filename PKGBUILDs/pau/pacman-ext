@@ -10,31 +10,24 @@ MayExit() { [ -n "$1" ] && exit $1 ; }
 
 Usage() {
     cat <<EOF
+$banner
+Usage:       $progname
+             $progname <option1>
+             $progname <option2> [other-parameters]
+             $progname <pacman-options>
+<option1>:   -Syu                Updates packages with additional features.
+             -Syyu               Like -Syu, with extra --refresh (see 'man pacman').
+             --paru              Like -Syu, also updates AUR packages using paru.
+             --yay               Like -Syu, also updates AUR packages using yay.
+             --aur               Like --paru or --yay (tried in this order).
+<option2>:   --wait-enter        Waits for user to press the Enter key to continue in the end.
+             --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
 
-Usage:
-   $progname
-   $progname <special-option>
-   $progname <special-option2>
-   $progname <pacman-options>
-
-<special-option>:
-   -Syu                Updates packages with additional features.
-   -Syyu               Like -Syu, with extra --refresh (see 'man pacman').
-   --paru              Like -Syu, also updates AUR packages using paru.
-   --yay               Like -Syu, also updates AUR packages using yay.
-   --aur               Like --paru or --yay (tried in this order).
-
-Notes:
-   - If no arguments are provided, -Syu is assumed.
-   - The <special-option> $msgtail
-   - Otherwise works like 'pacman <pacman-options>' *without* any additional features.
-
-<special-option2>:
-   --wait-enter        Waits for user to press the Enter key to continue.
-   --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
-
-Notes2:
-   - Options --downgrade and --dg require one or more package names.
+If no parameter is provided, -Syu is assumed.
+The <option1> $msgtail
+Option --wait-enter can be used with other parameters, e.g. <pacman-options>.
+Options --downgrade and --dg require one or more package names.
+Otherwise $progname works like 'pacman <pacman-options>' *without* any additional features.
 
 EOF
     MayExit "$1"
@@ -65,7 +58,7 @@ eos-virtualbox-check() {
 
 special_update() {
     cat <<EOF
-A pacman wrapper with additional package update features.
+$banner
 
 Additional features:
    - db lock file check
@@ -105,6 +98,7 @@ pacman_ext() {
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local db_opt="-Sy"                     # $db_opt used by special_update()
     local opt
+    local -r banner="$progname: A pacman wrapper with additional features for package update."
     local -r msgtail="must be used as the *only* parameter on the command line."
     case "$2" in
         "") case "$1" in    # additional features
@@ -136,7 +130,7 @@ pacman_ext() {
     for opt in "$@" ; do
         case "$opt" in
             --aur | --paru | --yay) DIE "special option '$opt' $msgtail" ;;  # should have been handled above!
-            -h | --help) Usage 0 ;;
+            -h | --help) Usage ; return ;;
         esac
     done
     normal_pacman_cmd "$@"
@@ -146,16 +140,26 @@ Main() {
     local wait_enter=no
     local show_cmd=no
     local retval
+    local args=() arg
 
-    while true ; do
-        case "$1" in
-            --wait-enter) wait_enter=yes ; shift ;;  # e.g. for pacseek
-            --show-cmd)  show_cmd=yes ; shift ;;
-            *) break ;;
+    for arg in "$@" ; do
+        case "$arg" in
+            -h | --help)
+                if [ $# -eq 1 ] ; then
+                    pacman_ext $arg
+                    echo "pacman: $(LANG=C /usr/bin/pacman -Qi pacman | grep ^Description | sed 's|^Description[ ]*: ||')"
+                fi
+                LANG=C /usr/bin/pacman "$@"
+                return
+                ;;
+            --wait-enter) wait_enter=yes ;;  # e.g. for pacseek
+            --show-cmd)  show_cmd=yes ;;
+            *) args+=("$arg") ;;
         esac
     done
 
-    pacman_ext "$@"
+    pacman_ext "${args[@]}"
+
     retval=$?
 
     [ "$wait_enter" = "yes" ] && read -p "Press ENTER: " >&2
