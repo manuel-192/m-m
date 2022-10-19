@@ -12,11 +12,11 @@ Main() {
     local out
     local retval
 
-    out=$(LANG=C pacman "$@" 2>&1)
+    out=$(LANG=C /usr/bin/pacman "$@" 2>&1)
     retval=$?
 
     case "$out" in
-        "$root_needed") sudo pacman "$@" ;;
+        "$root_needed") sudo /usr/bin/pacman "$@" ;;
         "")             return $retval ;;
         *)              printf "%s\n" "$out" ; return $retval ;;
     esac

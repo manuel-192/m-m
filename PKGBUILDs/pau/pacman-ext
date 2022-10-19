@@ -43,7 +43,7 @@ eos-virtualbox-check() {
         case "$helper" in
             /usr/bin/paru) readarray -t versions <<< $(LANG=C paru -Si virtualbox virtualbox-ext-oracle | grep "^Version" | awk '{print $NF}') ;;
             *)             # bug: yay does not find virtualbox-ext-oracle together with virtualbox!
-                           readarray -t versions <<< $( { LANG=C pacman -Si virtualbox; LANG=C yay -Si virtualbox-ext-oracle; } | grep "^Version" | awk '{print $NF}') ;;
+                           readarray -t versions <<< $( { LANG=C /usr/bin/pacman -Si virtualbox; LANG=C yay -Si virtualbox-ext-oracle; } | grep "^Version" | awk '{print $NF}') ;;
         esac
         if [ ${#versions[@]} -eq 2 ] ; then
             ver_app=${versions[0]%-*}
@@ -61,6 +61,7 @@ special_update() {
 $banner
 
 Additional features:
+   - require password only when needed
    - db lock file check
    - nvidia & kernel update check
    - check virtualbox vs. virtualbox-ext-oracle version compatibility
