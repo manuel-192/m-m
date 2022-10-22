@@ -65,7 +65,7 @@ Additional features:
    - db lock file check
    - nvidia & kernel update check
    - check virtualbox vs. virtualbox-ext-oracle version compatibility
-   - update keyrings first
+   - update keyrings first if archlinux-keyring-wkd-sync.timer is not active
    - 'sync' at end
 
 EOF
@@ -79,7 +79,11 @@ EOF
     [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
     eos-kernel-nvidia-update-check --needed
     [ $? -eq 2 ] && sudo_cmd=("eos-kernel-nvidia-update-check")
-    sudo_cmd+=("/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")   # the main stuff
+    if [ "$keyrings_first" = "yes" ] ; then
+        sudo_cmd+=("/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")
+    else
+        sudo_cmd+=("/usr/bin/pacman ${db_opt}u")
+    fi
     if [ "$helper" != "/usr/bin/pacman" ] ; then
         eos-virtualbox-check
         sudo_cmd+=("$helper -Sua $ignore_aur_pkgs")
@@ -142,6 +146,13 @@ Main() {
     local show_cmd=no
     local retval
     local args=() arg
+    local keyrings_first=no   # if yes, update keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
+
+    if [ "$keyrings_first" = "no" ] ; then
+        if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
+            keyrings_first=yes
+        fi
+    fi
 
     for arg in "$@" ; do
         case "$arg" in
