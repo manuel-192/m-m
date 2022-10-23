@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=crypt
+pkgdesc="Simple wrapper for the 'age' file encryption app."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+
+arch=(x86_64)
+license=('GPL')
+depends=(bash age)
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('b0e832ada1369586b2a504c7b39c9d73ad06612bdcb6801e886cf257625dfc383305d0a9413d61d2b1c1e90a3b8992833465160869a3aa14315763f66cbc6ffc')
+
+package() {
+    local item src
+
+    for src in "${source[@]}" ; do
+        item="${src##*/}"
+        case "$item" in
+            *.completion)
+                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
+            *)
+                install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
+        esac
+    done
+}

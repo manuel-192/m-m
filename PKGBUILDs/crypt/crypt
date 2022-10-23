@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Encrypt and decrypt a file.
+# Usage: crypt {en|de} file
+#
+# - Encrypted file will have suffix ".age" appended.
+# - Overwrites the target file of the operation if it exists.
+# - Does not delete the source file.
+
+echo2() { echo "$@" >&2 ; }
+DIE() {
+    echo2 "$progname: error: $1"
+    exit 1
+}
+
+_crypt-init() {
+    mkdir -p "$keydir"
+    chmod 0700 "$keydir"
+
+    local date=$(date +%Y%m%d-%H%M%S)
+    local tmpfile pubkey
+
+    if [ -r "$keyfile" ] ; then
+        mv "$keyfile" "$keyfile"."$date"
+        mv "$pubfile" "$pubfile"."$date"
+    fi
+    tmpfile=$(mktemp -u "$HOME/.tmpfile.XXXXXXXX")
+    pubkey=$(age-keygen -o "$tmpfile" 2>&1)  || DIE "ace-keygen target file exists"
+    chmod 0600 "$tmpfile"
+    age -p -o "$keyfile" "$tmpfile"
+    rm -f "$tmpfile"
+    pubkey=$(echo "$pubkey" | awk '{print $NF}')
+    echo "$pubkey" > "$pubfile"
+    chmod 0600 "$keyfile" "$pubfile"
+}
+
+_crypt-encrypt() {
+    local from_file="$1"
+    [ -r "$keyfile" ] || _crypt-init
+    age -r "$(cat "$pubfile")" -o "$from_file".age "$from_file"
+}
+
+_crypt-decrypt() {
+    local to_file="$1"
+    [ -r "$keyfile" ] || DIE "file $keyfile not found."
+    age -d -i "$keyfile" -o "$to_file" "$to_file".age
+}
+
+_crypt_delete_secrets() {
+    read -p "About to delete your '$progname' secrets. Are you sure (N/y)? " >&2
+    case "$REPLY" in
+        [yY]) echo2 "Secrets deleted." ;;
+        *) echo2 "Aborted." ; return ;;
+    esac
+    rm -rf "$keydir"       # deletes all keys !!!
+}
+
+crypt() {
+    local op="$1" ; shift
+    local keydir="$HOME/.usefuldir"
+    local keyfile="$keydir/useful.age"
+    local pubfile="$keydir/useful.pub"
+    local progname="$(basename "$0")"
+
+    [ -x /usr/bin/age ] || DIE "deps not installed"
+
+    case "$op" in
+        encrypt | en)    _crypt-encrypt "$@" ;;
+        decrypt | de)    _crypt-decrypt "$@" ;;
+        delete-secrets)  _crypt_delete_secrets ;;
+        *) echo "$FUNCNAME: error: invalid op '$op'." >&2 ;;
+    esac
+}
+
+crypt "$@"
