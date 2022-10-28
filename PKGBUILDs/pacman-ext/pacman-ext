@@ -7,6 +7,14 @@ printf2() { printf "$@" >&2 ; }
 DIE()     { echo2 "$progname: error: $1" ; Usage 1 ; }
 WARN()    { echo2 "$progname: warning: $1" ; MayExit "$2" ; }
 MayExit() { [ -n "$1" ] && exit $1 ; }
+verbose2() {
+    if [ "$verbose" = "yes" ] ; then
+        case "$1" in
+            -n) echo2 "$1" "==>" "$@" ;;  # support echo option -n
+            *)  echo2 "==>" "$@" ;;
+        esac
+    fi
+}
 
 Usage() {
     cat <<EOF
@@ -33,12 +41,20 @@ EOF
     MayExit "$1"
 }
 
-normal_pacman_cmd()      { /usr/bin/pacman-sudo-internal "$@" ; }
-special_update_helper()  { helper="/usr/bin/sudo -u $LOGNAME $helper" ; special_update ; }
+normal_pacman_cmd() {
+    verbose2 "will check need for sudo with pacman ..."
+    /usr/bin/pacman-sudo-internal "$@"
+}
+special_update_helper()  {
+    verbose2 "will run also $(basename $helper) ..."
+    helper="/usr/bin/sudo -u $LOGNAME $helper"
+    special_update
+}
 
 eos-virtualbox-check() {
     # if installed, check versions of virtualbox-ext-oracle vs. virtualbox
     if [ -x /usr/bin/virtualbox ] && [ -r /usr/share/virtualbox/extensions/Oracle_VM_VirtualBox_Extension_Pack-*.vbox-extpack ] ; then
+        verbose2 "will check virtualbox update ..."
         local versions ver_app ver_ext
         case "$helper" in
             /usr/bin/paru) readarray -t versions <<< $(LANG=C paru -Si virtualbox virtualbox-ext-oracle | grep "^Version" | awk '{print $NF}') ;;
@@ -56,6 +72,37 @@ eos-virtualbox-check() {
     fi
 }
 
+_nvidia_check_needed() {
+    if lspci -k | grep -P "Display|VGA|3D" | grep -w NVIDIA >/dev/null ; then
+        pacman -Qq | grep -P '^nvidia$|^nvidia-lts$' > /dev/null
+    fi
+}
+_nvidia_check() {
+    if _nvidia_check_needed ; then
+        echo :: Nvidia check...
+        eos-kernel-nvidia-update-check $updates       # when this line will be executed, pacman -Sy was just done
+    fi
+}
+_package_checks() {
+    local pkg updates="$(pacman -Quq)"
+    local install=()
+
+    if [ -z "$updates" ] ; then
+        echo " there is nothing to do"
+        return 1
+    fi
+
+    for pkg in "$@" ; do
+        if [ -n "$(echo "$updates" | grep "^$pkg$")" ] ; then
+            install+=("$pkg")
+        fi
+    done
+    [ ${#install[@]} -ne 0 ] && pacman -S --noconfirm "${install[@]}"
+
+    _nvidia_check
+}
+export -f _nvidia_check _nvidia_check_needed _package_checks
+
 special_update() {
     cat <<EOF
 $banner
@@ -71,25 +118,36 @@ Additional features:
 EOF
     local ignore_aur_pkgs=""
     local -r lockfile=/var/lib/pacman/db.lck logfile="$HOME/.cache/$progname.log"
+
+    verbose2 "will check $lockfile ..."
     if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
         WARN "$lockfile is in use." 1
     fi
-    # Build the command for sudo:
-    local sudo_cmd
+
+    # Build the command for sudo
+
+    local sudo_cmd=()
     [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
-    eos-kernel-nvidia-update-check --needed
-    [ $? -eq 2 ] && sudo_cmd=("eos-kernel-nvidia-update-check")
     if [ "$keyrings_first" = "yes" ] ; then
-        sudo_cmd+=("/usr/bin/pacman $db_opt --needed archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")
+        verbose2 "will check all keyrings first ..."
+        sudo_cmd+=("/usr/bin/pacman $db_opt && _package_checks archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")
     else
-        sudo_cmd+=("/usr/bin/pacman ${db_opt}u")
+        if false ; then
+            sudo_cmd+=("/usr/bin/pacman ${db_opt}u")
+        else
+            verbose2 "will check EndeavourOS keyrings first ..."
+            sudo_cmd+=("/usr/bin/pacman $db_opt && _package_checks endeavouros-keyring && /usr/bin/pacman -Su")
+        fi
     fi
     if [ "$helper" != "/usr/bin/pacman" ] ; then
         eos-virtualbox-check
         sudo_cmd+=("$helper -Sua $ignore_aur_pkgs")
     fi
+    verbose2 "will add 'sync' ..."
     sudo_cmd+=("sync")
-    # Handle the sudo command:
+
+    # Handle the sudo command
+
     local -r last_cmd="${sudo_cmd[@]: -1}"
     sudo_cmd=($(printf "%s\n" "${sudo_cmd[@]}" | sed "/^$last_cmd$/!s/$/ \&\&/" ))  # see 'info sed', chapter 6.4 for details!
     echo "$(date +%Y%m%d-%H%M): ${sudo_cmd[@]}" >> "$logfile"
@@ -110,6 +168,7 @@ pacman_ext() {
                 --aur)                            helper=/usr/bin/paru
                                                   [ -x $helper ] || helper=/usr/bin/yay
                                                   [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
+                                                  verbose2 "$(basename $helper) selected."
                                                   special_update_helper
                                                   return $?
                                                   ;;
@@ -147,6 +206,7 @@ Main() {
     local retval
     local args=() arg
     local keyrings_first=no   # if yes, update keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
+    local verbose=no
 
     if [ "$keyrings_first" = "no" ] ; then
         if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
@@ -164,6 +224,7 @@ Main() {
                 LANG=C /usr/bin/pacman "$@"
                 return
                 ;;
+            -v | --verbose) verbose=yes ;;   # shows what it does
             --wait-enter) wait_enter=yes ;;  # e.g. for pacseek
             --show-cmd)  show_cmd=yes ;;
             *) args+=("$arg") ;;
