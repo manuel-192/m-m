@@ -114,11 +114,11 @@ EOF
     # background info in verbose mode
     if [ "$verbose" = "yes" ] ; then
         printf "\n### Ranking data:\n"                 >> "$file"
-        echo "$ranked" | sed 's|^|# |' | column -t >&2 >> "$file"
+        echo "$ranked" | sed 's|^|## |' | column -t >&2 >> "$file"
 
         if [ $(stat -c %s "$rank_fails_file") -gt 0 ] ; then
             printf "\n### Ranking problems:\n"   >> "$file"
-            cat $rank_fails_file | sed 's|^|# |' >> "$file"
+            cat $rank_fails_file | sed 's|^|### |' >> "$file"
         fi
     fi
 }

@@ -6,7 +6,7 @@ pkgname=arch-rankmirrors
 pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=0.1
-pkgrel=9
+pkgrel=10
 
 arch=('any')
 license=('GPL')
@@ -14,9 +14,18 @@ depends=('bash')
 
 source=(
     $url/$pkgname
+    $url/long-time-rank-arch
 )
-sha512sums=('c05283e056ae7a8c27b91d4fbfa9dabd7ec9c9f3b94c1719a792c0a2400295402bc2bdefb28e096504b5292dbd0c3b55e450544ccec7ebfa43eefb573ea14838')
+sha512sums=('0ca143d3dfe850a5058596e49bd7f2bdf621c2bc168be4f0b3362442d7f37a2e139685a65e6abe273b5f1eafa624be4948ae1d069a2f5883d583c17595c0d554'
+            'bf7ee16973d0dfa7bc80e96d38a56187d7787dee483bf60ba67c787e80774fc2a2ba757e52af5273f0ba34d708d967122264cc4943b563cd988622b0fdddb4a3')
 
 package() {
-    install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
+    local src
+
+    for src in "${source[@]}" ; do
+        src="$(basename "$src")"
+        case "$src" in
+            *)  install -Dm755 $src                    $pkgdir/usr/bin/$src ;;
+        esac
+    done
 }

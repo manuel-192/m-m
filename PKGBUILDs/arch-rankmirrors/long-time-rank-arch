@@ -1,0 +1,155 @@
+#!/bin/bash
+
+REFLECTOR_EUROPE=(
+    Austria
+    Belgium
+    "Bosnia and Herzegovina"
+    Bulgaria
+    Croatia
+    Czechia
+    Denmark
+    Estonia
+    Finland
+    France
+    Germany
+    Greece
+    Hungary
+    Iceland
+    Ireland
+    Italy
+    Latvia
+    Lithuania
+    Luxembourg
+    Moldova
+    Monaco
+    Netherlands
+    "North Macedonia"
+    Norway
+    Poland
+    Portugal
+    Romania
+    Serbia
+    Slovakia
+    Slovenia
+    Spain
+    Sweden
+    Switzerland
+    Ukraine
+    "United Kingdom"
+)
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main() {
+    local progname="$(basename "$0")"
+    local storedir="$HOME/.cache/$progname"
+    local rank_date=$(date +%Y%m%d%H%M%S)
+    local europe=$(printf "%s\n" "${REFLECTOR_EUROPE[@]}" | tr '\n' ',')
+    local europe=${europe:: -1}
+
+    mkdir -p "$storedir"
+
+    case "$1" in
+        --once | -1) RankOnce ;;
+        --show | -s | "") ShowCurrentResult ;;
+    esac
+}
+
+RankOnce() {
+    /usr/bin/arch-rankmirrors -v -n 30 -c "$europe" -d 2 --save "$storedir/ranked.$rank_date" 2> /tmp/rank.tmp.93874
+}
+
+ShowCurrentResult() {
+    # search all files
+    #   - the newest Last-update
+    #   - which mirrors belong to this newest group
+    #   - for each found mirror, save
+    #       - how many times it has been in the newest group
+    #       - how much time was spent in Fetch-time
+    #       - caclulate (cumulated fetch time) / nr of times in first group
+    #          - smaller is better!
+
+    local file
+    local last_update mirror
+    declare -A best_mirrors      # array of: best_mirrors[mirror]='count|cumulative-fetch-time'
+    local newest_mirrors nm ft
+    local line
+    local rank_file_count=$(ls -1 "$storedir"/ranked.* 2>/dev/null | wc -l)
+
+    case "$rank_file_count" in
+        0) DIE "no ranking data found.\n Run '$progname -1' once or preferably many times at various dates and times.\n" ;;
+        *) printf "$rank_file_count ranking files found.\n\n" >&2 ;;
+    esac
+
+    for file in "$storedir"/ranked.* ; do
+        last_update=$(grep -P "^##[ ]+http" "$file" | head -n1 | awk '{print $3}')
+        readarray -t newest_mirrors <<< $(grep -P "^##[ ]+http.* $last_update " "$file")
+        for line in "${newest_mirrors[@]}" ; do
+            nm=$(echo "$line" | awk '{print $2}')
+            ft=$(echo "$line" | awk '{print $4}')
+            AddToBestMirrors "$nm" "$ft"
+        done
+    done
+    ShowBestMirrors
+}
+
+AddToBestMirrors() {
+    local nm="$1"
+    local ft="$2"
+    local count cumul
+
+    if IsInBestMirrors "$nm" ; then
+        GetValues "$nm"
+        ((count++))
+        cumul=$(echo "$cumul + $ft" | bc -l)
+    else
+        count=1
+        cumul="$ft"
+    fi
+    best_mirrors[$nm]="$count|$cumul"
+}
+
+IsInBestMirrors() {
+    local mirror="$1"
+    local m mnames=("${!best_mirrors[@]}")
+
+    if [ ${#mnames[@]} -gt 0 ] ; then
+        for m in "${mnames[@]}" ; do
+            [ "$m" = "$mirror" ] && return 0
+        done
+    fi
+    return 1
+}
+
+GetValues() {
+    local nm="$1"
+    local val="${best_mirrors[$nm]}"
+    count="${val%|*}"
+    cumul="${val#*|}"
+}
+
+ShowBestMirrors() {
+    local m mnames=("${!best_mirrors[@]}")
+    local count cumul
+    local heading="Mirror Ranked-as-best Cumulative-fetch-time"
+
+    {
+        if [ ${#mnames[@]} -gt 0 ] ; then
+            echo "$heading"
+            echo "$heading" | sed 's|[^ ]|~|g'
+        fi
+
+        if [ ${#mnames[@]} -gt 0 ] ; then
+            for m in "${mnames[@]}" ; do
+                GetValues "$m"
+                cumul=$(echo "1000 * $cumul" | bc -l)                   # cumul in milliseconds
+                echo "$m $count $cumul"
+            done
+        fi | sort -V -k2rn,2 -k3,3
+    } | column -t
+}
+
+Main "$@"
