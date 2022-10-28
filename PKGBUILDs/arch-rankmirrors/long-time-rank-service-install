@@ -1,0 +1,23 @@
+#!/bin/bash
+
+Main() {
+    local progname="$(basename "$0")"
+    local srv=long-time-rank-arch
+    local timer=$srv.timer
+    local dir="$HOME/.config/systemd/user"
+
+    mkdir -p "$dir" || return 1
+    cp $srv.{timer,service} "$dir" || return 1
+
+    systemctl --user enable $timer
+
+    if systemctl --user status $timer >/dev/null ; then
+        echo "$progname: reloading user daemon ..." >&2
+        systemctl --user daemon-reload        # is running
+    else
+        echo "$progname: starting $timer ..." >&2
+        systemctl --user start $timer         # was not running
+    fi
+}
+
+Main "$@"

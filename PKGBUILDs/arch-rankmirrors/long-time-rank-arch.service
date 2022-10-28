@@ -1,0 +1,9 @@
+[Unit]
+Description=Service for Arch mirror ranking with long time results
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/long-time-rank-arch -1
+
+[Install]
+WantedBy=long-time-rank-arch.timer

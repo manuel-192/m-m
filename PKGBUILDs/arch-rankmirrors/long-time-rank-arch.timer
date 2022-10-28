@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for Arch mirror ranking with long time results
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=45min
+Persistent=true
+ 
+[Install]
+WantedBy=timers.target
