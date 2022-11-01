@@ -41,10 +41,6 @@ EOF
     MayExit "$1"
 }
 
-normal_pacman_cmd() {
-    verbose2 "will check need for sudo with pacman ..."
-    /usr/bin/pacman-sudo-internal "$@"
-}
 special_update_helper()  {
     verbose2 "will run also $(basename $helper) ..."
     helper="/usr/bin/sudo -u $LOGNAME $helper"
@@ -117,7 +113,8 @@ Additional features:
 
 EOF
     local ignore_aur_pkgs=""
-    local -r lockfile=/var/lib/pacman/db.lck logfile="$HOME/.cache/$progname.log"
+    local -r lockfile=/var/lib/pacman/db.lck
+    local -r logfile="$HOME/.cache/$progname.log"
 
     verbose2 "will check $lockfile ..."
     if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
@@ -157,56 +154,52 @@ EOF
 }
 
 pacman_ext() {
-    local -r progname="$(basename "$0")"   # $progname used by various functions here
-    local helper=/usr/bin/pacman           # $helper used by special_update()
     local db_opt="-Sy"                     # $db_opt used by special_update()
     local opt
-    local -r banner="$progname: A pacman wrapper with additional features for package update."
     local -r msgtail="must be used as the *only* parameter on the command line."
+
+    case "$helper" in
+        /usr/bin/pacman) ;;
+        *) special_update_helper ; return $? ;;
+    esac
+
+    # Handle additional features.
     case "$2" in
-        "") case "$1" in    # additional features
-                --aur)                            helper=/usr/bin/paru
-                                                  [ -x $helper ] || helper=/usr/bin/yay
-                                                  [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
-                                                  verbose2 "$(basename $helper) selected."
-                                                  special_update_helper
-                                                  return $?
-                                                  ;;
-                --paru | --yay)                   helper=/usr/bin/${1#*--}
-                                                  [ -x $helper ] || DIE "AUR helper '$helper' not found."
-                                                  special_update_helper
-                                                  return $?
-                                                  ;;
-                -Syu|-Suy|-ySu|-yuS|-uSy|-uyS|"") special_update
-                                                  return $?
-                                                  ;;
-                -Syyu)                            db_opt="-Syy"
-                                                  special_update
-                                                  return $?
-                                                  ;;
+        "")
+            case "$1" in
+                -Syu|-Suy|-ySu|-yuS|-uSy|-uyS|"")
+                    special_update
+                    return $?
+                    ;;
+                -Syyu)
+                    db_opt="-Syy"
+                    special_update
+                    return $?
+                    ;;
             esac
             ;;
-        *)  case "$1" in
+        *)
+            case "$1" in
                 --dg | --downgrade) shift ; eos-downgrade "$@" ; return $? ;;
             esac
             ;;
     esac
-    for opt in "$@" ; do
-        case "$opt" in
-            --aur | --paru | --yay) DIE "special option '$opt' $msgtail" ;;  # should have been handled above!
-            -h | --help) Usage ; return ;;
-        esac
-    done
-    normal_pacman_cmd "$@"
+
+    verbose2 "will check need for sudo with pacman ..."
+    /usr/bin/pacman-sudo-internal "$@"
 }
 
 Main() {
+    local -r progname="$(basename "$0")"   # $progname used by various functions here
+    local -r banner="$progname: A pacman wrapper with additional features for package update."
     local wait_enter=no
     local show_cmd=no
     local retval
     local args=() arg
     local keyrings_first=no   # if yes, update keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
     local verbose=no
+    local helper=/usr/bin/pacman           # $helper used by special_update()
+    local show_help_now=no
 
     if [ "$keyrings_first" = "no" ] ; then
         if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
@@ -214,28 +207,52 @@ Main() {
         fi
     fi
 
+    # Handle new options and changed pacman options here.
+    # Gather all pacman options for the pacman call.
+
     for arg in "$@" ; do
         case "$arg" in
             -h | --help)
-                if [ $# -eq 1 ] ; then
-                    pacman_ext $arg
-                    echo "pacman: $(LANG=C /usr/bin/pacman -Qi pacman | grep ^Description | sed 's|^Description[ ]*: ||')"
-                fi
-                LANG=C /usr/bin/pacman "$@"
-                return
+                show_help_now=yes
+                args+=("$arg")
                 ;;
-            -v | --verbose) verbose=yes ;;   # shows what it does
-            --wait-enter) wait_enter=yes ;;  # e.g. for pacseek
-            --show-cmd)  show_cmd=yes ;;
-            *) args+=("$arg") ;;
+            -v | --verbose)
+                verbose=yes
+                args+=("$arg")
+                ;;
+            --wait-enter)
+                wait_enter=yes                                # useful for pacseek
+                ;;
+            --show-cmd)
+                show_cmd=yes
+                ;;
+            --aur)
+                helper=/usr/bin/paru
+                [ -x $helper ] || helper=/usr/bin/yay
+                [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
+                verbose2 "$(basename $helper) selected."
+                ;;
+            --paru | --yay)
+                helper=/usr/bin/${arg#*--}
+                [ -x $helper ] || DIE "AUR helper '$helper' not found."
+                ;;
+            *)
+                args+=("$arg")
+                ;;
         esac
     done
 
-    pacman_ext "${args[@]}"
+    if [ "$show_help_now" = "yes" ] ; then
+        Usage
+        echo "pacman: $(LANG=C /usr/bin/pacman -Qi pacman | grep ^Description | sed 's|^Description[ ]*: ||')"
+        LANG=C /usr/bin/pacman "${args[@]}"
+        return $?
+    fi
 
+    pacman_ext "${args[@]}"
     retval=$?
 
-    [ "$wait_enter" = "yes" ] && read -p "Press ENTER: " >&2
+    [ "$wait_enter" = "yes" ] && read -p "Press ENTER to continue: " >&2
 
     return $retval
 }
