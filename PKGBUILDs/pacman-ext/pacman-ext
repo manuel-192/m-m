@@ -31,6 +31,7 @@ Usage:       $progname
 <option2>:   --wait-enter        Waits for user to press the Enter key to continue in the end.
              --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
              --no-banner         Do not show the intial banner that tells about $progname.
+             --show-cmd          Shows the actual commands to be executed.
 
 If no parameter is provided, -Syu is assumed.
 The <option1> $msgtail
@@ -242,6 +243,10 @@ Main() {
                 ;;
             --no-banner)
                 banner_initial=no
+                ;;
+            --show-native-options)
+                echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd $arg"
+                exit 0
                 ;;
             *)
                 args+=("$arg")

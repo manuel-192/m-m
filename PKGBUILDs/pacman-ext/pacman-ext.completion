@@ -39,7 +39,8 @@ _pacman-ext_()
     local cur prev words #cword split
     _init_completion -s || return
 
-    local native_options="--paru --yay --aur --wait-enter --dg --downgrade"
+    local native_options="--paru --yay --aur --dg --downgrade --no-banner --show-cmd --wait-enter"
+    native_options="$(pacman-ext --show-native-options)"
 
     # Handle options that need sub-options.
     # Each option "case" should return immediately.
