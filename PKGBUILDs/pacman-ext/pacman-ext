@@ -70,37 +70,6 @@ eos-virtualbox-check() {
     fi
 }
 
-_nvidia_check_needed() {
-    if lspci -k | grep -P "Display|VGA|3D" | grep -w NVIDIA >/dev/null ; then
-        pacman -Qq | grep -P '^nvidia$|^nvidia-lts$' > /dev/null
-    fi
-}
-_nvidia_check() {
-    if _nvidia_check_needed ; then
-        echo :: Nvidia check...
-        eos-kernel-nvidia-update-check $updates       # when this line will be executed, pacman -Sy was just done
-    fi
-}
-_package_checks() {
-    local pkg updates="$(pacman -Quq)"
-    local install=()
-
-    if [ -z "$updates" ] ; then
-        echo " there is nothing to do"
-        return 1
-    fi
-
-    for pkg in "$@" ; do
-        if [ -n "$(echo "$updates" | grep "^$pkg$")" ] ; then
-            install+=("$pkg")
-        fi
-    done
-    [ ${#install[@]} -ne 0 ] && pacman -S --noconfirm "${install[@]}"
-
-    _nvidia_check
-}
-export -f _nvidia_check _nvidia_check_needed _package_checks
-
 special_update() {
     if [ "$banner_initial" = "yes" ] ; then
         cat <<EOF
@@ -131,13 +100,13 @@ EOF
     [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
     if [ "$keyrings_first" = "yes" ] ; then
         verbose2 "will check all keyrings first ..."
-        sudo_cmd+=("/usr/bin/pacman $db_opt && _package_checks archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")
+        sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")
     else
         if false ; then
             sudo_cmd+=("/usr/bin/pacman ${db_opt}u")
         else
             verbose2 "will check EndeavourOS keyrings first ..."
-            sudo_cmd+=("/usr/bin/pacman $db_opt && _package_checks endeavouros-keyring && /usr/bin/pacman -Su")
+            sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks endeavouros-keyring && /usr/bin/pacman -Su")
         fi
     fi
     if [ "$helper" != "/usr/bin/pacman" ] ; then

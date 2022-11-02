@@ -1,0 +1,39 @@
+#!/bin/bash
+
+_nvidia_check_needed() {
+    if lspci -k | grep -P "Display|VGA|3D" | grep -w NVIDIA >/dev/null ; then
+        pacman -Qq | grep -P '^nvidia$|^nvidia-lts$' > /dev/null
+    fi
+}
+_nvidia_check() {
+    if _nvidia_check_needed ; then
+        echo :: Nvidia check...
+        eos-kernel-nvidia-update-check $updates       # when this line will be executed, pacman -Sy was just done
+    fi
+}
+_package_checks() {
+    # Assumption: 'pacman -Sy' was executed immediately before calling this function.
+
+    local updates="$(pacman -Quq)"    # get possible updates
+    local install=() pkg
+
+    if [ -z "$updates" ] ; then
+        #echo " there is nothing to do"
+        return
+    fi
+
+    _nvidia_check || return 1
+
+    # Parameters are package(s) that should be installed before others.
+    # Very likely they are keyring package(s) for Arch and/or EndeavourOS,
+
+    for pkg in "$@" ; do
+        if [ -n "$(echo "$updates" | grep "^$pkg$")" ] ; then
+            install+=("$pkg")
+        fi
+    done
+
+    [ ${#install[@]} -ne 0 ] && pacman -S --noconfirm "${install[@]}"
+}
+
+_package_checks "$@"
