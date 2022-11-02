@@ -30,6 +30,7 @@ Usage:       $progname
              --aur               Like --paru or --yay (tried in this order).
 <option2>:   --wait-enter        Waits for user to press the Enter key to continue in the end.
              --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
+             --no-banner         Do not show the intial banner that tells about $progname.
 
 If no parameter is provided, -Syu is assumed.
 The <option1> $msgtail
@@ -100,7 +101,8 @@ _package_checks() {
 export -f _nvidia_check _nvidia_check_needed _package_checks
 
 special_update() {
-    cat <<EOF
+    if [ "$banner_initial" = "yes" ] ; then
+        cat <<EOF
 $banner
 
 Additional features:
@@ -112,6 +114,7 @@ Additional features:
    - 'sync' at end
 
 EOF
+    fi
     local ignore_aur_pkgs=""
     local -r lockfile=/var/lib/pacman/db.lck
     local -r logfile="$HOME/.cache/$progname.log"
@@ -200,6 +203,7 @@ Main() {
     local verbose=no
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local show_help_now=no
+    local banner_initial=yes
 
     if [ "$keyrings_first" = "no" ] ; then
         if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
@@ -235,6 +239,9 @@ Main() {
             --paru | --yay)
                 helper=/usr/bin/${arg#*--}
                 [ -x $helper ] || DIE "AUR helper '$helper' not found."
+                ;;
+            --no-banner)
+                banner_initial=no
                 ;;
             *)
                 args+=("$arg")
