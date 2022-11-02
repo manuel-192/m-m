@@ -9,6 +9,8 @@ _nvidia_check() {
     if _nvidia_check_needed ; then
         echo :: Nvidia check...
         eos-kernel-nvidia-update-check $updates       # when this line will be executed, pacman -Sy was just done
+    else
+        true
     fi
 }
 _package_checks() {
@@ -22,7 +24,9 @@ _package_checks() {
         return
     fi
 
-    _nvidia_check || return 1
+    if ! _nvidia_check ; then
+        return 1
+    fi
 
     # Parameters are package(s) that should be installed before others.
     # Very likely they are keyring package(s) for Arch and/or EndeavourOS,
@@ -33,7 +37,9 @@ _package_checks() {
         fi
     done
 
-    [ ${#install[@]} -ne 0 ] && pacman -S --noconfirm "${install[@]}"
+    if [ ${#install[@]} -ne 0 ] ; then
+        pacman -S --noconfirm "${install[@]}"
+    fi
 }
 
 _package_checks "$@"

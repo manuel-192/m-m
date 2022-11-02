@@ -1,0 +1,38 @@
+#!/bin/bash
+
+_Build_pkgname() {
+    source PKGBUILD
+    echo "$pkgname"
+}
+
+Build() {
+    [ -r PKGBUILD ] || { echo "Error: PKGBUILD not found." ; return 1 ; }
+    local makepkgopt=""
+    case "$1" in
+        -d) makepkgopt="$1" ;;
+    esac
+    local pkgname="$(_Build_pkgname)"
+    ls ${pkgname}-*.pkg.tar.zst >& /dev/null && rm -i ${pkgname}-*.pkg.tar.zst
+
+    case "$pkgname" in
+        eos-apps-info) ./eos-apps-info-collect ;;  # update actual html pages before build
+    esac
+
+    updpkgsums || return 1
+    makepkg -cf $makepkgopt || return 1
+
+    local file=$(ls ${pkgname}-*.pkg.tar.zst)
+    if [ -r "$file" ] ; then
+        echo "Install $file:"
+        sudo pacman -U "$file"
+        read -p "Delete $file (Y/n)? "
+        case "$REPLY" in
+            "" | [yY]*) rm -f $file ;;
+        esac
+    fi
+    if [ -x ./.destructor ] ; then
+        ./.destructor
+    fi
+}
+
+Build "$@"

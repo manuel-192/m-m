@@ -32,6 +32,7 @@ Usage:       $progname
              --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
              --no-banner         Do not show the intial banner that tells about $progname.
              --show-cmd          Shows the actual commands to be executed.
+             --UU                Builds and installs a package using a local PKGBUILD.
 
 If no parameter is provided, -Syu is assumed.
 The <option1> $msgtail
@@ -214,8 +215,12 @@ Main() {
                 banner_initial=no
                 ;;
             --show-native-options)
-                echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd $arg"
-                exit 0
+                echo "--aur --paru --yay --downgrade --dg --UU --no-banner --wait-enter --show-cmd $arg"
+                exit
+                ;;
+            --UU)
+                Build
+                exit
                 ;;
             *)
                 args+=("$arg")
