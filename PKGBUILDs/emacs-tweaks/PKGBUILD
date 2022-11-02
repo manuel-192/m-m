@@ -3,7 +3,7 @@
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
 pkgver=1
-pkgrel=3
+pkgrel=4
 arch=('any')
 license=('GPL')
 depends=(emacs)
@@ -13,7 +13,7 @@ url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
 source=(
   $url/emacs
 )
-sha512sums=('8c1c34febbb9c7577f13239b387a318cb9ac3de4edb6da7e3c269cb182acd4757d93b5c823888d847e09c128a91205066adfef314bffa1adb51783d737029eb2')
+sha512sums=('02fe319e25551d9c4b937c602177c44275fb08747c810917f239062b81438331730e1e366f7139c7918a32f6531792240b38312b9458ab7712dd50ea7d32ef83')
 
 package() {
   install -Dm755 emacs          $pkgdir/usr/local/bin/emacs

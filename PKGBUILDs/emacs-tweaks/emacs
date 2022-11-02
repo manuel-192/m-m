@@ -120,13 +120,14 @@ _emacs()
 
     # this should be made better regarding DEs and themes...
     extopt="--reverse-video"
-    if [ "$XDG_CURRENT_DESKTOP" = "KDE" ] ; then
-	if [ -r ~/.config/kdedefaults/kdeglobals ] ; then
-	    if [ -n "$(/usr/bin/grep "^ColorScheme=" ~/.config/kdedefaults/kdeglobals | /usr/bin/grep -i dark)" ] ; then
-		extopt=""
-	    fi
-	fi
-    fi
+
+    #if [ "$XDG_CURRENT_DESKTOP" = "KDE" ] ; then
+    #    if [ -r ~/.config/kdedefaults/kdeglobals ] ; then
+    #        if [ -n "$(/usr/bin/grep "^ColorScheme=" ~/.config/kdedefaults/kdeglobals | /usr/bin/grep -i dark)" ] ; then
+    #            extopt=""
+    #        fi
+    #    fi
+    #fi
 
     #args=(--reverse-video)
 
