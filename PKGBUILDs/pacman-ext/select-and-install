@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Select and install pacman packages.
+
+echo2()     { echo "$@" >&2 ; }
+Columnize() { column -t -s'|' | sed 's|[ ]*$||' ; }
+
+SelectPackages() {
+    local header="$(printf "Select packages by giving search word(s).\nNavigate using keys Up, Down, PgUp, PgDn.\nTAB=select, ESC=quit, ENTER=accept")"
+    local fzf=(
+        fzf
+        --header="$header"
+        --prompt="Search word(s): "
+        --marker=">>"
+        --info=inline
+        --exact
+        -i
+        --multi --layout=reverse --no-sort
+    )
+    expac -S '%n|%d' | Columnize | sort | "${fzf[@]}" | awk '{print $1}'
+}
+
+Main()
+{
+    local pkgs=$(SelectPackages)
+
+    if [ -n "$pkgs" ] ; then
+        echo2 "Selected:"
+        echo "$pkgs" | sed 's|^|    |' >&2
+        if ! pacman -Q $pkgs &> /dev/null ; then
+            sudo pacman -S --needed $pkgs
+        else
+            echo2 "Already installed."
+        fi
+    else
+        echo2 "Nothing to do."
+    fi
+}
+
+Main "$@"
