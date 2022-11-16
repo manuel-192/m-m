@@ -266,6 +266,9 @@ Main() {
                 _Build "$@"
                 exit
                 ;;
+            "")
+                break
+                ;;
             *)
                 args+=("$arg")
                 ;;
