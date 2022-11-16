@@ -1,25 +1,29 @@
 #!/bin/bash
 
-_Build_pkgname() {
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error:" "$@" >&2
+    exit 1
+}
+
+_Build_pkgname-pkgver-pkgrel() {
     source PKGBUILD
-    echo "$pkgname"
+    echo "$pkgname"-"$pkgver"-"$pkgrel"
 }
 
 Build() {
-    [ -r PKGBUILD ] || { echo "Error: PKGBUILD not found." ; return 1 ; }
-    local makepkgopt=""
-    case "$1" in
-        -d) makepkgopt="$1" ;;
-    esac
-    local pkgname="$(_Build_pkgname)"
+    [ -r PKGBUILD ] || DIE "PKGBUILD not found."
+
+    local makepkgopt="$*"
+    local pkgname="$(_Build_pkgname-pkgver-pkgrel)"
     ls ${pkgname}-*.pkg.tar.zst >& /dev/null && rm -i ${pkgname}-*.pkg.tar.zst
 
     case "$pkgname" in
-        eos-apps-info) ./eos-apps-info-collect ;;  # update actual html pages before build
+        eos-apps-info-*) ./eos-apps-info-collect ;;  # update actual html pages before build
     esac
 
-    updpkgsums || return 1
-    makepkg -cf $makepkgopt || return 1
+    updpkgsums || DIE "updpkgsums failed."
+    makepkg -cf $makepkgopt || DIE "makepkg failed."
 
     local file=$(ls ${pkgname}-*.pkg.tar.zst)
     if [ -r "$file" ] ; then
@@ -30,9 +34,7 @@ Build() {
             "" | [yY]*) rm -f $file ;;
         esac
     fi
-    if [ -x ./.destructor ] ; then
-        ./.destructor
-    fi
+    [ -x ./.destructor ] && ./.destructor   # user file .destructor can do post-build stuff, e.g. cleanup
 }
 
 Build "$@"

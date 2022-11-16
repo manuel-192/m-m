@@ -32,17 +32,58 @@ Usage:       $progname
              --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
              --no-banner         Do not show the intial banner that tells about $progname.
              --show-cmd          Shows the actual commands to be executed.
-             --UU                Builds and installs a package using a local PKGBUILD.
+             --build             Builds and installs a package using a local PKGBUILD.
 
 If no parameter is provided, -Syu is assumed.
 The <option1> $msgtail
 Option --wait-enter can be used with other parameters, e.g. <pacman-options>.
 Options --downgrade and --dg require one or more package names.
+Option --build can be followed by makepkg options.
 Otherwise $progname works like 'pacman <pacman-options>' *without* any additional features.
 
 EOF
     MayExit "$1"
 }
+
+_Build_pkgname() {
+    source PKGBUILD
+    echo "$pkgname"
+}
+
+_Build_pkgver-pkgrel() {
+    source PKGBUILD
+    echo "$pkgver"-"$pkgrel"
+}
+
+_Build() {
+    [ -r PKGBUILD ] || DIE "PKGBUILD not found."
+
+    local makepkg_opts="$*"
+    local pkgname="$(_Build_pkgname)"
+
+    ls ${pkgname}-*.pkg.tar.zst >& /dev/null && rm -i ${pkgname}-*.pkg.tar.zst
+
+    case "$pkgname" in
+        eos-apps-info) ./eos-apps-info-collect ;;  # update actual html pages before build
+    esac
+
+    updpkgsums || DIE "updpkgsums failed."
+    makepkg -cf $makepkg_opts || DIE "makepkg failed."
+
+    local pkgverrel="$(_Build_pkgver-pkgrel)"
+    local file=$(ls ${pkgname}-${pkgverrel}-*.pkg.tar.zst)
+
+    if [ -r "$file" ] ; then
+        echo "Install $file:"
+        sudo pacman -U "$file"
+        read -p "Delete $file (Y/n)? "
+        case "$REPLY" in
+            "" | [yY]*) rm -f $file ;;
+        esac
+    fi
+    [ -x ./.destructor ] && ./.destructor      # user file .destructor can do post-build stuff, e.g. cleanup
+}
+
 
 special_update_helper()  {
     verbose2 "will run also $(basename $helper) ..."
@@ -185,7 +226,9 @@ Main() {
     # Handle new options and changed pacman options here.
     # Gather all pacman options for the pacman call.
 
-    for arg in "$@" ; do
+    #for arg in "$@" ; do
+    while true ; do
+        arg="$1"
         case "$arg" in
             -h | --help)
                 show_help_now=yes
@@ -215,17 +258,19 @@ Main() {
                 banner_initial=no
                 ;;
             --show-native-options)
-                echo "--aur --paru --yay --downgrade --dg --UU --no-banner --wait-enter --show-cmd $arg"
+                echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd --build --show-native-options $arg"
                 exit
                 ;;
-            --UU)
-                Build
+            --build)
+                shift
+                _Build "$@"
                 exit
                 ;;
             *)
                 args+=("$arg")
                 ;;
         esac
+        shift
     done
 
     if [ "$show_help_now" = "yes" ] ; then
@@ -234,6 +279,8 @@ Main() {
         LANG=C /usr/bin/pacman "${args[@]}"
         return $?
     fi
+
+    Optionize "${args[@]}"
 
     pacman_ext "${args[@]}"
     retval=$?
