@@ -283,8 +283,6 @@ Main() {
         return $?
     fi
 
-    Optionize "${args[@]}"
-
     pacman_ext "${args[@]}"
     retval=$?
 
