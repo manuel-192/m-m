@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+_prefix=exe
+pkgname=${_prefix}-cpp-helper
+pkgdesc="Make a c/c++ source code file directly runnable like a script."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=2
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+optdepends=(
+    "gcc: support for gcc and g++ commands"
+    "clang: support for clang command"
+    "clang++: support for clang++ command"
+)
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('547713cac9e22abea970a91d0e9aadb98735182323d2f9cfe22d2ce4b08c129083e3c2b6798150a9dc130faa4582f1ec4d752e7896647dbff2d8266bfe29c983')
+
+package() {
+    install -Dm755 "$pkgname"   "$pkgdir/usr/bin/$pkgname"
+    ln -s "$pkgname"            "$pkgdir/usr/bin/${_prefix}-g++"
+    ln -s "$pkgname"            "$pkgdir/usr/bin/${_prefix}-gcc"
+    ln -s "$pkgname"            "$pkgdir/usr/bin/${_prefix}-clang"
+    ln -s "$pkgname"            "$pkgdir/usr/bin/${_prefix}-clang++"
+}
