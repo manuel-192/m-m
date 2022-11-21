@@ -1,0 +1,9 @@
+[Unit]
+Description=Change wallpaper periodically
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/wallpaper-changer
+
+[Install]
+WantedBy=notme.timer

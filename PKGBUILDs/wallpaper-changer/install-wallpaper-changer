@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Installs wallpaper-changer for the current user.
+
+Main()
+{
+    local appname=wallpaper-changer
+    local srvdir="$HOME/.config/systemd/user"
+    local skeldir=/etc/skel/$appname
+
+    mkdir -p "$srvdir"
+    cp $skeldir/$appname.timer $appname.service "$srvdir"
+    systemctl --user enable $appname.timer
+    systemctl --user start  $appname.timer
+    systemctl --user daemon-reload
+}
+
+Main "$@"

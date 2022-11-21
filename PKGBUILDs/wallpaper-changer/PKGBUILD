@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=wallpaper-changer
+pkgdesc="Change the wallpaper periodically"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=2
+
+arch=('any')
+license=('GPL')
+backup=(etc/$pkgname.conf)
+depends=(eos-bash-shared)
+
+source=(
+    $url/$pkgname
+    $url/$pkgname.conf
+    $url/$pkgname.timer
+    $url/$pkgname.service
+    $url/install-$pkgname
+)
+sha512sums=('db68a33017aae4ba5986758ffb9e285ab9659c6835301e4c3568853b159ce2dc4105e3e3d8f881c3a966076e3566dc5e1486052f19c2b188ef8331c59c429f92'
+            'f0065ec027c5af0d81a11d70289dcd44dc315de3331483e9b148cadf5ecdb8aa86f5603445ff7c97fb72c0eb2913d18c3f617820e912fea0a18db1061bad2439'
+            'd8f824089d32165d421b7efb01daa9787ade5dabf0c4f11d75f276e2829ccec7d9791d7e212758d3127c154a216380e92fe0e1716747640f7db22e5fcf168cc9'
+            'd5a21ba18dbb630f4d5004536b6e01c84367640e6b7d278d23356ce588a872462cc3f647a92256ca107800de32b5bfb0b008cdef0a13230113a36f2f79ea50c6'
+            '19462a14f80adbdb18773aa31798f39d4e9bcd7003a4c991ed54128e7712ec4bb96e49740a84131718cd3a1b47aa219b9557d2632b4b2475a3ef2c7510598433')
+
+package() {
+    local skel=/etc/skel/$pkgname
+    install -Dm755 "$pkgname"         "$pkgdir/usr/bin/$pkgname"
+    install -Dm755 install-"$pkgname" "$pkgdir/usr/bin/install-$pkgname"
+    install -Dm644 "$pkgname".timer   "$pkgdir/$skel/$pkgname".timer
+    install -Dm644 "$pkgname".service "$pkgdir/$skel/$pkgname".service
+    install -Dm644 "$pkgname".conf    "$pkgdir/etc/$pkgname".conf
+}
