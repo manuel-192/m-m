@@ -33,6 +33,7 @@ Usage:       $progname
              --no-banner         Do not show the intial banner that tells about $progname.
              --show-cmd          Shows the actual commands to be executed.
              --build             Builds and installs a package using a local PKGBUILD.
+             -c, --checkupdates  Only check if updates are available.
 
 If no parameter is provided, -Syu is assumed.
 The <option1> $msgtail
@@ -213,9 +214,12 @@ Main() {
     local args=() arg
     local keyrings_first=no   # if yes, update keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
     local verbose=no
-    local helper=/usr/bin/pacman           # $helper used by special_update()
     local show_help_now=no
     local banner_initial=yes
+
+    local helper=/usr/bin/pacman           # $helper used by special_update()
+    local aur_helper=/usr/bin/paru
+    [ -x $aur_helper ] || aur_helper=/usr/bin/yay
 
     if [ "$keyrings_first" = "no" ] ; then
         if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
@@ -245,8 +249,7 @@ Main() {
                 show_cmd=yes
                 ;;
             --aur)
-                helper=/usr/bin/paru
-                [ -x $helper ] || helper=/usr/bin/yay
+                helper=$aur_helper
                 [ -x $helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
                 verbose2 "$(basename $helper) selected."
                 ;;
@@ -265,6 +268,24 @@ Main() {
                 shift
                 _Build "$@"
                 exit
+                ;;
+            -c | --checkupdates)
+                checkupdatesext
+                retval=$?
+                case "$retval" in
+                    0) ;;  # has official updates
+                    1) DIE "checkupdates failed" ;;
+                    2) echo "No official updates avaiable." ;;
+                esac
+
+                [ -x $aur_helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
+                local updates=$($aur_helper -Qua)
+                if [ -z "$updates" ] ; then
+                    echo "No AUR updates avaiable."
+                else
+                    retval=0
+                fi
+                return $retval    # has the exit code of checkupdates
                 ;;
             "")
                 break
