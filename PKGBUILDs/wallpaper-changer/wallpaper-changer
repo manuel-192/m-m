@@ -1,13 +1,23 @@
 #!/bin/bash
 
 DIE() {
-    local progname="$(basename "$0")"
     echo "$progname: error: $1" >&2
     exit 1
 }
 
+FindFiles() {
+    local opt_depth="$1"
+    local opt_name="$2"
+    local suffix="$3"
+    local folder="$4"
+
+    fd $opt_depth $opt_name ".*\.$suffix" "$folder"
+}
+
 Main()
 {
+    local progname="$(basename "$0")"
+    local log=/tmp/$progname.log
     local RECURSE_SUBFOLDERS="no"
     local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
     local SUPPORTED_SUFFIXES=(jpg png)
@@ -15,35 +25,34 @@ Main()
 
     source /etc/wallpaper-changer.conf || return 1
 
-    local opt_name="-iname"
-    local opt_depth="-maxdepth 1"
-
-    local cmd="" folder suffix
-    local filelist=""
-
-    [ "$SEARCH_CASE_SENSITIVE" = "yes" ] && opt_name="-name"
+    local opt_name=""
+    local opt_depth="--maxdepth 1"
+    [ "$SEARCH_CASE_SENSITIVE" = "yes" ] && opt_name="--case-sensitive"
     [ "$RECURSE_SUBFOLDERS"    = "yes" ] && opt_depth=""
+
+    local folder suffix
+    local filelist=() tmp=()
 
     for folder in "${SUPPORTED_FOLDERS[@]}" ; do
         for suffix in "${SUPPORTED_SUFFIXES[@]}" ; do
-            if [ -z "$cmd" ] ; then
-                cmd="find $folder $opt_depth $opt_name *.$suffix"
-            else
-                cmd+=" -o $opt_name *.$suffix"
-            fi
+            readarray -t tmp <<< $(FindFiles "$opt_depth" "$opt_name" "$suffix" "$folder")
+            [ ${#tmp[@]} -gt 0 ] && filelist+=("${tmp[@]}")
         done
     done
 
-    if [ -n "$cmd" ] ; then
-        filelist=$($cmd)
-        if [ -n "$filelist" ] ; then
-            local count=$(echo "$filelist" | wc -l)
-            local nr=$(shuf -i 1-$count -n1)
-            local file=$(echo "$filelist" | sed -n "${nr}p")
-            if [ -r "$file" ] ; then
-                eos-wallpaper-set "$file"
-            fi
+    local count=${#filelist[@]}
+
+    if [ $count -gt 0 ] ; then
+        local nr=$(shuf -i 0-$((count-1)) -n1)
+        local file="${filelist[$nr]}"            # $(echo "$filelist" | sed -n "${nr}p")
+        if [ -r "$file" ] ; then
+            echo "$(date +%Y%m%d-%H%M): $file" >> $log
+            eos-wallpaper-set "$file"
+        else
+            DIE "wallpaper file '$file' not readable"
         fi
+    else
+        DIE "no wallpapers found."
     fi
 }
 
