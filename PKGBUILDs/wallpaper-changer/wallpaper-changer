@@ -16,6 +16,12 @@ FindFiles() {
 
 Main()
 {
+    case "$1" in
+        -h | --help)
+            xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/wallpaper-changer/README.md &>/dev/null
+            return
+            ;;
+    esac
     local progname="$(basename "$0")"
     local log=/tmp/$progname.log
     local RECURSE_SUBFOLDERS="no"
