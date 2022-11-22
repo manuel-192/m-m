@@ -14,22 +14,23 @@ FindFiles() {
     fd $opt_depth $opt_name ".*\.$suffix" "$folder"
 }
 
-Main()
-{
+Main() {
+    local progname="wallpaper-changer"    # don't use: local progname="$(basename "$0")"
+
     case "$1" in
         -h | --help)
-            xdg-open https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/wallpaper-changer/README.md &>/dev/null
+            local helpurl="https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/$progname/README.md"
+            xdg-open "$helpurl" &>/dev/null
             return
             ;;
     esac
-    local progname="$(basename "$0")"
-    local log=/tmp/$progname.log
+    local log="/tmp/$progname.log"
     local RECURSE_SUBFOLDERS="no"
     local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
     local SUPPORTED_SUFFIXES=(jpg png)
     local SEARCH_CASE_SENSITIVE="no"
 
-    source /etc/wallpaper-changer.conf || return 1
+    source "/etc/$progname.conf" || return 1
 
     local opt_name=""
     local opt_depth="--maxdepth 1"
