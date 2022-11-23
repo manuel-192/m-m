@@ -35,8 +35,8 @@ Usage:       $progname
              --build             Builds and installs a package using a local PKGBUILD.
              -c, --checkupdates  Only check if updates are available.
 
-If no parameter is provided, -Syu is assumed.
-The <option1> $msgtail
+If no parameter is provided, only check if updates are available.
+The <option1> must be used as the *only* parameter on the command line.
 Option --wait-enter can be used with other parameters, e.g. <pacman-options>.
 Options --downgrade and --dg require one or more package names.
 Option --build can be followed by makepkg options.
@@ -59,7 +59,7 @@ _Build_pkgver-pkgrel() {
 _Build() {
     [ -r PKGBUILD ] || DIE "PKGBUILD not found."
 
-    local makepkg_opts="$*"
+    local -r makepkg_opts="$*"
     local pkgname="$(_Build_pkgname)"
 
     ls ${pkgname}-*.pkg.tar.zst >& /dev/null && rm -i ${pkgname}-*.pkg.tar.zst
@@ -71,8 +71,8 @@ _Build() {
     updpkgsums || DIE "updpkgsums failed."
     makepkg -cf $makepkg_opts || DIE "makepkg failed."
 
-    local pkgverrel="$(_Build_pkgver-pkgrel)"
-    local file=$(ls ${pkgname}-${pkgverrel}-*.pkg.tar.zst)
+    local -r pkgverrel="$(_Build_pkgver-pkgrel)"
+    local -r file=$(ls ${pkgname}-${pkgverrel}-*.pkg.tar.zst)
 
     if [ -r "$file" ] ; then
         echo "Install $file:"
@@ -170,9 +170,11 @@ EOF
 }
 
 pacman_ext() {
+    if [ -z "$1" ] ; then
+        CheckUpdates
+        return $retval
+    fi
     local db_opt="-Sy"                     # $db_opt used by special_update()
-    local opt
-    local -r msgtail="must be used as the *only* parameter on the command line."
 
     case "$helper" in
         /usr/bin/pacman) ;;
@@ -205,6 +207,25 @@ pacman_ext() {
     /usr/bin/pacman-sudo-internal "$@"
 }
 
+CheckUpdates() {
+    checkupdatesext
+    retval=$?
+    case "$retval" in
+        0) ;;  # has official updates
+        1) DIE "checkupdates failed" ;;
+        2) echo "No official updates avaiable." ;;
+    esac
+
+    [ -x $aur_helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
+    local updates=$($aur_helper -Qua)
+    if [ -z "$updates" ] ; then
+        echo "No AUR updates avaiable."
+    else
+        retval=0
+    fi
+    #return $retval    # has the exit code of checkupdates
+}
+
 Main() {
     local -r progname="$(basename "$0")"   # $progname used by various functions here
     local -r banner="$progname: A pacman wrapper with additional features for package update."
@@ -230,7 +251,6 @@ Main() {
     # Handle new options and changed pacman options here.
     # Gather all pacman options for the pacman call.
 
-    #for arg in "$@" ; do
     while true ; do
         arg="$1"
         case "$arg" in
@@ -269,32 +289,12 @@ Main() {
                 _Build "$@"
                 exit
                 ;;
-            -c | --checkupdates)
-                checkupdatesext
-                retval=$?
-                case "$retval" in
-                    0) ;;  # has official updates
-                    1) DIE "checkupdates failed" ;;
-                    2) echo "No official updates avaiable." ;;
-                esac
-
-                [ -x $aur_helper ] || DIE "AUR helpers 'paru' or 'yay' not found."
-                local updates=$($aur_helper -Qua)
-                if [ -z "$updates" ] ; then
-                    echo "No AUR updates avaiable."
-                else
-                    retval=0
-                fi
-                return $retval    # has the exit code of checkupdates
-                ;;
-            "")
-                break
-                ;;
             *)
                 args+=("$arg")
                 ;;
         esac
         shift
+        [ -z "$1" ] && break
     done
 
     if [ "$show_help_now" = "yes" ] ; then
