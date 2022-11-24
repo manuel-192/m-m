@@ -23,19 +23,19 @@ Usage:       $progname
              $progname <option1>
              $progname <option2> [other-parameters]
              $progname <pacman-options>
-<option1>:   -Syu                Updates packages with additional features.
-             -Syyu               Like -Syu, with extra --refresh (see 'man pacman').
-             --paru              Like -Syu, also updates AUR packages using paru.
-             --yay               Like -Syu, also updates AUR packages using yay.
-             --aur               Like --paru or --yay (tried in this order).
-<option2>:   --wait-enter        Waits for user to press the Enter key to continue in the end.
-             --dg, --downgrade   (Experimental) Downgrades given Arch or EndeavourOS packages.
-             --no-banner         Do not show the intial banner that tells about $progname.
-             --show-cmd          Shows the actual commands to be executed.
-             --build             Builds and installs a package using a local PKGBUILD.
-             -c, --checkupdates  Only check if updates are available.
+<option1>:   -Syu                     Updates packages with additional features.
+             -Syyu                    Like -Syu, with extra --refresh (see 'man pacman').
+             --paru                   Like -Syu, also updates AUR packages using paru.
+             --yay                    Like -Syu, also updates AUR packages using yay.
+             --aur                    Like --paru or --yay (tried in this order).
+<option2>:   --wait-enter             Waits for user to press the Enter key to continue in the end.
+             --dg, --downgrade        (Experimental) Downgrades given Arch or EndeavourOS packages.
+             --no-banner              Do not show the intial banner that tells about $progname.
+             --show-cmd               Shows the actual commands to be executed.
+             --build                  Builds and installs a package using a local PKGBUILD.
+             -j, --just-checkupdates  Only check if updates are available.
 
-If no parameter is provided, only check if updates are available.
+If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
 Option --wait-enter can be used with other parameters, e.g. <pacman-options>.
 Options --downgrade and --dg require one or more package names.
@@ -170,11 +170,7 @@ EOF
 }
 
 CheckUpdates() {
-    if [ -x /usr/bin/checkupdatesext ] ; then
-        checkupdatesext
-    else
-        checkupdates
-    fi
+    $checkupdates
     retval=$?
 
     case "$retval" in
@@ -195,19 +191,21 @@ CheckUpdates() {
         fi
     fi
 
+    return $retval
+
     # retval:
     #  0 = no updates available
     #  1 = official updates available
     #  2 = AUR updates available
     #  3 = official and AUR updates available
-
-    #return $retval    # has the exit code of checkupdates
 }
 
 pacman_ext() {
     if [ -z "$1" ] ; then
-        CheckUpdates || return
+        CheckUpdates && return 0
+        [ "$just_checkupdates" = "yes" ] && return 0
     fi
+
     local db_opt="-Sy"                     # $db_opt used by special_update()
 
     case "$helper" in
@@ -252,6 +250,10 @@ Main() {
     local verbose=no
     local show_help_now=no
     local banner_initial=yes
+    local just_checkupdates=no
+
+    local checkupdates=checkupdatesext
+    [ -x /usr/bin/checkupdatesext ] || checkupdates=checkupdates
 
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local aur_helper=/usr/bin/paru
@@ -303,6 +305,10 @@ Main() {
                 shift
                 _Build "$@"
                 exit
+                ;;
+            -j | --just-checkupdates)
+                just_checkupdates=yes
+                break
                 ;;
             *)
                 args+=("$arg")
