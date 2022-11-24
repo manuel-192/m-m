@@ -170,7 +170,11 @@ EOF
 }
 
 CheckUpdates() {
-    checkupdatesext
+    if [ -x /usr/bin/checkupdatesext ] ; then
+        checkupdatesext
+    else
+        checkupdates
+    fi
     retval=$?
 
     case "$retval" in
@@ -202,7 +206,7 @@ CheckUpdates() {
 
 pacman_ext() {
     if [ -z "$1" ] ; then
-        CheckUpdates && return
+        CheckUpdates || return
     fi
     local db_opt="-Sy"                     # $db_opt used by special_update()
 
