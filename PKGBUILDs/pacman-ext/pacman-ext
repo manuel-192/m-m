@@ -188,7 +188,7 @@ CheckUpdates() {
                 1) retval=3 ;;  # both official and AUR updates
             esac
         else
-            echo "No AUR updates avaiable."
+            echo "No AUR updates available."
         fi
     fi
 
