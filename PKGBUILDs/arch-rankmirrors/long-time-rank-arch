@@ -133,8 +133,8 @@ GetValues() {
 
 ShowBestMirrors() {
     local m mnames=("${!best_mirrors[@]}")
-    local count cumul
-    local heading="Mirror Ranked-as-best Cumulative-fetch-time"
+    local count cumul mean
+    local heading="Mirror Ranked-as-best Cumulative-fetch-time_ms Fetch-time-mean_ms"
 
     {
         if [ ${#mnames[@]} -gt 0 ] ; then
@@ -146,7 +146,8 @@ ShowBestMirrors() {
             for m in "${mnames[@]}" ; do
                 GetValues "$m"
                 cumul=$(echo "1000 * $cumul" | bc -l)                   # cumul in milliseconds
-                echo "$m $count $cumul"
+                mean=$(echo "$cumul / $count" | bc -l)
+                echo "$m $count $cumul $mean"
             done
         fi | sort -V -k2rn,2 -k3,3
     } | column -t
