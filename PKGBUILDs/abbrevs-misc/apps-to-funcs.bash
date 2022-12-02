@@ -19,6 +19,8 @@ _apps_to_funcs_init() {
         gnome-boxes
         gnome-builder
         kate
+        kdevelop
+        konsole
         libreoffice
         mousepad
         notepadqq
