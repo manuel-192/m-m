@@ -176,7 +176,7 @@ CheckUpdates() {
 
     case "$retval" in
         1) DIE "checkupdates failed" ;;
-        2) retval=0 ; echo2 "No official updates available." ;;
+        2) retval=0 ; echo2 "No updates from EndeavourOS & Arch repos." ;;
         0) retval=1 ;;
     esac
 
@@ -190,17 +190,17 @@ CheckUpdates() {
             #    1) retval=3 ;;  # both official and AUR updates
             #esac
         else
-            echo2 "No AUR updates available."
+            echo2 "No updates from AUR."
         fi
     fi
 
     return $retval
 
     # retval:
-    #  0 = no updates available
-    #  1 = official updates available
-    #  2 = AUR updates available
-    #  3 = official and AUR updates available
+    #  0 = no updates
+    #  1 = official updates
+    #  2 = AUR updates
+    #  3 = official and AUR updates
 }
 
 Indent() {
