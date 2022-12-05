@@ -176,19 +176,21 @@ CheckUpdates() {
 
     case "$retval" in
         1) DIE "checkupdates failed" ;;
-        2) retval=0 ; echo "No official updates available." ;;
+        2) retval=0 ; echo2 "No official updates available." ;;
         0) retval=1 ;;
     esac
 
     if [ -x $aur_helper ] ; then                      # || DIE "AUR helpers 'paru' or 'yay' not found."
         local updates=$($aur_helper -Qua)
         if [ -n "$updates" ] ; then
-            case "$retval" in
-                0) retval=2 ;;  # only AUR updates
-                1) retval=3 ;;  # both official and AUR updates
-            esac
+            echo "$updates"
+            ((retval+=2))
+            #case "$retval" in
+            #    0) retval=2 ;;  # only AUR updates
+            #    1) retval=3 ;;  # both official and AUR updates
+            #esac
         else
-            echo "No AUR updates available."
+            echo2 "No AUR updates available."
         fi
     fi
 
@@ -201,12 +203,27 @@ CheckUpdates() {
     #  3 = official and AUR updates available
 }
 
+Indent() {
+    local levels="$1"    # how many levels of indent (positive integer)
+    local indent="$2"    # contents of one indent string, e.g. "    "
+    local ix
+    local str=""
+
+    [ -n "$levels" ] || levels=1
+    [ -n "$indent" ] || indent="    "
+    
+    for ((ix=0; ix < levels; ix++)) ; do
+        str+="$indent"
+    done
+    sed "s|^|${str}-> |"
+}
+
 ExtraChecks() {
     if [ "$extra_checks" = "yes" ] ; then
         echo2 "==> pacman -Qm"
-        pacman -Qm |& sed 's|^|    |'
+        pacman -Qm |& Indent 1
         echo2 "==> eos-pacdiff"
-        eos-pacdiff |& sed 's|^|    |'
+        eos-pacdiff |& Indent 1
     fi
 }
 
@@ -219,7 +236,6 @@ SpecialUpdateAndExtras() {
 }
 
 pacman_ext() {
-    local ret=0
     if [ -z "$1" ] ; then
         CheckUpdates
         [ "$just_checkupdates" = "yes" ] && return 0
