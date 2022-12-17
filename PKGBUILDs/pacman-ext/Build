@@ -22,7 +22,12 @@ Build() {
         eos-apps-info-*) ./eos-apps-info-collect ;;  # update actual html pages before build
     esac
 
-    updpkgsums || DIE "updpkgsums failed."
+    if [ -n "$(grep "[ ]*sha[0-9]*sums" PKGBUILD)" ] ; then
+        read -p "Run updpkgsums (Y/n)? "
+        case "$REPLY" in
+            "" | [yY]*)  updpkgsums || DIE "updpkgsums failed." ;;
+        esac
+    fi
     makepkg -cf $makepkgopt || DIE "makepkg failed."
 
     local file=$(ls ${pkgname}-*.pkg.tar.zst)
