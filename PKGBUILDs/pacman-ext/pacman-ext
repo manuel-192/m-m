@@ -223,7 +223,7 @@ ExtraChecks() {
         echo2 "==> pacman -Qm"
         pacman -Qm |& Indent 1
         echo2 "==> eos-pacdiff"
-        eos-pacdiff |& Indent 1
+        eos-pacdiff # |& Indent 1
     fi
 }
 
