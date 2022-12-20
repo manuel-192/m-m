@@ -313,6 +313,9 @@ Main() {
     while true ; do
         arg="$1"
         case "$arg" in
+            "")
+                break
+                ;;
             -h | --help)
                 show_help_now=yes
                 args+=("$arg")
@@ -360,7 +363,6 @@ Main() {
                 ;;
         esac
         shift
-        [ -z "$1" ] && break
     done
 
     if [ "$show_help_now" = "yes" ] ; then
