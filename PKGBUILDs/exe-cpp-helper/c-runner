@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Add e.g. #!/usr/bin/c-runner <compiler> to your C/C++ code.
+# <compiler>:
+#  gcc g++ clang clang++
+
+DIE() {
+    local progname="$(basename "$0")"
+    printf "==> %s error: %s\n" "$progname" "$1" >&2
+    exit 1
+}
+
+Main() {
+    # echo "$@" ; return
+
+    local compiler=""
+    local src_file=""
+
+    local args=()  arg
+    local nextix=0 count=${#@}
+
+    for arg in "$@" ; do
+        ((nextix++))
+        if [ -z "$compiler" ] ; then
+            compiler="$arg"
+            continue
+        fi
+        if [ $nextix -eq $count ] ; then
+            src_file="$arg"
+            break
+        fi
+        args+=("$arg")
+    done
+    [ -n "$src_file" ] || DIE "no source file as a parameter!"
+    [ -r "$src_file" ] || DIE "cannot read file '$src_file'"
+
+    local a_out=$(mktemp "$HOME/.cache/a.out-XXXXXXXX")
+    local src="${a_out}-$(basename "$src_file")"
+
+    tail -n +2 "$src_file" > "$src"
+    $compiler "${args[@]}" -o "$a_out" "$src" || DIE "compilation failed"
+    "$a_out"
+    rm -f "$a_out" "$src"
+}
+
+Main "$@"
