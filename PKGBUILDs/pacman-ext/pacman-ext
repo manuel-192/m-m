@@ -35,6 +35,7 @@ Usage:       $progname
              --build                  Builds and installs a package using a local PKGBUILD.
              -j, --just-checkupdates  Only check whether updates are available.
              --extras                 Still extra checks like 'pacman -Qm' and 'eos-pacdiff'.
+             --mirror-swap-eos        (Advanced) Swap the order of given two mirrors in /etc/pacman.d/endeavouros-mirrorlist.
 
 If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
@@ -357,6 +358,11 @@ Main() {
                 ;;
             --extras)
                 extra_checks=yes
+                ;;
+            --mirror-swap-eos)
+                shift
+                mirror-swap-eos "$1" "$2"
+                exit $?
                 ;;
             *)
                 args+=("$arg")

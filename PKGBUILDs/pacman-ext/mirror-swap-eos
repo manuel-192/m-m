@@ -1,0 +1,40 @@
+#!/bin/bash
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+GetMirror() {
+    local name="$1"
+    grep "^Server = http" $eosmlist | grep -iw "$name" | head -n1
+}
+
+Main() {
+    [ -n "$1" ] || DIE "please give 2 mirror names"
+    [ -n "$2" ] || DIE "please give 2 mirror names"
+
+    local eosmlist=/etc/pacman.d/endeavouros-mirrorlist
+
+    local mirror1=$(GetMirror "$1")
+    local mirror2=$(GetMirror "$2")
+    [ -n "$mirror1" ] || DIE "'$1' refers to no mirror"
+    [ -n "$mirror2" ] || DIE "'$2' refers to no mirror"
+    local tmp1=this-is-just-a-temp-thing1
+    local tmp2=this-is-just-a-temp-thing2
+
+    echo "==> Swapping the order of mirrors '$1' and '$2' in $eosmlist" >&2
+
+    local cmd=(
+        sed
+        -i "$eosmlist"
+        -e "s|^$mirror1$|$tmp1|"
+        -e "s|^$mirror2$|$tmp2|"
+        -e "s|^$tmp1$|$mirror2|"
+        -e "s|^$tmp2$|$mirror1|"
+    )
+    su-c_wrapper "${cmd[@]}"
+}
+
+Main "$@"
