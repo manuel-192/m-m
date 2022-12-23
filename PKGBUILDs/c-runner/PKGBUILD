@@ -20,7 +20,7 @@ optdepends=(
 source=(
     $url/$pkgname
 )
-sha512sums=('0ed8947e0182cff95a289f7ddf2d92fb167f100aab695126cd64de2f6233b928be4f04ab5ac59de14847f9a45c08492beb2eafb22678ff38035da86e966b4576')
+sha512sums=('a18fd98297882563114a85b02ed8ed13ef947d11c57dea5cca98ed3a189f2557dda034e17d867479e2adea8d72d82da912e84ef4d8cb8a011a5e0c37353e677e')
 
 package() {
     install -Dm755 "$pkgname"   "$pkgdir/usr/bin/$pkgname"

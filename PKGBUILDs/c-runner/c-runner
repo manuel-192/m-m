@@ -1,17 +1,35 @@
 #!/bin/bash
 
-# Add e.g. #!/usr/bin/c-runner <compiler> and parameters to your C/C++ code.
-# <compiler>:
+# Make your C or C++ source files run with *automatic* compiling.
+#
+# For example, you can run a C source file like any executable:
+#    ./mymain.c
+#
+# To do that, add a shebang
+#    #!/usr/bin/c-runner <compiler> and parameters
+# to your C/C++ source file.
+#
+# Supported compilers:
 #    gcc g++ clang clang++
 #
-# If you have more than one source file, add the shebang only to the main source file
-# and add other source files as parameters. The main source file will be added automatically.
+# You can have more than one source file. Then add the shebang
+# only to the *main* source file (contains the main() function)
+# and add *other* source files as parameters on the shebang line.
+# The main source file will be used automatically.
 #
 # Examples:
-#   One source file, which comes automatically. Add only compiler flags:
-#      #!/usr/bin/c-runner gcc -O2 -Wall
-#   Several source files. Add compiler flags and other needed source files:
-#      #!/usr/bin/c-runner clang -O2 other1.c other2.c
+#    One source file (e.g. mymain.c). Add only compiler flags if needed:
+#       #!/usr/bin/c-runner gcc -O2 -Wall
+#
+#    Several source files (main file e.g. mymain.c).
+#    Add compiler flags and other needed source files:
+#       #!/usr/bin/c-runner clang -O2 other1.c other2.c
+#
+# Then make the main source file executable, e.g.:
+#    chmod +x mymain.c
+# and you can run the source file:
+#    ./mymain.c
+
 
 DIE() {
     local progname="$(basename "$0")"
@@ -26,7 +44,7 @@ Testing() {
 }
 
 Main() {
-    local testing=false   # true = for the developer only
+    local testing=false   # true = for the developer only!
 
     if $testing ; then
         # some testing stuff only
