@@ -1,8 +1,17 @@
 #!/bin/bash
 
-# Add e.g. #!/usr/bin/c-runner <compiler> to your C/C++ code.
+# Add e.g. #!/usr/bin/c-runner <compiler> and parameters to your C/C++ code.
 # <compiler>:
-#  gcc g++ clang clang++
+#    gcc g++ clang clang++
+#
+# If you have more than one source file, add the shebang only to the main source file
+# and add other source files as parameters. The main source file will be added automatically.
+#
+# Examples:
+#   One source file, which comes automatically. Add only compiler flags:
+#      #!/usr/bin/c-runner gcc -O2 -Wall
+#   Several source files. Add compiler flags and other needed source files:
+#      #!/usr/bin/c-runner clang -O2 other1.c other2.c
 
 DIE() {
     local progname="$(basename "$0")"
@@ -10,43 +19,72 @@ DIE() {
     exit 1
 }
 
+Testing() {
+    if $testing ; then
+        "$@"
+    fi
+}
+
 Main() {
-    # echo "$@" ; return
+    local testing=false   # true = for the developer only
 
-    local compiler=""
-    local src_file=""
+    if $testing ; then
+        # some testing stuff only
+        case "$1" in
+            --show-args) echo "$@" ; return ;;
+            --cd)        cd ; shift ;;
+        esac
+    fi
 
-    local args=()  arg
-    local nextix=0 count=${#@}
+    local compiler_line=""     # compiler line from the shebang
+    local compiler_prog=""     # compiler program extracted from shebang
+    local src_main=""          # the main source file
 
-    [ $count -lt 2 ] && DIE "compiler not specified at '#!' line: '$*'"
+    local args=()              # only for developer testing
+    local arg                  # holds each parameter
+    local nextix=0             # for counting the parameters
+    local count=${#@}          # count of the parameters
+
+    # There should be exactly 2 parameters; "compiler parameters" "main-source"
+
+    if $testing ; then
+        [ $count -lt 2 ] && DIE "compiler and main source file not specified at '#!' line: '$*'"
+    else
+        [ $count -ne 2 ] && DIE "shebang problem at '#!' line: '$*'"
+    fi
 
     for arg in "$@" ; do
         ((nextix++))
-        if [ -z "$compiler" ] ; then
-            compiler="$arg"
+
+        if [ -z "$compiler_line" ] ; then
+            compiler_line="$arg"            # first argument is the shebang compiler line
+            compiler_prog="$(echo "$compiler_line" | awk '{print $1}')"
             continue
         fi
         if [ $nextix -eq $count ] ; then
-            src_file="$arg"
+            src_main="$arg"            # last argument is the main source file
             break
         fi
-        args+=("$arg")
+
+        args+=("$arg")                 # this meant for testing/debugging only!
     done
-    [ -n "$src_file" ] || DIE "no source file as a parameter!"
-    [ -r "$src_file" ] || DIE "cannot read file '$src_file'"
-    case "$compiler" in
+
+    [ -n "$src_main" ] || DIE "no source file as a parameter!"
+    [ -r "$src_main" ] || DIE "cannot read file '$src_main'"
+
+    case "$compiler_prog" in
         gcc | g++ | clang | clang++) ;;
-        *) DIE "compiler '$compiler' not supported" ;;
+        *) DIE "compiler '$compiler_prog' not supported" ;;
     esac
 
     local a_out=$(mktemp "$HOME/.cache/a.out-XXXXXXXX")
-    local src="${a_out}-$(basename "$src_file")"
+    local src_main_stripped="${a_out}-$(basename "$src_main")"
 
-    tail -n +2 "$src_file" > "$src"
-    $compiler "${args[@]}" -o "$a_out" "$src" || DIE "compilation failed"
+    tail -n +2 "$src_main" > "$src_main_stripped"  # remove the shebang from the main source file
+
+    $compiler_line "${args[@]}" "$src_main_stripped" -o "$a_out" || DIE "compilation failed"
     "$a_out"
-    rm -f "$a_out" "$src"
+    rm -f "$a_out" "$src_main_stripped"
 }
 
 Main "$@"

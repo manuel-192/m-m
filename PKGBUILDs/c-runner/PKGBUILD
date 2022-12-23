@@ -5,8 +5,8 @@
 pkgname=c-runner
 pkgdesc="Make a c/c++ source code file directly runnable like a script."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.2
-pkgrel=2
+pkgver=0.3
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -20,7 +20,7 @@ optdepends=(
 source=(
     $url/$pkgname
 )
-sha512sums=('e7c364b248126d44a24b5eba7c8c6ddab74fc31ef2fe0407ad3e56d3270e053f441186a99d189868a536788c4ad39391056e02bac5e5da051ecea7a0df888738')
+sha512sums=('0ed8947e0182cff95a289f7ddf2d92fb167f100aab695126cd64de2f6233b928be4f04ab5ac59de14847f9a45c08492beb2eafb22678ff38035da86e966b4576')
 
 package() {
     install -Dm755 "$pkgname"   "$pkgdir/usr/bin/$pkgname"
