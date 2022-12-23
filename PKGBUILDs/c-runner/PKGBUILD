@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=c-runner
+pkgdesc="Make a c/c++ source code file directly runnable like a script."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.2
+pkgrel=2
+
+arch=('any')
+license=('GPL')
+depends=('bash')
+optdepends=(
+    "gcc: support for gcc and g++ commands"
+    "clang: support for clang command"
+    "clang++: support for clang++ command"
+)
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('e7c364b248126d44a24b5eba7c8c6ddab74fc31ef2fe0407ad3e56d3270e053f441186a99d189868a536788c4ad39391056e02bac5e5da051ecea7a0df888738')
+
+package() {
+    install -Dm755 "$pkgname"   "$pkgdir/usr/bin/$pkgname"
+}
