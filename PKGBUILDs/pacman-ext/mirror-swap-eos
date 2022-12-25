@@ -8,7 +8,7 @@ DIE() {
 
 GetMirror() {
     local name="$1"
-    grep "^Server = http" $eosmlist | grep -iw "$name" | head -n1
+    grep "^Server[ ]*=[ ]*http" $eosmlist | grep -iw "$name" | head -n1
 }
 
 Main() {
@@ -35,6 +35,8 @@ Main() {
         -e "s|^$tmp2$|$mirror1|"
     )
     su-c_wrapper "${cmd[@]}"
+
+    grep -P "^Server[ ]*=[ ]*http|^# user added mirrors" $eosmlist
 }
 
 Main "$@"
