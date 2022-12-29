@@ -36,6 +36,10 @@ DIE() {
     printf "==> %s error: %s\n" "$progname" "$1" >&2
     exit 1
 }
+WARN() {
+    local progname="$(basename "$0")"
+    printf "==> %s warning: %s\n" "$progname" "$1" >&2
+}
 
 Testing() {
     if $testing ; then
@@ -50,7 +54,13 @@ Main() {
         # some testing stuff only
         case "$1" in
             --show-args) echo "$@" ; return ;;
-            --cd)        cd ; shift ;;
+            --cd)
+                local folder="$2"
+                [ -n "$folder" ] || DIE "option --cd requires a folder parameter"
+                [ -d "$folder" ] || DIE "'$folder' is not a folder"
+                cd "$folder"
+                shift 2
+                ;;
         esac
     fi
 
@@ -100,8 +110,8 @@ Main() {
 
     tail -n +2 "$src_main" > "$src_main_stripped"  # remove the shebang from the main source file
 
-    $compiler_line "${args[@]}" "$src_main_stripped" -o "$a_out" || DIE "compilation failed"
-    "$a_out"
+    $compiler_line "${args[@]}" "$src_main_stripped" -o "$a_out" || DIE "compilation of '$src_main_stripped' failed"
+    "$a_out" || WARN "exit code from '$src_main' is $?"
     rm -f "$a_out" "$src_main_stripped"
 }
 
