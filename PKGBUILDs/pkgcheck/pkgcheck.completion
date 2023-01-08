@@ -1,0 +1,30 @@
+# bash completion for pkgcheck        -*- shell-script -*-
+
+_pkgcheck_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_pkgcheck_() {
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    # echo "prev='$prev' cur='$cur'"
+
+    case "$prev" in
+        pkgcheck)
+            _pkgcheck_complete "m-aur m-m m-more2 mirrors.mirror1 repo-testing.x86_64"
+            ;;
+        -*)
+            ;;
+        *)
+            # Handle all top-level parameters.
+            _pkgcheck_complete "--dryrun -n --dryrun-local -nn"
+            ;;
+    esac
+} &&
+complete -F _pkgcheck_ pkgcheck

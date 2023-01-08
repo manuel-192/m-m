@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Check if package rebuilds are needed.
+
+pkgcheck() {
+    local folder="$1"
+    local opt="$2"
+    [ -n "$opt" ] || opt="-n"
+
+    case "$folder" in
+        m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64)
+            pushd $folder >/dev/null
+            assets.make $opt
+            popd >/dev/null
+            ;;
+        *)
+            echo "Sorry, folder '$folder' is not supported." >&2
+            ;;
+    esac
+}
+
+pkgcheck "$@"
