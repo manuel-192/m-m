@@ -16,7 +16,7 @@ source=(
     $url/pkgcheck
     $url/pkgcheck.completion
 )
-sha512sums=('6498ca0e7e266cc41ae414b61be45dba658a5f53fc19a70acb6e56c3e5fad35e2d37d5eebc0f016fee42a1e4e9118f1ee36376b7de548503e9f241b79db23069'
+sha512sums=('67a733ad1ee1667fd93cf4977726632f9064a57fd1db7becfddeb5999f241d4f99231bfdef1ee025b0fdae591ae57d86ac934640937423b306baf3d389ebb667'
             'e119a973bf81e77c983e91d68afe6583b27cf0dce500e5bc93d0731041005e817f09834d55cacee75feeb8329fbfc1f4daeca1dfc312eca2f2a78e6846337afe')
 
 package() {
