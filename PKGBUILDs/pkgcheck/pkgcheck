@@ -9,9 +9,12 @@ pkgcheck() {
 
     case "$folder" in
         m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64)
-            pushd $folder >/dev/null
+            source ~/.config/cd.conf || return 1
+            source /etc/skel/cd.bash || return 1
+
+            pushd $folder >/dev/null || return 1
             assets.make $opt
-            popd >/dev/null
+            popd >/dev/null || return 1
             ;;
         *)
             echo "Sorry, folder '$folder' is not supported." >&2
