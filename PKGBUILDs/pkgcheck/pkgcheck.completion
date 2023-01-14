@@ -6,25 +6,34 @@ _pkgcheck_complete() {
     compopt -o nosort
 }
 
+_pkgcheck_has_in_words() {
+    local list="$1"
+    local listitem word
+
+    for word in "${words[@]}" ; do
+        [ "$word" = "${words[0]}" ] && continue
+        for listitem in $list ; do
+            [ "$word" = "$listitem" ] && return 0
+        done
+    done
+    return 1
+}
+
 _pkgcheck_() {
-    local cur prev words #cword split
+    local cur prev words cword split
     _init_completion -s || return
 
-    # Handle options that need sub-options.
-    # Each option "case" should return immediately.
+    local -r folders="m-aur m-m m-more2 mirrors.mirror1 repo-testing.x86_64"
+    local -r operations="--dryrun --dryrun-local --build --repoup"
+    local -r options="--allow-downgrade"
+    local askfor=""
 
-    # echo "prev='$prev' cur='$cur'"
+    _pkgcheck_has_in_words "$folders"    || askfor+="$folders "
+    _pkgcheck_has_in_words "$operations" || askfor+="$operations "
+    _pkgcheck_has_in_words "$options"    || askfor+="$options "
 
-    case "$prev" in
-        pkgcheck)
-            _pkgcheck_complete "m-aur m-m m-more2 mirrors.mirror1 repo-testing.x86_64"
-            ;;
-        -*)
-            ;;
-        *)
-            # Handle all top-level parameters.
-            _pkgcheck_complete "--dryrun -n --dryrun-local -nn"
-            ;;
-    esac
-} &&
-complete -F _pkgcheck_ pkgcheck
+    [ -n "$askfor" ] && _pkgcheck_complete "$askfor"
+}
+
+complete -F _pkgcheck_ pkgcheck  pkg
+

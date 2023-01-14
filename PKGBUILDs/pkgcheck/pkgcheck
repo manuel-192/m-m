@@ -2,24 +2,76 @@
 
 # Check if package rebuilds are needed.
 
-pkgcheck() {
-    local folder="$1"
-    local opt="$2"
-    [ -n "$opt" ] || opt="-n"
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1" >&2
+    Options -h
+    exit 1
+}
+
+Options() {
+    local progname="$(/usr/bin/basename "$0")"
+    local opts
+
+    opts="$(/usr/bin/getopt -o=h --longoptions help,build,dryrun-local,dryrun,allow-downgrade,repoup --name "$progname" -- "$@")" || {
+        Options -h
+        return 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --dryrun-local | --dryrun | --allow-downgrade | --repoup)
+                opt="$1"
+                ;;
+            --build)
+                opt=""
+                ;;
+
+            -h | --help)
+                cat <<EOF >&2
+
+Usage: $progname [options] folder
+
+Options:
+  --dryrun-local       Dryrun, don't download assets from remote (minimal dryrun).
+                       Without options this is the default operation.
+  --dryrun             Dryrun, download assets from remote first (full dryrun).
+  --allow-downgrade    New package is allowed to get a smaller version number (advanced).
+  --repoup             Update only the database files (advanced).
+  --build              Build and release updated packages (advanced).
+
+Params:
+  folder               A basename of the folder path. Required.
+
+EOF
+                return
+                ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+
+    folder="$1"
 
     case "$folder" in
-        m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64)
-            source ~/.config/cd.conf || return 1
-            source /etc/skel/cd.bash || return 1
-
-            pushd $folder >/dev/null || return 1
-            assets.make $opt
-            popd >/dev/null || return 1
-            ;;
-        *)
-            echo "Sorry, folder '$folder' is not supported." >&2
-            ;;
+        m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64) ;;
+        *) DIE "folder '$folder' is not supported." ;;
     esac
+        
+}
+
+pkgcheck() {
+    local folder=""
+    local opt="--dryrun-local"
+
+    Options "$@" || return $?
+
+    pushd $folder >/dev/null
+    assets.make $opt
+    popd >/dev/null
 }
 
 pkgcheck "$@"
