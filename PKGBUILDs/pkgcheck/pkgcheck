@@ -69,6 +69,8 @@ pkgcheck() {
 
     Options "$@" || return $?
 
+    source /etc/skel/cd.bash || return $?
+
     pushd $folder >/dev/null
     assets.make $opt
     popd >/dev/null
