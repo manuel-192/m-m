@@ -2,7 +2,7 @@
 
 pkgname=grub-tweaks
 pkgdesc="Fixes, additions and enhancements to grub."
-pkgver=1.3
+pkgver=23
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -18,7 +18,7 @@ source=(
   $url/${pkgname}-pre.hook
 )
 sha512sums=('4af7beeb69c5a2eab12583a710687a417ee56ca70401bf912879e5bcfd680cdf704d33d84e1d33d381fcd532896303ebec7a9d55652418045d7d84c09da86ef7'
-            'fbcca01d0854940abb072224d82ecd4c7386343d95fcfef140916d3f5a0107d3628a586e03c7a99d30129e0c99d88afda0b2e8f55fa0ddbd1ccbfa4779723557'
+            'a8c58c5de1adeecad2d1ef6fa3dca1f88e15873a05cbbc617208e473220d000ef32b4b3544cbccc008c5de916936e7344a8eed68515f1ff74d781b8b2f85cf45'
             'c4385129b97f9ce2d92b095c1d87f0e10ed071ad04523106a08c0caffe5ef036a3ec2ce6d22610221b7bdbbd0334bf8baa6a536a9db8a6899fbdac44c615efd0'
             'b937b08358c3a7e7e9fd0696434dc3e97356bc0fb36b850f846bef48d4b8773d7a961051525e225058d005cb93ee339a1980f4dcc52daaafdb555dee96bbef23')
 
