@@ -5,7 +5,7 @@
 pkgname=vb-notif
 pkgdesc="Inform if vb extensions are needed."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2022.09.01
+pkgver=23
 pkgrel=1
 
 arch=('any')
@@ -17,7 +17,7 @@ source=(
     $url/virtualbox-ext-oracle.bash
 )
 sha512sums=('c18d822c9615b1898324b29e61f4c1c6973e65e17eeb196479677a34cd7cafca975ec1c6c9730cf13748187d974bbb1240dadb95b960de9f9b396d8ce2922767'
-            '7ff0f55bf48a44ca5e0319c67c41928acc3be69ab9789db287ae0d8771ce9e7abbeda113d3676f0006806410d959a6d66e3dcfbe8f1dab7bf144b818536ba114')
+            '965b7df819c5b83bee5c68bc8e8de5a104a53ffdf4b18683887fbae0eae45b586987ca0e42cf9e8fab09ec8460998c5306e239bdb2bc26d54e7cf814debfa6e1')
 
 package() {
     install -Dm755 virtualbox-ext-oracle.bash  $pkgdir/usr/bin/virtualbox-ext-oracle.bash
