@@ -23,10 +23,12 @@ _pkgcheck_() {
     local cur prev words cword split
     _init_completion -s || return
 
-    local -r folders="m-aur m-m m-more2 mirrors.mirror1 repo-testing.x86_64"
+    local -r folders="m-aur m-m m-more2 mirrors.mirror1 repo-testing.x86_64 local-repo"
     local -r operations="--dryrun --dryrun-local --build --repoup"
     local -r options="--allow-downgrade"
     local askfor=""
+
+    _pkgcheck_has_in_words "local-repo" && return  # nothing more needed!
 
     _pkgcheck_has_in_words "$folders"    || askfor+="$folders "
     _pkgcheck_has_in_words "$operations" || askfor+="$operations "

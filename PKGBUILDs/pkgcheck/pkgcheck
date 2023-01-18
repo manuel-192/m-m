@@ -57,7 +57,7 @@ EOF
     folder="$1"
 
     case "$folder" in
-        m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64) ;;
+        m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64 | local-repo) ;;
         *) DIE "folder '$folder' is not supported." ;;
     esac
         
@@ -72,7 +72,10 @@ pkgcheck() {
     source /etc/skel/cd.bash || return $?
 
     pushd $folder >/dev/null
-    assets.make $opt
+    case "$folder" in
+        local-repo) ./local-repo-manager ;;
+        *) assets.make $opt ;;
+    esac
     popd >/dev/null
 }
 
