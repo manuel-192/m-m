@@ -2,22 +2,21 @@
 
 DIE() {
     local progname="$(basename "$0")"
-    echo "$progname: error: $1"
+    echo "$progname: error: $@"
     exit 0
 }
+
+Execute() { "$@" || DIE "$@" ; }
 
 Main() {
     local conf=/etc/grub-install-parameters-local.conf
     local GRUB_INSTALL_PARAMETERS=()
 
     if [ -r $conf ] ; then
-        source $conf || DIE "$conf not found."
+        Execute source $conf
         if [ ${#GRUB_INSTALL_PARAMETERS[@]} -gt 0 ] ; then
-            local gi="grub-install ${GRUB_INSTALL_PARAMETERS[*]}"
-            local gm="grub-mkconfig -o /boot/grub/grub.cfg"
-
-            $gi || DIE "'$gi' failed."
-            $gm || DIE "'$gm' failed."
+            Execute grub-install "${GRUB_INSTALL_PARAMETERS[@]}"
+            Execute grub-mkconfig -o /boot/grub/grub.cfg
         fi
     fi
 }
