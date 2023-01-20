@@ -1,0 +1,9 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = grub
+
+[Action]
+Description = Prepare grub after updating the grub package
+When = PostTransaction
+Exec = /usr/bin/hook-for-grub-update

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+DIE() {
+    local progname="$(basename "$0")"
+    echo "$progname: error: $1"
+    exit 0
+}
+
+Main() {
+    local conf=/etc/grub-install-parameters-local.conf
+    local GRUB_INSTALL_PARAMETERS=()
+
+    if [ -r $conf ] ; then
+        source $conf || DIE "$conf not found."
+        if [ ${#GRUB_INSTALL_PARAMETERS[@]} -gt 0 ] ; then
+            local gi="grub-install ${GRUB_INSTALL_PARAMETERS[*]}"
+            local gm="grub-mkconfig -o /boot/grub/grub.cfg"
+
+            $gi || DIE "'$gi' failed."
+            $gm || DIE "'$gm' failed."
+        fi
+    fi
+}
+
+Main "$@"
