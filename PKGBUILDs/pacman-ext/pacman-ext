@@ -33,9 +33,12 @@ Usage:       $progname
              --no-banner              Do not show the intial banner that tells about $progname.
              --show-cmd               Shows the actual commands to be executed.
              --build                  Builds and installs a package using a local PKGBUILD.
-             -j, --just-checkupdates  Only check whether updates are available.
              --extras                 Still extra checks like 'pacman -Qm' and 'eos-pacdiff'.
              --mirror-swap-eos        (Advanced) Swap the order of given two mirrors in /etc/pacman.d/endeavouros-mirrorlist.
+             -j, --just-checkupdates  Only check whether updates are available.
+             --checkupdates           Use 'checkupdates' for checking updates from the repos.
+             --checkupdatesext        Use 'checkupdatesext' for checking updates from the repos.
+             --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
 
 If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
@@ -171,8 +174,44 @@ EOF
     return $?
 }
 
+CheckUpdatesFunc() {
+    HeaderOfUpdates() {
+        local header="$1"
+        echo "$header"
+        echo "$header" | sed 's/[^|]/~/g'
+    }
+
+    if [ "$checkupdates" = "checkupdatesext" ] ; then
+        checkupdatesext
+        retval=$?
+    else
+        local retval
+        local updates
+
+        updates=$(checkupdates)
+        retval=$?
+
+        if [ -n "$updates" ] ; then
+            {
+                case "$checkupdates" in
+                    expac)
+                        HeaderOfUpdates "Package name|New version|Description"
+                        expac -S "%n|%v|%d" $(echo "$updates" | awk '{print $1}')
+                        ;;
+                    checkupdates)
+                        HeaderOfUpdates "Package name|Current version|New version"
+                        echo "$updates" | sed -e 's/ -> / /' -e 's/ /|/g'          # remove "->"
+                        ;;
+                esac
+            } | column -t -s'|'
+        fi
+    fi
+
+    return $retval
+}
+
 CheckUpdates() {
-    $checkupdates
+    CheckUpdatesFunc "$checkupdates"
     retval=$?
 
     case "$retval" in
@@ -181,15 +220,11 @@ CheckUpdates() {
         0) retval=1 ;;
     esac
 
-    if [ -x $aur_helper ] ; then                      # || DIE "AUR helpers 'paru' or 'yay' not found."
+    if [ -x $aur_helper ] ; then
         local updates=$($aur_helper -Qua)
         if [ -n "$updates" ] ; then
             echo "$updates"
             ((retval+=2))
-            #case "$retval" in
-            #    0) retval=2 ;;  # only AUR updates
-            #    1) retval=3 ;;  # both official and AUR updates
-            #esac
         else
             echo2 "No updates from AUR."
         fi
@@ -300,10 +335,7 @@ Main() {
     local banner_initial=yes
     local just_checkupdates=no
     local extra_checks=no
-
-    local checkupdates=checkupdatesext
-    [ -x /usr/bin/checkupdatesext ] || checkupdates=checkupdates
-
+    local checkupdates=expac
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local aur_helper=/usr/bin/paru
     [ -x $aur_helper ] || aur_helper=/usr/bin/yay
@@ -360,7 +392,10 @@ Main() {
                 ;;
             -j | --just-checkupdates)
                 just_checkupdates=yes
-                break
+                # break
+                ;;
+            --checkupdates | --checkupdatesext | --expac)
+                checkupdates=${arg:2}
                 ;;
             --extras)
                 extra_checks=yes
