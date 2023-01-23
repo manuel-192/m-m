@@ -1,0 +1,36 @@
+#!/bin/bash
+
+DIE() {
+    echo "error: $1"
+    exit 1
+}
+
+Main()
+{
+    local url=https://www.virtualbox.org/wiki/Downloads
+    local data
+    local name
+    local sumfile
+    local sum version
+
+    data=$(curl --fail -Lsm 10 -o- $url)
+    [ $? -eq 0 ] || DIE "downloading $url failed"
+
+    url=$(echo "$data" | grep "All supported platforms" | sed -E 's|.*(https://[^"]+)".*|\1|')
+    echo "$url"
+    name=$(basename "$url")
+    version=$(echo "$name" | sed -E 's|^.*_Extension_Pack-(.+)\.vbox-extpack$|\1|')
+    echo "version = $version"
+    curl -Lsm 10 -o"$name" $url
+
+    url=https://www.virtualbox.org$(echo "$data" | grep "/SHA256SUMS" | sed -E 's|.*a href="(.+/SHA256SUMS)".*|\1|')
+    echo "$url"
+    sumfile="$(basename "$url")"
+    curl -Lsm 10 -o"$sumfile" $url
+    sum=$(grep "$name" $sumfile | awk '{print $1}')
+    echo "sum = $sum"
+
+    grep "$name" SHA256SUMS | sha256sum -c || DIE "package checksum failed."
+}
+
+Main "$@"
