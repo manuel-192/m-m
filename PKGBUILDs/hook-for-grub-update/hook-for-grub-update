@@ -6,16 +6,23 @@ DIE() {
     exit 0
 }
 
-Execute() { "$@" || DIE "$@" ; }
+Execute() {
+    echo "==>" "$@" >&2
+    "$@" || DIE "$@"
+}
 
 Main() {
-    local conf=/etc/grub-install-parameters-local.conf
+    local config_file=/etc/grub-install-parameters-local.conf
     local GRUB_INSTALL_PARAMETERS=()
 
-    if [ -r $conf ] ; then
-        Execute source $conf
+    if [ -r $config_file ] ; then
+        Execute source $config_file
         if [ ${#GRUB_INSTALL_PARAMETERS[@]} -gt 0 ] ; then
-            Execute grub-install "${GRUB_INSTALL_PARAMETERS[@]}"
+            if [ "${GRUB_INSTALL_PARAMETERS[0]}" = "NOTHING" ] ; then
+                Execute grub-install                                    # reserved word NOTHING was used
+            else
+                Execute grub-install "${GRUB_INSTALL_PARAMETERS[@]}"
+            fi
             Execute grub-mkconfig -o /boot/grub/grub.cfg
         fi
     fi

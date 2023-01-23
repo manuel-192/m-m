@@ -6,7 +6,7 @@ pkgname=hook-for-grub-update
 pkgdesc=""
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -18,9 +18,9 @@ source=(
     $url/$pkgname.hook
     $url/grub-install-parameters-local.conf
 )
-sha512sums=('443e4a8f0534305bb2d3b4833e6f548cc3ff8565d4d94a58ba893bee984d8478f76d3f2071c8beacac634560a05f433c0cf2fea8073fac959b1e2f8e52cfc1c3'
+sha512sums=('3ad37d56f8ae9e260a20eebc06c8ad849f50b51a6fca042e30363680327ec2cd05789e7fa66c2ee3937e7a15ec4effc159d72fe4deb3d0ec669d963c22157a93'
             '2d95ee100f77542ce76164b954b520aeb5ef09963293db3ede8fb584317168d8150a1ab0fd28336c816ef2adac3bf744cf4fa76f21287ed6981e14efd11ca055'
-            '226fa9dbea90696136ab246f0c6c4362356dcf01a9a5968e0602d8029e582615a61e8eb2154b6108a1442392856a1c88b138109fb79b6edbb0d2645459aa5cb6')
+            '48f23e45239fd6f7a7b3be3694530392c51a5f31d44a0f350a205310c928b6c51b441c6e3add19a4947bfea980a3ec528acbc90b984adc78b96cb13900768a60')
 
 package() {
     local hookdir=$pkgdir/usr/share/libalpm/hooks
