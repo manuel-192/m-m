@@ -13,7 +13,11 @@ Main()
     local cmds="cd '$PWD' ;"
 
     for xx in "$@" ; do
-        cmds+=" '$xx'"
+        if [ "${xx/ /}" = "$xx" ] || [ "${xx/	/}" = "$xx" ] ; then
+            cmds+=" $xx"     # includes no white spaces
+        else
+            cmds+=" '$xx'"
+        fi
     done
 
     echo "$prompt" >&2
