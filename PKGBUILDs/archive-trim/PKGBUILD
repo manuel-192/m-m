@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=archive-trim
+pkgdesc="Trims (deletes old files from) a package archive"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+arch=('any')
+license=('GPL')
+# depends=()
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('3ad37d56f8ae9e260a20eebc06c8ad849f50b51a6fca042e30363680327ec2cd05789e7fa66c2ee3937e7a15ec4effc159d72fe4deb3d0ec669d963c22157a93'
+            '2d95ee100f77542ce76164b954b520aeb5ef09963293db3ede8fb584317168d8150a1ab0fd28336c816ef2adac3bf744cf4fa76f21287ed6981e14efd11ca055'
+            '48f23e45239fd6f7a7b3be3694530392c51a5f31d44a0f350a205310c928b6c51b441c6e3add19a4947bfea980a3ec528acbc90b984adc78b96cb13900768a60')
+
+package() {
+    local hookdir=$pkgdir/usr/share/libalpm/hooks
+    local bindir=$pkgdir/usr/bin
+    local etcdir=$pkgdir/etc
+    local xx name
+
+    for xx in "${source[@]}" ; do
+        name=$(basename "$xx")
+        case "$name" in
+            *.hook) install -Dm644 $name   $hookdir/$name ;;
+            *.conf) install -Dm644 $name   $etcdir/$name ;;
+            *)      install -Dm755 $name   $bindir/$name ;;
+        esac
+    done
+}

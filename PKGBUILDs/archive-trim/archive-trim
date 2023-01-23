@@ -1,0 +1,153 @@
+#!/bin/bash
+
+DIE() {
+    echo "$progname: error: $@" >&2
+    exit 1
+}
+
+RemoveExtras() {
+    # remove $keep oldest from pkgsplits[@]
+    local count=${#pkgsplits[@]}
+    local removecount=$((count - keep))
+
+    if [ $removecount -gt 0 ] ; then
+        local split pkg
+        local removelist=()
+        
+        local epoch
+        local pkgname
+        local pkgver
+        local pkgrel
+        local arch
+        local compress
+        local -r pkg_tar="pkg.tar"
+
+        for split in "${pkgsplits[@]}" ; do
+
+            # take each value from the end
+
+            epoch=${split##*|}
+            split=${split%|*}
+
+            compress=${split##*|}
+            split=${split%|*}
+
+            arch=${split##*|}
+            split=${split%|*}
+
+            pkgrel=${split##*|}
+            split=${split%|*}
+
+            pkgver=${split##*|}
+            split=${split%|*}
+
+            pkgname=${split}
+
+            case "$epoch" in
+                0) pkg="${pkgname}-${pkgver}-${pkgrel}-${arch}.$pkg_tar.$compress" ;;
+                *) pkg="${pkgname}-${epoch}:${pkgver}-${pkgrel}-${arch}.$pkg_tar.$compress" ;;
+            esac
+
+            # pkg and .sig should be removed
+
+            echo "$where: remove: $pkg" >&2
+            echo "$where: remove: $pkg.sig" >&2
+
+            case "$where" in
+                "remote") removelist+=("$pkg") ;;                  # for files with the same prefix remote needs only the prefix
+                "local")  removelist+=("$pkg" "$pkg.sig") ;;
+            esac
+
+            ((removecount--))
+            [ $removecount -eq 0 ] && break
+        done
+        case "$where" in
+            "remote") delete-release-assets --quietly "$tag" "${removelist[@]}" ;;
+            "local")  rm -f "${removelist[@]}" ;;
+        esac
+    fi
+}
+
+Options() {
+    local opts
+
+    opts="$(/usr/bin/getopt -o=hrlt:k:d: --longoptions help,remote,local,tag:,keep:,dir: --name "$progname" -- "$@")" || {
+        Options -h
+        return 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -r | --remote)   where=remote ;;
+            -l | --local)    where=local ;;
+
+            -t | --tag)      tag="$2"  ; shift  ;;
+            -k | --keep)     keep="$2" ; shift  ;;
+            -d | --dir)      cwd="$2"  ; shift  ;;
+
+            -h | --help)
+                cat <<EOF >&2
+Usage: $progname [options]
+Options:
+  -h, --help               This help.
+  -r, --remote             Manage remote assets.
+  -l, --local              Manage local assets.
+  -t, --tag    <tag>       Remote tag.
+  -k, --keep   <number>    Max number of the latest versions to keep.
+  -d, --dir    <folder>    Working directory (debugging).
+EOF
+                exit 0
+                ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+}
+
+Main()
+{
+    local progname="$(/usr/bin/basename "$0")"
+    local foobar="${0##*/}"               # same as $progname ?
+
+    local where=remote
+    local tag=archive
+    local keep=5
+    local cwd=""
+
+    Options "$@"
+
+    [ -n "$cwd" ]  && cd "$cwd"
+    [ -n "$tag" ]  || tag=archive
+    [ -n "$keep" ] || keep=5
+    [ -n "$(hub release | grep "$tag")" ] || DIE "tag '$tag' not supported"
+
+    local pkgcomponents
+
+    case "$where" in
+        "remote") pkgcomponents=$(release-asset-names "$tag" | grep -v "\.sig$") ;;
+        "local")  pkgcomponents=$(ls -1 *.pkg.tar.{zst,xz}) ;;
+    esac
+    readarray -t pkgcomponents <<< $(echo "$pkgcomponents" | pkg-name-components NVRACE | sort -V)
+
+    local pkgname
+    local pkgsplit
+    local prevname=""
+    local pkgsplits=()
+
+    for pkgsplit in "${pkgcomponents[@]}" ; do
+        pkgname=${pkgsplit%%|*}
+        if [ "$pkgname" = "$prevname" ] ; then
+            pkgsplits+=("$pkgsplit")
+        else
+            prevname="$pkgname"
+            RemoveExtras
+            pkgsplits=("$pkgsplit")
+        fi
+    done
+    RemoveExtras
+}
+
+Main "$@"
