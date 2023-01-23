@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Set or get screen brightness using xrandr.
+
+DIE() {
+    printf "%s: error: %s\n" "$progname" "$1" >&2
+    Usage 1
+}
+
+CheckValue1() {
+    local supported_values="Supported value range: $min..$max."
+
+    if [ -z "$brightness" ] || [ -n "$(echo "$brightness" | tr -d '0-9')" ] || [ $brightness -gt $max ] || [ $brightness -lt $min ]
+    then
+        DIE "value '$brightness' is out of range. $supported_values"
+    fi
+    brightness="$(echo $brightness*0.01 | bc -l)"
+}
+
+GetData() {
+    data="$(LANG=C xrandr --query --verbose)"
+    [ -n "$data" ] || DIE "xrandr returned no data!"
+}
+
+GetOutputDevice() {
+    outdev="$(echo "$data" | grep -w connected | head -n1 | awk '{print $1}')"
+    [ -n "$outdev" ] || DIE "no output device found!"
+}
+
+GetBrightness() {
+    local br=$(echo "$data" | sed -E -n "/$outdev connected/,/[ \t]+Brightness:/p")
+    if [ $(echo "$br" | wc -l) -le 6 ] ; then
+        br=$(echo "$br" | tail -n1 | awk '{print $NF}')
+        if [ -n "$br" ] ; then
+            local div=$(echo "1 / 100" | bc -l)
+            brightness=$(echo "scale=0; $br / $div" | bc -l)
+            return
+        fi
+    fi
+    DIE "failed to get brightness value."
+}
+
+CheckDependencies() {
+    local pkgs=( xorg-xrandr bc )
+    pacman -Q ${pkgs[*]} &>/dev/null || DIE "required dependencies: ${pkgs[*]}"
+}
+
+Usage() {
+    cat <<EOF >&2
+
+Usage: $progname [percentage]
+       percentage    Percentage of the maximum screen brightness.
+If percentage is not given, current percentage will be shown, if previously set.
+
+EOF
+    [ -n "$1" ] && exit $1
+}
+
+MainXrandr() {
+    local -r progname="$(basename "$0")"
+    local -r min=5
+    local -r max=100
+    local brightness=""
+    local data=""
+    local outdev=""
+
+    CheckDependencies
+
+    GetData
+    GetOutputDevice
+
+    case "$1" in
+        "") GetBrightness
+            echo "$brightness"
+            ;;
+        *)
+            if [ -z "$(echo "$1" | sed 's|[0-9]||g')" ] ; then
+                brightness="$1"
+                CheckValue1
+                xrandr --output "$outdev" --brightness "$brightness" || DIE "failed to set brightness to '$brightness'."
+            else
+                DIE "sorry, value can contain only numbers in the range of $min to $max."
+            fi
+            ;;
+    esac
+}
+
+MainXrandr "$@"

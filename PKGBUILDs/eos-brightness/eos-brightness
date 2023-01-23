@@ -45,54 +45,9 @@ MainXbacklight()
     done
 }
 
-CheckValue1() {
-    local min=5
-    local max=100
-    local supported_values="Supported percentage values: from $min to $max."
-
-    if [ -z "$brightness" ] || [ -n "$(echo "$brightness" | tr -d '0-9')" ] || [ $brightness -gt $max ] || [ $brightness -lt $min ]
-    then
-        DIE "value '$brightness' is not supported! $supported_values"
-    fi
-
-    brightness="$(echo $brightness*0.01 | bc)"
-}
-
-MainXrandr() {
-    local brightness=""
-    local conf="$HOME/.config/brightness.conf"
-
-    case "$1" in
-        "")
-            brightness="$(cat "$conf" 2>/dev/null)"
-            if [ -n "$brightness" ] ; then
-                echo "$brightness"
-            else
-                echo "Brightness not yet set." >&2
-                return 1
-            fi
-            return
-            ;;
-        -*) DIE "unsupported parameter '$1'" ;;
-        *) brightness="$1" ;;
-    esac
-    local storevalue="$brightness"
-
-    CheckValue1
-
-    local query="$(xrandr --query)"
-    local output="$(echo "$query" | grep -w connected | head -n 1 | awk '{print $1}')"
-
-    [ -n "$output" ] || DIE "no output device found!"
-
-    xrandr --output "$output" --brightness "$brightness" || DIE "xrandr failed."
-
-    echo "$storevalue" > "$conf"
-}
-
 Main() {
     case "$(device-info --graphics)" in
-        NVIDIA*) MainXrandr     "$@" ;;
+        NVIDIA*) brightness-xrandr "$@" ;;
         *)       MainXbacklight "$@" ;;
     esac
 }

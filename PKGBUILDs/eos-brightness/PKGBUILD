@@ -4,7 +4,7 @@
 pkgname=eos-brightness
 pkgdesc="Simple app to set the brightness level of the screen."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.09.25
+pkgver=22.10
 pkgrel=1
 
 arch=('any')
@@ -17,9 +17,12 @@ optdepends=(
 
 source=(
     $url/$pkgname
+    $url/brightness-xrandr
 )
-sha512sums=('40387138f8b71f9695998807962914888d9d1e76f4a518b8b766869a8a789e0e6ff5c7a1214c91dd94da5f25cce7921c4612a93552a58153b31e6f1dcf0d6e8c')
+sha512sums=('4d24b3b9994c68545d7cc54089f7cde9ba634f7e591d1a8ef22393b864fd53b3b8c3f81145e5361193188ab8240256eb62ad5a891b298e91293186994a0b242d'
+            '81fad332910c605bea5c29db84da4d2847dbc5f95bc19c74bae1bf9b661e152744e10a98f09d33cc17071e36483edd53b6a17c36997a4b315156fd700d8afde9')
 
 package() {
   install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname
+  install -Dm755 brightness-xrandr           $pkgdir/usr/bin/brightness-xrandr
 }
