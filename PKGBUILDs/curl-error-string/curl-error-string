@@ -20,32 +20,42 @@ $(man curl | sed -n '/^EXIT CODES$/,/^AUTHORS \/ CONTRIBUTORS$/'p | grep "^ [ ]*
         0) msg="OK" ;;
         *) msg="[CURL doc error]: unsupported error code '\$curlRetCode'. See 'man curl'." ;;
     esac
-    echo "\$msg"
+    echo "\$curlRetCode: \$msg"
 }
 _generated_func_ "\$1"
 EOF
     chmod +x $tmp
-    echo "Creating curl code converter into $converter:" >&2
-    sudo mv $tmp $converter
+    rm -f "$converter"
+    mv $tmp "$converter" || DIE "Creating '$converter' failed."
 }
 
 CurlReturnCodeToString() {
     local curlRetCode=""
-    local converter=/usr/local/bin/curl-code-to-string-converter
+    local cdir="$HOME/.config/curl-error-string"
+    local converter="$cdir/curl-code-to-string-converter"
+    local timenow_sec=$(date +%s)
+    local timefile_sec=0
+    local generate_interval_seconds=$((3600*24*7))   # generate curl error code list weekly
+
+    mkdir -p "$cdir"
+
+    [ -r "$converter" ] && timefile_sec=$(stat -c %Y "$converter")
 
     while [ -n "$1" ] ; do
         case "$1" in
             --create | -c)  Generate ; return ;;
-            --remove | -r)  echo "Removing $converter:" >&2 ; sudo rm -f $converter ; return ;;
+            --remove | -r)  echo "Removing $converter" >&2 ; rm -f "$converter" ; return ;;
             -*)             DIE "unsupported option '$1'" ;;
             *)              curlRetCode="$1" ; shift ;;
         esac
     done
 
-    [ -x $converter ] || Generate
-    [ -x $converter ] || DIE "curl code to text converter '$converter' not found."
+    # ((timenow_sec += generate_interval_seconds))  # testing generation!
 
-    $converter "$curlRetCode"
+    [ $timenow_sec -gt $((timefile_sec + generate_interval_seconds)) ] && Generate
+    [ -x "$converter" ] || DIE "curl code to text converter '$converter' not found or not executable."
+
+    "$converter" "$curlRetCode"
 }
 
 CurlReturnCodeToString "$@"
