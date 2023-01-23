@@ -1,0 +1,20 @@
+## This file consists of lines that can be:
+##   - device id and driver list
+##   - comments starting with the # character
+##   - empty lines
+##
+## Every essential line has the device identification and a list of drivers separated by spaces:
+##   vendor:devid  driver  driver ...
+## Note: an essential line cannot contain comments!
+##
+    
+# Brother multifunction: printer and scanner drivers
+04f9:0422  brother-dcp-l2537dw-printer  brscan4  # Brother DCP-L2537DW
+
+# DVB receiver
+15f4:0131  dvb-mn88473  # HanfTek Astrometa DVB-T/T2/C FM & DAB receiver [RTL2832P]
+
+# NVIDIA GeForce GT 1030
+# 10de:1d01 nvidia-dkms # or: nvidia nvidia-lts
+# id = lspci -vnn | grep VGA | sed 's|.*\[\([0-9a-f]*:[0-9a-f]*\)\].*|\1|'
+# name = lspci -vnn | grep $id | sed -e 's|.*\]: ||' -e "s| \[$id.*||"
