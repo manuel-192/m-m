@@ -2,7 +2,13 @@
 
 DIE() {
     local progname="$(basename "$0")"
-    echo "$progname: error: $1" >&2
+    cat <<EOF >&2
+
+$progname: error: $1
+
+Usage: $progname <colortheme-name>
+
+EOF
     exit 1
 }
 
@@ -10,19 +16,25 @@ Main() {
     local theme_name="$1"
     local theme_file="/usr/share/xfce4/terminal/colorschemes/$theme_name.theme"
     local target_file="$HOME/.config/xfce4/terminal/terminalrc"
+    local whoami="$(whoami)"
 
-    [ -r "$theme_file" ]  || DIE "No such colorscheme file: '$theme_file'"
-    [ -r "$target_file" ] || DIE "No such theme config file: '$target_file'"
+    if [ "$whoami" = "root" ] ; then
+        target_file=/etc/skel/.config/xfce4/terminal/terminalrc
+    fi
 
-    # backup current file
-    cp "$target_file" "$target_file".bak.$(date +%Y%m%d-%H%M) || DIE "could not backup '$target_file'"
+    [ -r "$theme_file" ]  || DIE "colorscheme name is required (see $(dirname $theme_file))"
+    [ -r "$target_file" ] || DIE "no such theme config file: '$target_file'"
 
-    # remove lines with string "Color" in them from the current config file
-    local current=$(cat "$target_file" | grep -v Color)
+    if [ "$whoami" != "root" ] ; then
+        # backup current file
+        cp "$target_file" "$target_file".bak.$(date +%Y%m%d-%H%M) || DIE "could not backup '$target_file'"
+    fi
+
+    # Remove lines with string "Color" in them from the current config file.
+    # Add colors from the theme file.
+
+    local current=$(cat "$target_file" | grep -v Color ; cat "$theme_file" | grep Color)
     echo "$current" > "$target_file"
-
-    # add colors from the theme file
-    cat "$theme_file" | grep Color >> "$target_file"
 }
 
 Main "$@"
