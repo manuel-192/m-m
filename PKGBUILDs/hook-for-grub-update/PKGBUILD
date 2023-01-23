@@ -3,7 +3,7 @@
 # Maintainer: manuel (see forum.endeavouros.com)
 
 pkgname=hook-for-grub-update
-pkgdesc=""
+pkgdesc="Helps handling of grub updates."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
 pkgrel=2
