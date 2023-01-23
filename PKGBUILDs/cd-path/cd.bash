@@ -59,14 +59,14 @@ cd() {
         return 1
         # RunInTerminal nano $HOME/.config/cd.conf
     fi
-    if [ -z "CDPATH_ARR" ] && [ -z "$CDPATH_EXCLUDE" ] ; then
+    if [ -z "CDPATH_ARR" ] || [ -z "$CDPATH_EXCLUDE" ] || [ -z "$CDOUT" ] ; then
         source $conf || return 1
         export CDPATH="$(echo "${CDPATH_ARR[@]}" | tr ' ' ':')"
     fi
 
     case "$CDOUT" in
         all | important) ;;
-        *) _cd_out_important "value of CDOUT in file $conf is unsupported!" ; return 1 ;;
+        *) _cd_out_important "value '$CDOUT' of CDOUT in file $conf is unsupported!" ; return 1 ;;
     esac
 
     # handle options

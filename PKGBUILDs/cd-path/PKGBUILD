@@ -3,7 +3,7 @@
 pkgname=cd-path
 pkgdesc="Extends the CDPATH feature of the 'cd' command by allowing exclusion of folders."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=0.2
+pkgver=23
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -12,7 +12,7 @@ source=(
     cd.bash
     cd.conf
 )
-sha512sums=('fa3c9362cbb13bc1e009323be3a0ff321dd33cdfbd76b50f23eb7edba5e8c5bc3e57368c9bd74533d3b9a07172cf22e7ceb768cc2d4ac704114519cb2663d413'
+sha512sums=('443bad72da09e97a2879e63d43bc70c9b3ae19d5c23693f3d2b9af27ec3586eb6e01fda9d87bb7eaf7c5b0c5dd0bfdd2bc0553125f6ef73c7da9c0769c08d659'
             '67a5e4f20650bb4e64c492deadef589b7a276b9bef8106ccb4605d52941fa1748f2cc100ed54354b41c4d0c8764b529244125ebe3351b2d2a77e34cc5f5c704c')
 
 package() {
