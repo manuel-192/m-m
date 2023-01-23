@@ -128,7 +128,7 @@ Main()
 
     case "$where" in
         "remote") pkgcomponents=$(release-asset-names "$tag" | grep -v "\.sig$") ;;
-        "local")  pkgcomponents=$(ls -1 *.pkg.tar.{zst,xz}) ;;
+        "local")  pkgcomponents=$(ls -1 *.pkg.tar.{zst,xz} 2>/dev/null) ;;
     esac
     readarray -t pkgcomponents <<< $(echo "$pkgcomponents" | pkg-name-components NVRACE | sort -V)
 

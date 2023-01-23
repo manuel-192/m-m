@@ -6,7 +6,7 @@ pkgname=archive-trim
 pkgdesc="Trims (deletes old files from) a package archive"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 arch=('any')
 license=('GPL')
 # depends=()
@@ -14,7 +14,7 @@ license=('GPL')
 source=(
     $url/$pkgname
 )
-sha512sums=('cc2c8a71f29196d7ddb730d72c60c1054d962341f3340424d0d25de92fae8e493e66579936a7e95d053608f5ad105ab27d6276271a0ffe53fd65623af504fa98')
+sha512sums=('cdabaff7e2377c12e145e606f8c64a9ace18755d252973b78923426eb52970767fe90c5eeceaefd3e3bd0e7da769422bcc92b5bebf46725c42a356b6e25c6d4d')
 
 package() {
     local hookdir=$pkgdir/usr/share/libalpm/hooks
