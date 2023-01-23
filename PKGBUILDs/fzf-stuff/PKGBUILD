@@ -16,7 +16,7 @@ source=(
     $url/fzf-pkg-description
     $url/mgr
 )
-sha512sums=('061b927bd3b9a39376e653dbd99d1913ae891c55cc1caccedc10137aef34a5f5f3cfb0dbef1aadfa82d27a54fe8d017537bb68e11b2b2e73ab99493d6284d4c6'
+sha512sums=('624ccc688b0de3a7563ac1cc1acceb968f1555c10d16aeecec7c983c473f8ff5f6f4335b14e70b41481618694855f64fb72bdfbfc5d15eead7760c17cdcc0f9b'
             '1879821770ff048bac3f7405a84c6d5dbfcf06fb7df16ae529482b184640ea218a0e1ae2fa70c8249a59adc6a283c0763f148e2ed6e54d84ad6446a39bcc451f')
 
 package() {

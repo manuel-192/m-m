@@ -50,7 +50,10 @@ Execute() {
 SelectPackages() {
     local mode="$1"
     local install_source="$2"          # for install only
-    local fzf_opt='-m -e  --preview'
+    local fzf_opt='-m -e --keep-right --layout=reverse --border=horizontal  --preview'
+    # fzf_opt="--prompt='Search word\:> ' $fzf_opt"
+
+    # --cycle ??
 
     case "$mode" in
         show)
@@ -79,3 +82,6 @@ SelectPackages() {
 }
 
 SelectPackages "$@"
+
+# pacman -Ss endeavouros | sed '0~2d'   # prints only lines with package names
+# same with: pacman -Ss endeavouros | sed -n '1~2p'
