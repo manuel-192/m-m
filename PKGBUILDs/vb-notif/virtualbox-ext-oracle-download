@@ -1,36 +1,76 @@
 #!/bin/bash
 
 DIE() {
-    echo "error: $1"
+    echo "$progname: error: $1"
     exit 1
 }
 
 Main()
 {
+    local progname="$(basename "$0")"
     local url=https://www.virtualbox.org/wiki/Downloads
+    local dlurl
     local data
     local name
     local sumfile
-    local sum version
+    local pkgver
+
+    local pkgurl
+    local version
+    local sum
 
     data=$(curl --fail -Lsm 10 -o- $url)
     [ $? -eq 0 ] || DIE "downloading $url failed"
 
-    url=$(echo "$data" | grep "All supported platforms" | sed -E 's|.*(https://[^"]+)".*|\1|')
-    echo "$url"
-    name=$(basename "$url")
-    version=$(echo "$name" | sed -E 's|^.*_Extension_Pack-(.+)\.vbox-extpack$|\1|')
-    echo "version = $version"
-    curl -Lsm 10 -o"$name" $url
+    pkgurl=$(echo "$data" | grep "All supported platforms" | sed -E 's|.*(https://[^"]+)".*|\1|')
+    dlurl=https://www.virtualbox.org$(echo "$data" | grep "/SHA256SUMS" | sed -E 's|.*a href="(.+/SHA256SUMS)".*|\1|')
 
-    url=https://www.virtualbox.org$(echo "$data" | grep "/SHA256SUMS" | sed -E 's|.*a href="(.+/SHA256SUMS)".*|\1|')
-    echo "$url"
-    sumfile="$(basename "$url")"
-    curl -Lsm 10 -o"$sumfile" $url
+    # get sha256sum
+    sumfile="$(basename "$dlurl")"
+    curl -Lsm 10 -o"$sumfile" $dlurl
+    name=$(basename "$pkgurl")
     sum=$(grep "$name" $sumfile | awk '{print $1}')
-    echo "sum = $sum"
 
-    grep "$name" SHA256SUMS | sha256sum -c || DIE "package checksum failed."
+    # download pkg
+    curl -Lsm 10 -o"$name" $pkgurl
+
+    # check sum
+    grep "$name" $sumfile | sha256sum -c || DIE "package checksum failed."
+    rm -f $sumfile
+    
+    mkdir -p EXPERIMENTAL || DIE "creating folder EXPERIMENTAL failed."
+    cd EXPERIMENTAL
+    rm -rf virtualbox-ext-oracle
+    if [ -d virtualbox-ext-oracle ] ; then
+        cd virtualbox-ext-oracle
+        git pull
+    else
+        yay -Ga virtualbox-ext-oracle
+        cd virtualbox-ext-oracle
+    fi
+    if [ -r PKGBUILD ] && ! grep "$sum" PKGBUILD >& /dev/null ; then
+
+        # rename downloaded pkg back to suit PKGBUILD
+        mv ../../"$name" .
+        pkgver=$(grep "^pkgver=" PKGBUILD | cut -d'=' -f2)
+        mv "$name" Oracle_VM_VirtualBox_Extension_Pack-$pkgver.vbox-extpack
+
+        sed -i PKGBUILD \
+            -e "s|^sha256sums=.*|sha256sums=('$sum')|"
+
+        #echo "pkgurl    = $pkgurl"
+        #echo "version   = $version"
+        #echo "sha256sum = $sum"
+
+        makepkg -cf || DIE "makepkg failed."
+        sudo pacman -U virtualbox-ext-oracle-*.pkg.tar.zst || DIE "pacman failed."
+
+        rm -f virtualbox-ext-oracle-*.pkg.tar.zst || DIE "rm virtualbox-ext failed"
+        rm -f "$name" || DIE "rm $name failed"
+        rm -f ../../SHA256SUMS || DIE "SHA256SUMS failed"
+        cd ../..
+        rm -rf EXPERIMENTAL/virtualbox-ext-oracle
+    fi
 }
 
 Main "$@"
