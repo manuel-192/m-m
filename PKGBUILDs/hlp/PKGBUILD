@@ -4,8 +4,8 @@
 pkgname=hlp
 pkgdesc="Similar to 'man', but gets man pages from the Arch web. Also can find other info if man page doesn't exist."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=2021.10.15
-pkgrel=2
+pkgver=23
+pkgrel=1
 
 arch=('any')
 license=('GPL')
