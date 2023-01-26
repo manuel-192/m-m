@@ -5,8 +5,8 @@
 pkgname=meld-rcs
 pkgdesc="Meld with RCS support and small UI changes"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
-pkgrel=3
+pkgver=23
+pkgrel=1
 
 arch=('any')
 license=('GPL')
