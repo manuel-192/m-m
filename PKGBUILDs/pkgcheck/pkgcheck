@@ -32,21 +32,24 @@ Options() {
             -h | --help)
                 cat <<EOF >&2
 
-Usage: $progname [options] folder
+Usage: $progname [operation] [options] [folder]
 
-Options:
+Operations:
   --dryrun-local       Dryrun, don't download assets from remote (minimal dryrun).
-                       Without options this is the default operation.
+                       Without a given operation this is the default.
   --dryrun             Dryrun, download assets from remote first (full dryrun).
-  --allow-downgrade    New package is allowed to get a smaller version number (advanced).
   --repoup             Update only the database files (advanced).
   --build              Build and release updated packages (advanced).
 
+Options:
+  --allow-downgrade    New package is allowed to get a smaller version number (advanced).
+                       By default updated packages must have a bigger version number.
 Params:
-  folder               A basename of the folder path. Required.
+  folder               A basename of the folder path where assets will be built.
+                       Default: $default_folder
 
 EOF
-                return
+                exit 0
                 ;;
             
             --) shift ; break ;;
@@ -54,7 +57,7 @@ EOF
         shift
     done
 
-    folder="$1"
+    [ -n "$1" ] && folder="$1"
 
     case "$folder" in
         m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64 | local-repo) ;;
@@ -64,8 +67,11 @@ EOF
 }
 
 pkgcheck() {
-    local folder=""
-    local opt="--dryrun-local"
+    local -r default_folder="mirrors.mirror1"
+    local -r default_opt="--dryrun-local"
+
+    local folder="$default_folder"
+    local opt="$default_opt"
 
     Options "$@" || return $?
 

@@ -6,7 +6,7 @@ pkgname=pkgcheck
 pkgdesc=""
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=6
+pkgrel=7
 
 arch=('any')
 license=('GPL')
@@ -16,7 +16,7 @@ source=(
     $url/pkgcheck
     $url/pkgcheck.completion
 )
-sha512sums=('2e53999511d5184ca734eb3b2ed20f12720af1fae306d3d826f6d88667d2b66116ab7f120404bb19a5f42cab14e18520bd9b017513c05366b72e2a0a3905984d'
+sha512sums=('132a866228a8d8820a637ff55c67110abbe5718ca1ef0e0edefddf650c8b42c9950ec46e22ef62574c3c5bfb7ad58b4c3c1e2aca22c373d3715472058b93b4f2'
             'a8b7062f22534be83fd382afcbe391094764e758579ec135fa2fa4cdd2c19a4d71169b04d584e0ea01aefdcb0b4717b8a784cd5228f9cb67ab8adac147fe5371')
 
 package() {
