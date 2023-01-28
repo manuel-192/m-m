@@ -78,11 +78,13 @@ pkgcheck() {
     source $HOME/.config/cd.conf || return $?
     source /etc/skel/cd.bash || return $?
 
+    pushd ~/ >/dev/null
     pushd $folder >/dev/null
     case "$folder" in
         local-repo) ./local-repo-manager ;;
         *) assets.make $opt ;;
     esac
+    popd >/dev/null
     popd >/dev/null
 }
 
