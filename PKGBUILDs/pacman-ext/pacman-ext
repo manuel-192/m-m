@@ -335,7 +335,7 @@ Main() {
     local banner_initial=yes
     local just_checkupdates=no
     local extra_checks=no
-    local checkupdates=expac
+    local checkupdates=checkupdates  #expac
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local aur_helper=/usr/bin/paru
     [ -x $aur_helper ] || aur_helper=/usr/bin/yay
