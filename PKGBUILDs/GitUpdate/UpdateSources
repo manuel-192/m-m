@@ -7,8 +7,8 @@ DIE() {
     exit 1
 }
 
-pushd() { command pushd "$@" >/dev/null || DIE "'pushd $*' failed." ; }
-popd()  { command popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
+Pushd() { pushd "$@" >/dev/null || DIE "'pushd $*' failed." ; }
+Popd()  { popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
 
 _git_check1() {
     local folder="$1"
@@ -48,11 +48,11 @@ Main()
             esac
         fi
 
-        pushd ./"$folder"   # warning: $CDPATH may mix up!
+        Pushd "$PWD/$folder"   # (warning: $CDPATH may mix up!?)
 
         _git_check2 "$folder"
 
-        popd
+        Popd
     done
 }
 
