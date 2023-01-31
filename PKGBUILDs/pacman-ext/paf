@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# Select (with a TUI) and install pacman packages.
+# Install, remove, and update packages.
+#
+# Packages can be selected with a TUI for install and remove operations
+# if package name(s) are not given.
 
 echo2()      { echo "$@" >&2 ; }
 printf2()    { printf "$@" >&2 ; }
@@ -37,7 +40,7 @@ _SelectPackagesNotInstalled() {
     expac -Q '%n' | sed 's|^|^|' > $installed                        # for ignoring already installed packages
     expac -S '%n|%d' | grep -v -f $installed | _fzf "$prompt"
 
-    rm -f $installed
+    #rm -f $installed
 }
 
 _SelectPackagesInstalled() {
@@ -57,11 +60,7 @@ Install_Remove() {
         Install)
             msg="To be installed:"
             func=_SelectPackagesNotInstalled
-            if [ "$reinstall_force" = "yes" ] ; then
-                flags="-S"
-            else
-                flags="-S --needed"
-            fi
+            flags="-S"
             ;;
         Remove)
             msg="To be removed:"
@@ -72,30 +71,35 @@ Install_Remove() {
 
     if [ ${#pkgs[@]} -eq 0 ] ; then
         pkgs2=$($func "$msg")
+        if [ -z "${pkgs2[0]}" ] ; then
+            MSG "Packages selected: none!\n"
+            pkgs2=()
+        fi
     else
         local pkg
-        for pkg in "${pkgs[@]}" ; do
-            case "$op" in
-                Install)
-                    if [ "$reinstall_force" = "yes" ] ; then
-                        pkgs2+=("$pkg")
-                    else
+        case "$op" in
+            Install)
+                if [ "$reinstall_force" = "yes" ] ; then
+                    pkgs2=("${pkgs[@]}")
+                else
+                    for pkg in "${pkgs[@]}" ; do
                         if IsInstalled "$pkg" ; then
                             echo2 "  -> already installed: $pkg"
                         else
                             pkgs2+=("$pkg")
                         fi
-                    fi
-                    ;;
-                Remove)
+                    done
+                fi
+                ;;
+            Remove)
+                for pkg in "${pkgs[@]}" ; do
                     if IsInstalled "$pkg" ; then
                         pkgs2+=("$pkg")
                     else
                         echo2 "  -> not installed: $pkg"
                     fi
-                    ;;
-            esac
-        done
+                done
+        esac
     fi
 
     if [ ${#pkgs2[@]} -ne 0 ] ; then
@@ -107,20 +111,7 @@ Install_Remove() {
 
 Install() { Install_Remove ; }
 Remove()  { Install_Remove ; }
-
-Remove_old() {
-    if [ ${#pkgs[@]} -eq 0 ] ; then
-        pkgs=$(_SelectPackagesInstalled "To be removed:")
-    fi
-
-    if [ ${#pkgs[@]} -ne 0 ] ; then
-        pacman-ext -Rs "${pkgs[@]}"
-    else
-        MSG "Nothing to do.\n"
-    fi
-}
-
-Update() { pacman-ext -Syu --no-banner --extras ; }
+Update()  { pacman-ext -Syu --no-banner --extras ; }
 
 Options() {
     local opts
@@ -154,14 +145,24 @@ Options() {
 
 Usage() {
     cat <<EOF >&2
-Usage: $progname [options] [operation]
+Usage: $progname [options] [operation] [package-names]
 Operations:
-  -i, --install         Install package(s).
-  -r, --remove          Remove package(s).
-  -u, --update          Update package(s). Default without an option.
+  -u, --update          Update packages. Default operation when none is given.
+  -i, --install         Install given or selected packages.
+  -r, --remove          Remove given or selected packages.
 Options:
-  -f, --force           Install forced (only with option -i).
+  -f, --force           Install forced (meaningful only with option -i).
   -h, --help            This help.
+Package names:
+  List of package names to be installed (-i) or removed (-r).
+
+Examples:
+  $progname                # Updates packages (similar to: sudo pacman -Syu).
+  $progname -i             # Starts a TUI for selecting packages for install.
+  $progname -r             # Starts a TUI for selecting packages for removal.
+  $progname -i xed geany   # Installs given packages (if not yet installed).
+  $progname -if xed geany  # Installs given packages (even if already installed).
+  $progname -r xed geany   # Removes given packages.
 EOF
 }
 

@@ -6,17 +6,16 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=4
+pkgrel=5
 
-arch=('any')
-license=('GPL')
-depends=('bash')
+arch=(any)
+license=(GPL)
+depends=(bash expac)
 optdepends=(
     'eos-bash-shared: nvidia vs. kernel update check'
     'expac: for select-and-install'
     'eos-update-notifier: for using checkupdatesext (one of the update checkers)'
 )
-#conflicts=(pac pau)
 
 source=(
     $url/pacman-ext
@@ -34,7 +33,7 @@ sha512sums=('b1c42a3caf32dfc8b843ff46ef3c888e8bf24483cb0ccf2c3f5560d380d57a0548f
             '3650b44357a84d183826dd13220606368bc957913c4fd7f8e26070d389ed0951c5792218016eac38aa33f40706c78ba8d863643cb69a04fa3cb838d608d285aa'
             'ab96744bc078f97fa675efabbe71bf43a9d0a363b5c85ce3845696b7c6a7c373d8e76c4f4c990b41057b72c4d9e688874c1c10902a3ec3292e3dcc5f37d55613'
             '54d414b22c6d7cc7126fafadd82e4766a063d8f7f7482b1dde67ffe162e9cee487fd430c93bc50b282cc81d320da92c6022c8e45d6706ab40143df7a0d19525f'
-            '11106abab9e00a4c4142c0805acb8515ce78178f9cf23f1c7b884fe16856c959f002d44d4c14ba3831ea9d905570eb266c12ad5c0f9bad78aa7d81e009d4a5de'
+            '86e102c30ac67c4da50ebaf39f21f339b5c623f9d540d0d90090b8939afadf06dcc96ce4f0d632fece49dbc1c6f2136be08ad60b4fa9eb16c9074d5dcb0a2f89'
             '84d89e5eeb4982675e08cc1a1b914b8255c8335ce73add5275452c28b1c5c21545d7cb823034f9ed89aaa022db9d410ea908818a65b72ef750ac5545c5fdc8b6'
             '37f20cd76f51aa441d213ab95a8b5efe1c197c9a3e496e0a7dbd05a4211a073a33b1d5aa6dbf68fb70a4b4e56979902c477f8c1f91dffb35d6966feb3aca411e')
 
