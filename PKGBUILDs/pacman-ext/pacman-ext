@@ -256,6 +256,7 @@ Indent() {
 
 ExtraChecks() {
     if [ "$extra_checks" = "yes" ] ; then
+        printf2 "\nAdditional commands:\n"
         echo2 "==> pacman -Qm"
         pacman -Qm |& Indent 1
 

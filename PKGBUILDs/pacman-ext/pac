@@ -1,3 +1,0 @@
-#!/bin/bash
-
-pau "$@"  # remove this file, make alias in .bashrc
