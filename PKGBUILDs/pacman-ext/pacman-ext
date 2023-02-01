@@ -16,41 +16,6 @@ verbose2() {
     fi
 }
 
-Usage() {
-    cat <<EOF
-$banner
-Usage:       $progname
-             $progname <option1>
-             $progname <option2> [other-parameters]
-             $progname <pacman-options>
-<option1>:   -Syu                     Updates packages with additional features.
-             -Syyu                    Like -Syu, with extra --refresh (see 'man pacman').
-             --paru                   Like -Syu, also updates AUR packages using paru.
-             --yay                    Like -Syu, also updates AUR packages using yay.
-             --aur                    Like --paru or --yay (tried in this order).
-<option2>:   --wait-enter             Waits for user to press the Enter key to continue in the end.
-             --dg, --downgrade        (Experimental) Downgrades given Arch or EndeavourOS packages.
-             --no-banner              Do not show the intial banner that tells about $progname.
-             --show-cmd               Shows the actual commands to be executed.
-             --build                  Builds and installs a package using a local PKGBUILD.
-             --extras                 Still extra checks like 'pacman -Qm' and 'eos-pacdiff'.
-             --mirror-swap-eos        (Advanced) Swap the order of given two mirrors in /etc/pacman.d/endeavouros-mirrorlist.
-             -j, --just-checkupdates  Only check whether updates are available.
-             --checkupdates           Use 'checkupdates' for checking updates from the repos.
-             --checkupdatesext        Use 'checkupdatesext' for checking updates from the repos.
-             --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
-
-If no parameter is provided, install updates only if available.
-The <option1> must be used as the *only* parameter on the command line.
-Option --wait-enter can be used with other parameters, e.g. <pacman-options>.
-Options --downgrade and --dg require one or more package names.
-Option --build can be followed by makepkg options.
-Otherwise $progname works like 'pacman <pacman-options>' *without* any additional features.
-
-EOF
-    MayExit "$1"
-}
-
 _Build_pkgname() {
     source PKGBUILD
     echo "$pkgname"
@@ -115,23 +80,6 @@ eos-virtualbox-check() {
                 # printf2 "warning: ignoring virtualbox-ext-oracle update due to incompatible versions.\n"
             fi
         fi
-    fi
-}
-
-InitialBanner() {
-    if [ "$BANNER_INITIAL" = "yes" ] ; then
-        cat <<EOF
-$banner
-
-Additional features:
-   - require password only when needed
-   - db lock file check
-   - nvidia & kernel update check
-   - check virtualbox vs. virtualbox-ext-oracle version compatibility
-   - update keyrings first if archlinux-keyring-wkd-sync.timer is not active
-   - 'sync' at end
-
-EOF
     fi
 }
 
@@ -350,9 +298,63 @@ pacman_ext() {
     fi
 }
 
+InitialBanner() {
+    if [ "$BANNER_INITIAL" = "yes" ] ; then
+        cat <<EOF
+$progname: A pacman wrapper with additional features.
+
+Additional features:
+   - require password only when needed
+   - db lock file check
+   - nvidia & kernel update check
+   - check virtualbox vs. virtualbox-ext-oracle version compatibility
+   - update keyrings first if archlinux-keyring-wkd-sync.timer is not active
+   - 'sync' at end
+   - configuration file /etc/$progname.conf
+
+EOF
+    fi
+}
+
+Usage() {
+    InitialBanner
+    cat <<EOF
+Usage:       $progname
+             $progname <option1>
+             $progname <option2> [other-parameters]
+             $progname <pure-pacman-options>
+
+<option1>:   -Syu                     Updates packages with additional features.
+             -Syyu                    Like -Syu, with extra --refresh (see 'man pacman').
+             --paru                   Like -Syu, also updates AUR packages using paru.
+             --yay                    Like -Syu, also updates AUR packages using yay.
+             --aur                    Like --paru or --yay (tried in this order).
+
+<option2>:   --wait-enter             Waits for user to press the Enter key to continue in the end.
+             --dg, --downgrade        (Experimental) Downgrades given Arch or EndeavourOS packages.
+             --no-banner              Do not show the intial banner that tells about $progname.
+             --show-cmd               Shows the actual commands to be executed.
+             --build                  Builds and installs a package using a local PKGBUILD (advanced).
+             --extras                 Still extra checks like 'pacman -Qm' and 'eos-pacdiff'.
+             --mirror-swap-eos        (Advanced) Swap the order of given two mirrors in /etc/pacman.d/endeavouros-mirrorlist.
+             -j, --just-checkupdates  Only check whether updates are available.
+             --checkupdates           Use 'checkupdates' for checking updates from the repos.
+             --checkupdatesext        Use 'checkupdatesext' for checking updates from the repos.
+             --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
+
+If no parameter is provided, install updates only if available.
+The <option1> must be used as the *only* parameter on the command line.
+Option --wait-enter can be used with other parameters, e.g. <pure-pacman-options>.
+Options --downgrade and --dg require one or more package names.
+Option --build can be followed by makepkg options.
+Otherwise $progname works like 'pacman <pure-pacman-options>' *without* any additional features.
+
+EOF
+    MayExit "$1"
+}
+
 Main() {
     local -r progname="$(basename "$0")"   # $progname used by various functions here
-    local -r banner="$progname: A pacman wrapper with additional features for package update."
 
     local RUN_EXTRAS=no
     local   EXTRAS_PW_WHEN_NEEDED=yes          # yes=ask password only when needed, no=user handles privileges

@@ -6,7 +6,7 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=7
+pkgrel=8
 
 arch=(any)
 license=(GPL)
@@ -27,7 +27,7 @@ source=(
     $url/mirror-swap-eos
     $url/Build
 )
-sha512sums=('eaa49ffdddc329a7781aae3a177a6ae37a1f936994488f36c29c792fcce6a778e23535c8948746704fe1fb46d358271e1cb32367d0475c7b667f48653d9d5118'
+sha512sums=('e3007ff90f6c3b9e9728a4f2c6d7745815c17e787a23693ab601f41326f301d9ac0b3ad572ce819a895d4da71d83e94ac416ccc7332aca2a177ccf304ae94acf'
             '3227bc7e21d7ddbb8254e65b3657164fd74dacd294d7b88894bd44e3636dbdf80ce4649b0bd00c373de748db6d88e2712c07de9fc0a93b4666322d8f7ce725ac'
             '3650b44357a84d183826dd13220606368bc957913c4fd7f8e26070d389ed0951c5792218016eac38aa33f40706c78ba8d863643cb69a04fa3cb838d608d285aa'
             'd170988ee05d39e95e67168e0b52d03ade9c5747e9f59700d0697da69f14deb1b3df8324d333a20d300c8ba5697090b0ef31b8e296ac711b36f7685f56c82cef'
