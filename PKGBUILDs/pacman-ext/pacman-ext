@@ -16,41 +16,6 @@ verbose2() {
     fi
 }
 
-Usage() {
-    cat <<EOF
-$banner
-Usage:       $progname
-             $progname <option1>
-             $progname <option2> [other-parameters]
-             $progname <pacman-options>
-<option1>:   -Syu                     Updates packages with additional features.
-             -Syyu                    Like -Syu, with extra --refresh (see 'man pacman').
-             --paru                   Like -Syu, also updates AUR packages using paru.
-             --yay                    Like -Syu, also updates AUR packages using yay.
-             --aur                    Like --paru or --yay (tried in this order).
-<option2>:   --wait-enter             Waits for user to press the Enter key to continue in the end.
-             --dg, --downgrade        (Experimental) Downgrades given Arch or EndeavourOS packages.
-             --no-banner              Do not show the intial banner that tells about $progname.
-             --show-cmd               Shows the actual commands to be executed.
-             --build                  Builds and installs a package using a local PKGBUILD.
-             --extras                 Still extra checks like 'pacman -Qm' and 'eos-pacdiff'.
-             --mirror-swap-eos        (Advanced) Swap the order of given two mirrors in /etc/pacman.d/endeavouros-mirrorlist.
-             -j, --just-checkupdates  Only check whether updates are available.
-             --checkupdates           Use 'checkupdates' for checking updates from the repos.
-             --checkupdatesext        Use 'checkupdatesext' for checking updates from the repos.
-             --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
-
-If no parameter is provided, install updates only if available.
-The <option1> must be used as the *only* parameter on the command line.
-Option --wait-enter can be used with other parameters, e.g. <pacman-options>.
-Options --downgrade and --dg require one or more package names.
-Option --build can be followed by makepkg options.
-Otherwise $progname works like 'pacman <pacman-options>' *without* any additional features.
-
-EOF
-    MayExit "$1"
-}
-
 _Build_pkgname() {
     source PKGBUILD
     echo "$pkgname"
@@ -119,50 +84,50 @@ eos-virtualbox-check() {
 }
 
 special_update() {
-    if [ "$banner_initial" = "yes" ] ; then
-        cat <<EOF
-$banner
-
-Additional features:
-   - require password only when needed
-   - db lock file check
-   - nvidia & kernel update check
-   - check virtualbox vs. virtualbox-ext-oracle version compatibility
-   - update keyrings first if archlinux-keyring-wkd-sync.timer is not active
-   - 'sync' at end
-
-EOF
-    fi
     local ignore_aur_pkgs=""
     local -r lockfile=/var/lib/pacman/db.lck
     local -r logfile="$HOME/.cache/$progname.log"
-
-    verbose2 "will check $lockfile ..."
-    if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
-        WARN "$lockfile is in use." 1
-    fi
+    local sudo_cmd=()
+    local keyrings=""
+    local nvidia=""
 
     # Build the command for sudo
 
-    local sudo_cmd=()
-    [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
-    if [ "$keyrings_first" = "yes" ] ; then
+    if [ "$EXTRAS_PACMAN_LOCK_CHECK" = "yes" ] ; then
+        verbose2 "will check $lockfile ..."
+        if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
+            WARN "$lockfile is in use." 1
+        fi
+        [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
+    fi
+
+    # nvidia and keyring checks
+
+    [ "$EXTRAS_NVIDIA_CHECK" = "yes" ] && nvidia="--nvidia"
+
+    if [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] ; then
         verbose2 "will check all keyrings first ..."
-        sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")
+        [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] && keyrings="archlinux-keyring endeavouros-keyring"
+        sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks $nvidia $keyrings && /usr/bin/pacman -Su")
     else
         if false ; then
             sudo_cmd+=("/usr/bin/pacman ${db_opt}u")
         else
             verbose2 "will check EndeavourOS keyrings first ..."
-            sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks endeavouros-keyring && /usr/bin/pacman -Su")
+            [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] && keyrings="endeavouros-keyring"
+            sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks $nvidia $keyrings && /usr/bin/pacman -Su")
         fi
     fi
-    if [ "$helper" != "/usr/bin/pacman" ] ; then
-        eos-virtualbox-check
-        sudo_cmd+=("$helper -Sua $ignore_aur_pkgs")
+    if [ "$EXTRAS_VIRTUALBOX_CHECK" = "yes" ] ; then
+        if [ "$helper" != "/usr/bin/pacman" ] ; then
+            eos-virtualbox-check
+            sudo_cmd+=("$helper -Sua $ignore_aur_pkgs")
+        fi
     fi
-    verbose2 "will add 'sync' ..."
-    sudo_cmd+=("sync")
+    if [ "$EXTRAS_SYNC_AT_END" = "yes" ] ; then
+        verbose2 "will add 'sync' ..."
+        sudo_cmd+=("sync")
+    fi
 
     # Handle the sudo command
 
@@ -256,16 +221,23 @@ Indent() {
 
 ExtraChecks() {
     if [ "$extra_checks" = "yes" ] ; then
-        echo2 "==> pacman -Qm"
-        pacman -Qm |& Indent 1
-
-        local diffs=""
-        echo2 "==> eos-pacdiff"
-        diffs=$(eos-pacdiff 2>/dev/null)              # |& Indent 1
-        case "$?" in
-            # 0 | 1 | 3) ;;
-            2) echo "nothing to do." | Indent 1 ;;
+        case "$EXTRAS_PACMAN_QM $EXTRAS_PACDIFF" in
+            "no yes" | "yes no" | "yes yes")
+                printf2 "\nAdditional commands:\n" ;;
         esac
+        if [ "$EXTRAS_PACMAN_QM" = "yes" ] ; then
+            echo2 "==> pacman -Qm"
+            pacman -Qm |& Indent 1
+        fi
+        if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
+            local diffs=""
+            echo2 "==> eos-pacdiff"
+            diffs=$(eos-pacdiff 2>/dev/null)              # |& Indent 1
+            case "$?" in
+                # 0 | 1 | 3) ;;
+                2) echo "nothing to do." | Indent 1 ;;
+            esac
+        fi
     fi
 }
 
@@ -318,31 +290,105 @@ pacman_ext() {
             ;;
     esac
 
-    verbose2 "will check need for sudo with pacman ..."
-    /usr/bin/pacman-sudo-internal "$@"
+    if [ "$EXTRAS_PW_WHEN_NEEDED" = "yes" ] ; then
+        verbose2 "will check need for sudo with pacman ..."
+        /usr/bin/pacman-sudo-internal "$@"
+    else
+        /usr/bin/pacman "$@"     # normal pacman, so user must take care of needed privileges
+    fi
+}
+
+InitialBanner() {
+    if [ "$BANNER_INITIAL" = "yes" ] ; then
+        cat <<EOF
+$progname: A pacman wrapper with additional features.
+
+Additional features:
+   - require password only when needed
+   - db lock file check
+   - nvidia & kernel update check
+   - check virtualbox vs. virtualbox-ext-oracle version compatibility
+   - update keyrings first if archlinux-keyring-wkd-sync.timer is not active
+   - 'sync' at end
+   - configuration file /etc/$progname.conf
+
+EOF
+    fi
+}
+
+Usage() {
+    InitialBanner
+    cat <<EOF
+Usage:       $progname
+             $progname <option1>
+             $progname <option2> [other-parameters]
+             $progname <pure-pacman-options>
+
+<option1>:   -Syu                     Updates packages with additional features.
+             -Syyu                    Like -Syu, with extra --refresh (see 'man pacman').
+             --paru                   Like -Syu, also updates AUR packages using paru.
+             --yay                    Like -Syu, also updates AUR packages using yay.
+             --aur                    Like --paru or --yay (tried in this order).
+
+<option2>:   --wait-enter             Waits for user to press the Enter key to continue in the end.
+             --dg, --downgrade        (Experimental) Downgrades given Arch or EndeavourOS packages.
+             --no-banner              Do not show the intial banner that tells about $progname.
+             --show-cmd               Shows the actual commands to be executed.
+             --build                  Builds and installs a package using a local PKGBUILD (advanced).
+             --extras                 Still extra checks like 'pacman -Qm' and 'eos-pacdiff'.
+             --mirror-swap-eos        (Advanced) Swap the order of given two mirrors in /etc/pacman.d/endeavouros-mirrorlist.
+             -j, --just-checkupdates  Only check whether updates are available.
+             --checkupdates           Use 'checkupdates' for checking updates from the repos.
+             --checkupdatesext        Use 'checkupdatesext' for checking updates from the repos.
+             --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
+
+If no parameter is provided, install updates only if available.
+The <option1> must be used as the *only* parameter on the command line.
+Option --wait-enter can be used with other parameters, e.g. <pure-pacman-options>.
+Options --downgrade and --dg require one or more package names.
+Option --build can be followed by makepkg options.
+Otherwise $progname works like 'pacman <pure-pacman-options>' *without* any additional features.
+
+EOF
+    MayExit "$1"
 }
 
 Main() {
     local -r progname="$(basename "$0")"   # $progname used by various functions here
-    local -r banner="$progname: A pacman wrapper with additional features for package update."
-    local wait_enter=no
-    local show_cmd=no
+
+    local RUN_EXTRAS=no
+    local   EXTRAS_PW_WHEN_NEEDED=yes          # yes=ask password only when needed, no=user handles privileges
+    local   EXTRAS_KEYRINGS_FIRST=no           # if yes, update Arch keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
+    local   EXTRAS_NVIDIA_CHECK=yes            # runs only if nvidia gpu is detected
+    local   EXTRAS_VIRTUALBOX_CHECK=yes
+    local   EXTRAS_PACMAN_LOCK_CHECK=yes
+    local   EXTRAS_SYNC_AT_END=yes
+    local RUN_MORE_EXTRAS=no
+    local   EXTRAS_PACMAN_QM=yes
+    local   EXTRAS_PACDIFF=yes
+    local CHECKUPDATES=checkupdates
+    local SHOW_CMD=no
+    local VERBOSE=no
+    local BANNER_INITIAL=yes
+    local AUR_HELPER=/usr/bin/yay
+
+    source /etc/$progname.conf || WARN "/etc/$progname.conf not found, using defaults"
+
+    local wait_enter="no"
+    local show_cmd="$SHOW_CMD"
     local retval
     local args=() arg
-    local keyrings_first=no   # if yes, update keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
-    local verbose=no
+    local verbose="$VERBOSE"
     local show_help_now=no
-    local banner_initial=yes
     local just_checkupdates=no
-    local extra_checks=no
-    local checkupdates=expac
+    local extra_checks="$RUN_MORE_EXTRAS"
+    local checkupdates="$CHECKUPDATES"
+    local aur_helper="/usr/bin/${AUR_HELPER##*/}"
     local helper=/usr/bin/pacman           # $helper used by special_update()
-    local aur_helper=/usr/bin/paru
-    [ -x $aur_helper ] || aur_helper=/usr/bin/yay
 
-    if [ "$keyrings_first" = "no" ] ; then
+    if [ "$EXTRAS_KEYRINGS_FIRST" = "no" ] ; then
         if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
-            keyrings_first=yes
+            EXTRAS_KEYRINGS_FIRST=yes
         fi
     fi
 
@@ -379,7 +425,7 @@ Main() {
                 [ -x $helper ] || DIE "AUR helper '$helper' not found."
                 ;;
             --no-banner)
-                banner_initial=no
+                BANNER_INITIAL=no
                 ;;
             --show-native-options)
                 echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd --build --show-native-options $arg"
@@ -392,7 +438,6 @@ Main() {
                 ;;
             -j | --just-checkupdates)
                 just_checkupdates=yes
-                # break
                 ;;
             --checkupdates | --checkupdatesext | --expac)
                 checkupdates=${arg:2}
@@ -411,6 +456,8 @@ Main() {
         esac
         shift
     done
+
+    InitialBanner
 
     if [ "$show_help_now" = "yes" ] ; then
         Usage

@@ -37,5 +37,5 @@ _pkgcheck_() {
     [ -n "$askfor" ] && _pkgcheck_complete "$askfor"
 }
 
-complete -F _pkgcheck_ pkgcheck  pkg
+complete -F _pkgcheck_ pkgcheck
 

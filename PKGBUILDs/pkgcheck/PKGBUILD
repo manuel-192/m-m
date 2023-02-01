@@ -3,10 +3,10 @@
 # Maintainer: manuel (see forum.endeavouros.com)
 
 pkgname=pkgcheck
-pkgdesc=""
+pkgdesc="Package build helper"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=6
+pkgrel=10
 
 arch=('any')
 license=('GPL')
@@ -16,8 +16,8 @@ source=(
     $url/pkgcheck
     $url/pkgcheck.completion
 )
-sha512sums=('2e53999511d5184ca734eb3b2ed20f12720af1fae306d3d826f6d88667d2b66116ab7f120404bb19a5f42cab14e18520bd9b017513c05366b72e2a0a3905984d'
-            'a8b7062f22534be83fd382afcbe391094764e758579ec135fa2fa4cdd2c19a4d71169b04d584e0ea01aefdcb0b4717b8a784cd5228f9cb67ab8adac147fe5371')
+sha512sums=('04b37efba7b05bd225cbfd638b84d3d99b746515c448a1dd0fdcebcd0668f7b0d561168a7252b0b9a727e7be0f5e2a8e972cd40842d29b676d3572dadcf0bf29'
+            'c940885653572c4c3bdd3e20f341ef353a0f42e1473ed6266db3eddabdb20ea2cc8939846ef7089244178ecea5207631d31f12452aa9b09bb63886eb00f3e565')
 
 package() {
     local xx name

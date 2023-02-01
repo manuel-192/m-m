@@ -1,0 +1,180 @@
+#!/bin/bash
+
+# Install, remove, and update packages.
+#
+# Packages can be selected with a TUI for install and remove operations
+# if package name(s) are not given.
+
+echo2()      { echo "$@" >&2 ; }
+printf2()    { printf "$@" >&2 ; }
+MSG()        { printf2 "$@" ; }
+
+_columnize() { column -t -s'|' | sed 's|[ ]*$||' ; }
+
+_fzf() {
+    local prompt="$1"
+    local fzf=(
+        fzf
+        --header="Navigation: Up, Down, PgUp, PgDn. TAB=select, ESC=quit, ENTER=accept"
+        --prompt="Select package(s) by search word(s): "
+        --marker=">>"
+        --info=inline
+        --exact
+        -i
+        --multi --layout=reverse --no-sort
+    )
+    local out=$(_columnize | sort | "${fzf[@]}" | awk '{print $1}')
+    if [ -n "$out" ] ; then
+        [ -n "$prompt" ] || prompt="Selected:"
+        printf2 "$prompt\n"
+        printf "%s\n" "$out" | sed 's|^|    |' >&2
+        echo "$out"
+    fi
+}
+
+_SelectPackagesNotInstalled() {
+    local prompt="$1"
+    local installed=$(mktemp)
+    chmod go-rwx $installed
+
+    expac -Q '%n' | sed 's|^|^|' > $installed                        # for ignoring already installed packages
+    expac -S '%n|%d' | grep -v -f $installed | _fzf "$prompt"
+
+    #rm -f $installed
+}
+
+_SelectPackagesInstalled() {
+    local prompt="$1"
+    expac -Q '%n|%d' | _fzf "$prompt"
+}
+
+IsInstalled() { pacman -Qq "$1" >& /dev/null ; }
+
+Install_Remove() {
+    local msg
+    local func
+    local flags
+    local pkgs2=()
+
+    case "$op" in
+        Install)
+            msg="To be installed:"
+            func=_SelectPackagesNotInstalled
+            flags="-S"
+            ;;
+        Remove)
+            msg="To be removed:"
+            func=_SelectPackagesInstalled
+            flags="-Rs"
+            ;;
+    esac
+
+    if [ ${#pkgs[@]} -eq 0 ] ; then
+        pkgs2=$($func "$msg")
+        if [ -z "${pkgs2[0]}" ] ; then
+            MSG "Packages selected: none!\n"
+            pkgs2=()
+        fi
+    else
+        local pkg
+        case "$op" in
+            Install)
+                if [ "$reinstall_force" = "yes" ] ; then
+                    pkgs2=("${pkgs[@]}")
+                else
+                    for pkg in "${pkgs[@]}" ; do
+                        if IsInstalled "$pkg" ; then
+                            echo2 "  -> already installed: $pkg"
+                        else
+                            pkgs2+=("$pkg")
+                        fi
+                    done
+                fi
+                ;;
+            Remove)
+                for pkg in "${pkgs[@]}" ; do
+                    if IsInstalled "$pkg" ; then
+                        pkgs2+=("$pkg")
+                    else
+                        echo2 "  -> not installed: $pkg"
+                    fi
+                done
+        esac
+    fi
+
+    if [ ${#pkgs2[@]} -ne 0 ] ; then
+        pacman-ext $flags "${pkgs2[@]}"
+    else
+        MSG "Nothing to do.\n"
+    fi
+}
+
+Install() { Install_Remove ; }
+Remove()  { Install_Remove ; }
+Update()  { pacman-ext -Syu --no-banner --extras ; }
+
+Options() {
+    local opts
+
+    opts="$(/usr/bin/getopt -o=hiruf --longoptions help,install,remove,update,force --name "$progname" -- "$@")" || {
+        Options -h
+        return 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -i | --install) op=Install ;;
+            -r | --remove)  op=Remove ;;
+            -u | --update)  op=Update ;;
+            -f | --force)   reinstall_force=yes ;;
+
+            -h | --help) Usage ; exit 0 ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+
+    case "$op" in
+        Install | Remove) pkgs=("$@") ;;
+        "")               op=Update ;;
+    esac
+}
+
+Usage() {
+    cat <<EOF >&2
+Usage: $progname [options] [operation] [package-names]
+Operations:
+  -u, --update          Update packages. Default operation when none is given.
+  -i, --install         Install given or selected packages.
+  -r, --remove          Remove given or selected packages.
+Options:
+  -f, --force           Install forced (meaningful only with option -i).
+  -h, --help            This help.
+Package names:
+  List of package names to be installed (-i) or removed (-r).
+
+Examples:
+  $progname                # Updates packages (similar to: sudo pacman -Syu).
+  $progname -i             # Starts a TUI for selecting packages for install.
+  $progname -r             # Starts a TUI for selecting packages for removal.
+  $progname -i xed geany   # Installs given packages (if not yet installed).
+  $progname -if xed geany  # Installs given packages (even if already installed).
+  $progname -r xed geany   # Removes given packages.
+EOF
+}
+
+Main() {
+    local progname="$(/usr/bin/basename "$0")"
+    local op=""
+    local pkgs=()
+    local reinstall_force=no
+
+    Options "$@"
+
+    $op "${pkgs[@]}"
+}
+
+Main "$@"

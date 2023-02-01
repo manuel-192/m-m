@@ -6,38 +6,33 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=2
+pkgrel=8
 
-arch=('any')
-license=('GPL')
-depends=('bash')
+arch=(any)
+license=(GPL)
+depends=(bash expac)
 optdepends=(
     'eos-bash-shared: nvidia vs. kernel update check'
-    'expac: for select-and-install'
     'eos-update-notifier: for using checkupdatesext (one of the update checkers)'
 )
-conflicts=(pac pau)
+backup=(etc/pacman-ext.conf)
 
 source=(
-    $url/pac
-    $url/pac.completion
     $url/pacman-ext
-    $url/pacman-ext.completion
+    $url/pacman-ext.conf
+    $url/pacman-ext.completion     # bash completion
     $url/pacman-ext-checks
     $url/pacman-sudo-internal
-    $url/pau
-    $url/pacm
+    $url/paf                       # TUI
     $url/mirror-swap-eos
     $url/Build
 )
-sha512sums=('6633d4fb8b040272aa41e5cf9f02f7854c6c5daec69c396e91f9ff9befe8df988e9e9ee8d835de2cfed9a4b9c56ce1d41831f9572855d8a7e0f60a37930f2bd6'
-            '28c159e0b392e5863ac6a23d2535fd9395727c67509e2b79b2b04740aea959fafb241e77e9d94d7f3541e6f6f1b15e6c1a0e721ac66535fb421cf4229a3bea8f'
-            'c0bf0da5b6f8ef3e48d46cda66ebd08cb4fb324467c58452a32673fc1b1122e97965cb04848acce1c3c794434e568ee1fcec07b8d1e28b0f64d45d875b973165'
+sha512sums=('e3007ff90f6c3b9e9728a4f2c6d7745815c17e787a23693ab601f41326f301d9ac0b3ad572ce819a895d4da71d83e94ac416ccc7332aca2a177ccf304ae94acf'
+            '3227bc7e21d7ddbb8254e65b3657164fd74dacd294d7b88894bd44e3636dbdf80ce4649b0bd00c373de748db6d88e2712c07de9fc0a93b4666322d8f7ce725ac'
             '3650b44357a84d183826dd13220606368bc957913c4fd7f8e26070d389ed0951c5792218016eac38aa33f40706c78ba8d863643cb69a04fa3cb838d608d285aa'
-            'ab96744bc078f97fa675efabbe71bf43a9d0a363b5c85ce3845696b7c6a7c373d8e76c4f4c990b41057b72c4d9e688874c1c10902a3ec3292e3dcc5f37d55613'
+            'd170988ee05d39e95e67168e0b52d03ade9c5747e9f59700d0697da69f14deb1b3df8324d333a20d300c8ba5697090b0ef31b8e296ac711b36f7685f56c82cef'
             '54d414b22c6d7cc7126fafadd82e4766a063d8f7f7482b1dde67ffe162e9cee487fd430c93bc50b282cc81d320da92c6022c8e45d6706ab40143df7a0d19525f'
-            '9a6be6cb18694c8ecdd49039421baefa6f5544a921c72fa302ba24ab59ee449737f7eab59f5679f9fce4dea18a2d863d083fc17bf0858a7c44dc7d70f2f60d51'
-            '602e951b3d7250fbf3ee26b1e0da635b534eeadc6a6e9676c8df94de9257201efe743877b65621518052058979d7edcbbefade01aa15508337e8a98bfa99e920'
+            '86e102c30ac67c4da50ebaf39f21f339b5c623f9d540d0d90090b8939afadf06dcc96ce4f0d632fece49dbc1c6f2136be08ad60b4fa9eb16c9074d5dcb0a2f89'
             '84d89e5eeb4982675e08cc1a1b914b8255c8335ce73add5275452c28b1c5c21545d7cb823034f9ed89aaa022db9d410ea908818a65b72ef750ac5545c5fdc8b6'
             '37f20cd76f51aa441d213ab95a8b5efe1c197c9a3e496e0a7dbd05a4211a073a33b1d5aa6dbf68fb70a4b4e56979902c477f8c1f91dffb35d6966feb3aca411e')
 
@@ -49,6 +44,8 @@ package() {
         case "$item" in
             *.completion)
                 install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
+            *.conf)
+                install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
             *)
                 install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
         esac

@@ -2,8 +2,8 @@
 
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
-pkgver=1
-pkgrel=4
+pkgver=23
+pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(emacs)
