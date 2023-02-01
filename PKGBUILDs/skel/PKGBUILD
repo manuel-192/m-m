@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=skel
+pkgdesc="/etc/skel files"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=(any)
+license=(GPL)
+depends=()
+
+source=(
+    $url/eos.bashrc
+)
+sha512sums=('8c94ca33a823c13c55cffa86770669cc5ecb7a661218800a7a1fb0d023f922431e5067cb1afaefc55fd32295953e296d014bd85b380becb39c8f751ce9ae81f9')
+
+package() {
+    local item src
+
+    for src in "${source[@]}" ; do
+        item="${src##*/}"
+        case "$item" in
+            eos.*)         install -Dm644 "$item"  "$pkgdir/etc/skel/$item" ;;
+        esac
+    done
+}
