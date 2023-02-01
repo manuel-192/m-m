@@ -33,7 +33,7 @@ if [ -r /usr/share/bash-completion/completions/pkgcheck ] ; then
     source /usr/share/bash-completion/completions/pkgcheck
     complete -F _pkgcheck_ pc eos
 fi
-alias p=paf
+alias p=pacman-ext
 
 
 # other eos related aliases
