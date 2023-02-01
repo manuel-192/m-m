@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Check all available updates for
+# - updating keyrings first
+# - nvidia & kernel update in sync (if problems, fail)
+
 _nvidia_check_needed() {
     if lspci -k | grep -P "Display|VGA|3D" | grep -w NVIDIA >/dev/null ; then
         pacman -Qq | grep -P '^nvidia$|^nvidia-lts$' > /dev/null
@@ -16,16 +20,23 @@ _nvidia_check() {
 _package_checks() {
     # Assumption: 'pacman -Sy' was executed immediately before calling this function.
 
-    local updates="$(pacman -Quq)"    # get possible updates
+    local nvidia=no
+
+    case "$1" in
+        --nvidia) shift; nvidia=yes ;; # do nvidia check
+    esac
+
+    local updates="$(pacman -Quq)"     # get possible updates
     local install=() pkg
 
     if [ -z "$updates" ] ; then
-        #echo " there is nothing to do"
-        return
+        return                         # no updates available, so carry on
     fi
 
-    if ! _nvidia_check ; then
-        return 1
+    if [ "$nvidia" = "yes" ] ; then
+        if ! _nvidia_check ; then
+            return 1                   # nvidia check failed...
+        fi
     fi
 
     # Parameters are package(s) that should be installed before others.

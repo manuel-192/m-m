@@ -136,33 +136,47 @@ EOF
     local ignore_aur_pkgs=""
     local -r lockfile=/var/lib/pacman/db.lck
     local -r logfile="$HOME/.cache/$progname.log"
-
-    verbose2 "will check $lockfile ..."
-    if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
-        WARN "$lockfile is in use." 1
-    fi
+    local sudo_cmd=()
+    local keyrings=""
+    local nvidia=""
 
     # Build the command for sudo
 
-    local sudo_cmd=()
-    [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
-    if [ "$keyrings_first" = "yes" ] ; then
+    if [ "$EXTRAS_PACMAN_LOCK_CHECK" = "yes" ] ; then
+        verbose2 "will check $lockfile ..."
+        if [ -e $lockfile ] && fuser $lockfile &>/dev/null ; then
+            WARN "$lockfile is in use." 1
+        fi
+        [ -e $lockfile ] && sudo_cmd=("rm -f $lockfile")
+    fi
+
+    # nvidia and keyring checks
+
+    [ "$EXTRAS_NVIDIA_CHECK" = "yes" ] && nvidia="--nvidia"
+
+    if [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] ; then
         verbose2 "will check all keyrings first ..."
-        sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks archlinux-keyring endeavouros-keyring && /usr/bin/pacman -Su")
+        [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] && keyrings="archlinux-keyring endeavouros-keyring"
+        sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks $nvidia $keyrings && /usr/bin/pacman -Su")
     else
         if false ; then
             sudo_cmd+=("/usr/bin/pacman ${db_opt}u")
         else
             verbose2 "will check EndeavourOS keyrings first ..."
-            sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks endeavouros-keyring && /usr/bin/pacman -Su")
+            [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] && keyrings="endeavouros-keyring"
+            sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks $nvidia $keyrings && /usr/bin/pacman -Su")
         fi
     fi
-    if [ "$helper" != "/usr/bin/pacman" ] ; then
-        eos-virtualbox-check
-        sudo_cmd+=("$helper -Sua $ignore_aur_pkgs")
+    if [ "$EXTRAS_VIRTUALBOX_CHECK" = "yes" ] ; then
+        if [ "$helper" != "/usr/bin/pacman" ] ; then
+            eos-virtualbox-check
+            sudo_cmd+=("$helper -Sua $ignore_aur_pkgs")
+        fi
     fi
-    verbose2 "will add 'sync' ..."
-    sudo_cmd+=("sync")
+    if [ "$EXTRAS_SYNC_AT_END" = "yes" ] ; then
+        verbose2 "will add 'sync' ..."
+        sudo_cmd+=("sync")
+    fi
 
     # Handle the sudo command
 
@@ -256,17 +270,23 @@ Indent() {
 
 ExtraChecks() {
     if [ "$extra_checks" = "yes" ] ; then
-        printf2 "\nAdditional commands:\n"
-        echo2 "==> pacman -Qm"
-        pacman -Qm |& Indent 1
-
-        local diffs=""
-        echo2 "==> eos-pacdiff"
-        diffs=$(eos-pacdiff 2>/dev/null)              # |& Indent 1
-        case "$?" in
-            # 0 | 1 | 3) ;;
-            2) echo "nothing to do." | Indent 1 ;;
+        case "$EXTRAS_PACMAN_QM $EXTRAS_PACDIFF" in
+            "no yes" | "yes no" | "yes yes")
+                printf2 "\nAdditional commands:\n" ;;
         esac
+        if [ "$EXTRAS_PACMAN_QM" = "yes" ] ; then
+            echo2 "==> pacman -Qm"
+            pacman -Qm |& Indent 1
+        fi
+        if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
+            local diffs=""
+            echo2 "==> eos-pacdiff"
+            diffs=$(eos-pacdiff 2>/dev/null)              # |& Indent 1
+            case "$?" in
+                # 0 | 1 | 3) ;;
+                2) echo "nothing to do." | Indent 1 ;;
+            esac
+        fi
     fi
 }
 
@@ -319,31 +339,53 @@ pacman_ext() {
             ;;
     esac
 
-    verbose2 "will check need for sudo with pacman ..."
-    /usr/bin/pacman-sudo-internal "$@"
+    if [ "$EXTRAS_PW_WHEN_NEEDED" = "yes" ] ; then
+        verbose2 "will check need for sudo with pacman ..."
+        /usr/bin/pacman-sudo-internal "$@"
+    else
+        /usr/bin/pacman "$@"     # normal pacman, so user must take care of needed privileges
+    fi
 }
 
 Main() {
     local -r progname="$(basename "$0")"   # $progname used by various functions here
     local -r banner="$progname: A pacman wrapper with additional features for package update."
-    local wait_enter=no
-    local show_cmd=no
+
+    local RUN_EXTRAS=no
+    local   EXTRAS_PW_WHEN_NEEDED=yes          # yes=ask password only when needed, no=user handles privileges
+    local   EXTRAS_KEYRINGS_FIRST=no           # if yes, update Arch keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
+    local   EXTRAS_NVIDIA_CHECK=yes            # runs only if nvidia gpu is detected
+    local   EXTRAS_SYNC_AT_END=yes
+    local   EXTRAS_VIRTUALBOX_CHECK=yes
+    local   EXTRAS_PACMAN_LOCK_CHECK=yes
+    local RUN_MORE_EXTRAS=no
+    local   EXTRAS_PACMAN_QM=yes
+    local   EXTRAS_PACDIFF=yes
+    local CHECKUPDATES=checkupdates
+    local WAIT_ENTER=no
+    local SHOW_CMD=no
+    local VERBOSE=no
+    local BANNER_INITIAL=yes
+    local AUR_HELPER=/usr/bin/yay
+
+    source /etc/$progname.conf || WARN "/etc/$progname.conf not found, using defaults"
+
+    local wait_enter="$WAIT_ENTER"
+    local show_cmd="$SHOW_CMD"
     local retval
     local args=() arg
-    local keyrings_first=no   # if yes, update keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
-    local verbose=no
+    local verbose="$VERBOSE"
     local show_help_now=no
-    local banner_initial=yes
+    local banner_initial="$BANNER_INITIAL"
     local just_checkupdates=no
-    local extra_checks=no
-    local checkupdates=checkupdates  #expac
+    local extra_checks="$RUN_MORE_EXTRAS"
+    local checkupdates="$CHECKUPDATES"
+    local aur_helper="/usr/bin/${AUR_HELPER##*/}"
     local helper=/usr/bin/pacman           # $helper used by special_update()
-    local aur_helper=/usr/bin/paru
-    [ -x $aur_helper ] || aur_helper=/usr/bin/yay
 
-    if [ "$keyrings_first" = "no" ] ; then
+    if [ "$EXTRAS_KEYRINGS_FIRST" = "no" ] ; then
         if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
-            keyrings_first=yes
+            EXTRAS_KEYRINGS_FIRST=yes
         fi
     fi
 
