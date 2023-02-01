@@ -118,8 +118,8 @@ eos-virtualbox-check() {
     fi
 }
 
-special_update() {
-    if [ "$banner_initial" = "yes" ] ; then
+InitialBanner() {
+    if [ "$BANNER_INITIAL" = "yes" ] ; then
         cat <<EOF
 $banner
 
@@ -133,6 +133,9 @@ Additional features:
 
 EOF
     fi
+}
+
+special_update() {
     local ignore_aur_pkgs=""
     local -r lockfile=/var/lib/pacman/db.lck
     local -r logfile="$HOME/.cache/$progname.log"
@@ -355,14 +358,13 @@ Main() {
     local   EXTRAS_PW_WHEN_NEEDED=yes          # yes=ask password only when needed, no=user handles privileges
     local   EXTRAS_KEYRINGS_FIRST=no           # if yes, update Arch keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
     local   EXTRAS_NVIDIA_CHECK=yes            # runs only if nvidia gpu is detected
-    local   EXTRAS_SYNC_AT_END=yes
     local   EXTRAS_VIRTUALBOX_CHECK=yes
     local   EXTRAS_PACMAN_LOCK_CHECK=yes
+    local   EXTRAS_SYNC_AT_END=yes
     local RUN_MORE_EXTRAS=no
     local   EXTRAS_PACMAN_QM=yes
     local   EXTRAS_PACDIFF=yes
     local CHECKUPDATES=checkupdates
-    local WAIT_ENTER=no
     local SHOW_CMD=no
     local VERBOSE=no
     local BANNER_INITIAL=yes
@@ -370,13 +372,12 @@ Main() {
 
     source /etc/$progname.conf || WARN "/etc/$progname.conf not found, using defaults"
 
-    local wait_enter="$WAIT_ENTER"
+    local wait_enter="no"
     local show_cmd="$SHOW_CMD"
     local retval
     local args=() arg
     local verbose="$VERBOSE"
     local show_help_now=no
-    local banner_initial="$BANNER_INITIAL"
     local just_checkupdates=no
     local extra_checks="$RUN_MORE_EXTRAS"
     local checkupdates="$CHECKUPDATES"
@@ -422,7 +423,7 @@ Main() {
                 [ -x $helper ] || DIE "AUR helper '$helper' not found."
                 ;;
             --no-banner)
-                banner_initial=no
+                BANNER_INITIAL=no
                 ;;
             --show-native-options)
                 echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd --build --show-native-options $arg"
@@ -435,7 +436,6 @@ Main() {
                 ;;
             -j | --just-checkupdates)
                 just_checkupdates=yes
-                # break
                 ;;
             --checkupdates | --checkupdatesext | --expac)
                 checkupdates=${arg:2}
@@ -454,6 +454,8 @@ Main() {
         esac
         shift
     done
+
+    InitialBanner
 
     if [ "$show_help_now" = "yes" ] ; then
         Usage
