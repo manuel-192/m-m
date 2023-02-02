@@ -230,9 +230,8 @@ ExtraChecks() {
             pacman -Qm |& Indent 1
         fi
         if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
-            local diffs=""
             echo2 "==> eos-pacdiff"
-            diffs=$(eos-pacdiff 2>/dev/null)              # |& Indent 1
+            eos-pacdiff
             case "$?" in
                 # 0 | 1 | 3) ;;
                 2) echo "nothing to do." | Indent 1 ;;
