@@ -40,4 +40,4 @@ alias p=pacman-ext
 
 # alias pacman=pacman-ext         # maybe not the best idea ...
 
-welcome() { eos-welcome --once "$@" & }
+welcome() { setsid eos-welcome --once "$@" ; }
