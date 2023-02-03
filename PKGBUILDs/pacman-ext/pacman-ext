@@ -232,10 +232,6 @@ ExtraChecks() {
         if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
             echo2 "==> eos-pacdiff"
             eos-pacdiff
-            case "$?" in
-                # 0 | 1 | 3) ;;
-                2) echo "nothing to do." | Indent 1 ;;
-            esac
         fi
     fi
 }
