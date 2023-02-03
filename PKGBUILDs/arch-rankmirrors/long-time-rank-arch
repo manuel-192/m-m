@@ -54,7 +54,7 @@ Main() {
 
     case "$1" in
         --once | -1) RankOnce ;;
-        --show | -s | "") ShowCurrentResult ;;
+        --show | -s | "") time ShowCurrentResult ;;
     esac
 }
 
