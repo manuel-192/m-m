@@ -231,7 +231,7 @@ ExtraChecks() {
         fi
         if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
             echo2 "==> eos-pacdiff"
-            eos-pacdiff
+            eos-pacdiff --indent="    -> "
         fi
     fi
 }
