@@ -6,7 +6,7 @@ pkgname=skel
 pkgdesc="/etc/skel files"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=4
+pkgrel=5
 
 arch=(any)
 license=(GPL)
@@ -15,7 +15,7 @@ depends=()
 source=(
     $url/eos.bashrc
 )
-sha512sums=('146d2384be279481c0127725620b57242f049efa9a2839fdc253d8a39a8dcc768ce33cc1bb8bf052e0eaef15f6c2ec2e1932482ae01c5d903fe3d545974de4d8')
+sha512sums=('9a4d55c985d48c571f4b536386dd3d56d3f1f1e04f4e988f89f0cafa17170da4c4691a39afbf1ec1262584f7d84ee9f6da83ac299c015c30cf4d3b9edd63b001')
 
 package() {
     local item src

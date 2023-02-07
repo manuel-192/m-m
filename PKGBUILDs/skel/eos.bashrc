@@ -44,6 +44,8 @@ _pkgcheck_init() {
             alias $xx=pkgcheck
             complete -F _pkgcheck_ $xx
         done
+        type pc  >& /dev/null || alias pc='echo "Try rc instead!"'
+        type eos >& /dev/null || alias eos='echo "Try rc instead!"'
     fi
 }
 _pkgcheck_init
