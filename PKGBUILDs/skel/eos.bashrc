@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # ~/.bashrc
 #
@@ -26,18 +27,23 @@ bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
 # aliases for EOS package building
-
-if [ -r /usr/share/bash-completion/completions/pkgcheck ] ; then
-    alias pc=pkgcheck    # Which one
-    alias eos=pkgcheck   # to use?
-    source /usr/share/bash-completion/completions/pkgcheck
-    complete -F _pkgcheck_ pc eos
-fi
 alias p=pacman-ext
-
 
 # other eos related aliases
 
 # alias pacman=pacman-ext         # maybe not the best idea ...
 
 welcome() { setsid eos-welcome --once "$@" ; }
+
+_pkgcheck_init() {
+    if [ -r /usr/share/bash-completion/completions/pkgcheck ] ; then
+        source /usr/share/bash-completion/completions/pkgcheck
+        local xx
+        for xx in rc   # pc eos
+        do
+            alias $xx=pkgcheck
+            complete -F _pkgcheck_ $xx
+        done
+    fi
+}
+_pkgcheck_init
