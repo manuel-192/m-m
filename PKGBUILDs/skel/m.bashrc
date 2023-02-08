@@ -39,13 +39,11 @@ _pkgcheck_init() {
     if [ -r /usr/share/bash-completion/completions/pkgcheck ] ; then
         source /usr/share/bash-completion/completions/pkgcheck
         local xx
-        for xx in rc   # pc eos
+        for xx in rc
         do
             alias $xx=pkgcheck
             complete -F _pkgcheck_ $xx
         done
-        type pc  >& /dev/null || alias pc='echo "Try rc instead!"'
-        type eos >& /dev/null || alias eos='echo "Try rc instead!"'
     fi
 }
 _pkgcheck_init
