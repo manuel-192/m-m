@@ -15,8 +15,16 @@ PS1='[\u@\h \W]\$ '
 
 [ -z "$FUNCNEST" ] && export FUNCNEST=100   ## limits recursion in bash functions, see 'man bash'
 
-alias ll='ls -lav --ignore=..'              ## show long listing of all except ".."
-alias l='ls -lav --ignore=.?*'              ## show long listing but no hidden dotfiles except "."
+_try_alias() {
+    # do alias only if the name is not assigned to something already
+    local name="$1"
+    local def="$2"
+    type "$name" >& /dev/null || alias "$name"="$def"
+}
+
+_try_alias ll 'ls -lav --ignore=..'         ## show long listing of all except ".."
+_try_alias l  'ls -lav --ignore=.?*'        ## show long listing but no hidden dotfiles except "."
+
 alias pacdiff=eos-pacdiff                   ## use pacdiff with meld
 alias meld='setsid meld-rcs'
 
@@ -27,7 +35,7 @@ bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
 # aliases for EOS package building
-alias p=pacman-ext
+_try_alias p "pacman-ext --extras --no-banner"
 
 # other eos related aliases
 

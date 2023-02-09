@@ -6,7 +6,7 @@ pkgname=skel
 pkgdesc="/etc/skel files"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=6
+pkgrel=7
 
 arch=(any)
 license=(GPL)
@@ -16,7 +16,7 @@ backup=(etc/skel/m.bashrc)
 source=(
     $url/m.bashrc
 )
-sha512sums=('ef6eb9205e578be704839e4eaf816802c66754557d95bfcf979e326d81b9f0425a3c427bac241988855c6f92744fc4e516d8a926df7112f2afffcf6552acde6a')
+sha512sums=('449379dc84d1ae6fcf7ce1e146cec72521f1bb691e1be3438b686971d03b2c94116c56ed50934e8a6b409761267026efbd4a3defa010fb2154014d7b7e306876')
 
 package() {
     local item src
