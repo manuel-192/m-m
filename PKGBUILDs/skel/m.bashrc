@@ -28,6 +28,8 @@ _try_alias l  'ls -lav --ignore=.?*'        ## show long listing but no hidden d
 alias pacdiff=eos-pacdiff                   ## use pacdiff with meld
 alias meld='setsid meld-rcs'
 
+alias ramsleep='Power-routines suspend'     ## package abbrevs-misc
+
 ## Use the up and down arrow keys for finding a command in history
 ## (you can write some initial letters of the command first).
 #
