@@ -4,7 +4,7 @@
 pkgname=stickburn
 pkgdesc="GUI for burning ISO to USB stick with dd."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1.8
+pkgver=20
 pkgrel=1
 arch=('any')
 license=('GPL')
