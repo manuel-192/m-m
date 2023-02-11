@@ -1,14 +1,15 @@
 ### Manuel's mirror list ###
 
-# This works with
-#     pacman 6.0.1
-#     pacman 5.x
-# but fails with
-#     pacman 6.0.0
+# NOTE: repos
+#   - m-m
+#   - m-aur
+# do not use release assets anymore, but git repos instead.
 #
-Server = https://github.com/manuel-192/$repo/releases/download/$arch
+# However, m-more2 uses releases assets.
+# Thus the mirror syntax is different.
 
-
-# This works with all pacman versions, but will be deprecated later
-#
+# works with m-m and m-aur
 Server = https://raw.githubusercontent.com/manuel-192/$repo/master/repo
+
+# works with m-more2
+Server = https://github.com/manuel-192/$repo/releases/download/$arch

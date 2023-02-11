@@ -3,18 +3,16 @@
 pkgname=mirrorlist-m
 pkgdesc="A mirror list for Manuel's packages at github."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=6
-pkgrel=2
+pkgver=23
+pkgrel=1
 arch=(any)
 license=(GPL)
-#depends=(pacman)
 source=(
     $pkgname
 )
-sha512sums=('a951df55e2644c9a51be64b28e2e3f794e50cba516bc4a25800d4ded1a7a126363c4f9690f8ca182b1103a5198741485be7b5c513f2d24c6f1047efda09f8564')
+sha512sums=('6c4266fe9ac5fc2582976e1d686a9a551737b7a3c962d16601525e5f9e533d258fb9dbc18efc95645af3b5838877286a231a7379be1ecd0e8cf5ac12df5de08b')
 
-# Currently no need for the 'backup' variable. Simply override $pkgname file.
-# backup=(etc/pacman.d/mirrorlist-m)
+backup=(etc/pacman.d/mirrorlist-m)
 
 package() {
     install -Dm644 $pkgname    $pkgdir/etc/pacman.d/$pkgname
