@@ -1,15 +1,4 @@
 ### Manuel's mirror list ###
 
-# NOTE: repos
-#   - m-m
-#   - m-aur
-# do not use release assets anymore, but git repos instead.
-#
-# However, m-more2 uses releases assets.
-# Thus the mirror syntax is different.
-
-# works with m-m and m-aur
-Server = https://raw.githubusercontent.com/manuel-192/$repo/master/repo
-
-# works with m-more2
 Server = https://github.com/manuel-192/$repo/releases/download/$arch
+Server = https://raw.githubusercontent.com/manuel-192/$repo/master/repo

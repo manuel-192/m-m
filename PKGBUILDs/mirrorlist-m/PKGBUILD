@@ -4,13 +4,13 @@ pkgname=mirrorlist-m
 pkgdesc="A mirror list for Manuel's packages at github."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 arch=(any)
 license=(GPL)
 source=(
     $pkgname
 )
-sha512sums=('6c4266fe9ac5fc2582976e1d686a9a551737b7a3c962d16601525e5f9e533d258fb9dbc18efc95645af3b5838877286a231a7379be1ecd0e8cf5ac12df5de08b')
+sha512sums=('de8f9cffc1e2141ef4198b26d44c6be229a9c941fba995e0820ef8ddab8ae057de758d76df6b0be0f87881e0e0cd528f3d0463c3033e1bd62c4b76941c6508f5')
 
 backup=(etc/pacman.d/mirrorlist-m)
 
