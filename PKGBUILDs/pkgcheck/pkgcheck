@@ -50,7 +50,7 @@ Options:
                        By default updated packages must have a bigger version number.
 Params:
   reponame             A name of a repository in /etc/pacman.conf.
-                       Default: endeavouros
+                       Default: $default_reponame
 
 EOF
                 exit 0
@@ -61,10 +61,18 @@ EOF
         shift
     done
 
-    [ -n "$1" ] && reponame="$1"
+    if [ -n "$1" ] ; then
+        reponame="$1"
+    else
+        reponame="$(basename "$PWD")"
+    fi
+    case "$reponame" in
+        repo-testing.x86_64) reponame=endeavouros-testing-dev ;;
+    esac
 
     if ! printf "%s\n" "$reponames" | grep "$reponame" >/dev/null ; then
-        DIE "reponame '$reponame' is not supported."
+        [ -n "$1" ] && echo2 "==> Reponame '$reponame' is not supported."
+        reponame="$default_reponame"
     fi
 }
 
@@ -72,9 +80,11 @@ pkgcheck() {
     local -r default_reponame="endeavouros"
     local -r default_opt="--dryrun-local"
 
-    local reponame="$default_reponame"
+    local reponame=""
+    local folder=""
     local opt="$default_opt"
-    local reponames="$(pacconf --repo-list | grep -Pv 'core|extra|community|multilib')"
+    local reponames="$(pacconf --repo-list | grep -Pv 'core|extra|community|multilib')"  # contains non-Arch repos
+    [ -n "$reponames" ] || DIE "no repos found to manage"
 
     Options "$@" || return $?
 
@@ -82,14 +92,16 @@ pkgcheck() {
     source /etc/skel/cd.bash || return $?
 
     case "$reponame" in
-        endeavouros)                        reponame=mirrors.mirror1 ;;
-        endeavouros-testing-dev)            reponame=repo-testing.x86_64 ;;
-        m-aur | m-m | m-more2 | local-repo) ;;
+        endeavouros)                        folder=mirrors.mirror1 ;;
+        endeavouros-testing-dev)            folder=repo-testing.x86_64 ;;
+        m-aur | m-m | m-more2 | local-repo) folder="$reponame" ;;
     esac
+    echo2 "==> Reponame     = $reponame"
+    echo2 "==> Build folder = $folder"
 
     pushd ~/ >/dev/null
-    pushd $reponame >/dev/null
-    case "$reponame" in
+    pushd $folder >/dev/null
+    case "$folder" in
         local-repo) ./local-repo-manager ;;
         *) assets.make $opt ;;
     esac
