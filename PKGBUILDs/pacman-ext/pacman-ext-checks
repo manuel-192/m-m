@@ -35,7 +35,11 @@ _package_checks() {
 
     if [ "$nvidia" = "yes" ] ; then
         if ! _nvidia_check ; then
-            return 1                   # nvidia check failed...
+            read -p "    Continue anyway (y/N)? " >&2
+            case "$REPLY" in
+                [yY]*) ;;
+                *) return 1 ;;                   # nvidia check failed...
+            esac
         fi
     fi
 

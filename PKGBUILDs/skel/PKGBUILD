@@ -6,16 +6,17 @@ pkgname=skel
 pkgdesc="/etc/skel files"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=2
+pkgrel=8
 
 arch=(any)
 license=(GPL)
 depends=()
+backup=(etc/skel/m.bashrc)
 
 source=(
-    $url/eos.bashrc
+    $url/m.bashrc
 )
-sha512sums=('ac1221c5dd29b1cad1662a9a8b4b25d9d2250f2bdd1f2ee68984d786f7992b5a753fae28fcad3ca32c1878f140a5cbb1ea93c1f9a7752ff989eb50c625b66508')
+sha512sums=('08b3c759732b25af78748f741ed34dffc5a572533afe55d372634f2367054e34fea16c77989facfb7cc820f62ee3f386216eea2d3de34b81c5d266390477b9bc')
 
 package() {
     local item src
@@ -23,7 +24,7 @@ package() {
     for src in "${source[@]}" ; do
         item="${src##*/}"
         case "$item" in
-            eos.*)         install -Dm644 "$item"  "$pkgdir/etc/skel/$item" ;;
+            m.*)         install -Dm644 "$item"  "$pkgdir/etc/skel/$item" ;;
         esac
     done
 }

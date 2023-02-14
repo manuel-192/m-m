@@ -6,20 +6,20 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
 depends=(ncdu)
 optdepends=(
     'grub: for updating grub.cfg'
-    'systemd: for power-routines'
+    'systemd: for Power-routines'
 )
 
 source=(
     $url/echo2
     $url/ncdu
-    $url/power-routines
+    $url/Power-routines
     $url/printf2
     $url/update-grub
     $url/apps-to-funcs.bash

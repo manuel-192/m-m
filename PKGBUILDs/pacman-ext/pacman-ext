@@ -153,8 +153,13 @@ CheckUpdatesFunc() {
         local retval
         local updates
 
-        updates=$(checkupdates)
-        retval=$?
+        if [ "$given_checkupdates" != "" ] ; then
+            updates="$given_checkupdates"
+            retval=0
+        else
+            updates=$(checkupdates)
+            retval=$?
+        fi
 
         if [ -n "$updates" ] ; then
             {
@@ -230,13 +235,8 @@ ExtraChecks() {
             pacman -Qm |& Indent 1
         fi
         if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
-            local diffs=""
             echo2 "==> eos-pacdiff"
-            diffs=$(eos-pacdiff 2>/dev/null)              # |& Indent 1
-            case "$?" in
-                # 0 | 1 | 3) ;;
-                2) echo "nothing to do." | Indent 1 ;;
-            esac
+            eos-pacdiff --indent="    -> "
         fi
     fi
 }
@@ -341,6 +341,7 @@ Usage:       $progname
              --checkupdates           Use 'checkupdates' for checking updates from the repos.
              --checkupdatesext        Use 'checkupdatesext' for checking updates from the repos.
              --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
+             --updates="Updates"     'Updates' is the output of 'checkupdates'. Useful in scripts.
 
 If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
@@ -385,6 +386,7 @@ Main() {
     local checkupdates="$CHECKUPDATES"
     local aur_helper="/usr/bin/${AUR_HELPER##*/}"
     local helper=/usr/bin/pacman           # $helper used by special_update()
+    local given_checkupdates=""
 
     if [ "$EXTRAS_KEYRINGS_FIRST" = "no" ] ; then
         if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
@@ -441,6 +443,9 @@ Main() {
                 ;;
             --checkupdates | --checkupdatesext | --expac)
                 checkupdates=${arg:2}
+                ;;
+            --updates=*)
+                given_checkupdates="${arg#*=}"
                 ;;
             --extras)
                 extra_checks=yes

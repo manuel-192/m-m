@@ -13,7 +13,7 @@ Options() {
     local progname="$(/usr/bin/basename "$0")"
     local opts
 
-    opts="$(/usr/bin/getopt -o=h --longoptions help,build,dryrun-local,dryrun,allow-downgrade,repoup --name "$progname" -- "$@")" || {
+    opts="$(/usr/bin/getopt -o=h --longoptions help,build,dryrun-local,dryrun,allow-downgrade,repoup,reponames --name "$progname" -- "$@")" || {
         Options -h
         return 1
     }
@@ -28,11 +28,15 @@ Options() {
             --build)
                 opt=""
                 ;;
+            --reponames)
+                echo "$reponames"
+                exit 0
+                ;;
 
             -h | --help)
                 cat <<EOF >&2
 
-Usage: $progname [operation] [options] [folder]
+Usage: $progname [operation] [options] [reponame]
 
 Operations:
   --dryrun-local       Dryrun, don't download assets from remote (minimal dryrun).
@@ -45,8 +49,8 @@ Options:
   --allow-downgrade    New package is allowed to get a smaller version number (advanced).
                        By default updated packages must have a bigger version number.
 Params:
-  folder               A basename of the folder path where assets will be built.
-                       Default: $default_folder
+  reponame             A name of a repository in /etc/pacman.conf.
+                       Default: $default_reponame
 
 EOF
                 exit 0
@@ -57,26 +61,43 @@ EOF
         shift
     done
 
-    [ -n "$1" ] && folder="$1"
-
-    case "$folder" in
-        m-aur | m-m | m-more2 | mirrors.mirror1 | repo-testing.x86_64 | local-repo) ;;
-        *) DIE "folder '$folder' is not supported." ;;
+    if [ -n "$1" ] ; then
+        reponame="$1"
+    else
+        reponame="$(basename "$PWD")"
+    fi
+    case "$reponame" in
+        repo-testing.x86_64) reponame=endeavouros-testing-dev ;;
     esac
-        
+
+    if ! printf "%s\n" "$reponames" | grep "$reponame" >/dev/null ; then
+        [ -n "$1" ] && echo2 "==> Reponame '$reponame' is not supported."
+        reponame="$default_reponame"
+    fi
 }
 
 pkgcheck() {
-    local -r default_folder="mirrors.mirror1"
+    local -r default_reponame="endeavouros"
     local -r default_opt="--dryrun-local"
 
-    local folder="$default_folder"
+    local reponame=""
+    local folder=""
     local opt="$default_opt"
+    local reponames="$(pacconf --repo-list | grep -Pv 'core|extra|community|multilib')"  # contains non-Arch repos
+    [ -n "$reponames" ] || DIE "no repos found to manage"
 
     Options "$@" || return $?
 
     source $HOME/.config/cd.conf || return $?
     source /etc/skel/cd.bash || return $?
+
+    case "$reponame" in
+        endeavouros)                        folder=mirrors.mirror1 ;;
+        endeavouros-testing-dev)            folder=repo-testing.x86_64 ;;
+        m-aur | m-m | m-more2 | local-repo) folder="$reponame" ;;
+    esac
+    echo2 "==> Reponame     = $reponame"
+    echo2 "==> Build folder = $folder"
 
     pushd ~/ >/dev/null
     pushd $folder >/dev/null
