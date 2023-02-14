@@ -154,7 +154,6 @@ CheckUpdatesFunc() {
         local updates
 
         if [ "$given_checkupdates" != "" ] ; then
-            echo2 "### using given updates"
             updates="$given_checkupdates"
             retval=0
         else
@@ -447,7 +446,6 @@ Main() {
                 ;;
             --updates=*)
                 given_checkupdates="${arg#*=}"
-                echo2 "### given --updates option"
                 ;;
             --extras)
                 extra_checks=yes
