@@ -29,7 +29,7 @@ Options() {
                 opt=""
                 ;;
             --reponames)
-                echo "$reponames"
+                echo "${repoitems[*]}"
                 exit 0
                 ;;
 
@@ -50,6 +50,7 @@ Options:
                        By default updated packages must have a bigger version number.
 Params:
   reponame             A name of a repository in /etc/pacman.conf.
+                       Also repo groups are accepted.
                        Default: $default_reponame
 
 EOF
@@ -64,38 +65,24 @@ EOF
     if [ -n "$1" ] ; then
         reponame="$1"
     else
-        reponame="$(basename "$PWD")"
+        folder="$(basename "$PWD")"
+        reponame="${dir_repo[$folder]}"
     fi
-    case "$reponame" in
-        repo-testing.x86_64) reponame=endeavouros-testing-dev ;;
-    esac
 
-    if ! printf "%s\n" "$reponames" | grep "$reponame" >/dev/null ; then
-        [ -n "$1" ] && echo2 "==> Reponame '$reponame' is not supported."
+    if ! printf "%s\n" "${repoitems[@]}" | grep "$reponame" >/dev/null ; then
+        [ -n "$1" ] && echo2 "==> Reponame or group '$reponame' is not supported."
         reponame="$default_reponame"
     fi
+    case "$reponame" in
+        eos) ;;
+        man) ;;
+        *)   [ -n "$reponame" ] || DIE "sorry, cannot determine repo name" ;;
+    esac
 }
 
-pkgcheck() {
-    local -r default_reponame="endeavouros"
-    local -r default_opt="--dryrun-local"
+HandleRepo() {
+    folder="${repo_dir[$reponame]}"
 
-    local reponame=""
-    local folder=""
-    local opt="$default_opt"
-    local reponames="$(pacconf --repo-list | grep -Pv 'core|extra|community|multilib')"  # contains non-Arch repos
-    [ -n "$reponames" ] || DIE "no repos found to manage"
-
-    Options "$@" || return $?
-
-    source $HOME/.config/cd.conf || return $?
-    source /etc/skel/cd.bash || return $?
-
-    case "$reponame" in
-        endeavouros)                        folder=mirrors.mirror1 ;;
-        endeavouros-testing-dev)            folder=repo-testing.x86_64 ;;
-        m-aur | m-m | m-more2 | local-repo) folder="$reponame" ;;
-    esac
     echo2 "==> Reponame     = $reponame"
     echo2 "==> Build folder = $folder"
 
@@ -107,6 +94,56 @@ pkgcheck() {
     esac
     popd >/dev/null
     popd >/dev/null
+}
+
+HandleRepos() {
+    local reponame
+    for reponame in "$@" ; do
+        HandleRepo
+    done
+}
+
+pkgcheck() {
+    local -r default_reponame="endeavouros"
+    local -r default_opt="--dryrun-local"
+
+    local reponame=""
+    local folder=""
+    local opt="$default_opt"
+    local REPO_GROUPS=()
+    local KNOWN_REPONAMES=()
+    local KNOWN_FOLDERS=()
+    local repoitems=()
+
+    source /etc/pkgcheck.conf || return $?
+
+    repoitems=("${KNOWN_REPONAMES[@]}" "${REPO_GROUPS[@]}")
+
+    declare -A repo_dir
+    declare -A dir_repo
+    local reponames=("${KNOWN_REPONAMES[@]}")
+    local folders=("${KNOWN_FOLDERS[@]}")
+    local ix
+    local count=${#reponames[@]}
+
+    [ $count -gt 0 ] || DIE "no known repo names"
+
+    for ((ix=0; ix<count; ix++)) ; do
+        repo_dir[${reponames[$ix]}]="${folders[$ix]}"
+        dir_repo[${folders[$ix]}]="${reponames[$ix]}"
+    done
+
+    Options "$@" || return $?
+
+    source $HOME/.config/cd.conf || return $?
+    source /etc/skel/cd.bash || return $?
+
+    case "$reponame" in
+        eos) HandleRepos "${REPO_GROUP_eos[@]}" ;;
+        man) HandleRepos "${REPO_GROUP_man[@]}" ;;
+        ALL) HandleRepos "${REPO_GROUP_eos[@]}" "${REPO_GROUP_man[@]}" ;;
+        *)   HandleRepo ;;
+    esac
 }
 
 pkgcheck "$@"

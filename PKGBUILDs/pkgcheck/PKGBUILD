@@ -6,7 +6,7 @@ pkgname=pkgcheck
 pkgdesc="Package build helper"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=12
+pkgrel=13
 
 arch=('any')
 license=('GPL')
@@ -15,9 +15,11 @@ depends=(cd-path)
 source=(
     $url/pkgcheck
     $url/pkgcheck.completion
+    $url/pkgcheck.conf
 )
-sha512sums=('a80eecca9f23e3148eb861fb502ee82ff102227b4d4c31a625024ae4ea433c65386d241edb10ca9b8cbb745c9445468f965e3b62d0b99f35bda460c7aaa41ab3'
-            'a7da2a7860984207f697ec70eda7544e4ee4bf276c4f018f6719733c26cb4f807fa670e74e55ab901ff25bdeaada350c17fd80d4cac53eef3c9467e677941810')
+sha512sums=('fb9026a2f4157099cf751e78ade4da530733b231a1c4bf45d7aa596e9baae63da3f2134d910403c3c24b9f11564d98c3f1b5e1cf904efa844780df4380b3576b'
+            'a7da2a7860984207f697ec70eda7544e4ee4bf276c4f018f6719733c26cb4f807fa670e74e55ab901ff25bdeaada350c17fd80d4cac53eef3c9467e677941810'
+            'bee714109a42dce65e3e70067f548a731e93b146005c1cd6a2b4bb85aeec37fb53c999d6f40fdea2a2c99431e755c5acca33515b09e01309cecff17cd04cc1f0')
 
 package() {
     local xx name
@@ -25,6 +27,7 @@ package() {
         name=$(basename "$xx")
         case "$name" in
             *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
+            *.conf)       install -Dm644 $name   $pkgdir/etc/$name ;;
             *)            install -Dm755 $name   $pkgdir/usr/bin/$name ;;
         esac
     done
