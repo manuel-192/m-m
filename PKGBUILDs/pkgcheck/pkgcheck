@@ -66,7 +66,18 @@ EOF
         reponame="$1"
     else
         folder="$(basename "$PWD")"
-        reponame="${dir_repo[$folder]}"
+        local rname="${dir_repo[$folder]}"
+        if [ -n "$rname" ] && [ -L .git ] && [ -r .git/config ] ; then
+            local gitname="$(basename "$(grep "url = " .git/config | awk '{print $NF}')" .git)"
+            if [ "$gitname" = "$rname" ] ; then
+                reponame="$rname"
+            else
+                echo2 "==> current folder $PWD is not a supported repo folder, using defaults"
+                reponame="$default_reponame"
+            fi
+        else
+            reponame="$default_reponame"
+        fi
     fi
 
     if ! printf "%s\n" "${repoitems[@]}" | grep "$reponame" >/dev/null ; then
@@ -133,10 +144,10 @@ pkgcheck() {
         dir_repo[${folders[$ix]}]="${reponames[$ix]}"
     done
 
-    Options "$@" || return $?
-
     source $HOME/.config/cd.conf || return $?
     source /etc/skel/cd.bash || return $?
+
+    Options "$@" || return $?
 
     case "$reponame" in
         eos) HandleRepos "${REPO_GROUP_eos[@]}" ;;
