@@ -6,7 +6,7 @@ pkgname=pkgcheck
 pkgdesc="Package build helper"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=15
+pkgrel=16
 
 arch=('any')
 license=('GPL')
@@ -19,7 +19,7 @@ source=(
 )
 sha512sums=('5d2fdc3f9580b6d9e27af2d2dfd3415f326dfec8272b849c4fa64c839b0118540b8cbbe2bee3f97ee656f66fbd481429ff9a0e52e7b64913a0c75313672bab70'
             'a7da2a7860984207f697ec70eda7544e4ee4bf276c4f018f6719733c26cb4f807fa670e74e55ab901ff25bdeaada350c17fd80d4cac53eef3c9467e677941810'
-            'cf644d5f45465e701a9fa7e181e13bd60ebf3263bb334381ca42845aab13d5329b5608c903d22825ddde42c55440177c05b0b84b202c1c85aba4e92d2ec3c38b')
+            '5489e26990ec06de3bc1cc2fa0bf91f26fad04aca5e1f2915175d803e96ee98bd7c78bbfb404d2d82275d8a6f83eb132d869edccfb14e288116f7987d6cdf96b')
 
 package() {
     local xx name
