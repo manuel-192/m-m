@@ -69,6 +69,7 @@ EOF
         local rname="${dir_repo[$folder]}"
         if [ -n "$rname" ] && [ -L .git ] && [ -r .git/config ] ; then
             local gitname="$(basename "$(grep "url = " .git/config | awk '{print $NF}')" .git)"
+            gitname="${git_repo[$gitname]}"
             if [ "$gitname" = "$rname" ] ; then
                 reponame="$rname"
             else
@@ -123,7 +124,7 @@ pkgcheck() {
     local opt="$default_opt"
     local REPO_GROUPS=()
     local KNOWN_REPONAMES=()
-    local KNOWN_FOLDERS=()
+    local KNOWN_BUILD_FOLDERS=()
     local repoitems=()
 
     source /etc/pkgcheck.conf || return $?
@@ -132,16 +133,25 @@ pkgcheck() {
 
     declare -A repo_dir
     declare -A dir_repo
+    declare -A git_repo
+
     local reponames=("${KNOWN_REPONAMES[@]}")
-    local folders=("${KNOWN_FOLDERS[@]}")
+    local folders=("${KNOWN_BUILD_FOLDERS[@]}")
     local ix
     local count=${#reponames[@]}
+
+    local rn bf fi
 
     [ $count -gt 0 ] || DIE "no known repo names"
 
     for ((ix=0; ix<count; ix++)) ; do
-        repo_dir[${reponames[$ix]}]="${folders[$ix]}"
-        dir_repo[${folders[$ix]}]="${reponames[$ix]}"
+        bf="${folders[$ix]}"
+        rn="${reponames[$ix]}"
+        fi=${folders[$ix]}
+
+        repo_dir[${reponames[$ix]}]="$bf"
+        dir_repo[$fi]="$rn"
+        git_repo[${KNOWN_REPO_FOLDERS[$ix]}]="${reponames[$ix]}"
     done
 
     source $HOME/.config/cd.conf || return $?
