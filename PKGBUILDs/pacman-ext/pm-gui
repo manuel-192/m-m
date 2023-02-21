@@ -44,20 +44,28 @@ Main() {
     local amp="&amp;"
     
     local cmd=(
-        yad #--form
+        yad --form --align-buttons
         --use-interp
         --title="Package management"
         --text="Manage installed packages with the buttons below"
         --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png
         --image=system-software-install
+        --columns=3
+        --button=yad-quit
 
-        --button="Check $amp Update":"RunInTerminal 'pacman-ext'"
-        --button="Update":"RunInTerminal 'echo System Update ; pacman-ext -Syu --aur'"
-        --button="Install":"RunInTerminal 'paf -i'"
-        --button="Remove":"RunInTerminal 'paf -r'"
-        --button="Edit $pacman_conf":"EditFile $pacman_conf"
+        --field="Check $amp Update!system-software-update!If updates are available, run system update":fbtn "RunInTerminal 'pacman-ext'"
+        --field="Update!system-software-update!Run system update directly":fbtn "RunInTerminal 'echo System Update ; pacman-ext -Syu --aur'"
+        --field="Install!system-software-install!Select and install packages":fbtn "RunInTerminal 'paf -i'"
+        --field="Remove!software-manager!Select and remove packages":fbtn "RunInTerminal 'paf -r'"
+
+        --field="Edit $pacman_conf!accessories-text-editor!Change general package management settings":fbtn "EditFile $pacman_conf"
+        --field="Edit Arch mirrorlist!accessories-text-editor!Change the list of Arch mirrors":fbtn "EditFile /etc/pacman.d/mirrorlist"
+        --field="Edit EndeavourOS mirrorlist!accessories-text-editor!Change the list of EndeavourOS mirrors":fbtn "EditFile /etc/pacman.d/endeavouros-mirrorlist"
+
+        --field="Rank Arch mirrors":fbtn "reflector-simple"
+        --field="Rank EndeavourOS mirrors":fbtn "RunInTerminal eos-rankmirrors"
     )
-    "${cmd[@]}" &
+    "${cmd[@]}" >/dev/null &
 }
 
 Main "$@"
