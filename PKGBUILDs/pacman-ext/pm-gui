@@ -41,6 +41,7 @@ export PMGUI_PROGNAME="$(basename "$0")"
 
 Main() {
     local pacman_conf=/etc/pacman.conf
+    local amp="&amp;"
     
     local cmd=(
         yad #--form
@@ -50,8 +51,8 @@ Main() {
         --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png
         --image=system-software-install
 
-        --button="Check Updates":"RunInTerminal 'pacman-ext -j'"
-        --button="Update":"RunInTerminal 'echo System Update ; paf'"
+        --button="Check $amp Update":"RunInTerminal 'pacman-ext'"
+        --button="Update":"RunInTerminal 'echo System Update ; pacman-ext -Syu --aur'"
         --button="Install":"RunInTerminal 'paf -i'"
         --button="Remove":"RunInTerminal 'paf -r'"
         --button="Edit $pacman_conf":"EditFile $pacman_conf"
