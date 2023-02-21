@@ -6,7 +6,7 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=14
+pkgrel=15
 
 arch=(any)
 license=(GPL)
@@ -14,6 +14,13 @@ depends=(bash expac)
 optdepends=(
     'eos-bash-shared: nvidia vs. kernel update check'
     'eos-update-notifier: for using checkupdatesext (one of the update checkers)'
+
+    'emacs: editor alternative for pm-gui'
+    'nano: editor alternative for pm-gui'
+    'vim: editor alternative for pm-gui'
+    'yad: GUI widgets for pm-gui'
+    'sudo: alternative privileges manager for pm-gui'
+    'polkit: alternative privileges manager for pm-gui'
 )
 backup=(etc/pacman-ext.conf)
 
@@ -25,6 +32,7 @@ source=(
     $url/pacman-sudo-internal
     $url/paf                       # TUI
     $url/mirror-swap-eos
+    $url/pm-gui
     $url/Build
 )
 sha512sums=('e3d07bc48e81ce480aee205153b7c09569b0a6aabdd4a6fa58bab51837bda68e64013f4a5a4c8b58b8c0b51367ab1c5a6a4d6d22d75a39028bc1882b7adc2760'
@@ -34,6 +42,7 @@ sha512sums=('e3d07bc48e81ce480aee205153b7c09569b0a6aabdd4a6fa58bab51837bda68e640
             '54d414b22c6d7cc7126fafadd82e4766a063d8f7f7482b1dde67ffe162e9cee487fd430c93bc50b282cc81d320da92c6022c8e45d6706ab40143df7a0d19525f'
             '86e102c30ac67c4da50ebaf39f21f339b5c623f9d540d0d90090b8939afadf06dcc96ce4f0d632fece49dbc1c6f2136be08ad60b4fa9eb16c9074d5dcb0a2f89'
             '84d89e5eeb4982675e08cc1a1b914b8255c8335ce73add5275452c28b1c5c21545d7cb823034f9ed89aaa022db9d410ea908818a65b72ef750ac5545c5fdc8b6'
+            '44360ca1158ddf93ad5afa542a70e65a3984c459a1248836535d3df2969ea4c74d23f2783454e1be5aba752012794a700ba3f26a15f718d00879b47c0e66558f'
             '37f20cd76f51aa441d213ab95a8b5efe1c197c9a3e496e0a7dbd05a4211a073a33b1d5aa6dbf68fb70a4b4e56979902c477f8c1f91dffb35d6966feb3aca411e')
 
 package() {

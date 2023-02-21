@@ -1,0 +1,62 @@
+#!/bin/bash
+
+PMGUI_DIE() {
+    echo "$PMGUI_PROGNAME: error: $@" >&2
+    yad --forn --image=error \
+        --title="$PMGUI_PROGNAME: error" --text="sorry, $*" --button=yad-quit
+    exit 1
+}
+
+FirstAppOf() {
+    local cmd app
+    for cmd in "$@" ; do
+        app=${cmd%% *}            # remove tail from first space
+        app=${app%%	*}        # remove tail from first tab
+
+        if which $app >& /dev/null ; then
+            echo "$cmd"
+            return 0
+        fi
+    done
+    PMGUI_DIE "none of the supported apps ($@) detected"
+}
+
+EditFile() {
+    local file="$1"
+    local editor=$(FirstAppOf "emacs -nw" nano vim)
+    local sudo=$(  FirstAppOf  sudo       pkexec)
+
+    [ -n "$editor" ] || return 1
+    [ -n "$sudo" ] || return 1
+
+    if [ -w "$file" ] ; then
+        RunInTerminal $editor "$file"
+    else
+        RunInTerminal $sudo $editor "$file"
+    fi
+}
+
+export -f PMGUI_DIE FirstAppOf EditFile
+export PMGUI_PROGNAME="$(basename "$0")"
+
+Main() {
+    local pacman_conf=/etc/pacman.conf
+    
+    local cmd=(
+        yad #--form
+        --use-interp
+        --title="Package management"
+        --text="Manage installed packages with the buttons below"
+        --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png
+        --image=system-software-install
+
+        --button="Check Updates":"RunInTerminal 'pacman-ext -j'"
+        --button="Update":"RunInTerminal 'echo System Update ; paf'"
+        --button="Install":"RunInTerminal 'paf -i'"
+        --button="Remove":"RunInTerminal 'paf -r'"
+        --button="Edit $pacman_conf":"EditFile $pacman_conf"
+    )
+    "${cmd[@]}" &
+}
+
+Main "$@"
