@@ -5,6 +5,7 @@
 Pushd()  { pushd "$@" >/dev/null ; }
 Popd()   { popd  "$@" >/dev/null ; }
 echo2()  { echo "$@" >&2 ; }
+printf2()  { printf "$@" >&2 ; }
 
 ASSERT() { "$@" || DIE "'$*' failed" ; }
 DIE()    {
@@ -19,8 +20,9 @@ INFO() {
 
 AddPackagesToRepo() {
     local pkg pkgs=() sigs=()
+    echo2 "==> add packages to repo db"
     for pkg in "$@" ; do
-        echo2 "==> $pkg"
+        echo2 "    -> $pkg"
         pkgs+=("$pkg")
         if [ -n "$SIGNER" ] ; then
             ASSERT gpg --local-user "$SIGNER" --output="$pkg.sig" --detach-sign "$pkg"
@@ -30,7 +32,7 @@ AddPackagesToRepo() {
     ASSERT repo-add "$REPONAME.db.tar.xz" "${pkgs[@]}" >/dev/null
 
     if [ -n "$SIGNER" ] ; then
-        echo2 "Add built packages to package cache:"
+        echo2 "==> add built packages to package cache: "
         sudo cp "${pkgs[@]}" "${sigs[@]}" /var/cache/pacman/pkg/
     fi
 }
@@ -52,7 +54,9 @@ BuildPackages() {
 
         ASSERT Pushd "$pkgname"
 
+        printf2 "==> build %-40s: " "$pkgname"
         ASSERT makepkg -cf &> "$buildlog"
+        echo2 "done"
 
         destructor="${PKG_BEFORE_AFTER[$pkgname]}"
         [ -n "$destructor" ] && ASSERT "$destructor" --op=destruct                 # destructor should clean up
@@ -74,20 +78,19 @@ BuildPackages() {
     done
     if [ "$built" = "yes" ] ; then
         AddPackagesToRepo "${pkgs[@]}"
-        echo2 "Done."
+        echo2 "==> done"
     else
         echo2 "Nothing to do."
     fi
 }
 
-NewPkgExists() {
+BuildNeeded() {
     local pkgname="$1"
     local old_version new_version
 
-    # Getting version from installed packages may not always work..
-    old_version=$(LANG=C pacman -Q "$pkgname" 2>/dev/null | awk '{print $NF}')
-    [ -n "$old_version" ] || old_version=$(ls -1 "$pkgname-*.pkg.tar.zst" | tail -n1 | pkg-name-components VR | tr '|' '-')
-    [ -n "$old_version" ] || : # DIE "sorry, cannot determine current local version of package '$pkgname'"
+    old_version=$(ls -1 "$pkgname"-*.pkg.tar.zst 2>/dev/null)
+    old_version=$(echo "$old_version" | tail -n1 | pkg-name-components --real EVR)
+    [ -n "$old_version" ] || return 0
 
     new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
     [ -n "$new_version" ] || DIE "cannot determine the latest available version of package '$pkgname'"
@@ -96,18 +99,21 @@ NewPkgExists() {
 }
 
 FetchPkgbuilds() {
-    FetchAurPackage() { ASSERT $helper_Ga "$1" ; }
+    FetchAurPackage() {
+        printf2 "==> fetch %-40s: " "$pkgname"
+        ASSERT $helper_Ga "$1"
+        echo2 "done"
+    }
 
     local pkgname
     local constructor
 
     for pkgname in "${PKGNAMES[@]}" ; do
         if [ "$rebuild" = "no" ] ; then
-            NewPkgExists "$pkgname" || continue
+            BuildNeeded "$pkgname" || continue
         fi
         build_needed+=("$pkgname")
         rm -rf "$pkgname"                        # remove possible old pkg folder
-        echo2 "Fetching $pkgname ..."
         FetchAurPackage "$pkgname" >/dev/null
         constructor="${PKG_BEFORE_AFTER[$pkgname]}"
         [ -n "$constructor" ] && ASSERT "$constructor" --op=construct
@@ -122,7 +128,7 @@ FuncnameToPkgname() {
 }
 
 Add_before-after_func() {
-    local funcame="$1"
+    local funcname="$1"
     local pkgname="$(FuncnameToPkgname "$funcname")"
     PKG_BEFORE_AFTER[$pkgname]="$funcname"
 }
@@ -134,6 +140,8 @@ Main() {
     # to be filled by the config file
     local REPONAME=""             # the reponame for /etc/pacman.conf
     local SIGNER=""               # the package signer, for option --local-user in gpg
+    local WORKDIR=""              # where the package building occurs
+    local PACKAGED_BY=""          # who built the packages (gpg)
     local PKGNAMES=()             # AUR package names for the local repo
     declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
 
@@ -154,7 +162,13 @@ Main() {
 
     [ -n "$REPONAME" ]        || DIE "REPONAME in the config file is empty or not set"
     [ -n "$SIGNER" ]          || INFO "SIGNER not set in file $conf, packages will not be signed"
+    [ -n "$WORKDIR" ]         || DIE "WORKDIR is missing, cannot build packages"
     [ ${#PKGNAMES[@]} -gt 0 ] || DIE "PKGNAMES array in the config file is empty or not set"
+
+    [ -n "$PACKAGED_BY" ]     && export PACKAGER="$PACKAGED_BY"
+    
+
+    cd "$WORKDIR"
 
     FetchPkgbuilds
 

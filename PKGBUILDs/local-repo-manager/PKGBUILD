@@ -10,15 +10,15 @@ pkgrel=1
 
 arch=(any)
 license=(GPL)
-depends=(bash gnupg)
+depends=(bash gnupg eos-bash-shared)
 backup=(etc/$pkgname.conf)
 
 source=(
     $url/$pkgname
     $url/$pkgname.conf
 )
-sha512sums=('24088742d1c32e97d07977f1673c00458de1782a18c186263c7dffbc5074a50c36972fba219dfe23cb0fffa481e5ad54eda5f9412bfb5c00801c336b4db9e118'
-            '34575d05ed9cc5619c0c67453eea9a1d1705ffd83be96ee52b1758dd6b6f356a49a884c144f95aaa5a8304750485b3208a9654bca40c0662703ce67f058b34fc')
+sha512sums=('c92fedfb47853e6e6f465569a956d6cc587b9026151c7bec991581ee23a34763255d0901b6b3ac09f2df2cc61c553c70fd90df0a7e5af684a4ec4bf029d099a1'
+            'a11da897e743f2f009c55231902c4d371997b8adee3af35ca52eaa1424020fa955168431502abfec51c8074d8baf1fa16f1b77ba903a87ddea31424e323a6578')
 
 package() {
     local item src
