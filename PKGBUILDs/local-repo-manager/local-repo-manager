@@ -1,0 +1,164 @@
+#!/bin/bash
+
+# Create a local repo from certain AUR PKGBUILDs.
+
+Pushd()  { pushd "$@" >/dev/null ; }
+Popd()   { popd  "$@" >/dev/null ; }
+echo2()  { echo "$@" >&2 ; }
+
+ASSERT() { "$@" || DIE "'$*' failed" ; }
+DIE()    {
+    local msg="$(date +%Y%m%d-%H%M): $progname: error: $1"
+    echo2 "$msg"
+    echo "$msg" > "$errlog"
+    exit 1
+}
+INFO() {
+    echo2 "==> $progname: info: $@"
+}
+
+AddPackagesToRepo() {
+    local pkg pkgs=() sigs=()
+    for pkg in "$@" ; do
+        echo2 "==> $pkg"
+        pkgs+=("$pkg")
+        if [ -n "$SIGNER" ] ; then
+            ASSERT gpg --local-user "$SIGNER" --output="$pkg.sig" --detach-sign "$pkg"
+            sigs+=("$pkg".sig)
+        fi
+    done
+    ASSERT repo-add "$REPONAME.db.tar.xz" "${pkgs[@]}" >/dev/null
+
+    if [ -n "$SIGNER" ] ; then
+        echo2 "Add built packages to package cache:"
+        sudo cp "${pkgs[@]}" "${sigs[@]}" /var/cache/pacman/pkg/
+    fi
+}
+
+GetPkgbuildPkgname() {
+    local PKGBUILD="$1"
+    source "$PKGBUILD"
+    echo "${pkgname}-${pkgver}-${pkgrel}-${arch[0]}.pkg.tar.zst"
+}
+
+BuildPackages() {
+    local files file pkgs=()
+    local built=no
+    local pkgname                 # pkgname = name in PKGNAMES array (a folder)
+    local destructor
+
+    for pkgname in "${build_needed[@]}" ; do
+        [ -r "$pkgname/PKGBUILD" ] || DIE "no PKGBUILD for '$pkgname'"
+
+        ASSERT Pushd "$pkgname"
+
+        ASSERT makepkg -cf &> "$buildlog"
+
+        destructor="${PKG_BEFORE_AFTER[$pkgname]}"
+        [ -n "$destructor" ] && ASSERT "$destructor" --op=destruct                 # destructor should clean up
+        pkgs=()
+        readarray -t files <<< $(ls -1 *.pkg.tar.zst 2>/dev/null)
+        for file in "${files[@]}" ; do
+            if [ ! -e "$repodir/$file" ] || [ "$rebuild" = "yes" ] ; then
+                rm -f "$repodir/$file"{,.sig}
+                pkgs+=("$file")                           # these are new repo files
+            fi
+        done
+        if [ ${#pkgs[@]} -gt 0 ] ; then
+            ASSERT cp "${pkgs[@]}" "$repodir"             # copy built package files to the repo
+            rm -f "${pkgs[@]}"                            # cleanup
+            built=yes
+        fi
+
+        ASSERT Popd
+    done
+    if [ "$built" = "yes" ] ; then
+        AddPackagesToRepo "${pkgs[@]}"
+        echo2 "Done."
+    else
+        echo2 "Nothing to do."
+    fi
+}
+
+NewPkgExists() {
+    local pkgname="$1"
+    local old_version new_version
+
+    # Getting version from installed packages may not always work..
+    old_version=$(LANG=C pacman -Q "$pkgname" 2>/dev/null | awk '{print $NF}')
+    [ -n "$old_version" ] || old_version=$(ls -1 "$pkgname-*.pkg.tar.zst" | tail -n1 | pkg-name-components VR | tr '|' '-')
+    [ -n "$old_version" ] || : # DIE "sorry, cannot determine current local version of package '$pkgname'"
+
+    new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
+    [ -n "$new_version" ] || DIE "cannot determine the latest available version of package '$pkgname'"
+
+    [ "$new_version" != "$old_version" ]
+}
+
+FetchPkgbuilds() {
+    FetchAurPackage() { ASSERT $helper_Ga "$1" ; }
+
+    local pkgname
+    local constructor
+
+    for pkgname in "${PKGNAMES[@]}" ; do
+        if [ "$rebuild" = "no" ] ; then
+            NewPkgExists "$pkgname" || continue
+        fi
+        build_needed+=("$pkgname")
+        rm -rf "$pkgname"                        # remove possible old pkg folder
+        echo2 "Fetching $pkgname ..."
+        FetchAurPackage "$pkgname" >/dev/null
+        constructor="${PKG_BEFORE_AFTER[$pkgname]}"
+        [ -n "$constructor" ] && ASSERT "$constructor" --op=construct
+    done
+}
+
+FuncnameToPkgname() {
+    local name="$1"       # funcname
+    name=${name:1}        # remove first char
+    name=${name:: -1}     # remove last char
+    echo "$name"
+}
+
+Add_before-after_func() {
+    local funcame="$1"
+    local pkgname="$(FuncnameToPkgname "$funcname")"
+    PKG_BEFORE_AFTER[$pkgname]="$funcname"
+}
+
+Main() {
+    local progname="local-repo-manager"
+    local conf="/etc/$progname.conf"
+
+    # to be filled by the config file
+    local REPONAME=""             # the reponame for /etc/pacman.conf
+    local SIGNER=""               # the package signer, for option --local-user in gpg
+    local PKGNAMES=()             # AUR package names for the local repo
+    declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
+
+    source "$conf" || return 1    # $conf file must fill the required variables above
+
+    local repodir="$PWD"
+    local buildlog="$HOME/.cache/$progname.buildlog"
+    local errlog="$HOME/.cache/$progname.errlog"
+    local build_needed=()
+    local rebuild=no
+
+    case "$1" in
+        --rebuild) rebuild=yes ;;
+    esac
+
+    local helper_Sia="yay -Sia"   # because yay does this faster than paru
+    local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
+
+    [ -n "$REPONAME" ]        || DIE "REPONAME in the config file is empty or not set"
+    [ -n "$SIGNER" ]          || INFO "SIGNER not set in file $conf, packages will not be signed"
+    [ ${#PKGNAMES[@]} -gt 0 ] || DIE "PKGNAMES array in the config file is empty or not set"
+
+    FetchPkgbuilds
+
+    BuildPackages
+}
+
+Main "$@"

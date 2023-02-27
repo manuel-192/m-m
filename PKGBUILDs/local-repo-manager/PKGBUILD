@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=local-repo-manager
+pkgdesc="Manage local repo"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=(any)
+license=(GPL)
+depends=(bash gnupg)
+backup=(etc/$pkgname.conf)
+
+source=(
+    $url/$pkgname
+    $url/$pkgname.conf
+)
+sha512sums=('24088742d1c32e97d07977f1673c00458de1782a18c186263c7dffbc5074a50c36972fba219dfe23cb0fffa481e5ad54eda5f9412bfb5c00801c336b4db9e118'
+            '34575d05ed9cc5619c0c67453eea9a1d1705ffd83be96ee52b1758dd6b6f356a49a884c144f95aaa5a8304750485b3208a9654bca40c0662703ce67f058b34fc')
+
+package() {
+    local item src
+
+    for src in "${source[@]}" ; do
+        item="${src##*/}"
+        case "$item" in
+            *.completion)
+                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
+            *.conf)
+                install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
+            *)
+                install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
+        esac
+    done
+}
