@@ -7,6 +7,9 @@ Popd()   { popd  "$@" >/dev/null ; }
 echo2()  { echo "$@" >&2 ; }
 printf2()  { printf "$@" >&2 ; }
 
+echo2v()   { [ $verbose = yes ] && echo2   "$@" ; }
+printf2v() { [ $verbose = yes ] && printf2 "$@" ; }
+
 ASSERT() { "$@" || DIE "'$*' failed" ; }
 DIE()    {
     local msg="$(date +%Y%m%d-%H%M): $progname: error: $1"
@@ -20,7 +23,7 @@ INFO() {
 
 AddPackagesToRepo() {
     local pkg pkgs=() sigs=()
-    echo2 "==> add packages to repo db"
+    echo2 "==> Adding built packages to repo db"
     for pkg in "$@" ; do
         echo2 "    -> $pkg"
         pkgs+=("$pkg")
@@ -31,10 +34,17 @@ AddPackagesToRepo() {
     done
     ASSERT repo-add "$REPONAME.db.tar.xz" "${pkgs[@]}" >/dev/null
 
-    if [ -n "$SIGNER" ] ; then
-        echo2 "==> add built packages to package cache: "
-        sudo cp "${pkgs[@]}" "${sigs[@]}" /var/cache/pacman/pkg/
+    rm -f $REPONAME.{db,files}.tar.xz.old
+
+    if [ $add_cache = yes ] ; then
+        if [ -n "$SIGNER" ] ; then
+            echo2 "==> add built packages to package cache: "
+            sudo cp "${pkgs[@]}" "${sigs[@]}" /var/cache/pacman/pkg/
+        else
+            INFO "no signed packages, will not add to local cache"
+        fi
     fi
+    echo2 "==> done."
 }
 
 GetPkgbuildPkgname() {
@@ -54,16 +64,16 @@ BuildPackages() {
 
         ASSERT Pushd "$pkgname"
 
-        printf2 "==> build %-40s: " "$pkgname"
+        printf2 "==> %-40s: Building..." "$pkgname"
         ASSERT makepkg -cf &> "$buildlog"
-        echo2 "done"
+        echo2 "done."
 
         destructor="${PKG_BEFORE_AFTER[$pkgname]}"
         [ -n "$destructor" ] && ASSERT "$destructor" --op=destruct                 # destructor should clean up
         pkgs=()
         readarray -t files <<< $(ls -1 *.pkg.tar.zst 2>/dev/null)
         for file in "${files[@]}" ; do
-            if [ ! -e "$repodir/$file" ] || [ "$rebuild" = "yes" ] ; then
+            if [ ! -e "$repodir/$file" ] || [ "$force_rebuild" = "yes" ] ; then
                 rm -f "$repodir/$file"{,.sig}
                 pkgs+=("$file")                           # these are new repo files
             fi
@@ -78,7 +88,6 @@ BuildPackages() {
     done
     if [ "$built" = "yes" ] ; then
         AddPackagesToRepo "${pkgs[@]}"
-        echo2 "==> done"
     else
         echo2 "Nothing to do."
     fi
@@ -100,17 +109,24 @@ BuildNeeded() {
 
 FetchPkgbuilds() {
     FetchAurPackage() {
-        printf2 "==> fetch %-40s: " "$pkgname"
+        printf2v "fetching..."
         ASSERT $helper_Ga "$1"
-        echo2 "done"
+        echo2v "done."
     }
 
     local pkgname
     local constructor
 
     for pkgname in "${PKGNAMES[@]}" ; do
-        if [ "$rebuild" = "no" ] ; then
-            BuildNeeded "$pkgname" || continue
+        printf2v "==> %-40s: Checking..." "$pkgname"
+        if [ "$force_rebuild" = "no" ] ; then
+            if ! BuildNeeded "$pkgname" ; then
+                echo2v "up to date."
+                continue
+            fi
+            printf2v "build needed..."
+        else
+            printf2v "build forced..."
         fi
         build_needed+=("$pkgname")
         rm -rf "$pkgname"                        # remove possible old pkg folder
@@ -151,11 +167,18 @@ Main() {
     local buildlog="$HOME/.cache/$progname.buildlog"
     local errlog="$HOME/.cache/$progname.errlog"
     local build_needed=()
-    local rebuild=no
+    local force_rebuild=no
+    local verbose=no
+    local add_cache=no
+    local arg
 
-    case "$1" in
-        --rebuild) rebuild=yes ;;
-    esac
+    for arg in "$@" ; do
+        case "$arg" in
+            --rebuild) force_rebuild=yes ;;
+            -v | --verbose) verbose=yes ;;
+            --add-cache) add_cache=yes ;;
+        esac
+    done
 
     local helper_Sia="yay -Sia"   # because yay does this faster than paru
     local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
@@ -171,6 +194,8 @@ Main() {
     cd "$WORKDIR"
 
     FetchPkgbuilds
+
+    echo2v ""
 
     BuildPackages
 }
