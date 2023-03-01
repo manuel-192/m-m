@@ -109,30 +109,34 @@ BuildNeeded() {
 
 FetchPkgbuilds() {
     FetchAurPackage() {
-        printf2v "fetching..."
+        printf2v "...fetching"
         ASSERT $helper_Ga "$1"
-        echo2v "done."
+        echo2v "...done."
     }
 
     local pkgname
     local constructor
 
     for pkgname in "${PKGNAMES[@]}" ; do
-        printf2v "==> %-40s: Checking..." "$pkgname"
+        printf2v "==> %-40s: Checking" "$pkgname"
         if [ "$force_rebuild" = "no" ] ; then
             if ! BuildNeeded "$pkgname" ; then
-                echo2v "up to date."
+                echo2v "...up to date"
                 continue
             fi
-            printf2v "build needed..."
+            printf2v "...build needed"
         else
-            printf2v "build forced..."
+            printf2v "...build forced"
         fi
-        build_needed+=("$pkgname")
-        rm -rf "$pkgname"                        # remove possible old pkg folder
-        FetchAurPackage "$pkgname" >/dev/null
-        constructor="${PKG_BEFORE_AFTER[$pkgname]}"
-        [ -n "$constructor" ] && ASSERT "$constructor" --op=construct
+        if [ $dryrun = no ] ; then
+            build_needed+=("$pkgname")
+            rm -rf "$pkgname"                        # remove possible old pkg folder
+            FetchAurPackage "$pkgname" >/dev/null
+            constructor="${PKG_BEFORE_AFTER[$pkgname]}"
+            [ -n "$constructor" ] && ASSERT "$constructor" --op=construct
+        else
+            echo2v ""
+        fi
     done
 }
 
@@ -170,13 +174,29 @@ Main() {
     local force_rebuild=no
     local verbose=no
     local add_cache=no
+    local dryrun=no
     local arg
 
     for arg in "$@" ; do
         case "$arg" in
-            --rebuild) force_rebuild=yes ;;
-            -v | --verbose) verbose=yes ;;
-            --add-cache) add_cache=yes ;;
+            -h | --help)
+                cat <<EOF
+Usage:    $progname [options]
+Options:
+          -b, --build            Build updated packages. Default.
+          -f, --build-force      Re-build all packages.
+          -c, --add-cache        Add builts packages to system's package cache.
+          -n, --dryrun           Show what would be done, but change nothing. Implies --verbose.
+          -v, --verbose          More verbose output.
+EOF
+                ;;
+
+            -f | --build-force) force_rebuild=yes ;;
+            -v | --verbose)     verbose=yes ;;
+            -c | --add-cache)   add_cache=yes ;;
+            -n | --dryrun | --dryrun-local)
+                                dryrun=yes; verbose=yes ;;
+            -b | --build)       dryrun=no ;;
         esac
     done
 

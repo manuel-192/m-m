@@ -6,7 +6,7 @@ pkgname=local-repo-manager
 pkgdesc="Manage local repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=2
+pkgrel=3
 
 arch=(any)
 license=(GPL)
@@ -17,7 +17,7 @@ source=(
     $url/$pkgname
     $url/$pkgname.conf
 )
-sha512sums=('9902978e60d4d2828f2a716583bc5bf093f4f4358bb39fb8d00e0b5aa79476457c0a09f3feafa8b07a5c5cd8d40cfcfbf885f2672afd51b427d079900b7abfe0'
+sha512sums=('b4af8d55de9c67b97005925b450696758c0cb4b58cf9ba6b45e8ae5e3d16410c540bcbe1728b381637434ac3d1f218a2bd9bcd14b71feec0786c499f46a9f745'
             'a11da897e743f2f009c55231902c4d371997b8adee3af35ca52eaa1424020fa955168431502abfec51c8074d8baf1fa16f1b77ba903a87ddea31424e323a6578')
 
 package() {
