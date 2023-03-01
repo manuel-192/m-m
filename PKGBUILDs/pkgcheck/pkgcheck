@@ -67,17 +67,45 @@ EOF
     else
         folder="$(basename "$PWD")"
         local rname="${dir_repo[$folder]}"
-        if [ -n "$rname" ] && [ -L .git ] && [ -r .git/config ] ; then
-            local gitname="$(basename "$(grep "url = " .git/config | awk '{print $NF}')" .git)"
-            gitname="${git_repo[$gitname]}"
-            if [ "$gitname" = "$rname" ] ; then
+        case "$rname" in
+            local-repo) reponame="$rname" ;;
+            "")         reponame="$default_reponame" ;;
+            *)
+                if [ -L .git ] && [ -r .git/config ] ; then
+                    local gitname="$(basename "$(grep "url = " .git/config | awk '{print $NF}')" .git)"
+                    gitname="${git_repo[$gitname]}"
+                    if [ "$gitname" = "$rname" ] ; then
+                        reponame="$rname"
+                    else
+                        echo2 "==> current folder $PWD is not a supported repo folder, using defaults"
+                        reponame="$default_reponame"
+                    fi
+                else
+                    echo2 "==> current folder $PWD is not a supported repo folder, using defaults"
+                    reponame="$default_reponame"
+                fi
+                ;;
+        esac
+        if false ; then
+        if [ -n "$rname" ] ; then
+            if [ "$rname" = "local-repo" ] ; then
                 reponame="$rname"
+            elif [ -L .git ] && [ -r .git/config ] ; then
+                local gitname="$(basename "$(grep "url = " .git/config | awk '{print $NF}')" .git)"
+                gitname="${git_repo[$gitname]}"
+                if [ "$gitname" = "$rname" ] ; then
+                    reponame="$rname"
+                else
+                    echo2 "==> current folder $PWD is not a supported repo folder, using defaults"
+                    reponame="$default_reponame"
+                fi
             else
                 echo2 "==> current folder $PWD is not a supported repo folder, using defaults"
                 reponame="$default_reponame"
             fi
         else
             reponame="$default_reponame"
+        fi
         fi
     fi
 
@@ -86,8 +114,8 @@ EOF
         reponame="$default_reponame"
     fi
     case "$reponame" in
-        eos) ;;
-        man) ;;
+        EOS) ;;
+        MAN) ;;
         *)   [ -n "$reponame" ] || DIE "sorry, cannot determine repo name" ;;
     esac
 }
@@ -101,7 +129,7 @@ HandleRepo() {
     pushd ~/ >/dev/null
     pushd $folder >/dev/null
     case "$folder" in
-        local-repo) ./local-repo-manager ;;
+        local-repo) ./local-repo-manager $opt ;;
         *) assets.make $opt ;;
     esac
     popd >/dev/null
@@ -160,9 +188,9 @@ pkgcheck() {
     Options "$@" || return $?
 
     case "$reponame" in
-        eos) HandleRepos "${REPO_GROUP_eos[@]}" ;;
-        man) HandleRepos "${REPO_GROUP_man[@]}" ;;
-        ALL) HandleRepos "${REPO_GROUP_eos[@]}" "${REPO_GROUP_man[@]}" ;;
+        EOS) HandleRepos "${REPO_GROUP_EOS[@]}" ;;
+        MAN) HandleRepos "${REPO_GROUP_MAN[@]}" ;;
+        ALL) HandleRepos "${REPO_GROUP_EOS[@]}" "${REPO_GROUP_MAN[@]}" ;;
         *)   HandleRepo ;;
     esac
 }
