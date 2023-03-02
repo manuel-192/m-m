@@ -129,8 +129,15 @@ HandleRepo() {
     pushd ~/ >/dev/null
     pushd $folder >/dev/null
     case "$folder" in
-        local-repo) ./local-repo-manager $opt ;;
-        *) assets.make $opt ;;
+        local-repo)
+            ./local-repo-manager $opt
+            ;;
+        *)
+            case "$(pacman -Q eos-pkgbuild-setup | awk '{print $NF}')" in
+                2023-16.1) assets.make $reponame $opt ;;
+                *)         assets.make $opt ;;
+            esac
+            ;;
     esac
     popd >/dev/null
     popd >/dev/null
