@@ -27,8 +27,8 @@ _try_alias l  'ls -lav --ignore=.?*'        ## show long listing but no hidden d
 
 alias pacdiff=eos-pacdiff                   ## use pacdiff with meld
 alias meld='setsid meld-rcs'
-
 alias ramsleep='Power-routines suspend'     ## package abbrevs-misc
+
 
 ## Use the up and down arrow keys for finding a command in history
 ## (you can write some initial letters of the command first).
@@ -36,15 +36,14 @@ alias ramsleep='Power-routines suspend'     ## package abbrevs-misc
 bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
-# aliases for EOS package building
 _try_alias p "pacman-ext --extras --no-banner"
-
-# other eos related aliases
-
 # alias pacman=pacman-ext         # maybe not the best idea ...
 
-welcome() { setsid eos-welcome --once "$@" ; }
+welcome()          { setsid eos-welcome --once "$@" ; }
+open-anything()    { setsid exo-open "$@" >& /dev/null ; }
+alias o=open-anything
 
+# aliases for EOS package building
 _pkgcheck_init() {
     if [ -r /usr/share/bash-completion/completions/pkgcheck ] ; then
         source /usr/share/bash-completion/completions/pkgcheck
