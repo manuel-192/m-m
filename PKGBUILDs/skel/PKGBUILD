@@ -16,7 +16,7 @@ backup=(etc/skel/m.bashrc)
 source=(
     $url/m.bashrc
 )
-sha512sums=('06c5fe2d77ccefa5bbb053327560950e4f96a05463b036118f769a659ce5afbcc173db8f0686612b553848c232bd38e85715653220c8e7b2a0f8c860cd108017')
+sha512sums=('8c4abec068a3675c6e3aef5a454b7c131a8c89a8740c5d958e3e8ad69ac15fed33b09e9e02c461d1f066f83a193d5f0e87d1be41553ce86bf988d1421eaeaea9')
 
 package() {
     local item src

@@ -40,7 +40,15 @@ _try_alias p "pacman-ext --extras --no-banner"
 # alias pacman=pacman-ext         # maybe not the best idea ...
 
 welcome()          { setsid eos-welcome --once "$@" ; }
-open-anything()    { setsid exo-open "$@" >& /dev/null ; }
+open-anything() {
+    {
+        local app=exo-open
+        if ! which $app ; then
+            app=xdg-open
+        fi
+        setsid $app "$@"
+    } >& /dev/null
+}
 alias o=open-anything
 
 # aliases for EOS package building
