@@ -16,7 +16,7 @@ _git_check1() {
     if [ -n "$(/usr/bin/git fetch --dry-run 2>&1)" ] ; then
         read -p "    $folder: 'git pull' now (Y/n)? " >&2
         case "$REPLY" in
-            ""|[yY]*) /usr/bin/git pull ;;
+            ""|[yY]*) which logstuff >& /dev/null && logstuff on ; /usr/bin/git pull ;;
         esac
     else
         echo "    up to date: $folder"
