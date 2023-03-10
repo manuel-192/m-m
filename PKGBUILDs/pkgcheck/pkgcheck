@@ -133,7 +133,7 @@ HandleRepo() {
             ./local-repo-manager $opt
             ;;
         *)
-            case "$(pacman -Q eos-pkgbuild-setup | awk '{print $NF}')" in
+            case "$(expac -Q %v eos-pkgbuild-setup)" in
                 2023-16.1) assets.make $reponame $opt ;;
                 *)         assets.make $opt ;;
             esac
