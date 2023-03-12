@@ -18,6 +18,7 @@ meld() {
     local xx
     local parents="$PWD"
     local has_git=no
+    local prefer="GIT"
 
     # Is this a git tree?
 
@@ -30,7 +31,15 @@ meld() {
         parents="$(dirname "$parents")"
     done
 
-    if [ "$has_git" = "yes" ] ; then
+    if [ "$has_git" = "yes" ] && [ -d RCS ] ; then
+        read -p "Both GIT and RCS detected. Prefer RCS (Y/n)? "
+        case "$REPLY" in
+            [nN]*) prefer=GIT ;;
+            *)     prefer=RCS ;;
+        esac
+    fi
+
+    if [ "$prefer" = "GIT" ] && [ "$has_git" = "yes" ] ; then
         if [ -z "$1" ] ; then
             # meld for the current folder in git tree
             _meld_do .
