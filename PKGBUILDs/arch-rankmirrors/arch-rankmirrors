@@ -310,7 +310,7 @@ Country list can be given also without option -c.
 
 Note: ranking mirrors from many countries will take lots of time.
 
-A configuration file at $conf2 supports the following
+A configuration file at $conf supports the following
 settings (i.e. bash variables):
 
   USER_PREFERRED_MIRRORS    An array of mirrors which will be at the top of the ranking results.
@@ -320,8 +320,8 @@ Example:
        #!/bin/bash
 
        USER_PREFERRED_MIRRORS=(
-          'https://ftp.acc.umu.se/mirror/archlinux/$repo/os/$arch'
-          'https://ftp.halifax.rwth-aachen.de/archlinux/$repo/os/$arch'
+          'https://ftp.acc.umu.se/mirror/archlinux/\$repo/os/\$arch'
+          'https://ftp.halifax.rwth-aachen.de/archlinux/\$repo/os/\$arch'
        )
 
 EOF
@@ -329,10 +329,9 @@ EOF
 }
 
 Main() {
-    local progname="$(/usr/bin/basename "$0")"
-    local cmdline="$progname $*"
-    local conf="$HOME/.config/$progname.conf"
-    local conf2='$HOME/.config/$progname.conf'
+    local -r progname="$(/usr/bin/basename "$0")"
+    local -r cmdline="$progname $*"
+    local -r conf="/etc/$progname.conf"
     local USER_PREFERRED_MIRRORS=()
     local verbose=no
     local time_as_datetime=yes
@@ -346,10 +345,10 @@ Main() {
     local max_mirrors_to_show=""
     local savefile=""
 
-    local def_protocols=(https)
-    local def_ip_versions=4
-    local def_download_timeout=10       # for each mirror check
-    local def_max_mirrors_to_show=15
+    local -r def_protocols=(https)
+    local -r def_ip_versions=4
+    local -r def_download_timeout=10       # for each mirror check
+    local -r def_max_mirrors_to_show=15
 
     local fetchcmd
 

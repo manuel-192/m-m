@@ -117,6 +117,7 @@ _emacs()
     local helpfile=$(/usr/bin/mktemp)
     local argfile=$(/usr/bin/mktemp)   # $argfile is used only for delivering new args, if they exist
     local extopt
+    local nw=no
 
     # this should be made better regarding DEs and themes...
     extopt="--reverse-video"
@@ -176,10 +177,11 @@ _emacs()
                 emacs_new_options "$arg" "$helpfile"
                 ;;
             -*)
+                [ "$arg" = "-nw" ] && nw=yes
                 args+=("$arg")
                 ;;
             *)
-                if [ -r "$arg" ] ; then
+                if [ -r "$arg" ] && [ "$nw" = "no" ] ; then
                     _geometry
                 fi
                 args+=("$arg")
@@ -202,8 +204,12 @@ _emacs()
         fi
         /usr/bin/rm -f $helpfile
     else
-        # Run emacs in backgound.
-        /usr/bin/emacs $extopt "${args[@]}" >& /dev/null &
+        if [ "$nw" != "yes" ] ; then
+            # Run emacs in backgound.
+            /usr/bin/emacs $extopt "${args[@]}" >& /dev/null &
+        else
+            /usr/bin/emacs "${args[@]}" >& /dev/null
+        fi
     fi
     /usr/bin/rm -f $helpfile $argfile
 }

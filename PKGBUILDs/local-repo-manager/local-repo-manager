@@ -1,0 +1,223 @@
+#!/bin/bash
+
+# Create a local repo from certain AUR PKGBUILDs.
+
+Pushd()  { pushd "$@" >/dev/null ; }
+Popd()   { popd  "$@" >/dev/null ; }
+echo2()  { echo "$@" >&2 ; }
+printf2()  { printf "$@" >&2 ; }
+
+echo2v()   { [ $verbose = yes ] && echo2   "$@" ; }
+printf2v() { [ $verbose = yes ] && printf2 "$@" ; }
+
+ASSERT() { "$@" || DIE "'$*' failed" ; }
+DIE()    {
+    local msg="$(date +%Y%m%d-%H%M): $progname: error: $1"
+    echo2 "$msg"
+    echo "$msg" > "$errlog"
+    exit 1
+}
+INFO() {
+    echo2 "==> $progname: info: $@"
+}
+
+AddPackagesToRepo() {
+    local pkg pkgs=() sigs=()
+    echo2 "==> Adding built packages to repo db"
+    for pkg in "$@" ; do
+        echo2 "    -> $pkg"
+        pkgs+=("$pkg")
+        if [ -n "$SIGNER" ] ; then
+            ASSERT gpg --local-user "$SIGNER" --output="$pkg.sig" --detach-sign "$pkg"
+            sigs+=("$pkg".sig)
+        fi
+    done
+    ASSERT repo-add "$REPONAME.db.tar.xz" "${pkgs[@]}" >/dev/null
+
+    rm -f $REPONAME.{db,files}.tar.xz.old
+
+    if [ $add_cache = yes ] ; then
+        if [ -n "$SIGNER" ] ; then
+            echo2 "==> add built packages to package cache: "
+            sudo cp "${pkgs[@]}" "${sigs[@]}" /var/cache/pacman/pkg/
+        else
+            INFO "no signed packages, will not add to local cache"
+        fi
+    fi
+    echo2 "==> done."
+}
+
+GetPkgbuildPkgname() {
+    local PKGBUILD="$1"
+    source "$PKGBUILD"
+    echo "${pkgname}-${pkgver}-${pkgrel}-${arch[0]}.pkg.tar.zst"
+}
+
+BuildPackages() {
+    local files file pkgs=()
+    local built=no
+    local pkgname                 # pkgname = name in PKGNAMES array (a folder)
+    local destructor
+
+    for pkgname in "${build_needed[@]}" ; do
+        [ -r "$pkgname/PKGBUILD" ] || DIE "no PKGBUILD for '$pkgname'"
+
+        ASSERT Pushd "$pkgname"
+
+        printf2 "==> %-40s: Building..." "$pkgname"
+        ASSERT makepkg -cf &> "$buildlog"
+        echo2 "done."
+
+        destructor="${PKG_BEFORE_AFTER[$pkgname]}"
+        [ -n "$destructor" ] && ASSERT "$destructor" --op=destruct                 # destructor should clean up
+        pkgs=()
+        readarray -t files <<< $(ls -1 *.pkg.tar.zst 2>/dev/null)
+        for file in "${files[@]}" ; do
+            if [ ! -e "$repodir/$file" ] || [ "$force_rebuild" = "yes" ] ; then
+                rm -f "$repodir/$file"{,.sig}
+                pkgs+=("$file")                           # these are new repo files
+            fi
+        done
+        if [ ${#pkgs[@]} -gt 0 ] ; then
+            ASSERT cp "${pkgs[@]}" "$repodir"             # copy built package files to the repo
+            rm -f "${pkgs[@]}"                            # cleanup
+            built=yes
+        fi
+
+        ASSERT Popd
+    done
+    if [ "$built" = "yes" ] ; then
+        AddPackagesToRepo "${pkgs[@]}"
+    else
+        echo2 "Nothing to do."
+    fi
+}
+
+BuildNeeded() {
+    local pkgname="$1"
+    local old_version new_version
+
+    old_version=$(ls -1 "$pkgname"-*.pkg.tar.zst 2>/dev/null)
+    old_version=$(echo "$old_version" | tail -n1 | pkg-name-components --real EVR)
+    [ -n "$old_version" ] || return 0
+
+    new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
+    [ -n "$new_version" ] || DIE "cannot determine the latest available version of package '$pkgname'"
+
+    [ "$new_version" != "$old_version" ]
+}
+
+FetchPkgbuilds() {
+    FetchAurPackage() {
+        printf2v "...fetching"
+        ASSERT $helper_Ga "$1"
+        echo2v "...done."
+    }
+
+    local pkgname
+    local constructor
+
+    for pkgname in "${PKGNAMES[@]}" ; do
+        printf2v "==> %-40s: Checking" "$pkgname"
+        if [ "$force_rebuild" = "no" ] ; then
+            if ! BuildNeeded "$pkgname" ; then
+                echo2v "...up to date"
+                continue
+            fi
+            printf2v "...build needed"
+        else
+            printf2v "...build forced"
+        fi
+        if [ $dryrun = no ] ; then
+            build_needed+=("$pkgname")
+            rm -rf "$pkgname"                        # remove possible old pkg folder
+            FetchAurPackage "$pkgname" >/dev/null
+            constructor="${PKG_BEFORE_AFTER[$pkgname]}"
+            [ -n "$constructor" ] && ASSERT "$constructor" --op=construct
+        else
+            echo2v ""
+        fi
+    done
+}
+
+FuncnameToPkgname() {
+    local name="$1"       # funcname
+    name=${name:1}        # remove first char
+    name=${name:: -1}     # remove last char
+    echo "$name"
+}
+
+Add_before-after_func() {
+    local funcname="$1"
+    local pkgname="$(FuncnameToPkgname "$funcname")"
+    PKG_BEFORE_AFTER[$pkgname]="$funcname"
+}
+
+Main() {
+    local progname="local-repo-manager"
+    local conf="/etc/$progname.conf"
+
+    # to be filled by the config file
+    local REPONAME=""             # the reponame for /etc/pacman.conf
+    local SIGNER=""               # the package signer, for option --local-user in gpg
+    local WORKDIR=""              # where the package building occurs
+    local PACKAGED_BY=""          # who built the packages (gpg)
+    local PKGNAMES=()             # AUR package names for the local repo
+    declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
+
+    source "$conf" || return 1    # $conf file must fill the required variables above
+
+    local repodir="$PWD"
+    local buildlog="$HOME/.cache/$progname.buildlog"
+    local errlog="$HOME/.cache/$progname.errlog"
+    local build_needed=()
+    local force_rebuild=no
+    local verbose=no
+    local add_cache=no
+    local dryrun=no
+    local arg
+
+    for arg in "$@" ; do
+        case "$arg" in
+            -h | --help)
+                cat <<EOF
+Usage:    $progname [options]
+Options:
+          -b, --build            Build updated packages. Default.
+          -f, --build-force      Re-build all packages.
+          -c, --add-cache        Add builts packages to system's package cache.
+          -n, --dryrun           Show what would be done, but change nothing. Implies --verbose.
+          -v, --verbose          More verbose output.
+EOF
+                ;;
+
+            -f | --build-force) force_rebuild=yes ;;
+            -v | --verbose)     verbose=yes ;;
+            -c | --add-cache)   add_cache=yes ;;
+            -n | --dryrun | --dryrun-local)
+                                dryrun=yes; verbose=yes ;;
+            -b | --build)       dryrun=no ;;
+        esac
+    done
+
+    local helper_Sia="yay -Sia"   # because yay does this faster than paru
+    local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
+
+    [ -n "$REPONAME" ]        || DIE "REPONAME in the config file is empty or not set"
+    [ -n "$SIGNER" ]          || INFO "SIGNER not set in file $conf, packages will not be signed"
+    [ -n "$WORKDIR" ]         || DIE "WORKDIR is missing, cannot build packages"
+    [ ${#PKGNAMES[@]} -gt 0 ] || DIE "PKGNAMES array in the config file is empty or not set"
+
+    [ -n "$PACKAGED_BY" ]     && export PACKAGER="$PACKAGED_BY"
+    
+
+    cd "$WORKDIR"
+
+    FetchPkgbuilds
+
+    echo2v ""
+
+    BuildPackages
+}
+
+Main "$@"

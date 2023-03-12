@@ -10,23 +10,24 @@ DIE() {
 Pushd() { pushd "$@" >/dev/null || DIE "'pushd $*' failed." ; }
 Popd()  { popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
 
-_git_check1() {
+_git_check__not_used() {
     local folder="$1"
 
     if [ -n "$(/usr/bin/git fetch --dry-run 2>&1)" ] ; then
         read -p "    $folder: 'git pull' now (Y/n)? " >&2
         case "$REPLY" in
-            ""|[yY]*) /usr/bin/git pull ;;
+            ""|[yY]*) which logstuff >& /dev/null && logstuff on ; /usr/bin/git pull ;;
         esac
     else
         echo "    up to date: $folder"
     fi
 }
 
-_git_check2() {
-    local folder="$1"
-
+_git_check() {
     printf "====> %-30s: " "$folder"
+    if [ $need_logstuff = yes ] ; then
+        which logstuff >& /dev/null && logstuff on
+    fi
     git pull
 }
 
@@ -34,6 +35,7 @@ Main()
 {
     local progname="$(basename "$0")"
     local folder
+    local need_logstuff=no
 
     for folder in $(/usr/bin/ls -1) ; do
         [ -d $folder/.git ] || continue
@@ -43,14 +45,14 @@ Main()
         if [ -e $folder/.ask-auto-update ] ; then
             read -p "want to check folder '$folder' (y/N)? " >&2
             case "$REPLY" in
-                [yY]*) ;;
+                [yY]*) need_logstuff=yes ;;
                 *) continue ;;
             esac
         fi
 
         Pushd "$PWD/$folder"   # (warning: $CDPATH may mix up!?)
 
-        _git_check2 "$folder"
+        _git_check
 
         Popd
     done

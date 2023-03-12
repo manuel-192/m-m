@@ -6,21 +6,24 @@ pkgname=arch-rankmirrors
 pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
 depends=('bash')
+backup=(etc/$pkgname.conf)
 
 source=(
     $url/$pkgname                         # ranks Arch mirrors
+    $url/$pkgname.conf                    # configuration
 
     $url/long-time-rank-arch              # orders mirrors based on long time periodically running arch-rankmirrors
     $url/long-time-rank-arch.service      # user service
     $url/long-time-rank-arch.timer        # user service timer
     $url/long-time-rank-service-install   # run this manually once
 )
-sha512sums=('0ca143d3dfe850a5058596e49bd7f2bdf621c2bc168be4f0b3362442d7f37a2e139685a65e6abe273b5f1eafa624be4948ae1d069a2f5883d583c17595c0d554'
+sha512sums=('a778e3480607e4ff1c3b5447d5bba3f8095b55ea84acf4590640ad0a74e6bcc8b164f0ec53ebfcbae4f71af757cfe67f19a8596b537864427a9a6b77f51f3c8d'
+            '7bba446f88fe449d61bb58a032ad440da8c743146991e329566e6536510452e649c8821115a2f90a62b7a40bc6267b5691dc662cbe71ff25dd80f06d967dff02'
             '727f559c2ba429ede98624e7f21a7b0313a0aa20935cb91cbc15cbf046c77c88ad1924922e643d4e6d56516cdfb283d17a4c10621ceae4f5e8353203c85dc090'
             '0352bd54fd246fef7531323c701eae5fe687dcadf0a75abd8b3a4d367759f173b4265898d63ab29edf6bb6175bfae6b5de2aaca32dd95fba57b89f24eaeb8ca3'
             '9eded1b08f1e423bf06d805840cd7a45766c854f148be0efba3e61544638324d90baaa7274621c01d722a428a748c2a4ec64e00ec43909a7b12085fe28e4cf7a'
@@ -34,8 +37,8 @@ package() {
         src="$(basename "$src")"
         case "$src" in
             *.timer | *.service) ;;  # cannot install user services
-            *)  install -Dm755 $src  "$pkgdir/$bin/$src"
-                ;;
+            *.conf)              install -Dm644 $src  "$pkgdir/etc/$src" ;;
+            *)                   install -Dm755 $src  "$pkgdir/$bin/$src" ;;
         esac
     done
 }
