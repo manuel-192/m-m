@@ -26,8 +26,8 @@ _try_alias ll 'ls -lav --ignore=..'         ## show long listing of all except "
 _try_alias l  'ls -lav --ignore=.?*'        ## show long listing but no hidden dotfiles except "."
 
 alias pacdiff=eos-pacdiff                   ## use pacdiff with meld
-alias meld='setsid meld-rcs'
 alias ramsleep='Power-routines suspend'     ## package abbrevs-misc
+alias meld=meld-rcs                         # setsid fails with 'read' !!
 
 
 ## Use the up and down arrow keys for finding a command in history
