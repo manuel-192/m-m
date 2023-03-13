@@ -130,7 +130,13 @@ HandleRepo() {
     pushd $folder >/dev/null
     case "$folder" in
         local-repo)
-            ./local-repo-manager $opt
+            if [ -x /usr/bin/local-repo-manager ] ; then
+                /usr/bin/local-repo-manager $opt
+            elif [ -x ./local-repo-manager ] ; then
+                ./local-repo-manager $opt
+            else
+                DIE "local-repo-manager app not found!"
+            fi
             ;;
         *)
             case "$(expac -Q %v eos-pkgbuild-setup)" in
