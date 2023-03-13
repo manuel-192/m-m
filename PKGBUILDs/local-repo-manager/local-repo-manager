@@ -204,7 +204,7 @@ EOF
     local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
 
     [ -n "$REPONAME" ]        || DIE "REPONAME in the config file is empty or not set"
-    [ -n "$SIGNER" ]          || INFO "SIGNER not set in file $conf, packages will not be signed"
+    [ -n "$SIGNER" ]          || INFO "packages will not be signed"
     [ -n "$WORKDIR" ]         || DIE "WORKDIR is missing, cannot build packages"
     [ ${#PKGNAMES[@]} -gt 0 ] || DIE "PKGNAMES array in the config file is empty or not set"
 
