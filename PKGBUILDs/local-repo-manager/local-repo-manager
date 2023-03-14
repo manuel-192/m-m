@@ -94,6 +94,8 @@ BuildPackages() {
 }
 
 BuildNeeded() {
+    # TODO: handle multipackage PKGBUILDs
+
     local pkgname="$1"
     local old_version new_version
 
@@ -104,7 +106,13 @@ BuildNeeded() {
     new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
     [ -n "$new_version" ] || DIE "cannot determine the latest available version of package '$pkgname'"
 
-    [ "$new_version" != "$old_version" ]
+    if [ "$new_version" != "$old_version" ] ; then
+        mkdir -p Archive
+        mv "$pkgname"-*.pkg.tar.zst{,.sig} Archive 2>/dev/null
+        return 0
+    else
+        return 1
+    fi
 }
 
 FetchPkgbuilds() {
