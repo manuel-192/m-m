@@ -129,7 +129,7 @@ FetchPkgbuilds() {
         printf2v "==> %-40s: Checking" "$pkgname"
         if [ "$force_rebuild" = "no" ] ; then
             if ! BuildNeeded "$pkgname" ; then
-                echo2v "...up to date"
+                echo2v "...OK"    # up to date
                 continue
             fi
             printf2v "...build needed"
