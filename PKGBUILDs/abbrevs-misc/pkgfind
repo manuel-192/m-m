@@ -1,0 +1,28 @@
+#!/bin/bash
+
+_pkgfind() {
+    local progname=${0##*/}
+    local opt="$1"
+    case "$opt" in
+        -S | -Q) shift ;;
+        -h | --help)
+            cat <<EOF >&2
+Usage:     $progname [options] search-pattern(s)
+Options:   -Q           Search for installed packages.
+           -S           Search for available packages. Default.
+           -h, --help   This help.
+EOF
+            return
+            ;;
+        -*) echo "unsupported option '$opt'" >&2 ; return 1 ;;
+        *) opt="-S" ;;
+    esac
+    {
+        local header="NAME|REPOSITORY|VERSION|DESCRIPTION"
+        echo "$header"
+        echo "$header" | sed 's/[^|]/~/g'
+        expac ${opt}s '%n|%r|%v|%d' "$@" | sort
+    } | column -t -s'|'
+}
+
+_pkgfind "$@"
