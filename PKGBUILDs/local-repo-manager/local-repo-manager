@@ -204,7 +204,8 @@ InstallMissingDeps() {
     install+=($(MissingDeps "$pkgname_dir" makedepends)) || return 1
 
     if [ ${#install[@]} -gt 0 ] ; then
-        echo "Installing dependencies ${install[*]}:" >&2
+        local list=$(printf "   %s\n" "${install[@]}")
+        printf "Package %s, installing dependencies:\n%s\n" "$pkgname_dir" "$list" >&2
         echo "${install[*]}" > $depsfile
         sudo pacman -S "${install[@]}"
     fi
@@ -216,6 +217,8 @@ RemoveInstalledDeps() {
     local remove=$( test -r $depsfile && cat $depsfile )
 
     if [ -n "$remove" ]  ; then
+        local list=$(printf "   %s\n" $remove)
+        printf "Package %s, removing dependencies:\n%s\n" "$pkgname_dir" "$list" >&2
         echo "Removing dependencies $remove:" >&2
         sudo pacman -R $remove
     fi
