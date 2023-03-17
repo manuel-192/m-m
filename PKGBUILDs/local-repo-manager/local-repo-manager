@@ -113,13 +113,14 @@ BuildNeeded() {
     new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
     [ -n "$new_version" ] || DIE "cannot determine the latest available version of package '$pkgname'"
 
-    if [ "$new_version" != "$old_version" ] ; then
-        mkdir -p Archive
-        mv "$pkgname"-*.pkg.tar.zst{,.sig} Archive 2>/dev/null
-        return 0
-    else
-        return 1
-    fi
+    case "$(vercmp "$new_version" "$old_version")" in
+        1)  mkdir -p Archive
+            mv "$pkgname"-*.pkg.tar.zst{,.sig} Archive 2>/dev/null
+            return 0
+            ;;
+        *)  return 1
+            ;;
+    esac
 }
 
 FetchPkgbuilds() {
