@@ -58,15 +58,22 @@ BuildPackages() {
     local built=no
     local pkgname                 # pkgname = name in PKGNAMES array (a folder)
     local destructor
+    local depsfile
 
     for pkgname in "${build_needed[@]}" ; do
         [ -r "$pkgname/PKGBUILD" ] || DIE "no PKGBUILD for '$pkgname'"
 
         ASSERT Pushd "$pkgname"
 
+        depsfile=/tmp/$pkgname.tmp.deps
+        InstallMissingDeps $pkgname $depsfile
+
         printf2 "==> %-40s: Building..." "$pkgname"
         ASSERT makepkg -cf &> "$buildlog"
         echo2 "done."
+
+        RemoveInstalledDeps $pkgname $depsfile
+        rm -f $depsfile
 
         destructor="${PKG_BEFORE_AFTER[$pkgname]}"
         [ -n "$destructor" ] && ASSERT "$destructor" --op=destruct                 # destructor should clean up
@@ -159,6 +166,59 @@ Add_before-after_func() {
     local funcname="$1"
     local pkgname="$(FuncnameToPkgname "$funcname")"
     PKG_BEFORE_AFTER[$pkgname]="$funcname"
+}
+
+GetPkgbuildValue() {
+    local varname="$1"
+    local -n retvar="$2"
+
+    source PKGBUILD || return 1
+    case "$varname" in
+        depends)     retvar=("${depends[@]}") ;;
+        makedepends) retvar=("${makedepends[@]}") ;;
+        *) return 1 ;;
+    esac
+}
+
+MissingDeps() {
+    local -r pkgname_dir="$1"
+    local -r varname="$2"
+    local DEPS=()
+    local pkgs=()
+
+    GetPkgbuildValue $varname DEPS || return 1
+
+    for pkg in "${DEPS[@]}" ; do
+        expac -Q %n $pkg &>/dev/null || pkgs+=($pkg)
+    done
+
+    printf "%s\n" "${pkgs[@]}"
+}
+
+InstallMissingDeps() {
+    local -r pkgname_dir="$1"
+    local depsfile="$2"
+    local install=()
+
+    install+=($(MissingDeps "$pkgname_dir" depends))     || return 1
+    install+=($(MissingDeps "$pkgname_dir" makedepends)) || return 1
+
+    if [ ${#install[@]} -gt 0 ] ; then
+        echo "Installing dependencies ${install[*]}:" >&2
+        echo "${install[*]}" > $depsfile
+        sudo pacman -S "${install[@]}"
+    fi
+}
+
+RemoveInstalledDeps() {
+    local -r pkgname_dir="$1"
+    local depsfile="$2"
+    local remove=$( test -r $depsfile && cat $depsfile )
+
+    if [ -n "$remove" ]  ; then
+        echo "Removing dependencies $remove:" >&2
+        sudo pacman -R $remove
+    fi
 }
 
 Main() {
