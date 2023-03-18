@@ -156,17 +156,22 @@ FetchPkgbuilds() {
     done
 }
 
-FuncnameToPkgname() {
+FuncnameToPkgname() {     # convert "_name_" to "name"
     local name="$1"       # funcname
     name=${name:1}        # remove first char
     name=${name:: -1}     # remove last char
     echo "$name"
 }
 
+IsInPkgnames() {
+    local -r pkgname="$1"
+    printf "%s\n" "${PKGNAMES[@]}" | grep "^$pkgname$" >/dev/null
+}
+
 Add_before-after_func() {
-    local funcname="$1"
-    local pkgname="$(FuncnameToPkgname "$funcname")"
-    PKG_BEFORE_AFTER[$pkgname]="$funcname"
+    local -r funcname="$1"
+    local -r pkgname="$(FuncnameToPkgname "$funcname")"
+    IsInPkgnames "$pkgname" && PKG_BEFORE_AFTER[$pkgname]="$funcname"
 }
 
 GetPkgbuildValue() {
