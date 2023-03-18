@@ -172,6 +172,8 @@ Add_before-after_func() {
     local -r funcname="$1"
     local -r pkgname="$(FuncnameToPkgname "$funcname")"
     IsInPkgnames "$pkgname" && PKG_BEFORE_AFTER[$pkgname]="$funcname"
+
+    true  # do not fail sourceing the config file
 }
 
 GetPkgbuildValue() {
