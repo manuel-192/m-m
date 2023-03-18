@@ -104,7 +104,6 @@ BuildNeeded() {
     # TODO: handle multipackage PKGBUILDs
 
     local pkgname="$1"
-    local old_version new_version
 
     old_version=$(ls -1 "$pkgname"-*.pkg.tar.zst 2>/dev/null)
     old_version=$(echo "$old_version" | tail -n1 | pkg-name-components --real EVR)
@@ -132,17 +131,18 @@ FetchPkgbuilds() {
 
     local pkgname
     local constructor
+    local old_version new_version
 
     for pkgname in "${PKGNAMES[@]}" ; do
-        printf2v "==> %-40s: Checking" "$pkgname"
+        printf2v "==> %-40s: " "$pkgname"
         if [ "$force_rebuild" = "no" ] ; then
             if ! BuildNeeded "$pkgname" ; then
-                echo2v "...OK"    # up to date
+                echo2v "OK ($old_version)"
                 continue
             fi
-            printf2v "...build needed"
+            printf2v "update ($old_version --> $new_version)"
         else
-            printf2v "...build forced"
+            printf2v "forced ($old_version --> $new_version)"
         fi
         if [ $dryrun = no ] ; then
             build_needed+=("$pkgname")
