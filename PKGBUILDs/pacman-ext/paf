@@ -12,11 +12,12 @@ MSG()        { printf2 "$@" ; }
 _columnize() { column -t -s'|' | sed 's|[ ]*$||' ; }
 
 _fzf() {
-    local prompt="$1"
+    local op="$1"
+    local prompt="$2"
     local fzf=(
         fzf
-        --header="Navigation: Up, Down, PgUp, PgDn. TAB=select, ESC=quit, ENTER=accept"
-        --prompt="Select package(s) by search word(s): "
+        --header="Navigation: Up, Down, PgUp, PgDn; TAB=select, ENTER=accept, ESC=quit"
+        --prompt="[$op] select package(s) by search word(s): "
         --marker=">>"
         --info=inline
         --exact
@@ -38,14 +39,14 @@ _SelectPackagesNotInstalled() {
     chmod go-rwx $installed
 
     expac -Q '%n' | sed 's|^|^|' > $installed                        # for ignoring already installed packages
-    expac -S '%n|%d' | grep -v -f $installed | _fzf "$prompt"
+    expac -S '%n|%d' | grep -v -f $installed | _fzf "Install" "$prompt"
 
     #rm -f $installed
 }
 
 _SelectPackagesInstalled() {
     local prompt="$1"
-    expac -Q '%n|%d' | _fzf "$prompt"
+    expac -Q '%n|%d' | _fzf "Remove" "$prompt"
 }
 
 IsInstalled() { pacman -Qq "$1" >& /dev/null ; }
