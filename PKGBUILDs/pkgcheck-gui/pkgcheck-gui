@@ -1,0 +1,80 @@
+#!/bin/bash
+
+_echo2()  { echo "$@" >&2 ; }
+_DIE()    { _echo2 "$progname: error: $@" ; exit 1 ; }
+_ASSERT() { "$@" || _DIE "$@" failed ; }
+
+_Pkgcheck() {
+    local -r mode="$1"
+    local -r repo="$2"
+    local opt=""
+    local WAIT_AT_END=60
+
+    _ASSERT source /etc/pkgcheck-gui.conf
+
+    [ -n "$WAIT_AT_END" ] || _DIE "WAIT_AT_END value is empty"
+
+    case "$mode" in
+        Check)            opt="--dryrun-local" ;;
+        Check+fetch)      opt="--dryrun" ;;
+        Build)            opt="--build" ;;
+        *)                return 1 ;;
+    esac
+    case "$repo" in
+        local-repo) RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pkgcheck $repo ;;
+        *)          RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pkgcheck $repo $opt ;;
+    esac
+}
+
+
+# export local functions used (in)directly in yad
+export -f _echo2 _DIE _ASSERT
+export -f _Pkgcheck
+
+
+Main() {
+    local -r progname="$(basename "$0")"
+    local PKGCHECK_GUI_GEOM=""
+    local WAIT_AT_END=60
+
+    _ASSERT source /usr/share/endeavouros/scripts/eos-script-lib-yad
+    _ASSERT source /etc/pkgcheck-gui.conf
+
+    local -r column_count=3
+    local mode=""
+    local cmd=(
+        eos_yad --form --image=endeavouros-icon --use-interp --align-buttons --columns=$column_count
+        --title="Manage package building"
+        --text="Managing EndeavourOS and other repos.\nClick a repo button from the column you want."
+        $( [ -n "$PKGCHECK_GUI_GEOM" ] && echo "--geometry=$PKGCHECK_GUI_GEOM" )
+
+        --button="<small>Check Updates</small>!system-software-update!Check updates and update if needed":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'pacman-ext --checkupdates'"
+        --button="<small>Update</small>!system-software-update!Run system update":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'paf'"
+        --button="<small>Pull requests</small>!dialog-info!Show some EOS pull requests":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pull-requests"
+        --button="<small>EndeavourOS Forum</small>!login!Log in to the EndeavourOS Forum":"BrowsePage login"
+        --button="<small>Browse PKGBUILDS</small>!software-sources!Browse the PKGBUILDS page":"BrowsePage pkgbuilds"
+    )
+    declare -A tips
+    local tips2="Build all changed packages"
+
+    tips[Check]="Check if any package needs to be rebuilt, but compare only with local packages."
+    tips[Check+fetch]="Same as CHECK, but fetch packages to compare from github first."
+    tips[Build]="Build all changed packages, but fetch current packages from github first."
+
+    for mode in Check Check+fetch Build ; do
+        cmd+=(
+            --field="  <b>$mode</b>!${tips[$mode]}":lbl ""
+            --field="endeavouros":fbtn             "_Pkgcheck $mode endeavouros"
+            --field="endeavouros-testing-dev":fbtn "_Pkgcheck $mode endeavouros-testing-dev"
+            --field="m-m":fbtn                     "_Pkgcheck $mode m-m"
+            --field="m-more2":fbtn                 "_Pkgcheck $mode m-more2"
+            --field="m-aur":fbtn                   "_Pkgcheck $mode m-aur"
+
+            --field="local-repo!!$tips2":fbtn                      "_Pkgcheck $mode local-repo"   # mode not actually used
+        )
+    done
+
+    "${cmd[@]}" >/dev/null &
+}
+
+Main "$@"
