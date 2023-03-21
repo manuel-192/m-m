@@ -36,10 +36,18 @@ _fzf() {
 _SelectPackagesNotInstalled() {
     local prompt="$1"
     local installed=$(mktemp)
+    local pkgs
+
     chmod go-rwx $installed
 
     expac -Q '%n' | sed 's|^|^|' > $installed                        # for ignoring already installed packages
-    expac -S '%n|%d' | grep -v -f $installed | _fzf "Install" "$prompt"
+    if true ; then
+        pkgs=$(expac -S '%n|%d')
+    else
+        pkgs=$(yay -Ss | sed -E 's|^([^ ]+) .*|\1|' | sed -E ':a ; $!N ; s/\n\s+/|/ ; ta ; P ; D')
+    fi
+
+    echo "$pkgs" | grep -v -f $installed | _fzf "Install" "$prompt"
 
     #rm -f $installed
 }
@@ -126,8 +134,8 @@ Options() {
 
     while true ; do
         case "$1" in
-            -i | --install) op=Install ;;
-            -r | --remove)  op=Remove ;;
+            -i | --tui-install) op=Install ;;
+            -r | --tui-remove)  op=Remove ;;
             -u | --update)  op=Update ;;
             -f | --force)   reinstall_force=yes ;;
 
@@ -149,8 +157,8 @@ Usage() {
 Usage: $progname [options] [operation] [package-names]
 Operations:
   -u, --update          Update packages. Default operation when none is given.
-  -i, --install         Install given or selected packages.
-  -r, --remove          Remove given or selected packages.
+  -i, --tui-install     Install given or selected packages.
+  -r, --tui-remove      Remove given or selected packages.
 Options:
   -f, --force           Install forced (meaningful only with option -i).
   -h, --help            This help.

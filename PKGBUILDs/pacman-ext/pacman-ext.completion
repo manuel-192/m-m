@@ -29,7 +29,11 @@ _pacman_ext_all() {
 }
 
 _pacman_ext_pkgs() {
-    _pacman-ext_complete "$(pacman -Ssq)"
+    local pkgs="$(expac -S %n)"
+    if [ -z "$pkgs" ] ; then
+        pkgs="$(yay -Pc | awk '{print $1}' | sort)"
+    fi
+    _pacman-ext_complete "$pkgs"
 }
 
 _pacman-ext_() 

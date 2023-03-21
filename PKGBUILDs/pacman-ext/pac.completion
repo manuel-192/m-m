@@ -1,0 +1,52 @@
+# bash completion for pac        -*- shell-script -*-
+
+_pac_options() {
+    _pacman-ext_complete "${pac_options[*]}"
+    local all=("${COMPREPLY[@]}")
+    _pacman-ext_ "$@"
+    COMPREPLY+=("${all[@]}")
+    compopt -o nosort
+}
+
+_pac_all() {
+    _pacman-ext_complete "${pac_options[*]}"
+    local all=("${COMPREPLY[@]}")
+
+    _pacman-ext_ "$@"
+    COMPREPLY+=("${all[@]}")
+
+    _pacman_ext_pkgs
+    all=("${COMPREPLY[@]}")
+    COMPREPLY+=("${all[@]}")
+
+    compopt -o nosort
+}
+
+_pac_() 
+{
+    source /usr/share/bash-completion/completions/pacman-ext || return 1
+
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    local pac_options=(--tui-install --tui-remove --who-needs --deps-of --who-owns)
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        "") _pac_options "${words[*]}" ;;
+        -*) _pac_all "${words[*]}" ;;
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                "" | -*) _pac_options "${words[*]}" ;;
+                *)
+                    # Non-option parameters.
+                    _pacman_ext_pkgs
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _pac_ pac

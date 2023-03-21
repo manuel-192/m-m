@@ -6,7 +6,7 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=19
+pkgrel=20
 
 arch=(any)
 license=(GPL)
@@ -30,7 +30,8 @@ source=(
     $url/pacman-ext.completion     # bash completion
     $url/pacman-ext-checks
     $url/pacman-sudo-internal
-    $url/pac                       # similar to yay or paru
+    $url/pac                       # "combines" yay/paru, pacman, paf, and adds more
+    $url/pac.completion
     $url/paf                       # TUI
     $url/mirror-swap-eos
     $url/pm-gui
@@ -38,11 +39,12 @@ source=(
 )
 sha512sums=('e3d07bc48e81ce480aee205153b7c09569b0a6aabdd4a6fa58bab51837bda68e64013f4a5a4c8b58b8c0b51367ab1c5a6a4d6d22d75a39028bc1882b7adc2760'
             '3227bc7e21d7ddbb8254e65b3657164fd74dacd294d7b88894bd44e3636dbdf80ce4649b0bd00c373de748db6d88e2712c07de9fc0a93b4666322d8f7ce725ac'
-            '3650b44357a84d183826dd13220606368bc957913c4fd7f8e26070d389ed0951c5792218016eac38aa33f40706c78ba8d863643cb69a04fa3cb838d608d285aa'
+            '689d6b2ef1ed982b5210dd384b4613568fd355e3ea26bfc1ca6e93438eb4a97b4f13aa056f0c459303f4558aca76e380f7f24429d7d7b97bb7803de09eda5626'
             'c488be5554128e5c6e73afa2dfa361500d778a346e751d0ca3093c228877516fe2d3bfee17137d41c02b30afc2e1ba53a9f558f0b9b69e886d6f89be0ac925f0'
             '54d414b22c6d7cc7126fafadd82e4766a063d8f7f7482b1dde67ffe162e9cee487fd430c93bc50b282cc81d320da92c6022c8e45d6706ab40143df7a0d19525f'
-            'b5bb13f2dab9db09aceb9a14111b215a8f1b056749ab1c38ee68cb42b76774d15be18885999a1a9524e4009b3f8b9101b225f6a989b624d2c9362231b06c1077'
-            'ac8bd901e947325a14e14941a8ec0b48a00f3dcf059c2a6c84bf766b3855ca5e57b084d44713f3638909befcd45b3efebc33391fa5a478ee9aeabbf8dd60a712'
+            'ab55923da684e6f25b781b9b86a61b42ebf9febc9e24a12fae66af13381869986b57a2d765665ee966e1ca2d18d828581436dfb1f7994cf810da0cfc86f23870'
+            '36e075274aa86deb1eb545212c33b671247c61693e32d5b2cbda406d9e005b6dc83747a266a82e775664b15eeb2af96b1ba24b2680f8425dae7c840fa930422b'
+            'c418ac0a672f6286fdb0638579e23947485c81d240b93c9770e67ca2ca8f38a1d8028c1b29867ec4fe147c077611511cf0c6d3aaed57489888a75d05db1712c1'
             '84d89e5eeb4982675e08cc1a1b914b8255c8335ce73add5275452c28b1c5c21545d7cb823034f9ed89aaa022db9d410ea908818a65b72ef750ac5545c5fdc8b6'
             '1dda8c16231b213aff07d268f5ee8cb4093cd01e88cadd720fba3b97790f9472d05998441f374520caa4b394cad9f1b87fe7347c9920bbfd1a3ae810d4d10647'
             '37f20cd76f51aa441d213ab95a8b5efe1c197c9a3e496e0a7dbd05a4211a073a33b1d5aa6dbf68fb70a4b4e56979902c477f8c1f91dffb35d6966feb3aca411e')

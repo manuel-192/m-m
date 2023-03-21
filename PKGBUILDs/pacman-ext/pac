@@ -1,7 +1,5 @@
 #!/bin/bash
 
-TODO() { echo "$progname: $1: not implemented yet" >&2 ; }
-
 FirstAppOf() {
     local -n app_ret="$1"
     shift
@@ -20,7 +18,7 @@ RunFirstApp() {
     fi
 }
 
-WhoNeeds() {
+who-needs() {
     local pkg="$1"
     if expac -Q %n "$pkg" &> /dev/null ; then
         RunFirstApp pactree --reverse "$pkg"
@@ -33,7 +31,7 @@ WhoNeeds() {
         fi
     fi
 }
-DepsOf() {
+deps-of() {
     local pkg="$1"
     if expac -Q %n "$pkg" &> /dev/null ; then
         RunFirstApp pactree --depth 1 "$pkg"
@@ -41,7 +39,7 @@ DepsOf() {
         LANG=C paru -Si "$pkg" | grep -w "^Depends On" | sed 's|^Depends On[ ]*:[ ]*||'
     fi
 }
-WhoOwns() {
+who-owns() {
     local file="$1"
     # pkgfile needs pkgfile-update.timer being enabled and started
     pkgfile "$file"
@@ -50,16 +48,18 @@ WhoOwns() {
 
 Usage() {
     cat <<EOF >&2
-Usage: $progname [options]
-Options:
+Usage: $progname [params]
+Params:
   --who-needs <pkgname>     Show which packages need the given package.
   --deps-of <pkgname>       Show the dependencies of the given package.
   --who-owns <file>         Show which package(s) include <file>.
-  -i                        Install packages (TUI).
-  -r                        Uninstall packages (TUI).
+  --tui-install             Install packages (TUI).
+  --tui-remove              Uninstall packages (TUI).
   -h, --help                This help.
 
 Without options "$defaultcmd" is executed.
+
+If other params exist, pacman-ext is executed.
 EOF
     exit 0
 }
@@ -71,13 +71,21 @@ Main() {
     FirstAppOf defaultcmd paf pacman-ext paru yay pacman
 
     case "$1" in
-        -h | --help)     Usage ;;
-        "")              $defaultcmd ;;
-        -i | -r)         RunFirstApp paf "$1" ;;
-        --who-needs)     WhoNeeds "$2" ;;
-        --deps-of)       DepsOf "$2" ;;
-        --who-owns)      WhoOwns "$2" ;;
-        -*)              RunFirstApp "pacman-ext paru yay pacman" "$@" ;;
+        --tui-install | --tui-remove)
+            RunFirstApp paf "$1"
+            ;;
+        --who-needs | --deps-of | --who-owns)
+            ${1:2} "$2"
+            ;;
+        "")
+            $defaultcmd
+            ;;
+        -h | --help)
+            Usage
+            ;;
+        *)
+            RunFirstApp "pacman-ext paru yay pacman" "$@"
+            ;;
     esac
 }
 
