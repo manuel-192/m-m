@@ -6,7 +6,7 @@ pkgname=pkgcheck-gui
 pkgdesc="Package build helper GUI"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
