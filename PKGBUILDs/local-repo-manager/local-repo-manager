@@ -177,15 +177,23 @@ Add_before-after_func() {
 }
 
 GetPkgbuildValue() {
-    local varname="$1"
+    local -r varname="$1"
     local -n retvar="$2"
 
     source PKGBUILD || return 1
     case "$varname" in
         depends)     retvar=("${depends[@]}") ;;
         makedepends) retvar=("${makedepends[@]}") ;;
+        pkgrel)      retval="$pkgrel" ;;
+        pkgver)      retval="$pkgver" ;;
+        epoch)       retval="$eopch" ;;
         *) return 1 ;;
     esac
+}
+PutPkgbuildValueSimple() {
+    local -r varname="$1"
+    local -r value="$2"
+    sed -i PKGBUILD -e "s|^$varname=.*|$varname='$value'|"
 }
 
 MissingDeps() {
