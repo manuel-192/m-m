@@ -3,9 +3,9 @@
 FirstAppOf() {
     local -n app_ret="$1"
     shift
-    local aaa               # bash bug? cannot make 'app_ret' as the for loop parameter?
-    for aaa in "$@" ; do
-        type "$aaa" >& /dev/null && { app_ret="$aaa"; return 0 ; }
+    local app1               # bash bug? cannot make 'app_ret' as the for loop parameter?
+    for app1 in "$@" ; do
+        type "$app1" >& /dev/null && { app_ret="$app1"; return 0 ; }
     done
     return 1
 }
@@ -21,11 +21,11 @@ RunFirstApp() {
 who-needs() {
     local pkg="$1"
     if expac -Q %n "$pkg" &> /dev/null ; then
-        RunFirstApp pactree --reverse "$pkg"
+        pactree --reverse "$pkg"
     else
-        return
+        # return
         if paru -Si "$pkg" &> /dev/null ; then
-            echo "Sorry, not implemented yet." >&2
+            echo "Sorry, not implemented." >&2
         else
             echo "Package '$pkg' not found."
         fi
@@ -34,15 +34,14 @@ who-needs() {
 deps-of() {
     local pkg="$1"
     if expac -Q %n "$pkg" &> /dev/null ; then
-        RunFirstApp pactree --depth 1 "$pkg"
+        pactree --depth 1 "$pkg"
     else
         LANG=C paru -Si "$pkg" | grep -w "^Depends On" | sed 's|^Depends On[ ]*:[ ]*||'
     fi
 }
 who-owns() {
     local file="$1"
-    # pkgfile needs pkgfile-update.timer being enabled and started
-    pkgfile "$file"
+    pkgfile "$file"    # pkgfile needs pkgfile-update.timer being enabled and started
     # pkgfile "$file" || paru -Qo "$file" 2> /dev/null || paru -F "$file" | sed 's|^    |    /|'
 }
 
@@ -66,13 +65,11 @@ EOF
 
 Main() {
     local progname="${0##*/}"
-    local defaultcmd=""
-
-    FirstAppOf defaultcmd paf pacman-ext paru yay pacman
+    local defaultcmd="pacman-ext -Syu"
 
     case "$1" in
         --tui-install | --tui-remove)
-            RunFirstApp paf "$1"
+            paf "$1"
             ;;
         --who-needs | --deps-of | --who-owns)
             ${1:2} "$2"
