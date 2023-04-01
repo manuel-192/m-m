@@ -1,0 +1,6 @@
+[Unit]
+Description=Disable mouse wakeup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/mouse-stuff

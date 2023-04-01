@@ -1,0 +1,17 @@
+#!/bin/bash
+
+Main() {
+    local ids=(1-1.2.1
+               2-1.2.1)
+    local id
+    local file
+
+    for id in "${ids[@]}" ; do
+        file=/sys/bus/usb/devices/$id/power/wakeup
+        if [ -r $file ] ; then
+            echo "disabled" > $file
+        fi
+    done
+}
+
+Main "$@"

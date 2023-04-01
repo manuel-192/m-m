@@ -1,0 +1,8 @@
+[Unit]
+Description=Disable mouse wakeup
+
+[Timer]
+OnStartupSec=30sec
+
+[Install]
+WantedBy=timers.target
