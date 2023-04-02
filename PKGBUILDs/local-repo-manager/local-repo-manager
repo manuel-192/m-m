@@ -205,6 +205,11 @@ MissingDeps() {
     GetPkgbuildValue $varname DEPS || return 1
 
     for pkg in "${DEPS[@]}" ; do
+        case "$pkg" in
+            *">"*) pkg=${pkg%%>*} ;;
+            *"="*) pkg=${pkg%%=*} ;;
+            *"<"*) pkg=${pkg%%<*} ;;
+        esac
         expac -Q %n $pkg &>/dev/null || pkgs+=($pkg)
     done
 
