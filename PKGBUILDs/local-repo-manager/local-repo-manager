@@ -24,6 +24,11 @@ INFO() {
 AddPackagesToRepo() {
     local pkg pkgs=() sigs=()
     echo2 "==> Adding built packages to repo db"
+    if [ -z "$SIGNER" ] ; then
+        if [ $dryrun = no ] || [ $force_rebuild = yes ] ; then
+            INFO "packages will not be signed"
+        fi
+    fi
     for pkg in "$@" ; do
         echo2 "    -> $pkg"
         pkgs+=("$pkg")
@@ -296,7 +301,6 @@ EOF
     local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
 
     [ -n "$REPONAME" ]        || DIE "REPONAME in the config file is empty or not set"
-    [ -n "$SIGNER" ]          || INFO "packages will not be signed"
     [ -n "$WORKDIR" ]         || DIE "WORKDIR is missing, cannot build packages"
     [ ${#PKGNAMES[@]} -gt 0 ] || DIE "PKGNAMES array in the config file is empty or not set"
 
