@@ -6,7 +6,7 @@ pkgname=mouse-stuff
 pkgdesc="Disable mouse wakeup"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 
 arch=(any)
 license=(GPL)
@@ -16,7 +16,7 @@ source=(
     $url/$pkgname.service
     $url/$pkgname.timer
 )
-sha512sums=('f4e872a2d765cb39cd92bd7754871cc64863d100e76ec85081e157b62c8fc2bf2a557512b5bf62e4b13dbf92c919ed38d5dd866af52b732519303071a42b089c'
+sha512sums=('1dea63aad2c67a88ff4d24cb87a37d78ac2b2f87fb480ac9f6fc730b44ecd0eaa2c1bd26eb5b8fd9f40b5ea0f989eb9935ab3f8683f07ca4a60156502580dc59'
             '9e32697fcdb7f66d1d1b6e5f08c56329c548c79ece94cc812e5513d1f4c9dd897a4710d8050abd85c2929db192b3a71323490455b958c76dad9e70da100e0e78'
             '25a385090acbd14d035f6ba53c4bee4803a790bf73ad3823983a83dfe683ad9d95d901373239dd0f6f0a6ece9cbb03c88db87e8262feddf92ad632980a79db0c')
 

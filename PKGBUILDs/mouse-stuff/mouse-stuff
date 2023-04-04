@@ -1,17 +1,33 @@
 #!/bin/bash
 
-Main() {
-    local ids=(1-1.2.1
-               2-1.2.1)
-    local id
-    local file
-
-    for id in "${ids[@]}" ; do
-        file=/sys/bus/usb/devices/$id/power/wakeup
-        if [ -r $file ] ; then
-            echo "disabled" > $file
-        fi
-    done
+DIE() {
+    local progname="${0##*/}"
+    echo "$progname: $1" >&2
+    exit 1
 }
 
-Main "$@"
+Main() {
+    local vendorname="$1"
+    local vendorinfo=$(lsusb | grep "$vendorname")
+    [ -n "$vendorinfo" ] || DIE "sorry, $vendorname devices not found."
+    local productid=$(echo "$vendorinfo" | sed -E 's|.* [0-9a-f]+:([0-9a-f]+) .*|\1|')
+    [ -n "$productid" ] || DIE "sorry, $vendorname device product id not found."
+    local devid=$(grep "$productid" /sys/bus/usb/devices/*/idProduct | sed -E 's|.*/devices/([^/]+)/.*|\1|')
+    [ -n "$devid" ] || DIE "sorry, $vendorname system device id not found."
+
+    local devcount=$(echo "$devid" | wc -l)
+
+    case "$devcount" in
+        0) DIE "internal problem!" ;;
+        1) local file=/sys/bus/usb/devices/$devid/power/wakeup
+           [ -r $file ] || DIE "sorry, file $file not found."
+           echo "disabled" > $file
+           ;;
+        *) DIE "sorry, $count products from $vendorname found, cannot determine which one to use."
+           ;;
+    esac
+    
+
+}
+
+Main Logitech
