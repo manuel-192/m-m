@@ -139,10 +139,8 @@ HandleRepo() {
             fi
             ;;
         *)
-            case "$(expac -Q %v eos-pkgbuild-setup)" in
-                2023-16.1) assets.make $reponame $opt ;;
-                *)         assets.make $opt ;;
-            esac
+            assets.make $opt
+            count_to_build=$?
             ;;
     esac
     popd >/dev/null
@@ -204,7 +202,15 @@ pkgcheck() {
         EOS) HandleRepos "${REPO_GROUP_EOS[@]}" ;;
         MAN) HandleRepos "${REPO_GROUP_MAN[@]}" ;;
         ALL) HandleRepos "${REPO_GROUP_EOS[@]}" "${REPO_GROUP_MAN[@]}" ;;
-        *)   HandleRepo ;;
+        *)
+            local count_to_build=0
+            HandleRepo
+            case "$opt" in
+                --dryrun | --dryrun-local)
+                    return $((count_to_build + 0))
+                    ;;
+            esac
+            ;;
     esac
 }
 
