@@ -25,6 +25,7 @@ _apps_to_funcs_init() {
         mousepad
         notepadqq
         opera
+        pamac-manager
         parole
         qterminal
         ristretto
