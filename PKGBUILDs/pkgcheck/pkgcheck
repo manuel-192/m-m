@@ -125,6 +125,7 @@ HandleRepo() {
 
     echo2 "==> Reponame     = $reponame"
     echo2 "==> Build folder = $folder"
+    echo2 ""
 
     pushd ~/ >/dev/null
     pushd $folder >/dev/null
