@@ -77,11 +77,18 @@ BuildPackages() {
         ASSERT makepkg -cf &> "$buildlog"
         echo2 "done."
 
-        RemoveInstalledDeps $pkgname $depsfile
+        if [ $remove_deps = yes ] ; then
+            RemoveInstalledDeps $pkgname $depsfile
+        fi
         rm -f $depsfile
 
-        destructor="${PKG_BEFORE_AFTER[$pkgname]}"
-        [ -n "$destructor" ] && ASSERT "$destructor" --op=destruct                 # destructor should clean up
+        destructor="${PKG_BEFORE_AFTER[$pkgname]}"                 # destructor should clean up
+        if [ -n "$destructor" ] ; then
+            case "$VERSION_COMPAT" in
+                0) ASSERT "$destructor" --op=destruct ;;
+                *) ASSERT "$destructor" after ;;
+            esac
+        fi
         pkgs=()
         readarray -t files <<< $(ls -1 *.pkg.tar.zst 2>/dev/null)
         for file in "${files[@]}" ; do
@@ -154,7 +161,12 @@ FetchPkgbuilds() {
             rm -rf "$pkgname"                        # remove possible old pkg folder
             FetchAurPackage "$pkgname" >/dev/null
             constructor="${PKG_BEFORE_AFTER[$pkgname]}"
-            [ -n "$constructor" ] && ASSERT "$constructor" --op=construct
+            if [ -n "$constructor" ] ; then
+                case "$VERSION_COMPAT" in
+                    0) ASSERT "$constructor" --op=construct ;;
+                    *) ASSERT "$constructor" before ;;
+                esac
+            fi
         else
             echo2v ""
         fi
@@ -173,7 +185,7 @@ IsInPkgnames() {
     printf "%s\n" "${PKGNAMES[@]}" | grep "^$pkgname$" >/dev/null
 }
 
-Add_before-after_func() {
+Add_BeforeAfter_func() {
     local -r funcname="$1"
     local -r pkgname="$(FuncnameToPkgname "$funcname")"
     IsInPkgnames "$pkgname" && PKG_BEFORE_AFTER[$pkgname]="$funcname"
@@ -195,7 +207,7 @@ GetPkgbuildValue() {
         *) return 1 ;;
     esac
 }
-PutPkgbuildValueSimple() {
+PutPkgbuildValue() {
     local -r varname="$1"
     local -r value="$2"
     sed -i PKGBUILD -e "s|^$varname=.*|$varname='$value'|"
@@ -250,6 +262,11 @@ RemoveInstalledDeps() {
     fi
 }
 
+#### Backwards compatibility stuff:
+# VERSION_COMPAT == 0:
+Add_before-after_func()  { Add_BeforeAfter_func "$@" ; }
+PutPkgbuildValueSimple() { PutPkgbuildValue "$@" ; }
+
 Main() {
     local progname="local-repo-manager"
     local conf="/etc/$progname.conf"
@@ -260,6 +277,7 @@ Main() {
     local WORKDIR=""              # where the package building occurs
     local PACKAGED_BY=""          # who built the packages (gpg)
     local PKGNAMES=()             # AUR package names for the local repo
+    local VERSION_COMPAT=0        # compatibility of the config file, 0=first
     declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
 
     source "$conf" || return 1    # $conf file must fill the required variables above
@@ -272,6 +290,7 @@ Main() {
     local verbose=no
     local add_cache=no
     local dryrun=no
+    local remove_deps=no
     local arg
 
     for arg in "$@" ; do
@@ -285,6 +304,7 @@ Options:
           -c, --add-cache        Add builts packages to system's package cache.
           -n, --dryrun           Show what would be done, but change nothing. Implies --verbose.
           -v, --verbose          More verbose output.
+          --rmdeps               Remove dependencies installed during build.
 EOF
                 ;;
 
@@ -294,6 +314,7 @@ EOF
             -n | --dryrun | --dryrun-local)
                                 dryrun=yes; verbose=yes ;;
             -b | --build)       dryrun=no ;;
+            --rmdeps)           remove_deps=yes ;;
         esac
     done
 
