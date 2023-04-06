@@ -162,10 +162,12 @@ FetchPkgbuilds() {
             FetchAurPackage "$pkgname" >/dev/null
             constructor="${PKG_BEFORE_AFTER[$pkgname]}"
             if [ -n "$constructor" ] ; then
+                ASSERT Pushd "$pkgname"
                 case "$VERSION_COMPAT" in
                     0) ASSERT "$constructor" --op=construct ;;
                     *) ASSERT "$constructor" before ;;
                 esac
+                Popd
             fi
         else
             echo2v ""
