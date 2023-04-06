@@ -74,7 +74,7 @@ BuildPackages() {
         InstallMissingDeps $pkgname $depsfile
 
         printf2 "==> %-40s: Building..." "$pkgname"
-        ASSERT makepkg -cf &> "$buildlog"
+        ASSERT makepkg -cf ${MAKEPKG_EXTRA_OPTS[$pkgname]} &> "$buildlog"
         echo2 "done."
 
         if [ $remove_deps = yes ] ; then
@@ -279,6 +279,7 @@ Main() {
     local PKGNAMES=()             # AUR package names for the local repo
     local VERSION_COMPAT=0        # compatibility of the config file, 0=first
     declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
+    declare -A MAKEPKG_EXTRA_OPTS
 
     source "$conf" || return 1    # $conf file must fill the required variables above
 
