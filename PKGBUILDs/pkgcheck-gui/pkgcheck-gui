@@ -26,16 +26,15 @@ _Pkgcheck() {
     esac
 }
 
-
 # export local functions used (in)directly in yad
 export -f _echo2 _DIE _ASSERT
 export -f _Pkgcheck
-
 
 Main() {
     local -r progname="$(basename "$0")"
     local PKGCHECK_GUI_GEOM=""
     local WAIT_AT_END=60
+    local BUILT_REPO_DIR=""
 
     _ASSERT source /usr/share/endeavouros/scripts/eos-script-lib-yad
     _ASSERT source /etc/pkgcheck-gui.conf
@@ -48,8 +47,7 @@ Main() {
         --text="Managing EndeavourOS and other repos.\nClick a repo button from the column you want."
         $( [ -n "$PKGCHECK_GUI_GEOM" ] && echo "--geometry=$PKGCHECK_GUI_GEOM" )
 
-        --button="<small>Check Updates</small>!system-software-update!Check updates and update if needed":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'pacman-ext --checkupdates'"
-        --button="<small>Update</small>!system-software-update!Run system update":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'paf'"
+        --button="<small>Check Alpix</small>!dialog-info!Check if Alpix mirror is up to date":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'mirrorcheck $BUILT_REPO_DIR'"
         --button="<small>Pull requests</small>!dialog-info!Show some EOS pull requests":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pull-requests"
         --button="<small>EndeavourOS Forum</small>!login!Log in to the EndeavourOS Forum":"BrowsePage login"
         --button="<small>Browse PKGBUILDS</small>!software-sources!Browse the PKGBUILDS page":"BrowsePage pkgbuilds"
