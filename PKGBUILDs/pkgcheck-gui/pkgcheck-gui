@@ -68,7 +68,7 @@ Main() {
             --field="m-more2":fbtn                 "_Pkgcheck $mode m-more2"
             --field="m-aur":fbtn                   "_Pkgcheck $mode m-aur"
 
-            --field="local-repo!!$tips2":fbtn                      "_Pkgcheck $mode local-repo"   # mode not actually used
+            --field="local-repo!!$tips2":fbtn      "_Pkgcheck $mode local-repo"   # mode not actually used
         )
     done
 
