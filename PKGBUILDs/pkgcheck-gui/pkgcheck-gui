@@ -21,7 +21,7 @@ _Pkgcheck() {
         *)                return 1 ;;
     esac
     case "$repo" in
-        local-repo) RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pkgcheck $repo ;;
+        local-repo) RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pkgcheck $repo $opt ;;
         *)          RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pkgcheck $repo $opt ;;
     esac
 }
