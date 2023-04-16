@@ -132,7 +132,7 @@ HandleRepo() {
     case "$folder" in
         local-repo)
             if [ -x /usr/bin/local-repo-manager ] ; then
-                /usr/bin/local-repo-manager $opt
+                /usr/bin/local-repo-manager $opt --verbose
             elif [ -x ./local-repo-manager ] ; then
                 ./local-repo-manager $opt
             else
