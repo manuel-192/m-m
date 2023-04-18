@@ -61,7 +61,7 @@ _pkgcheck_init ; unset -f _pkgcheck_init
 
 _try_alias ll 'ls -lav --ignore=..'         ## show long listing of all except ".."
 _try_alias l  'ls -lav --ignore=.?*'        ## show long listing but no hidden dotfiles except "."
-_try_alias p  "pacman-ext --extras --no-banner"
+_try_alias p  "pacman-ext --extras --no-banner --expac"
 # alias pacman=pacman-ext         # maybe not the best idea ...
 
 alias branch="pacman-conf --repo-list | grep '^testing$' || echo stable"
