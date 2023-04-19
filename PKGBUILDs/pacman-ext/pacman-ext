@@ -166,7 +166,17 @@ CheckUpdatesFunc() {
                 case "$checkupdates" in
                     expac)
                         HeaderOfUpdates "Package name|New version|Description"
-                        expac -S "%n|%v|%d" $(echo "$updates" | awk '{print $1}')
+                        if false ; then
+                            expac -S "%n|%v|%d" $(echo "$updates" | awk '{print $1}')   # 'new version' may not be correct...
+                        else
+                            local pkgnames new_versions descriptions
+                            readarray -t pkgnames     <<< $(echo "$updates" | awk '{print $1}')
+                            readarray -t new_versions <<< $(echo "$updates" | awk '{print $NF}')
+                            readarray -t descriptions <<< $(expac -Q %d "${pkgnames[@]}")
+                            for ((ix=0; ix < ${#pkgnames[@]}; ix++)) ; do
+                                echo "${pkgnames[$ix]}|${new_versions[$ix]}|${descriptions[$ix]}"
+                            done
+                        fi
                         ;;
                     checkupdates)
                         HeaderOfUpdates "Package name|Current version|New version"
