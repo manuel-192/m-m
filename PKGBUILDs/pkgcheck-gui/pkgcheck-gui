@@ -45,7 +45,6 @@ TABFUNC_package_maintenance() {
         --form --image=endeavouros-icon --use-interp --align-buttons --columns=3
         --title="Manage package building"
         --text="Managing EndeavourOS and other repos.\nClick a repo button from the column you want."
-        $( [ -n "$PKGCHECK_GUI_GEOM" ] && echo "--geometry=$PKGCHECK_GUI_GEOM" )
     )
     for mode in Check Check+fetch Build ; do
         tabcontents+=(
@@ -72,8 +71,8 @@ TABFUNC_package_maintenance_extras() {
         --text="Additional package maintenance"
         --field="Check master mirror!dialog-info!Check if the master mirror is up to date":fbtn "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'mirrorcheck $BUILT_REPO_DIR'"
         --field="Pull requests!dialog-info!Show some EOS pull requests":fbtn       "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pull-requests"
-        --field="EndeavourOS Forum!login!Log in to the EndeavourOS Forum":fbtn     "BrowsePage login"
-        --field="Browse PKGBUILDS!software-sources!Browse the PKGBUILDS page":fbtn "BrowsePage pkgbuilds"
+        --field="EndeavourOS Forum!web-browser!Log in to the EndeavourOS Forum":fbtn     "BrowsePage login"
+        --field="Browse PKGBUILDS!web-browser!Browse the PKGBUILDS page":fbtn "BrowsePage pkgbuilds"
     )
     "${tabcontents[@]}" >& /dev/null &
 }
@@ -86,15 +85,15 @@ TABFUNC_system_maintenance() {
         --title="System maintenance"
         --text="System maintenance tasks"
 
-        --field="Check system update!software-sources!If updates are available, update all packages in the system":fbtn
+        --field="Check system update!package-manager-icon!If updates are available, update all packages in the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'pacman-ext --extras --no-banner --expac'"
 
-        --field="Update system!software-sources!Update all packages in the system":fbtn
+        --field="Update system!package-manager-icon!Update all packages in the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf"
 
-        --field="Install packages!software-sources!Install packages in the system":fbtn
+        --field="Install packages!package-manager-icon!Install packages in the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf -i"
-        --field="Remove packages!software-sources!Remove packages from the system":fbtn
+        --field="Remove packages!package-manager-icon!Remove packages from the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf -r"
     )
     "${tabcontents[@]}" >& /dev/null &
@@ -114,7 +113,11 @@ NotebookCreate() {
     local ix
     local handle=$(shuf -i 700000-999999 -n 1)
 
-    notebook=(eos_yad --notebook --key="$handle" --center --title="General management" --use-interp --expand --no-buttons)
+    notebook=(
+        eos_yad --notebook --key="$handle" --title="General management" --use-interp --expand --no-buttons
+        $( [ -n "$PKGCHECK_GUI_GEOM" ] && echo "--geometry=$PKGCHECK_GUI_GEOM" )
+    )
+
 
     for ((ix=0; ix < ${#funcnames[@]}; ix++)) ; do
         ${funcnames[$ix]} $((ix + 1))
