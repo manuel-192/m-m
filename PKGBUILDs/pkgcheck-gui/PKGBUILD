@@ -10,7 +10,7 @@ pkgrel=5
 
 arch=('any')
 license=('GPL')
-depends=(pkgcheck)
+depends=(pkgcheck pacman-ext)
 backup=(etc/pkgcheck-gui.conf)
 
 source=(
