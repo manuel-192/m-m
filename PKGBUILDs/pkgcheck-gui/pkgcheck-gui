@@ -4,7 +4,7 @@ _echo2()  { echo "$@" >&2 ; }
 _DIE()    { _echo2 "$progname: error: $@" ; exit 1 ; }
 _ASSERT() { "$@" || _DIE "$@" failed ; }
 
-_Pkgcheck() {
+TFH_Pkgcheck() {                 # TFH = Tab Function Helper
     local -r mode="$1"
     local -r repo="$2"
     local opt=""
@@ -28,7 +28,99 @@ _Pkgcheck() {
 
 # export local functions used (in)directly in yad
 export -f _echo2 _DIE _ASSERT
-export -f _Pkgcheck
+export -f TFH_Pkgcheck
+
+TABFUNC_package_maintenance() {
+    local tabnum="$1"
+    local mode=""
+    local tips2="Build all changed packages"
+    declare -A tips
+
+    tips[Check]="Check if any package needs to be rebuilt, but compare only with local packages."
+    tips[Check+fetch]="Same as CHECK, but fetch packages to compare from github first."
+    tips[Build]="Build all changed packages, but fetch current packages from github first."
+
+    local tabcontents=(
+        eos_yad --plug="$handle" --tabnum="$tabnum"
+        --form --image=endeavouros-icon --use-interp --align-buttons --columns=3
+        --title="Manage package building"
+        --text="Managing EndeavourOS and other repos.\nClick a repo button from the column you want."
+        $( [ -n "$PKGCHECK_GUI_GEOM" ] && echo "--geometry=$PKGCHECK_GUI_GEOM" )
+    )
+    for mode in Check Check+fetch Build ; do
+        tabcontents+=(
+            --field="  <b>$mode</b>!${tips[$mode]}":lbl ""
+            --field="endeavouros":fbtn             "TFH_Pkgcheck $mode endeavouros"
+            --field="endeavouros-testing-dev":fbtn "TFH_Pkgcheck $mode endeavouros-testing-dev"
+            --field="m-m":fbtn                     "TFH_Pkgcheck $mode m-m"
+            --field="m-more2":fbtn                 "TFH_Pkgcheck $mode m-more2"
+            --field="m-aur":fbtn                   "TFH_Pkgcheck $mode m-aur"
+
+            --field="local-repo!!$tips2":fbtn      "TFH_Pkgcheck $mode local-repo"   # mode not actually used
+        )
+    done
+
+    "${tabcontents[@]}" >& /dev/null &
+}
+
+TABFUNC_package_maintenance_extras() {
+    local tabnum="$1"
+    local tabcontents=(
+        eos_yad --plug="$handle" --tabnum="$tabnum"
+        --form --image=endeavouros-icon --use-interp --align-buttons --columns=2
+        --title="Package maintenance extras"
+        --text="Additional package maintenance"
+        --field="Check master mirror!dialog-info!Check if the master mirror is up to date":fbtn "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'mirrorcheck $BUILT_REPO_DIR'"
+        --field="Pull requests!dialog-info!Show some EOS pull requests":fbtn       "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pull-requests"
+        --field="EndeavourOS Forum!login!Log in to the EndeavourOS Forum":fbtn     "BrowsePage login"
+        --field="Browse PKGBUILDS!software-sources!Browse the PKGBUILDS page":fbtn "BrowsePage pkgbuilds"
+    )
+    "${tabcontents[@]}" >& /dev/null &
+}
+
+TABFUNC_system_maintenance() {
+    local tabnum="$1"
+    local tabcontents=(
+        eos_yad --plug="$handle" --tabnum="$tabnum"
+        --form --image=endeavouros-icon --use-interp --align-buttons --columns=2
+        --title="System maintenance"
+        --text="System maintenance tasks"
+
+        --field="Check system update!software-sources!If updates are available, update all packages in the system":fbtn
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'pacman-ext --extras --no-banner --expac'"
+
+        --field="Update system!software-sources!Update all packages in the system":fbtn
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf"
+
+        --field="Install packages!software-sources!Install packages in the system":fbtn
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf -i"
+        --field="Remove packages!software-sources!Remove packages from the system":fbtn
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf -r"
+    )
+    "${tabcontents[@]}" >& /dev/null &
+}
+
+NotebookCreate() {
+    local tabnames=(                      # use the same order as in $funcnames
+        "Package maintenance"
+        "Package maintenance extras"
+        "System maintenance"
+    )
+    local funcnames=(                     # use the same order as in $tabnames
+        TABFUNC_package_maintenance
+        TABFUNC_package_maintenance_extras
+        TABFUNC_system_maintenance
+    )
+    local ix
+    local handle=$(shuf -i 700000-999999 -n 1)
+
+    notebook=(eos_yad --notebook --key="$handle" --center --title="General management" --use-interp --expand --no-buttons)
+
+    for ((ix=0; ix < ${#funcnames[@]}; ix++)) ; do
+        ${funcnames[$ix]} $((ix + 1))
+        notebook+=(--tab="${tabnames[$ix]}")
+    done
+}
 
 Main() {
     local -r progname="$(basename "$0")"
@@ -39,40 +131,12 @@ Main() {
     _ASSERT source /usr/share/endeavouros/scripts/eos-script-lib-yad
     _ASSERT source /etc/pkgcheck-gui.conf
 
-    local -r column_count=3
-    local mode=""
-    local cmd=(
-        eos_yad --form --image=endeavouros-icon --use-interp --align-buttons --columns=$column_count
-        --title="Manage package building"
-        --text="Managing EndeavourOS and other repos.\nClick a repo button from the column you want."
-        $( [ -n "$PKGCHECK_GUI_GEOM" ] && echo "--geometry=$PKGCHECK_GUI_GEOM" )
+    # notebook stuff
+    local notebook
 
-        --button="<small>Check Alpix</small>!dialog-info!Check if Alpix mirror is up to date":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'mirrorcheck $BUILT_REPO_DIR'"
-        --button="<small>Pull requests</small>!dialog-info!Show some EOS pull requests":"RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pull-requests"
-        --button="<small>EndeavourOS Forum</small>!login!Log in to the EndeavourOS Forum":"BrowsePage login"
-        --button="<small>Browse PKGBUILDS</small>!software-sources!Browse the PKGBUILDS page":"BrowsePage pkgbuilds"
-    )
-    declare -A tips
-    local tips2="Build all changed packages"
+    NotebookCreate
 
-    tips[Check]="Check if any package needs to be rebuilt, but compare only with local packages."
-    tips[Check+fetch]="Same as CHECK, but fetch packages to compare from github first."
-    tips[Build]="Build all changed packages, but fetch current packages from github first."
-
-    for mode in Check Check+fetch Build ; do
-        cmd+=(
-            --field="  <b>$mode</b>!${tips[$mode]}":lbl ""
-            --field="endeavouros":fbtn             "_Pkgcheck $mode endeavouros"
-            --field="endeavouros-testing-dev":fbtn "_Pkgcheck $mode endeavouros-testing-dev"
-            --field="m-m":fbtn                     "_Pkgcheck $mode m-m"
-            --field="m-more2":fbtn                 "_Pkgcheck $mode m-more2"
-            --field="m-aur":fbtn                   "_Pkgcheck $mode m-aur"
-
-            --field="local-repo!!$tips2":fbtn      "_Pkgcheck $mode local-repo"   # mode not actually used
-        )
-    done
-
-    "${cmd[@]}" >/dev/null &
+    "${notebook[@]}" 2>/dev/null
 }
 
 Main "$@"
