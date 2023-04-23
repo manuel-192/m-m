@@ -6,7 +6,7 @@ pkgname=pkgcheck-gui
 pkgdesc="Package build helper GUI"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=5.2
+pkgrel=5.3
 
 arch=('any')
 license=('GPL')
@@ -17,7 +17,7 @@ source=(
     $url/pkgcheck-gui
     $url/pkgcheck-gui.conf
 )
-sha512sums=('563030b96b564d7e238551ebb6c7939c3b9030a2e54c3d991dbc93b93e23658ca54ab22e391eb9d69c0ad6704542c779939027039d8ad7d93d7824543e1b4531'
+sha512sums=('9959f349cfc58ca613acbdba3c43718f2f58db831390361a7119e6f586fe5384dd96376e9e31c3f3c6a00be1d3ea1cbb9d57dbcec0c5f4eec055193ee4cac3d8'
             '390fc5afe4699cf2931cf1db814f29003c3ae567a5e9535ac54bf4646789befc2c20a4e7de3b2d7073dd3ab8756201322e9dc2d946afd4d06d7520408121b67a')
 
 package() {

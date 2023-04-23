@@ -89,7 +89,7 @@ TABFUNC_system_maintenance() {
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'pacman-ext --extras --no-banner --expac'"
 
         --field="Update system!package-manager-icon!Update all packages in the system":fbtn
-          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf"
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'echo System update. ; paf'"
 
         --field="Install packages!package-manager-icon!Install packages in the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf -i"
