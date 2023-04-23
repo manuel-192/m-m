@@ -139,7 +139,7 @@ Main() {
 
     NotebookCreate
 
-    "${notebook[@]}" 2>/dev/null
+    "${notebook[@]}" 2>/dev/null &
 }
 
 Main "$@"
