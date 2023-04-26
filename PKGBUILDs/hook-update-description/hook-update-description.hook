@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = *
+
+[Action]
+Description = Show updates with their descriptions
+When = PostTransaction
+NeedsTargets
+Exec = /bin/bash -c "/bin/showline '=====' 10; /bin/expac -Q '%n|%d' $(/bin/cat) | /bin/column -t -s'|'; /bin/showline '=====' 10"

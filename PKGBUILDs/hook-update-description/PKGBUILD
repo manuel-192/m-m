@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=hook-update-description
+pkgdesc="Show updates with their descriptions."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+#depends=()
+#backup=(etc/grub-install-parameters-local.conf)
+
+source=(
+    $url/$pkgname.hook
+    $url/showline
+ )
+sha512sums=('cf9b8c337a7b621316139e7b2e6eac9289e79257e702f8a15f2709fd0c4d464e93ffba883fdf06ddc50d712a59d0e967951c27e9c9c15e31c0045d44c2825fa4'
+            '85b88b5d937425bb94e6c2a494d8f8e679f12f57a5eda1aa631f8d396577a939711e2dda3a20edca18f134c4414b7a5c004f3cf5e40f0f7395e43037aac55b33')
+
+package() {
+    local hookdir1=$pkgdir/usr/share/libalpm/hooks
+    local hookdir=$pkgdir/etc/pacman.d/hooks
+    local bindir=$pkgdir/usr/bin
+    local etcdir=$pkgdir/etc
+    local xx name
+
+    for xx in "${source[@]}" ; do
+        name=$(basename "$xx")
+        case "$name" in
+            *.hook) install -Dm644 $name   $hookdir/$name ;;
+            *.conf) install -Dm644 $name   $etcdir/$name ;;
+            *)      install -Dm755 $name   $bindir/$name ;;
+        esac
+    done
+}
