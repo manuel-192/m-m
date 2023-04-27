@@ -12,9 +12,11 @@ printf2v() { [ $verbose = yes ] && printf2 "$@" ; }
 
 ASSERT() { "$@" || DIE "'$*' failed" ; }
 DIE()    {
-    local msg="$(date +%Y%m%d-%H%M): $progname: error: $1"
+    local msg="$progname: error: $1"
     echo2 "$msg"
-    echo "$msg" > "$errlog"
+
+    local date="$(date +%Y%m%d-%H%M)"
+    echo "$date: $msg" > "$errlog"
     exit 1
 }
 INFO() {
