@@ -4,6 +4,11 @@
 # - show updates and their descriptions
 # - pacman -Su
 
+Cmd() {
+    [ $verbose = yes ] && echo "==>" "$@" >&2
+    "$@" || exit $?
+}
+
 show-updates-and-descriptions() {
     local updates=$(pacman -Su --print-format '%n')
     if [ -n "$updates" ] ; then
@@ -14,7 +19,7 @@ show-updates-and-descriptions() {
         return 0
     else
         echo "Nothing to do." >&2
-        return 1
+        exit 1
     fi
 }
 
@@ -26,9 +31,11 @@ Main() {
             return 1
             ;;
     esac
+    local verbose=yes
 
-    pacman -Sy
-    show-updates-and-descriptions && pacman -Su
+    Cmd pacman -Sy
+    Cmd show-updates-and-descriptions
+    Cmd pacman -Su
 }
 
 Main
