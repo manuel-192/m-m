@@ -6,7 +6,7 @@ pkgname=pkgcheck-gui
 pkgdesc="Package build helper GUI"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=5.3
+pkgrel=5.4
 
 arch=('any')
 license=('GPL')
@@ -15,19 +15,14 @@ backup=(etc/pkgcheck-gui.conf)
 
 source=(
     $url/pkgcheck-gui
+    $url/pkgcheck-gui.desktop
     $url/pkgcheck-gui.conf
 )
 sha512sums=('9959f349cfc58ca613acbdba3c43718f2f58db831390361a7119e6f586fe5384dd96376e9e31c3f3c6a00be1d3ea1cbb9d57dbcec0c5f4eec055193ee4cac3d8'
+            'dea6a1531cdcee690792f5ce41aa4971db42a1ac80a9a8fce49edf0319cda38467a14054a08e05d3edae5419ecbfea0ae117cece880142c746138cedf3f72170'
             '390fc5afe4699cf2931cf1db814f29003c3ae567a5e9535ac54bf4646789befc2c20a4e7de3b2d7073dd3ab8756201322e9dc2d946afd4d06d7520408121b67a')
 
 package() {
-    local xx name
-    for xx in "${source[@]}" ; do
-        name=$(basename "$xx")
-        case "$name" in
-            *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
-            *.conf)       install -Dm644 $name   $pkgdir/etc/$name ;;
-            *)            install -Dm755 $name   $pkgdir/usr/bin/$name ;;
-        esac
-    done
+    source /usr/share/endeavouros/scripts/PackageFunc || return 1
+    Package "$@"
 }
