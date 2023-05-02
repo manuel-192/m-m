@@ -25,10 +25,32 @@ TFH_Pkgcheck() {                 # TFH = Tab Function Helper
         *)          RunInTerminalOpt --wait sleep=$WAIT_AT_END -- pkgcheck $repo $opt ;;
     esac
 }
+TFH_RankMirrors() {
+    local repos="$1"   # arch or endeavouros
+    local ml=""
+    local tmp=/tmp/tmp.3498734
+    local cmd="rate-mirrors --disable-comments-in-file --protocol https --save $tmp $repos"
+
+    case "$repos" in
+        arch)
+            ml=/etc/pacman.d/mirrorlist
+            cmd+=" --max-delay=60"
+            ;;
+        endeavouros)
+            ml=/etc/pacman.d/endeavouros-mirrorlist
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    # echo "==> $cmd" >&2
+    $cmd && sudo cp $tmp $ml && echo "==> $ml written." >&2
+    rm -f $tmp
+}
 
 # export local functions used (in)directly in yad
 export -f _echo2 _DIE _ASSERT
-export -f TFH_Pkgcheck
+export -f TFH_Pkgcheck TFH_RankMirrors
 
 TABFUNC_package_maintenance() {
     local tabnum="$1"
@@ -81,19 +103,23 @@ TABFUNC_system_maintenance() {
     local tabnum="$1"
     local tabcontents=(
         eos_yad --plug="$handle" --tabnum="$tabnum"
-        --form --image=endeavouros-icon --use-interp --align-buttons --columns=2
+        --form --image=endeavouros-icon --use-interp --align-buttons --columns=3
         --title="System maintenance"
         --text="System maintenance tasks"
 
-        --field="Check system update!package-manager-icon!If updates are available, update all packages in the system":fbtn
-          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'pacman-ext --extras --no-banner --expac'"
+        --field="Rank Arch mirrors!!Use rate-mirrors for ranking":fbtn
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'TFH_RankMirrors arch'"
+        --field="Rank EndeavourOS mirrors!!Use rate-mirrors for ranking":fbtn
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'TFH_RankMirrors endeavouros'"
 
-        --field="Update system!package-manager-icon!Update all packages in the system":fbtn
+        --field="Check system update!!If updates are available, update all packages in the system":fbtn
+          "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'pacman-ext --extras --no-banner --expac'"
+        --field="Update system!!Update all packages in the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- 'echo System update. ; paf'"
 
-        --field="Install packages!package-manager-icon!Install packages in the system":fbtn
+        --field="Install packages!!Install packages in the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf -i"
-        --field="Remove packages!package-manager-icon!Remove packages from the system":fbtn
+        --field="Remove packages!!Remove packages from the system":fbtn
           "RunInTerminalOpt --wait sleep=$WAIT_AT_END -- paf -r"
     )
     "${tabcontents[@]}" >& /dev/null &
