@@ -6,9 +6,9 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=24.1
+pkgrel=24.2
 
-changelog=changelog.txt
+changelog=changelog.md
 
 arch=(any)
 license=(GPL)
