@@ -49,7 +49,7 @@ _SelectPackagesNotInstalled() {
 
     echo "$pkgs" | grep -v -f $installed | _fzf "Install" "$prompt"
 
-    #rm -f $installed
+    rm -f $installed
 }
 
 _SelectPackagesInstalled() {
