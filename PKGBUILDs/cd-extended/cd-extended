@@ -1,0 +1,126 @@
+#!/bin/bash
+
+source $HOME/.config/cd-extended.conf || exit 1
+
+if [ ${#CDPATH_ARR[@]} -eq 0 ] ; then
+    echo "==> $(basename "$0"): error: no CDPATH_ARR" >&2
+    exit 1
+fi
+
+cd-extended() {
+    # Enhances 'cd' by refusing to go to specified folder(s).
+    # Uses variables
+    #    CDPATH_ARR          Array of paths to search for a matching folder.
+    #    CDPATH_REJECT       Array of paths to reject.
+    # and file
+    #    .no-cd              File in a folder that rejects cd into it.
+    # When called with only one parameter (=the target folder), adds
+    #  - rejection of a target folder with
+    #     - array variable CDPATH_REJECT
+    #     - file $REJECTOR_FILE inside the target folder
+    #  - note: direct child folder will not be rejected
+
+    _IsAllowedDir() {
+        [ -f $REJECTOR_FILE ] && return 1
+        local dir
+        for dir in "${CDPATH_REJECT[@]}" ; do
+            [ "$dir" -ef "$PWD" ] && return 2
+        done
+        return 0
+    }
+    _IsDirectChildDir() {
+        [ ".." -ef "$startdir" ]
+    }
+    _SetNewMultiDir() {
+        local nextix="$1"
+        newdir="${matches[$nextix]}"
+
+        local match mark
+        echo "==> Matches:" >&2
+        for str in "${matches[@]}" ; do
+            [ "$str" = "$newdir" ] && mark="->" || mark="  "
+            printf "    $mark %s\n" "$str" >&2
+        done
+    }
+    _Cd() { echo "$@" ; }
+
+    _HandleMultiMatch() {
+        _MultiDirStore() {
+            local count=${#matches[@]}
+            local nextix
+
+            for ((nextix=0; nextix < count; nextix++)) ; do
+                if [ "${matches[$nextix]}" -ef "$PWD" ] ; then
+                    ((nextix++)) ; [ $nextix -eq $count ] && nextix=0
+                    _SetNewMultiDir $nextix
+                    return
+                fi
+            done
+
+            _SetNewMultiDir 0
+        }
+
+        # Change $newdir in case of multiple matches.
+
+        case "$newdir" in
+            /*) return ;;  # absolute path so nothing to do
+        esac
+        local ix matches=()
+        for ((ix=0; ix < ${#CDPATH_ARR[@]}; ix++)) ; do
+            if [ -d "${CDPATH_ARR[$ix]}/$newdir" ] ; then
+                matches+=("${CDPATH_ARR[$ix]}/$newdir")      # rejected folders are handled elsewhere
+            fi
+        done
+        case "${#matches[@]}" in
+            0) return 1 ;;
+            1) newdir="${matches[0]}" ;;
+            *) _MultiDirStore ;;
+        esac
+    }
+
+    local funcname="$FUNCNAME"
+    local newdir="$1"
+    local REJECTOR_FILE=".no-cd"
+
+    case "$newdir" in
+        -* | "")
+            _Cd "$@"
+            ;;
+        *)
+            if [ -n "$2" ] ; then
+                _Cd "$@"
+                return $?
+            fi
+
+            # extensions start here!
+
+            local ret=0
+            local startdir="$PWD"                     # used for allowing direct child dir
+
+            _HandleMultiMatch                         # if multiple matches, select a (round robin) value for newdir
+
+            builtin cd "$newdir" >/dev/null || return $?    # optimistically cd to the given dir, check validity below
+
+            _IsAllowedDir || ret="$?"                 # check if the dir is somehow rejected
+
+            case "$ret" in
+                0)
+                    _Cd "$PWD"
+                    ;;                                # OK!
+                *)
+                    if ! _IsDirectChildDir ; then
+                        # builtin cd - >/dev/null           # go back to the original folder (not really needed...)
+                        case "$ret" in
+                            1) echo "Sorry, target folder rejected by file '$REJECTOR_FILE'. Use '$cd' instead." >&2 ;;
+                            2) echo "Sorry, target folder rejected by variable 'CDPATH_REJECT'. Use '$cd' instead." >&2 ;;
+                            *) echo "Sorry, target folder rejected by user. Use '$cd' instead." >&2 ;;
+                        esac
+                        return $ret
+                    fi
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+cd-extended "$@"

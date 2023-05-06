@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=cd-extended
+pkgdesc="cd extended"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=()
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('625f2f04aef7e1275e058022ea7b5890ebfc4953bff5445d634d3ecdbda4768ece279fba390067c3331961f30dc9c007187df86d5a560442044938be3a80797e')
+
+package() {
+    #source /usr/share/endeavouros/scripts/PackageFunc || return 1
+    #Package "$@"
+
+    local item src
+
+    for src in "${source[@]}" ; do
+        item="${src##*/}"
+        case "$item" in
+            *.completion)
+                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
+            *.conf)
+                install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
+            *)
+                install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
+        esac
+    done
+
+}
