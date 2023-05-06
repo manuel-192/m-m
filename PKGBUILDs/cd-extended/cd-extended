@@ -21,15 +21,24 @@ cd-extended() {
     #  - note: direct child folder will not be rejected
 
     _IsAllowedDir() {
-        [ -f $REJECTOR_FILE ] && return 1
-        local dir
-        for dir in "${CDPATH_REJECT[@]}" ; do
-            [ "$dir" -ef "$PWD" ] && return 2
-        done
-        return 0
-    }
-    _IsDirectChildDir() {
-        [ ".." -ef "$startdir" ]
+        local msg=""
+
+        if [ -f $REJECTOR_FILE ] ; then
+            msg="Sorry, target folder rejected by file '$REJECTOR_FILE'. Use '$bcd' instead."
+        else
+           local dir
+           for dir in "${CDPATH_REJECT[@]}" ; do
+               if [ "$dir" -ef "$PWD" ] ; then
+                   msg="Sorry, target folder rejected by variable 'CDPATH_REJECT'. Use '$bcd' instead."
+                   break
+               fi
+           done
+        fi
+        # $newdir was rejected above, but still may allow direct child folder.
+        if [ -n "$msg" ] && [ ! "$PWD" -ef "$startdir/$newdir" ] ; then
+            echo "$msg" >&2
+            return 1
+        fi
     }
     _SetNewMultiDir() {
         local nextix="$1"
@@ -42,13 +51,19 @@ cd-extended() {
             printf "    $mark %s\n" "$str" >&2
         done
     }
-    _Cd() { echo "$@" ; }
-
     _HandleMultiMatch() {
+        _UniqueMatch() {
+            local dir="$1"
+            local ff
+            for ff in "${matches[@]}" ; do
+                [ "$ff" -ef "$dir" ] && return 1
+            done
+        }
         _MultiDirStore() {
             local count=${#matches[@]}
             local nextix
 
+            # If $PWD is one of the multiple matches, go to the next match.
             for ((nextix=0; nextix < count; nextix++)) ; do
                 if [ "${matches[$nextix]}" -ef "$PWD" ] ; then
                     ((nextix++)) ; [ $nextix -eq $count ] && nextix=0
@@ -57,69 +72,76 @@ cd-extended() {
                 fi
             done
 
+            # $PWD is not a matched folder, so select the first of the multiple matches.
             _SetNewMultiDir 0
         }
 
         # Change $newdir in case of multiple matches.
 
-        case "$newdir" in
-            /*) return ;;  # absolute path so nothing to do
-        esac
+        # Find all unique matches for the given $newdir.
         local ix matches=()
         for ((ix=0; ix < ${#CDPATH_ARR[@]}; ix++)) ; do
             if [ -d "${CDPATH_ARR[$ix]}/$newdir" ] ; then
-                matches+=("${CDPATH_ARR[$ix]}/$newdir")      # rejected folders are handled elsewhere
+                if _UniqueMatch "${CDPATH_ARR[$ix]}/$newdir" ; then
+                    matches+=("${CDPATH_ARR[$ix]}/$newdir")      # rejected folders are handled elsewhere
+                fi
             fi
         done
         case "${#matches[@]}" in
-            0) return 1 ;;
-            1) newdir="${matches[0]}" ;;
-            *) _MultiDirStore ;;
+            0) return 1 ;;                     # no match, later code will handle it
+            1) newdir="${matches[0]}" ;;       # exactly one match
+            *) _MultiDirStore ;;               # multiple matches, choose where to go next
         esac
     }
+    _HandleRelativeRejects() {
+        local ix msg=""
+        for ((ix=0; ix < ${#CDPATH_REJECT_RELATIVE[@]}; ix++)) ; do
+            if [ "$newdir" = "${CDPATH_REJECT_RELATIVE[$ix]}" ] ; then
+                msg="Sorry, target folder rejected by variable 'CDPATH_REJECT_RELATIVE'. Use e.g. prefix ./ instead."
+                break
+            fi
+        done
+        # $newdir was rejected, but still may allow direct child folder.
+        if [ -n "$msg" ] && [ ! -d "$startdir/$newdir" ] ; then
+            echo "$msg" >&2
+            return 1
+        fi
+    }
 
-    local funcname="$FUNCNAME"
+    _cd_is_echo() { echo "$@" ; }
+
     local newdir="$1"
+    local funcname="$FUNCNAME"
     local REJECTOR_FILE=".no-cd"
+    local bcd="builtin cd"
+    local startdir="$PWD"
 
     case "$newdir" in
-        -* | "")
-            _Cd "$@"
+        ?*/) newdir=${newdir%/} ;;             # remove trailing /
+    esac
+
+    _HandleRelativeRejects || return $?        # reject some relative paths
+
+    case "$newdir" in
+        -* | /* | .*)
+            _cd_is_echo "$@"
+            ;;
+        "")
+            _cd_is_echo "$HOME"
             ;;
         *)
-            if [ -n "$2" ] ; then
-                _Cd "$@"
-                return $?
-            fi
-
-            # extensions start here!
-
-            local ret=0
-            local startdir="$PWD"                     # used for allowing direct child dir
-
-            _HandleMultiMatch                         # if multiple matches, select a (round robin) value for newdir
-
-            builtin cd "$newdir" >/dev/null || return $?    # optimistically cd to the given dir, check validity below
-
-            _IsAllowedDir || ret="$?"                 # check if the dir is somehow rejected
-
-            case "$ret" in
-                0)
-                    _Cd "$PWD"
-                    ;;                                # OK!
-                *)
-                    if ! _IsDirectChildDir ; then
-                        # builtin cd - >/dev/null           # go back to the original folder (not really needed...)
-                        case "$ret" in
-                            1) echo "Sorry, target folder rejected by file '$REJECTOR_FILE'. Use '$cd' instead." >&2 ;;
-                            2) echo "Sorry, target folder rejected by variable 'CDPATH_REJECT'. Use '$cd' instead." >&2 ;;
-                            *) echo "Sorry, target folder rejected by user. Use '$cd' instead." >&2 ;;
-                        esac
-                        return $ret
-                    fi
-                    ;;
-            esac
-            ;;
+            case "$2" in
+               "")          # extensions start here!
+                   _HandleMultiMatch                             # if multiple matches, select a (round robin) value for newdir
+                   $bcd "$newdir" >/dev/null || return $?        # optimistically cd to the given dir, check rejections below
+                   _IsAllowedDir || return "$?"                  # check if the dir is somehow rejected
+                   _cd_is_echo "$PWD"                            # OK, just echo the new folder name
+                   ;;
+               *)
+                   _cd_is_echo "$@"
+                   ;;
+           esac
+           ;;
     esac
 }
 
