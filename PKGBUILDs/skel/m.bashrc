@@ -27,6 +27,7 @@ _try_alias() {
     type "$name" >& /dev/null || alias "$name"="$def"
 }
 
+
 open-anything() {
     {
         local app=exo-open
