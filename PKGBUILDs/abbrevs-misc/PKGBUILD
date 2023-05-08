@@ -6,13 +6,14 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=4
+pkgrel=5
 
 arch=('any')
 license=('GPL')
-depends=(ncdu
-         eos-bash-shared   # for curl
-        )
+depends=(
+    ncdu
+    eos-bash-shared   # for curl
+)
 optdepends=(
     'grub: for updating grub.cfg'
     'systemd: for Power-routines'
@@ -26,7 +27,6 @@ source=(
     $url/Power-routines
     $url/printf2
     $url/update-grub
-    $url/apps-to-funcs.bash
 )
 sha512sums=('c808bbb3ae9bd5a9419545cbdf8f96856ee9862d7e7248fc0b6c6ed351b107c2719f237de04e7a1d780970d55e678371be57b298a925cd459dbb73e406f5183c'
             '9efae914b6a100cf41f30a554ff83592e0805e040f8167d3cc8bf3d049a247bd2166013f8a3a52d9fdde070bd485ba8bccf2fcbcc76ffdfeaf2a1d405ee64e05'
