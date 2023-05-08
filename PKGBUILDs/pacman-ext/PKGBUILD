@@ -6,10 +6,7 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=24.3
-
-changelog=changelog.md
-
+pkgrel=24.4
 arch=(any)
 license=(GPL)
 depends=(bash expac)
@@ -67,4 +64,33 @@ package() {
                 install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
         esac
     done
+
+    _changelog_generate
+}
+
+changelog=changelog.md
+
+_changelog_generate() {
+    local version
+    if declare -F pkgver ; then
+        version=$(pkgver)-$pkgrel
+    else
+        version=${pkgver}-$pkgrel
+    fi
+
+    # Write changes in simple markdown format, then it is readable in both text and markdown.
+
+    local all_changes="
+$pkgname: latest version $version
+
+# Changes
+## 23-24.4
+- added more support for changelog
+- use markdown in changelog
+## 23-24.3
+- remove a temporary file
+## 23-24.2
+- tiny structural rewrite
+"
+    echo "$all_changes" > ../$changelog
 }
