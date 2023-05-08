@@ -127,8 +127,9 @@ HandleRepo() {
     echo2 "==> Build folder = $folder"
     echo2 ""
 
-    pushd ~/ >/dev/null
-    pushd $folder >/dev/null
+    local dirnow="$PWD"
+    cd "$folder"
+
     case "$folder" in
         local-repo)
             if [ -x /usr/bin/local-repo-manager ] ; then
@@ -144,8 +145,8 @@ HandleRepo() {
             count_to_build=$?
             ;;
     esac
-    popd >/dev/null
-    popd >/dev/null
+
+    cd "$dirnow"
 }
 
 HandleRepos() {
