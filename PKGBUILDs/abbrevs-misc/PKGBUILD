@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=5
+pkgrel=5.1
 
 arch=('any')
 license=('GPL')
@@ -26,16 +26,14 @@ source=(
     $url/pkgfind
     $url/Power-routines
     $url/printf2
-    $url/update-grub
+#    $url/update-grub
 )
 sha512sums=('c808bbb3ae9bd5a9419545cbdf8f96856ee9862d7e7248fc0b6c6ed351b107c2719f237de04e7a1d780970d55e678371be57b298a925cd459dbb73e406f5183c'
             '9efae914b6a100cf41f30a554ff83592e0805e040f8167d3cc8bf3d049a247bd2166013f8a3a52d9fdde070bd485ba8bccf2fcbcc76ffdfeaf2a1d405ee64e05'
             'be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
             'c1a6480300a4ff9d7c6aa7a521873d2b38373d74e8a6750f69bf90fba41f16d54b63f09a56a961e997a115cecc3d7944086d5d7b0834187e16e57b24bb088bfa'
             '37a0ba3672efd8e97b26565d9a3959729a019e14f6b761d2a3a5107644c04be2f2091c06ff49dde44edb543de280709f3e249e152a6b6fb2f83c28da89621ee6'
-            'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
-            '57b471678c9cc9e77636629b6ab66845657267380c1e5bd2f9fab97cfd72ed036b1152e7d9cc4c716e540023b206e9b4ad8d18651b507389381683974c90f524'
-            'b52dd77a58b9e09c56c13aeef2227b2b972038ad8708c6dac28abf5a61387a754a7a13414cdbbd4165575c16135fd4327ce89b164f3997f7819f4663fb11db0d')
+            'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9')
 
 package() {
     local item
