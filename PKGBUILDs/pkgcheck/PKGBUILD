@@ -10,7 +10,8 @@ pkgrel=20
 
 arch=('any')
 license=('GPL')
-depends=(cd-path)
+depends=()
+backup=(etc/$pkgname.conf)
 
 source=(
     $url/pkgcheck
@@ -19,7 +20,7 @@ source=(
 )
 sha512sums=('3e2e30880b7044a59f5a92eb19c5dcd63008c39b174cfb3216f6404733a721d53ca1a973dd6416e2caa18dba16ddbf648950e41b2e8ffbf1106e74e31e9307c2'
             'a7da2a7860984207f697ec70eda7544e4ee4bf276c4f018f6719733c26cb4f807fa670e74e55ab901ff25bdeaada350c17fd80d4cac53eef3c9467e677941810'
-            'eb10af1e8e5eb99532ddf5c2cddfe33f111d6139af3016a69b548d68164f41b0d7c937a6393a8ab4cd418083b94edb1528c2bc990d0e2076524f676ad2aac556')
+            '088d71b0b10ca859af78fba163f5d3e5172a6632c678cec3bce72526a4fdcb7372fcb8628360bce70471bb6b58748842fcc353d37cc28021add7b86ad57191a4')
 
 package() {
     local xx name
