@@ -195,8 +195,8 @@ pkgcheck() {
         git_repo[${KNOWN_REPO_FOLDERS[$ix]}]="${reponames[$ix]}"
     done
 
-    source $HOME/.config/cd.conf || return $?
-    source /etc/skel/cd.bash || return $?
+    #source $HOME/.config/cd.conf || return $?
+    #source /etc/skel/cd.bash || return $?
 
     Options "$@" || return $?
 
