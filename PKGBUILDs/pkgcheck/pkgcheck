@@ -127,11 +127,9 @@ HandleRepo() {
     echo2 "==> Build folder = $folder"
     echo2 ""
 
-    local dirnow="$PWD"
-    cd "$folder"
-
     case "$folder" in
         local-repo)
+            # local-repo-manager knows the build folder from the config file
             if [ -x /usr/bin/local-repo-manager ] ; then
                 /usr/bin/local-repo-manager $opt --verbose
             elif [ -x ./local-repo-manager ] ; then
@@ -141,19 +139,14 @@ HandleRepo() {
             fi
             ;;
         *)
+            # these repos must be built in the proper folder
+            local dirnow="$PWD"
+            cd "$folder"
             assets.make $opt
             count_to_build=$?
+            cd "$dirnow"
             ;;
     esac
-
-    cd "$dirnow"
-}
-
-HandleRepos() {
-    local reponame
-    for reponame in "$@" ; do
-        HandleRepo
-    done
 }
 
 pkgcheck() {
@@ -176,10 +169,9 @@ pkgcheck() {
     declare -A dir_repo
     declare -A git_repo
 
-    local reponames=("${KNOWN_REPONAMES[@]}")
     local folders=("${KNOWN_BUILD_FOLDERS[@]}")
     local ix
-    local count=${#reponames[@]}
+    local count=${#KNOWN_REPONAMES[@]}
 
     local rn bf fi
 
@@ -187,12 +179,12 @@ pkgcheck() {
 
     for ((ix=0; ix<count; ix++)) ; do
         bf="${folders[$ix]}"
-        rn="${reponames[$ix]}"
+        rn="${KNOWN_REPONAMES[$ix]}"
         fi=${folders[$ix]}
 
-        repo_dir[${reponames[$ix]}]="$bf"
+        repo_dir[${KNOWN_REPONAMES[$ix]}]="$bf"
         dir_repo[$fi]="$rn"
-        git_repo[${KNOWN_REPO_FOLDERS[$ix]}]="${reponames[$ix]}"
+        git_repo[${KNOWN_REPO_FOLDERS[$ix]}]="${KNOWN_REPONAMES[$ix]}"
     done
 
     #source $HOME/.config/cd.conf || return $?
@@ -200,18 +192,13 @@ pkgcheck() {
 
     Options "$@" || return $?
 
-    case "$reponame" in
-        EOS) HandleRepos "${REPO_GROUP_EOS[@]}" ;;
-        MAN) HandleRepos "${REPO_GROUP_MAN[@]}" ;;
-        ALL) HandleRepos "${REPO_GROUP_EOS[@]}" "${REPO_GROUP_MAN[@]}" ;;
-        *)
-            local count_to_build=0
-            HandleRepo
-            case "$opt" in
-                --dryrun | --dryrun-local)
-                    return $((count_to_build + 0))
-                    ;;
-            esac
+    local count_to_build=0
+
+    HandleRepo
+
+    case "$opt" in
+        --dryrun | --dryrun-local)
+            return $((count_to_build + 0))
             ;;
     esac
 }
