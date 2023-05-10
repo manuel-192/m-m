@@ -1,0 +1,25 @@
+#!/bin/bash
+
+BannerLine() {
+    local str="$1"
+    local count="$2"
+    local nl="$3"   # optional, "no" prevents newline
+
+    printf "%0.s$str" $(seq 1 $count)
+
+    [ "$nl" != "no" ] && echo ""
+}
+
+Main()
+{
+    local targets="$(cat)"
+    [ -n "$targets" ] || return
+    local out=$(expac -Q '%n|%d' $targets | /bin/column -t -s'|')
+    local maxlen=$(echo "$out" | wc -L)
+
+    BannerLine '=' $maxlen
+    echo "$out"
+    BannerLine '=' $maxlen
+}
+
+Main "$@"

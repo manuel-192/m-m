@@ -6,19 +6,17 @@ pkgname=hook-update-description
 pkgdesc="Show updates with their descriptions."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
-#depends=()
-#backup=(etc/grub-install-parameters-local.conf)
 
 source=(
     $url/$pkgname.hook
-    $url/showline
+    $url/$pkgname
  )
-sha512sums=('cf9b8c337a7b621316139e7b2e6eac9289e79257e702f8a15f2709fd0c4d464e93ffba883fdf06ddc50d712a59d0e967951c27e9c9c15e31c0045d44c2825fa4'
-            '85b88b5d937425bb94e6c2a494d8f8e679f12f57a5eda1aa631f8d396577a939711e2dda3a20edca18f134c4414b7a5c004f3cf5e40f0f7395e43037aac55b33')
+sha512sums=('f25f4f9a66fb01706d7fb46d9078f3ead06886c6a062701e411ad9f2d0adf5bda7302d9eba10c23ae5362cac9c4b9b7be379e7bad654369208e73ef1f65d6213'
+            '75b88464faeee0cc8d525f916d564838b3ab9a3029cde4df966977f6f0533172e003cbd9764fdc98f9cc122ca59bddd330b47df7f43a0b36b743ac9e59447b46')
 
 package() {
     local hookdir1=$pkgdir/usr/share/libalpm/hooks
