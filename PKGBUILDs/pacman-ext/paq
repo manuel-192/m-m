@@ -12,14 +12,7 @@ Cmd() {
 show-updates-and-descriptions() {
     local updates=$(pacman -Su --print-format '%n')
     if [ -n "$updates" ] ; then
-        if false ; then
-            local bannerline=$(printf "%.0s=" {1..70})
-            echo "$bannerline"
-            expac -Q '%n|%d' $updates | column -t -s'|' | sort
-            echo $bannerline
-        else
-            hook-update-description $updates
-        fi
+        hook-update-description $updates
         return 0
     else
         echo "Nothing to do." >&2
