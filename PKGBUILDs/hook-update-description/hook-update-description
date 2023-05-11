@@ -3,21 +3,25 @@
 BannerLine() {
     local str="$1"
     local count="$2"
-    local nl="$3"   # optional, "no" prevents newline
 
-    printf "%0.s$str" $(seq 1 $count)
+    [ -n "$str" ] || return
 
-    [ "$nl" != "no" ] && echo ""
+    printf "%0.s$str" $(seq $count)
+    echo ""
 }
 
 Main()
 {
-    local pkgnames="$*"                      # as parameters
-    [ -n "$pkgnames" ] || pkgnames="$(cat)"  # piped
-    [ -n "$pkgnames" ] || return
+    local pkgnames="$*"                  # as parameters
+    if [ -z "$pkgnames" ] ; then
+        pkgnames="$(cat)"                # piped
+        [ -z "$pkgnames" ] && return
+    fi
 
-    local out=$(expac -Q '%n|%d' $pkgnames | /bin/column -t -s'|')
-    local maxlen=$(echo "$out" | wc -L)
+    local out maxlen
+
+    out=$(expac -Q '%n|%d' $pkgnames | /bin/column -t -s'|')
+    maxlen=$(echo "$out" | wc -L)
 
     BannerLine '=' $maxlen
     echo "$out"
