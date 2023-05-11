@@ -12,9 +12,11 @@ BannerLine() {
 
 Main()
 {
-    local targets="$(cat)"
-    [ -n "$targets" ] || return
-    local out=$(expac -Q '%n|%d' $targets | /bin/column -t -s'|')
+    local pkgnames="$*"                      # as parameters
+    [ -n "$pkgnames" ] || pkgnames="$(cat)"  # piped
+    [ -n "$pkgnames" ] || return
+
+    local out=$(expac -Q '%n|%d' $pkgnames | /bin/column -t -s'|')
     local maxlen=$(echo "$out" | wc -L)
 
     BannerLine '=' $maxlen
