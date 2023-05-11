@@ -6,10 +6,10 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=24.4
+pkgrel=24.5
 arch=(any)
 license=(GPL)
-depends=(bash expac)
+depends=(bash expac hook-update-description)
 optdepends=(
     'eos-bash-shared: nvidia vs. kernel update check'
     'eos-update-notifier: for using checkupdatesext (one of the update checkers)'
