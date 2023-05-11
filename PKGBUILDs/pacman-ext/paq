@@ -18,7 +18,7 @@ show-updates-and-descriptions() {
             expac -Q '%n|%d' $updates | column -t -s'|' | sort
             echo $bannerline
         else
-            hook-update-description
+            hook-update-description $updates
         fi
         return 0
     else
