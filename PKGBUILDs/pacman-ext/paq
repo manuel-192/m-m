@@ -6,7 +6,7 @@
 
 Cmd() {
     [ $verbose = yes ] && echo "==>" "$@" >&2
-    "$@" || exit $?
+    "$@"
 }
 
 show-updates-and-descriptions() {
@@ -15,8 +15,8 @@ show-updates-and-descriptions() {
         hook-update-description $updates
         return 0
     else
-        echo "Nothing to do." >&2
-        exit 1
+        echo "No updates." >&2
+        return 0
     fi
 }
 
@@ -33,6 +33,8 @@ Main() {
     Cmd pacman -Sy
     Cmd show-updates-and-descriptions
     Cmd pacman -Su
+    Cmd pacman -Qm
+    Cmd eos-pacdiff
 }
 
 Main
