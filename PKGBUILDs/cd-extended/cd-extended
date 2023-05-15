@@ -24,12 +24,12 @@ cd-extended() {
         local msg=""
 
         if [ -f $REJECTOR_FILE ] ; then
-            msg="Sorry, target folder rejected by file '$REJECTOR_FILE'. Use '$bcd' instead."
+            msg="==> rejected by $REJECTOR_FILE. Use '$bcd' instead."
         else
            local dir
            for dir in "${CDPATH_REJECT[@]}" ; do
                if [ "$dir" -ef "$PWD" ] ; then
-                   msg="Sorry, target folder rejected by variable 'CDPATH_REJECT'. Use '$bcd' instead."
+                   msg="==> rejected by $CDPATH_REJECT. Use '$bcd' instead."
                    break
                fi
            done
@@ -97,7 +97,7 @@ cd-extended() {
         local ix msg=""
         for ((ix=0; ix < ${#CDPATH_REJECT_RELATIVE[@]}; ix++)) ; do
             if [ "$newdir" = "${CDPATH_REJECT_RELATIVE[$ix]}" ] ; then
-                msg="Sorry, target folder rejected by variable 'CDPATH_REJECT_RELATIVE'. Use e.g. prefix ./ instead."
+                msg="==> rejected by \$CDPATH_REJECT_RELATIVE. Use a prefix path instead."
                 break
             fi
         done
