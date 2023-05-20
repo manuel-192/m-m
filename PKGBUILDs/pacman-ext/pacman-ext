@@ -145,6 +145,7 @@ CheckUpdatesFunc() {
         echo "$header"
         echo "$header" | sed 's/[^|]/~/g'
     }
+    echo "Checking available updates..." >&2
 
     if [ "$checkupdates" = "checkupdatesext" ] ; then
         checkupdatesext
