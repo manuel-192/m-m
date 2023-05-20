@@ -165,6 +165,7 @@ CheckUpdatesFunc() {
             {
                 case "$checkupdates" in
                     expac)
+                        # deprecated... use checkupdates instead!
                         HeaderOfUpdates "Package name|New version|Description"
                         if false ; then
                             expac -S "%n|%v|%d" $(echo "$updates" | awk '{print $1}')   # 'new version' may not be correct...
@@ -179,8 +180,17 @@ CheckUpdatesFunc() {
                         fi
                         ;;
                     checkupdates)
-                        HeaderOfUpdates "Package name|Current version|New version"
-                        echo "$updates" | sed -e 's/ -> / /' -e 's/ /|/g'          # remove "->"
+                        #HeaderOfUpdates "Package name|Current version|New version"
+                        #echo "$updates" | sed -e 's/ -> / /' -e 's/ /|/g'          # remove "->"
+                        HeaderOfUpdates "Package name|Current version|New version|Description"
+                        local pkgnames old_versions new_versions descriptions
+                        readarray -t pkgnames     <<< $(echo "$updates" | awk '{print $1}')
+                        readarray -t old_versions <<< $(echo "$updates" | awk '{print $2}')
+                        readarray -t new_versions <<< $(echo "$updates" | awk '{print $NF}')
+                        readarray -t descriptions <<< $(expac -Q %d "${pkgnames[@]}")
+                        for ((ix=0; ix < ${#pkgnames[@]}; ix++)) ; do
+                            echo "${pkgnames[$ix]}|${old_versions[$ix]}|${new_versions[$ix]}|${descriptions[$ix]}"
+                        done
                         ;;
                 esac
             } | column -t -s'|'
@@ -235,7 +245,7 @@ Indent() {
 }
 
 ExtraChecks() {
-    if [ "$extra_checks" = "yes" ] ; then
+    if [ "$RUN_MORE_EXTRAS" = "yes" ] ; then
         case "$EXTRAS_PACMAN_QM $EXTRAS_PACDIFF" in
             "no yes" | "yes no" | "yes yes")
                 printf2 "\nAdditional commands:\n" ;;
@@ -309,18 +319,19 @@ pacman_ext() {
 }
 
 InitialBanner() {
+    _DefVal() { printf "%-5s" "[$1]" ; }
     if [ "$BANNER_INITIAL" = "yes" ] ; then
         cat <<EOF
 $progname: A pacman wrapper with additional features.
 
-Additional features:
-   - require password only when needed
-   - db lock file check
-   - nvidia & kernel update check
-   - check virtualbox vs. virtualbox-ext-oracle version compatibility
-   - update keyrings first if archlinux-keyring-wkd-sync.timer is not active
-   - 'sync' at end
+Additional features and their defaults:
    - configuration file /etc/$progname.conf
+   - $(_DefVal $EXTRAS_PW_WHEN_NEEDED) require password only when needed
+   - $(_DefVal $EXTRAS_PACMAN_LOCK_CHECK) db lock file check
+   - $(_DefVal $EXTRAS_NVIDIA_CHECK) nvidia & kernel update check
+   - $(_DefVal $EXTRAS_VIRTUALBOX_CHECK) check virtualbox vs. virtualbox-ext-oracle version compatibility
+   - $(_DefVal $EXTRAS_KEYRINGS_FIRST) update keyrings first if archlinux-keyring-wkd-sync.timer is not active
+   - $(_DefVal $EXTRAS_SYNC_AT_END) 'sync' at end
 
 EOF
     fi
@@ -367,7 +378,6 @@ EOF
 Main() {
     local -r progname="$(basename "$0")"   # $progname used by various functions here
 
-    local RUN_EXTRAS=no
     local   EXTRAS_PW_WHEN_NEEDED=yes          # yes=ask password only when needed, no=user handles privileges
     local   EXTRAS_KEYRINGS_FIRST=no           # if yes, update Arch keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
     local   EXTRAS_NVIDIA_CHECK=yes            # runs only if nvidia gpu is detected
@@ -392,7 +402,7 @@ Main() {
     local verbose="$VERBOSE"
     local show_help_now=no
     local just_checkupdates=no
-    local extra_checks="$RUN_MORE_EXTRAS"
+    #local extra_checks="$RUN_MORE_EXTRAS"
     local checkupdates="$CHECKUPDATES"
     local aur_helper="/usr/bin/${AUR_HELPER##*/}"
     local helper=/usr/bin/pacman           # $helper used by special_update()
@@ -458,7 +468,7 @@ Main() {
                 given_checkupdates="${arg#*=}"
                 ;;
             --extras)
-                extra_checks=yes
+                RUN_MORE_EXTRAS=yes
                 ;;
             --mirror-swap-eos)
                 shift
