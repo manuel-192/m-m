@@ -65,7 +65,7 @@ EOF
 
 Main() {
     local progname="${0##*/}"
-    local defaultcmd="pacman-ext -Syu"
+    local defaultcmd="pacman-ext"                 # "pacman-ext -Syu"
 
     case "$1" in
         --tui-install | --tui-remove)
