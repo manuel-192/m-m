@@ -409,7 +409,8 @@ Main() {
     local given_checkupdates=""
 
     if [ "$EXTRAS_KEYRINGS_FIRST" = "no" ] ; then
-        if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
+        #if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
+        if [ -z "$(systemctl status archlinux-keyring-wkd-sync.timer | grep " Active: active ")" ] ; then
             EXTRAS_KEYRINGS_FIRST=yes
         fi
     fi
