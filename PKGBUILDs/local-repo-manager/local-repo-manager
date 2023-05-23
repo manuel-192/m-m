@@ -67,6 +67,8 @@ BuildPackages() {
     local destructor
     local depsfile
 
+    Pushd "$pkgbuilddir"
+    
     for pkgname in "${build_needed[@]}" ; do
         [ -r "$pkgname/PKGBUILD" ] || DIE "no PKGBUILD for '$pkgname'"
         ASSERT Pushd "$pkgname"
@@ -107,6 +109,8 @@ BuildPackages() {
 
         ASSERT Popd
     done
+    Popd   # "$pkgbuilddir"
+
     if [ "$built" = "yes" ] ; then
         AddPackagesToRepo "${pkgs[@]}"
     else
@@ -118,8 +122,9 @@ BuildNeeded() {
     # TODO: handle multipackage PKGBUILDs
 
     local pkgname="$1"
+    local archive="$repodir/PKG_ARCHIVE"
 
-    old_version=$(ls -1 "$pkgname"-*.pkg.tar.zst 2>/dev/null)
+    old_version=$(ls -1 "$repodir/$pkgname"-*.pkg.tar.zst 2>/dev/null)
     old_version=$(echo "$old_version" | tail -n1 | pkg-name-components --real EVR)
     [ -n "$old_version" ] || return 0
 
@@ -127,8 +132,8 @@ BuildNeeded() {
     [ -n "$new_version" ] || DIE "cannot determine the latest available version of package '$pkgname'"
 
     case "$(vercmp "$new_version" "$old_version")" in
-        1)  mkdir -p Archive
-            mv "$pkgname"-*.pkg.tar.zst{,.sig} Archive 2>/dev/null
+        1)  mkdir -p "$archive"
+            mv "$pkgname"-*.pkg.tar.zst{,.sig} "$archive" 2>/dev/null
             return 0
             ;;
         *)  return 1
@@ -146,6 +151,8 @@ FetchPkgbuilds() {
     local pkgname
     local constructor
     local old_version new_version
+
+    Pushd "$pkgbuilddir"
 
     for pkgname in "${PKGNAMES[@]}" ; do
         printf2v "==> %-40s: " "$pkgname"
@@ -175,6 +182,8 @@ FetchPkgbuilds() {
             echo2v ""
         fi
     done
+
+    Popd  # "$pkgbuilddir"
 }
 
 FuncnameToPkgname() {     # convert "_name_" to "name"
@@ -288,6 +297,7 @@ Main() {
     source "$conf" || return 1    # $conf file must fill the required variables above
 
     local repodir="$WORKDIR"    # "$PWD"
+    local pkgbuilddir="$WORKDIR/PKGBUILDS"
     local buildlog="$HOME/.cache/$progname.buildlog"
     local errlog="$HOME/.cache/$progname.errlog"
     local build_needed=()
