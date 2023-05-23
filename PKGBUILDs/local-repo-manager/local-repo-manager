@@ -61,7 +61,7 @@ GetPkgbuildPkgname() {
 }
 
 BuildPackages() {
-    local files file pkgs=()
+    local files file pkgs=() onepkgs=()
     local built=no
     local pkgname                 # pkgname = name in PKGNAMES array (a folder)
     local destructor
@@ -69,7 +69,6 @@ BuildPackages() {
 
     for pkgname in "${build_needed[@]}" ; do
         [ -r "$pkgname/PKGBUILD" ] || DIE "no PKGBUILD for '$pkgname'"
-
         ASSERT Pushd "$pkgname"
 
         depsfile=/tmp/$pkgname.tmp.deps
@@ -91,18 +90,19 @@ BuildPackages() {
                 *) ASSERT "$destructor" after ;;
             esac
         fi
-        pkgs=()
+        onepkgs=()
         readarray -t files <<< $(ls -1 *.pkg.tar.zst 2>/dev/null)
         for file in "${files[@]}" ; do
             if [ ! -e "$repodir/$file" ] || [ "$force_rebuild" = "yes" ] ; then
                 rm -f "$repodir/$file"{,.sig}
-                pkgs+=("$file")                           # these are new repo files
+                onepkgs+=("$file")                        # these are new repo files
             fi
         done
-        if [ ${#pkgs[@]} -gt 0 ] ; then
-            ASSERT cp "${pkgs[@]}" "$repodir"             # copy built package files to the repo
-            rm -f "${pkgs[@]}"                            # cleanup
+        if [ ${#onepkgs[@]} -gt 0 ] ; then
+            ASSERT cp "${onepkgs[@]}" "$repodir"          # copy built package files to the repo
+            rm -f "${onepkgs[@]}"                         # cleanup
             built=yes
+            pkgs+=("${onepkgs[@]}")
         fi
 
         ASSERT Popd
@@ -287,7 +287,7 @@ Main() {
 
     source "$conf" || return 1    # $conf file must fill the required variables above
 
-    local repodir="$PWD"
+    local repodir="$WORKDIR"    # "$PWD"
     local buildlog="$HOME/.cache/$progname.buildlog"
     local errlog="$HOME/.cache/$progname.errlog"
     local build_needed=()
