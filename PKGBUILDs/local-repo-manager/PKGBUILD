@@ -6,7 +6,7 @@ pkgname=local-repo-manager
 pkgdesc="Manage local repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=16.5
+pkgrel=16.6
 
 arch=(any)
 license=(GPL)
