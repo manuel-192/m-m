@@ -158,6 +158,16 @@ RunOnlyIfAllowed() {
 }
 
 GitUpdate() {
+    if false && [ "$reponame" = "endeavouros" ] ; then
+	local file
+	printf2 "==> You need to transfer the following files to github:"
+	for file in $git_adds ; do
+	    printf "       %s\n" "$file"
+	done
+	echo2 "==> Commands 'cd $gitdir ; git push', or use the browser for the same."
+	return
+    fi
+
     local commit_msg="$1"
 
     cd "$gitdir"
