@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Some useful pacman operations.
+
+NextPhase() {
+    case "$1" in
+        -h | --help)
+            cat <<EOF
+Usage: $progname [option] [operation]
+Options:
+  -h, --help   This help.
+  --tool=X     Use tool X instead of pacman. X can be one of: pacman, paru, yay.
+  -Syu         Runs plain '$tool -Syu'.
+Operations:
+  keyring      Updates pacman database and tries to update keyring packages.
+  display      Displays available package updates and their new versions.
+  update       Updates packages.
+
+Note that pacman database should be updated before other operations.
+
+Example:
+    sudo bash -c "$progname keyring && $progname update"
+
+EOF
+            ;;
+        "")       NextPhase keyring && NextPhase update ;;
+        keyring)  $tool -Sy --noconfirm --needed archlinux-keyring endeavouros-keyring ;;
+        display)  $tool -Su --print-format '%n %v' ;;   # shows each pkgname and new version
+        update)   $tool -Su ;;
+    esac
+}
+
+Main() {
+    # Note: pacman -Sy must run before other pacman commands.
+    local progname="${0##*/}"
+    local tool=pacman
+    local cmd=":"
+    local cmd_keyring
+    local cmd_display
+    local cmd_update
+    local cmd_default
+
+    case "$1" in
+        --tool=*) tool="${1:7}"; shift ;;    # tool can be one of: pacman paru yay
+    esac
+
+    cmd_keyring="$tool -Sy --noconfirm --needed archlinux-keyring endeavouros-keyring"
+    cmd_display="$tool -Su --print-format \"%n %v\""
+     cmd_update="$tool -Su"
+    cmd_default="$cmd_keyring && $cmd_update"
+
+    while [ -n "$1" ] ; do
+        case "$1" in
+            default) cmd="$cmd_keyring && $cmd_update" ;;
+            keyring) cmd="$cmd_keyring" ;;
+            display) cmd+=" && $cmd_display" ;;
+            update)  cmd+=" && $cmd_update" ;;
+        esac
+        shift
+    done
+    [ "$cmd" = ":" ] && cmd="$cmd_keyring && $cmd_display && $cmd_update"
+
+    if [ $tool = pacman ] ; then
+        sudo bash -c "$cmd"
+    else
+        bash -c "$cmd"   # may ask elevated password more than once...
+    fi
+}
+
+Main "$@"
