@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Some useful pacman operations.
+
+Main() {
+    # Note: pacman -Sy must run before other pacman commands.
+    local progname="${0##*/}"
+    case "$1" in
+        -h | --help)
+            cat <<EOF
+Usage: $progname [operation]
+Operations:
+  ""        Updates pacman database only.
+  keyring   Updates pacman database and tries to update keyring packages.
+  display   Displays available package updates and their new versions.
+  update    Updates packages.
+
+Note that pacman database should be updated before other operations.
+
+EOF
+            ;;
+        "")      pacman -Sy ;;
+        keyring) pacman -Sy --noconfirm --needed archlinux-keyring endeavouros-keyring ;;
+        display) pacman -Su --print-format '%n %v' ;;   # shows each pkgname and new version
+        update)  pacman -Su ;;
+    esac
+}
+
+Main "$@"
