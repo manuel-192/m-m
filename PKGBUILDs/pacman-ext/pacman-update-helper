@@ -44,9 +44,9 @@ Main() {
         --tool=*) tool="${1:7}"; shift ;;    # tool can be one of: pacman paru yay
     esac
 
-    cmd_keyring="$tool -Sy --noconfirm --needed archlinux-keyring endeavouros-keyring"
-    cmd_display="$tool -Su --print-format \"%n %v\""
-     cmd_update="$tool -Su"
+    cmd_keyring="/bin/$tool -Sy --noconfirm --needed archlinux-keyring endeavouros-keyring"
+    cmd_display="/bin/$tool -Su --print-format \"%n %v\""
+     cmd_update="/bin/$tool -Su"
     cmd_default="$cmd_keyring && $cmd_update"
 
     while [ -n "$1" ] ; do
