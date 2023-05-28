@@ -77,12 +77,14 @@ CheckDiff() {
             has_statefile=yes
             statefile="$PWD/state"
             test -r "$statefile" || DIE "file '$statefile' is missing!"
-            srcdir="$PWD/../_BUILD_/mirrors.mirror1"
+            #srcdir="$PWD/../_BUILD_/mirrors.mirror1"
+            srcdir="$ASSETSDIR"
             dstdir="$PWD/$reponame/x86_64"
             git_adds="$reponame state"
             ;;
         endeavouros-testing-dev)                           # was eos-tools
-            srcdir="$PWD/../_BUILD_/repo-testing.x86_64"
+            #srcdir="$PWD/../_BUILD_/repo-testing.x86_64"
+            srcdir="$ASSETSDIR"
             dstdir="$PWD/$reponame"                        # was endeavouros-pkgtools
             git_adds="$(basename "$dstdir")"
             ;;
@@ -206,9 +208,10 @@ GetArmCommitMessage() {
 
 Main()
 {
-    local handle_also_arm=no          # yes or no; will be no later
     local commit_msg="$1"
+    local ASSETSDIR="$2"
     local commit_msg_arm=""
+    local handle_also_arm=no          # yes or no; will be no later
 
     [ -f .GitUpdate ] || DIE "no .GitUpdate file in folder $PWD"
     [ -d .git ]       || DIE "no .git folder in $PWD"
