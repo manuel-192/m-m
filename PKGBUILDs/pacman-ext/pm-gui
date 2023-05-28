@@ -100,6 +100,7 @@ export PMGUI_PROGNAME="$(basename "$0")"
 
 Main() {
     local pacman_conf=/etc/pacman.conf
+    local pacman_ext_conf=/etc/pacman-ext.conf
 
     local -r amp="&amp;"
     local -r and="&#38;"
@@ -125,9 +126,8 @@ Main() {
         --field="Install!$icon_install!Select and install packages":fbtn "RunInTerminal 'paf -i'"
         --field="Remove!$icon_manager!Select and remove packages":fbtn "RunInTerminal 'paf -r'"
 
-        --field=" Configure package cache management!$icon_prefs!Configure management of the package cache)":fbtn 'paccache-service-manager'
-
         --field="Edit $pacman_conf!$icon_edit!Change general package management settings":fbtn "EditFile $pacman_conf"
+        --field="Edit $pacman_ext_conf!$icon_edit!Change settings of pacman-ext":fbtn "EditFile $pacman_ext_conf"
         --field="Edit Arch mirrorlist!$icon_edit!Change the list of Arch mirrors":fbtn "EditFile /etc/pacman.d/mirrorlist"
         --field="Edit EndeavourOS mirrorlist!$icon_edit!Change the list of EndeavourOS mirrors":fbtn "EditFile /etc/pacman.d/endeavouros-mirrorlist"
 
@@ -135,7 +135,8 @@ Main() {
         --field="Rank EndeavourOS mirrors!$icon_prefs!Re-organize list of EndeavourOS mirrors":fbtn "RunInTerminal eos-rankmirrors"
 
         --field=" Pacdiff $and meld!$icon_prefs!Use apps pacdiff and meld to manage system config changes":fbtn "eos-pacdiff --nt"
-        --field=" System suggestions!$icon_prefs!Propose potentially needed changes to your system":fbtn "SystemSuggestions"
+        --field=" Configure package cache management!$icon_prefs!Configure management of the package cache)":fbtn 'paccache-service-manager'
+        # --field=" System suggestions!$icon_prefs!Propose potentially needed changes to your system":fbtn "SystemSuggestions"
     )
 
     "${cmd[@]}" >/dev/null &
