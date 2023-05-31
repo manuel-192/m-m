@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Enhance CDPATH so that
+#   - if multiple matches, make round robin with them
+
+DIE() {
+    [ -n "$1" ] && echo "$@" >&2
+    exit 1
+}
+
+ncd() {
+    local dir matches=() ix count found=no
+
+    for dir in "${CDPATH_ARR[@]}" ; do
+        if [ -d "$dir/$newdir" ] ; then
+            matches+=("$dir/$newdir")
+        fi
+    done
+    count=${#matches[@]}
+    case "$count" in
+        0) dir="$newdir" ;;         # no match in CDPATH_ARR
+        1) dir="${matches[0]}" ;;   # one match in CDPATH_ARR
+        *)
+            # many matches in CDPATH_ARR
+            for ((ix=0; ix < ${#matches[@]}; ix++)) ; do
+                if [ "${matches[$ix]}" -ef "$PWD" ] ; then
+                    found=yes
+                    break
+                fi
+            done
+            if [ "$found" = "no" ] ; then
+                ix=0
+            else
+                ((ix++)) ; [ $ix -ge $count ] && ix=0
+            fi
+            dir="${matches[$ix]}"
+            echo "($((ix+1))/$count)" >&2
+            ;;
+    esac
+
+    echo "$dir"
+}
+
+Main()
+{
+    local newdir="$1"
+    local bcd="builtin cd"
+
+    source ~/.config/cd-extended.conf || DIE ""
+
+    case "$newdir" in
+        "") echo "$newdir" ;;
+        .* | /* | -) echo "$newdir" ;;
+        *) ncd "$newdir" ;;
+    esac
+}
+
+Main "$@"
