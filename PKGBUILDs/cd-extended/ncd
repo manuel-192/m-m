@@ -21,12 +21,20 @@ ncd() {
         1) dir="${matches[0]}" ;;   # one match in CDPATH
         *)
             # many matches in CDPATH
-            for ((ix=0; ix < count; ix++)) ; do
-                [ "${matches[$ix]}" -ef "$PWD" ] && break
-            done
-            [ $ix -ge $((count-1)) ] && ix=0 || ((ix++))
-            echo "($((ix+1))/$count)" >&2
-            dir="${matches[$ix]}"
+            case "2" in
+                1)
+                    for ((ix=0; ix < count; ix++)) ; do
+                        [ "${matches[$ix]}" -ef "$PWD" ] && break
+                    done
+                    [ $ix -ge $((count-1)) ] && ix=0 || ((ix++))
+                    echo "($((ix+1))/$count)" >&2
+                    dir="${matches[$ix]}"
+                    ;;
+                2)
+                    dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
+                    [ -n "$dir" ] || dir=.
+                    ;;
+            esac
             ;;
     esac
 
