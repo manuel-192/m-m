@@ -6,7 +6,7 @@ pkgname=cd-extended
 pkgdesc="cd extended"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=2.5
+pkgrel=2.6
 
 arch=('any')
 license=('GPL')
@@ -17,7 +17,7 @@ source=(
     $url/ncd
 )
 sha512sums=('da27671cbebab6238e404493dd81c5c94eee58e13646010b98ec30dbe35145bad17c69a32618331d8e5c8a245ca9ba0f4e33837516b217943913eae9fea82fb5'
-            '66e97eddc902360c0c9732e1a2aa16fee14031633cc3f93b59af0db4e9e8e220c05066738b1c1931e59b9c66ea6cda670a65af4c34be225ad8276ee2c1041bae')
+            '3c1f14491f3bf9c6c2d178dcbf780ef05bf8827d6fe80fffddc75faebf7cac9fb018d3feb6724dfb4f8b1a280c0c12e76f032abd38414a8af246832df8de75b4')
 
 package() {
     #source /usr/share/endeavouros/scripts/PackageFunc || return 1

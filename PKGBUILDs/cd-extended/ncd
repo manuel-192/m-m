@@ -1,12 +1,7 @@
 #!/bin/bash
 
 # Enhance CDPATH and cd:
-#   - if multiple matches, make round robin with them
-
-DIE() {
-    [ -n "$1" ] && echo "$@" >&2
-    exit 1
-}
+#   - if multiple matches, use fzf to select
 
 AddUniqueMatch() {
     local d="$1"
@@ -21,44 +16,31 @@ ncd() {
     local newdir="$1"
     local dir matches=() ix count
 
-    for dir in ${CDPATH//:/ } ; do
-        if [ -d "$dir/$newdir" ] ; then
-            AddUniqueMatch "$dir/$newdir"
-        fi
-    done
-    count=${#matches[@]}
-    case "$count" in
-        0) dir="$newdir" ;;         # no match in CDPATH
-        1) dir="${matches[0]}" ;;   # one match in CDPATH
-        *)
-            # many matches in CDPATH
-            case "2" in
-                1)
-                    for ((ix=0; ix < count; ix++)) ; do
-                        [ "${matches[$ix]}" -ef "$PWD" ] && break
-                    done
-                    [ $ix -ge $((count-1)) ] && ix=0 || ((ix++))
-                    echo "($((ix+1))/$count)" >&2
-                    dir="${matches[$ix]}"
-                    ;;
-                2)
-                    dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
-                    [ -n "$dir" ] || dir=.
-                    ;;
-            esac
-            ;;
-    esac
-
+    if [ -d "./$newdir" ] ; then
+        dir="./$newdir"                 # prefer direct subdir always
+    else
+        for dir in ${CDPATH//:/ } ; do
+            [ -d "$dir/$newdir" ] && AddUniqueMatch "$dir/$newdir"
+        done
+        count=${#matches[@]}
+        case "$count" in
+            0)  dir="$newdir" ;;         # no match in CDPATH
+            1)  dir="${matches[0]}" ;;   # one match in CDPATH
+            *)
+                # many matches in CDPATH, select with fzf
+                dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
+                [ -n "$dir" ] || dir=.
+                ;;
+        esac
+    fi
     echo "$dir"
 }
 
-Main()
-{
+Main() {
     case "$1" in
         "")          ;;
-        .* | /* | -) echo "$@" ;;
-        -[LP@])      echo "$@" ;;   # ncd does not support options currently
-        -*)          echo "$@" ;;   # error
+        .* | /* | -) echo "$@" ;;   # for builtin cd
+        -*)          echo "$@" ;;   # options to builtin cd
         *)           ncd  "$@" ;;
     esac
 }
