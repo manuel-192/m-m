@@ -8,12 +8,23 @@ DIE() {
     exit 1
 }
 
+AddUniqueMatch() {
+    local d="$1"
+    local m n
+    for m in "${matches[@]}" ; do
+        [ "$d" -ef "$m" ] && return
+    done
+    matches+=("$d")
+}
+
 ncd() {
     local newdir="$1"
     local dir matches=() ix count
 
     for dir in ${CDPATH//:/ } ; do
-        [ -d "$dir/$newdir" ] && matches+=("$dir/$newdir")
+        if [ -d "$dir/$newdir" ] ; then
+            AddUniqueMatch "$dir/$newdir"
+        fi
     done
     count=${#matches[@]}
     case "$count" in
