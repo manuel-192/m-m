@@ -12,36 +12,36 @@ AddUniqueMatch() {
     matches+=("$d")
 }
 
-ncd() {
+HandleCdpathMatches() {
     local newdir="$1"
     local dir matches=() ix count
 
-    if [ -d "./$newdir" ] ; then
-        dir="./$newdir"                 # prefer direct subdir always
-    else
-        for dir in ${CDPATH//:/ } ; do
-            [ -d "$dir/$newdir" ] && AddUniqueMatch "$dir/$newdir"
-        done
-        count=${#matches[@]}
-        case "$count" in
-            0)  dir="$newdir" ;;         # no match in CDPATH
-            1)  dir="${matches[0]}" ;;   # one match in CDPATH
-            *)
-                # many matches in CDPATH, select with fzf
-                dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
-                [ -n "$dir" ] || dir=.
-                ;;
-        esac
-    fi
+    for dir in ${CDPATH//:/ } ; do
+        [ -d "$dir/$newdir" ] && AddUniqueMatch "$dir/$newdir"
+    done
+    count=${#matches[@]}
+    case "$count" in
+        0)  dir="$newdir" ;;         # no match in CDPATH
+        1)  dir="${matches[0]}" ;;   # one match in CDPATH
+        *)  # many matches in CDPATH, select with fzf
+            dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
+            [ -n "$dir" ] || dir=.   # nothing was selected, so stay here
+            ;;
+    esac
     echo "$dir"
 }
 
 Main() {
     case "$1" in
-        "")          ;;
-        .* | /* | -) echo "$@" ;;   # for builtin cd
-        -*)          echo "$@" ;;   # options to builtin cd
-        *)           ncd  "$@" ;;
+        "" | .* | /* | -*)
+            echo "$@" ;;                    # handled by builtin cd
+        *)
+            if [ -d "./$1" ] ; then
+                echo "./$1"                 # always prefer direct subdir
+            else
+                HandleCdpathMatches "$1"
+            fi
+            ;;
     esac
 }
 
