@@ -1,48 +1,31 @@
 #!/bin/bash
 
+# Show a glimpse of the "testing" updates in a "stable" system.
+
+HasRepo() { echo "$repos" | grep "^$1$" >/dev/null ; }
+
+AddRepo() {
+    local before_repo="${1#--before=}"
+    local repo_to_add="$2"
+    local repoentry="[$repo_to_add]\n"
+    repoentry+="Include = /etc/pacman.d/mirrorlist\n"
+    sed -i "$testconf" -e "/^\[$before_repo\]/i \ \n$repoentry"   # add testing repo before its stable repo
+}
 
 glimpse-testing-updates() {
     local testconf="$(mktemp)"
-    local reponame_testing repoentry
-    local repos_testing=(
-        community-testing
-        multilib-testing
-        testing
-    )
-
-    if [ "$XDG_CURRENT_DESKTOP" = "KDE" ] ; then
-        repos_testing+=(kde-unstable)
-    fi
+    local repo
+    local repos=$(pacconf --repo-list)
 
     rm -f "$testconf"
     cp /etc/pacman.conf "$testconf"
+    chmod go-rwx "$testconf"
 
-    for reponame_testing in "${repos_testing[@]}"
-    do
-        case "reponame_testing" in
-            multilib-testing)       # test only multilib here since we "always" need the [community] entry
-                grep "^\[multilib\]$" "$testconf" >& /dev/null || continue
-                ;;
-        esac
-        if ! grep "^\[$reponame_testing\]$" "$testconf" >& /dev/null ; then
-            repoentry="[$reponame_testing]\n"
-            repoentry+="Include = /etc/pacman.d/mirrorlist\n"
-            if grep "^#\[$reponame_testing\]$" "$testconf" >& /dev/null ; then
-                # add the entry before the commented entry
-                sed -i  "$testconf" -e "/^#\[$reponame_testing\]/i \ \n$repoentry"
-            elif grep "^#\[core\]$" "$testconf" >& /dev/null ; then
-                # add the entry before the [core] entry
-                sed -i  "$testconf" -e "/^#\[core\]/i \ \n$repoentry"
-            else
-                cat <<EOF
-Sorry, failed to add testing repos because either
-- the *commented* testing repo entry [$reponame_testing] was not found
-- the [core] repo entry was not found
-in file /etc/pacman.conf.
-EOF
-                rm -f "$testconf"
-                return 1
-            fi
+    [ "$XDG_CURRENT_DESKTOP" = "KDE" ] && AddRepo --before=core kde-unstable
+
+    for repo in core extra multilib ; do
+        if HasRepo $repo ; then
+            HasRepo ${repo}-testing || AddRepo --before=$repo ${repo}-testing
         fi
     done
 
@@ -52,7 +35,5 @@ EOF
     pacman --config "$testconf" -Qu | column -t
     rm -f "$testconf"
 }
-
-
 
 glimpse-testing-updates "$@"
