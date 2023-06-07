@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=connection-checker
+pkgdesc="Check internet connection"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=()
+
+source=(
+    $url/eos-connection-checker
+)
+sha512sums=('fac48d97bbc72d2b2b3a6220bd5a93e11960071ed28a8e385d35b841a70309900007eab63d8db2cd6f976ea2ea883d4f81e4e4ba7a402e85de62df5cb6de2935')
+
+package() {
+    local item src
+
+    for src in "${source[@]}" ; do
+        item="${src##*/}"
+        case "$item" in
+            *.completion)
+                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
+            *.conf)
+                install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
+            *)
+                install -Dm755 "$item"   "$pkgdir/usr/local/bin/$item" ;;
+        esac
+    done
+
+}
