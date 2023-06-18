@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Set or show display brightness using percent values between min (1) and max (100).
+# For Intel graphics.
+
+DIE() {
+    echo "==> $progname: error: $1" >&2
+    exit 1
+}
+Usage() {
+    cat <<EOF >&2
+Usage: $progname [parameter]
+Parameter:
+    =number, number  New percentage value for the brightness.
+    +number          Percentage value to be added to the current value.
+    -number          Percentage value to be removed from the current value.
+Notes:
+- Without parameter the current percentage value is displayed.
+- Given percentage value range is 1-100. The value will be checked
+  and adjusted to the nearest boundary if needed.
+
+EOF
+}
+
+CheckNumber() {
+    local nr="$1"
+    [ -z "$(echo "$nr" | tr -d '[0-9]')" ] && return 0
+    DIE "'$nr' is not a number."
+}
+
+Main() {
+    local percent_new="$1"
+    local -r progname=${0##*/}
+    local -r group=video
+    local -r dir=/sys/class/backlight/intel_backlight
+    local -r file=$dir/brightness
+    local -r val_max=$(< $dir/max_brightness)
+    local -r val_current=$(< $file)
+    local -r factor=$((val_max/100))
+    local -r op=${percent_new::1}
+
+    case "$percent_new" in
+        -h | --help)
+            Usage
+            return
+            ;;
+        -* | +*)
+            percent_new=${percent_new:1}
+            CheckNumber "$percent_new"
+            percent_new=$((val_current/factor $op percent_new))
+            ;;
+        [0-9]* | =[0-9]*)
+            [ $op = "=" ] && percent_new=${percent_new:1}
+            CheckNumber "$percent_new"
+            ;;
+        "")
+            echo $((val_current/factor))
+            return
+            ;;
+        *)
+            Usage
+            DIE "parameter '$percent_new' not supported."
+            ;;
+    esac
+    [ -z "$(id | grep "($group)")" ] && DIE "you must belong in group '$group' to *change* brightness."
+
+    # make sure new value is reasonable
+    if [ $percent_new -gt 100 ] ; then
+        percent_new=100
+    elif [ $percent_new -lt 1 ] ; then
+        percent_new=1
+    fi
+
+    echo $((percent_new * factor)) > $file
+}
+
+Main "$@"
