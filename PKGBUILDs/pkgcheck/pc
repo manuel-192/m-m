@@ -1,0 +1,128 @@
+#!/bin/bash
+
+# - help build endeavouros and other packages
+# - help update sources
+
+pc() {
+    pc_IsSupportedFolderName() {
+        local folder
+        case "$1" in
+            "" | ".") folder="${PWD}" ;;
+            *)        folder="${1}" ;;
+        esac
+        case "${folder##*/}" in
+            endeavouros | endeavouros-testing-dev | m-m | m-more2 | m-aur | MAN | EOS)
+                repodir=$folder  #"${folder##*/}"
+                return 0
+                ;;
+        esac
+        printf "${FUNCNAME[1]}: folder '$folder' is not supported.\nSupported: $supported_folders\n" >&2
+        return 1
+    }
+
+    local repodir=""
+    local op=""
+    local dir1 dir2 dirs
+    local supported_folders="endeavouros endeavouros-testing-dev m-m m-more2 m-aur MAN EOS"
+
+    while [ -n "$1" ] ; do
+        case "$1" in
+            -h | --help)
+                cat <<EOF >&2
+
+Build packages if needed.
+
+Usage: $FUNCNAME [options] [repodir]
+
+Repodir:
+    - "": uses current folder
+    - One of: $supported_folders
+
+Options:
+    -h, --help        This help.
+    -n                Check if build is needed, using local packages.
+    -nn               Check if build is needed, using remote packages.
+    -b                Directly try to build packages.
+    ""                Same as -n.
+EOF
+                return
+                ;;
+            -*) op="$1" ;;
+            *)  repodir="$1" ;;
+        esac
+        shift
+    done
+
+    pc_IsSupportedFolderName "$repodir" || return 1
+
+    case "$repodir" in
+        MAN | EOS | */MAN | */EOS)
+            # special for UpdateSources
+            pushd "$repodir" >/dev/null
+            UpdateSources
+            popd >/dev/null
+            return
+            ;;
+    esac
+
+    for dir1 in "${CDPATH_ARR[@]}" ; do
+        case "$dir1" in
+            */_BUILD_)
+                dirs=("$dir1"/*)
+                for dir2 in "${dirs[@]}" ; do
+                    case "$repodir" in
+                        "" | .) repodir="$PWD" ;;
+                    esac
+                    case "$repodir" in
+                        /*)
+                            if [ "$repodir" -ef "$dir2" ] ; then
+                                repodir="$dir2"
+                                break 2
+                            fi
+                            ;;
+                        *)
+                            case "$dir2" in
+                                */"$repodir")
+                                    repodir="$dir2"
+                                    break 2
+                                    ;;
+                            esac
+                            ;;
+                    esac
+                done
+                ;;
+        esac
+    done
+    case "$op" in
+        "") op="-n" ;;                # ""  = check local
+        -n | -nn) ;;                  # -n  = check local
+        # -nn = check remote
+        -b) op="" ;;                  # -b  = build
+        *)
+            echo "$FUNCNAME: unsupported option '$op'" >&2
+            $FUNCNAME -h
+            return 1
+            ;;
+    esac
+
+    local cwd="$PWD"
+    local exit_code=0
+
+    if [ -n "$repodir" ] ; then
+        cd "$repodir" || return 1
+        if [ ! -L .git ] ; then
+            echo "$FUNCNAME: '$PWD/.git' does not exist or is not a symlink." >&2
+            cd "$cwd"
+            return 1
+        fi
+    fi
+    assets.make $op
+    exit_code=$?
+    cd "$cwd"
+    case $exit_code in
+        100 | 0) ;;
+        *)       return $exit_code ;;
+    esac
+}
+
+pc "$@"
