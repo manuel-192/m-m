@@ -5,7 +5,7 @@ pkgname=eos-brightness
 pkgdesc="Simple app to set the brightness level of the screen."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1.1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -22,11 +22,15 @@ source=(
     $url/brightness-intel
     $url/brightness-xrandr
     $url/xbacklight
+    $url/xbacklight.timer
+    $url/xbacklight.service
 )
 sha512sums=('4d24b3b9994c68545d7cc54089f7cde9ba634f7e591d1a8ef22393b864fd53b3b8c3f81145e5361193188ab8240256eb62ad5a891b298e91293186994a0b242d'
             '465f9e6e1221d3461ef9036eada4e01d01d081742c42f3cea49c54ceb6ac3a18c64ee793b6408f1459059981355561cc78f4a455bb778f00e719de64e6dcb17a'
             '81fad332910c605bea5c29db84da4d2847dbc5f95bc19c74bae1bf9b661e152744e10a98f09d33cc17071e36483edd53b6a17c36997a4b315156fd700d8afde9'
-            '1c43877a8b05a4dc8bf8434752a3b37c53df9a92a94fb6ac0ac706c5853b2963486ec322018e503c71810b011b17e155d982c6795363cbf6ba40c66fb07e8539')
+            'a4ca5c6e6065e1fdd98eca50cf59bec5b137d9c4a172e6dc4bd12c43a07d72f7243c122fbd6ff8ca7d4ae4d27301e379df81f3ce4ce4c1a1307351acfbad4677'
+            '9757ff8e3fb2a79f61b265c84f6f9cedcdd9d0a56da18c37b9f8c1260a6df7b583629d63560708479207fa1ab33c523dbdead61d2252cc4fa8715c884690fa62'
+            '9516213ba8e23656443ad9fb3dfd826cbe6a6ad740d45634677e1ee7c8e137f6086049475331880f6abd0689ef7889f50fb67981f7587aaf74df67b0c4701df7')
 
 package() {
   install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname

@@ -1,3 +1,24 @@
 #!/bin/bash
 
-brightness-intel "$@"
+Main() {
+    case "$1" in
+        auto)
+            local curr=$(brightness-intel)
+            local hour=$(/usr/bin/date +%H)
+            local new=15
+            if [ $hour -le 6 ] || [ $hour -ge 22 ] ; then
+                new=5
+            elif [ $hour -eq 7 ] || [ $hour -eq 21 ] ; then
+                new=10
+            fi
+            if [ $curr -ne $new ] ; then
+                brightness-intel =$new
+            fi
+            ;;
+        *)
+            brightness-intel "$@"
+            ;;
+    esac
+}
+
+Main "$@"
