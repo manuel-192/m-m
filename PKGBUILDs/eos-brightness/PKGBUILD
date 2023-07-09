@@ -5,7 +5,7 @@ pkgname=eos-brightness
 pkgdesc="Simple app to set the brightness level of the screen."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=2
+pkgrel=2.1
 
 arch=('any')
 license=('GPL')
@@ -16,20 +16,23 @@ optdepends=(
     'libnotify: for brightness-intel'
 )
 conflicts=(acpilight xorg-xbacklight)
+backup=(etc/xbacklight.conf)
 
 source=(
     $url/$pkgname
     $url/brightness-intel
     $url/brightness-xrandr
     $url/xbacklight
+    $url/xbacklight.conf
     $url/xbacklight.timer
     $url/xbacklight.service
 )
 sha512sums=('4d24b3b9994c68545d7cc54089f7cde9ba634f7e591d1a8ef22393b864fd53b3b8c3f81145e5361193188ab8240256eb62ad5a891b298e91293186994a0b242d'
             '465f9e6e1221d3461ef9036eada4e01d01d081742c42f3cea49c54ceb6ac3a18c64ee793b6408f1459059981355561cc78f4a455bb778f00e719de64e6dcb17a'
             '81fad332910c605bea5c29db84da4d2847dbc5f95bc19c74bae1bf9b661e152744e10a98f09d33cc17071e36483edd53b6a17c36997a4b315156fd700d8afde9'
-            'a4ca5c6e6065e1fdd98eca50cf59bec5b137d9c4a172e6dc4bd12c43a07d72f7243c122fbd6ff8ca7d4ae4d27301e379df81f3ce4ce4c1a1307351acfbad4677'
-            '9757ff8e3fb2a79f61b265c84f6f9cedcdd9d0a56da18c37b9f8c1260a6df7b583629d63560708479207fa1ab33c523dbdead61d2252cc4fa8715c884690fa62'
+            'ed6acb9a83d4f023882ad4cd56ba1adc63021a6d6959da62ef8ef328c1fbdc1e47cee5fa280ea834ebcd3a4da074e249b64b7d2e62647d916811b7166350fc5d'
+            '52ef8e838888def96f71b2aff876c4350d653c640f4f02ab80dfa3301d9f4b2b8eb29ad52999ebf33ecc1b153418d6cbf66ac5c0bdc1a726fdf20092c99be496'
+            'c675425a972595874cd6eb95e84e902a600428252988d2c3d379f458e8484bf41cbaa88427f34852c86b1648d3ad4500b337e73172fd55236d539904aa59c250'
             '9516213ba8e23656443ad9fb3dfd826cbe6a6ad740d45634677e1ee7c8e137f6086049475331880f6abd0689ef7889f50fb67981f7587aaf74df67b0c4701df7')
 
 package() {
@@ -37,4 +40,5 @@ package() {
   install -Dm755 brightness-xrandr           $pkgdir/usr/bin/brightness-xrandr
   install -Dm755 brightness-intel            $pkgdir/usr/bin/brightness-intel
   install -Dm755 xbacklight                  $pkgdir/usr/bin/xbacklight
+  install -Dm644 xbacklight.conf             $pkgdir/etc/xbacklight.conf
 }

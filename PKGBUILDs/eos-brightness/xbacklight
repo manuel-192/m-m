@@ -1,16 +1,54 @@
 #!/bin/bash
 
-Main() {
+DIE() {
+    echo "$1" >&2
+    exit 1
+}
+
+xbacklight() {
+    local error="$FUNCNAME: error in values of variable AUTO_BRIGHTNESS_TIMED_VALUES"
+
     case "$1" in
         auto)
             local curr=$(brightness-intel)
             local hour=$(/usr/bin/date +%H)
-            local new=15
-            if [ $hour -le 6 ] || [ $hour -ge 22 ] ; then
-                new=5
-            elif [ $hour -eq 7 ] || [ $hour -eq 21 ] ; then
-                new=10
-            fi
+            local new=""
+            local hourspec h1 h2 value ix
+
+            source /etc/xbacklight.conf || DIE "$FUNCNAME: cannot read /etc/xbacklight.conf"
+
+            for ((ix=0; ix < ${#AUTO_BRIGHTNESS_TIMED_VALUES[@]}; )) ; do
+                hourspec="${AUTO_BRIGHTNESS_TIMED_VALUES[$((ix++))]}"
+                value="${AUTO_BRIGHTNESS_TIMED_VALUES[$((ix++))]}"
+
+                [ -n "$value" ] || DIE "$error"
+
+                case "$hourspec" in
+                    "")
+                        DIE "$error"
+                        ;;
+                    other)
+                        new="$value"
+                        break
+                        ;;
+                    *-*)
+                        h1=${hourspec%-*}
+                        h2=${hourspec#*-}
+                        if [ $hour -ge $h1 ] && [ $hour -le $h2 ] ; then
+                            new="$value"
+                            break
+                        fi
+                        ;;
+                    [0-9]*)
+                        if [ $hour -eq $value ] ; then
+                            new="$value"
+                            break
+                        fi
+                        ;;
+                esac
+            done
+            [ -n "$new" ] || DIE "$error"
+
             if [ $curr -ne $new ] ; then
                 brightness-intel =$new
             fi
@@ -21,4 +59,4 @@ Main() {
     esac
 }
 
-Main "$@"
+xbacklight "$@"
