@@ -2,6 +2,7 @@
 
 DIE() {
     echo "$1" >&2
+    [ -n "$2" ] && echo "  ==> $2" >&2
     exit 1
 }
 
@@ -21,11 +22,11 @@ xbacklight() {
                 hourspec="${AUTO_BRIGHTNESS_TIMED_VALUES[$((ix++))]}"
                 value="${AUTO_BRIGHTNESS_TIMED_VALUES[$((ix++))]}"
 
-                [ -n "$value" ] || DIE "$error"
+                [ -n "$value" ] || DIE "$error" "value = ''"
 
                 case "$hourspec" in
                     "")
-                        DIE "$error"
+                        DIE "$error" "hourspec = ''"
                         ;;
                     other)
                         new="$value"
@@ -47,7 +48,7 @@ xbacklight() {
                         ;;
                 esac
             done
-            [ -n "$new" ] || DIE "$error"
+            [ -n "$new" ] || DIE "$error" "new = ''"
 
             if [ $curr -ne $new ] ; then
                 brightness-intel =$new
