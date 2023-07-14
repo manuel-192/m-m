@@ -32,11 +32,14 @@ pc() {
 
 Build packages if needed.
 
-Usage: $FUNCNAME [options] [repodir]
+Usage: $FUNCNAME [options] [params]
 
-Repodir:
-    - "": uses current folder
-    - One of: $supported_folders
+Params:
+    repodir
+        - "": uses current folder
+        - One of: $supported_folders
+    pull
+        Show potential pull requests and issues. Options ignored.
 
 Options:
     -h, --help        This help.
@@ -48,6 +51,10 @@ EOF
                 return
                 ;;
             -*) op="$1" ;;
+            pull)
+                pull-requests
+                return
+                ;;
             *)  repodir="$1" ;;
         esac
         shift

@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# Show number of pull requests for PKGBUILDS.
+#
+
+echo2() { echo "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+
+DIE() {
+    echo2 "$progname: error: $1"
+    exit 1
+}
+
+Main2()
+{
+    local url="$1"
+    local url2="$url/issues"
+    local result
+    local comments
+    local strings=(
+        "Pull requests"
+        "Issues"
+    )
+    local data
+    local str
+    local maxstrlen=0
+    local maxurllen=0
+    test -n "$url" || DIE "no URL!"
+
+    for str in "${strings[@]}" ; do
+        if [ $maxstrlen -lt ${#str} ] ; then
+            maxstrlen=${#str}
+        fi
+    done
+
+    for str in "${urls[@]}" ; do
+        if [ $maxurllen -lt ${#str} ] ; then
+            maxurllen=${#str}
+        fi
+    done
+
+    data="$(curl -s $url)"
+    [ -n "$data" ] || DIE "data not available!"
+
+    for str in "${strings[@]}" ; do
+
+        printf2 "%-*s for %-*s : " "$maxstrlen" "$str" "$maxurllen" "$url"
+
+        result="$(echo "$data" | grep -A1 "$str</span>" | tail -n 1 | sed 's|^.*>\([0-9][0-9]*\)</span>$|\1|')"
+        comments=0
+        case "$result" in
+            [0-9] | [0-9][0-9] | [0-9][0-9][0-9]*)
+		comments=$(curl -s $url2 | grep -E '"[0-9]+ comment' | sed -E 's|.*/issues/([0-9]+)".* aria-label="([0-9]+) comment.*|issue \1: \2 comments|')
+                ;;
+            *)
+                result=none
+                ;;
+        esac
+        case "$result" in
+	    "" | none) printf2 "$result " ;;
+	    0) printf2 "$result " ;;
+            *) printf2 "$result: " ;;
+        esac
+        if [ "$str" = "Issues" ] ; then
+            if [ -n "$comments" ] ; then   # && [ "$comments" != "0" ] ; then
+                # printf2 ", %d comments" "$comments"
+                printf2 "%s" "$comments"
+            fi
+        fi
+        printf2 "\n"
+    done
+}
+
+Main() {
+    local progname="$(basename "$0")"
+    local urls=(
+        https://github.com/endeavouros-team/PKGBUILDS
+        https://github.com/endeavouros-team/eos-bash-shared
+        https://github.com/endeavouros-team/welcome
+        # https://github.com/endeavouros-team/repo
+
+        # https://github.com/endeavouros-team/User-contributions
+        # https://github.com/rogalmic/vscode-bash-debug
+    )
+    local url
+    for url in "${urls[@]}" "$@" ; do
+        Main2 "$url"
+    done
+}
+
+Main "$@"
