@@ -40,7 +40,7 @@ xbacklight() {
                         fi
                         ;;
                     [0-9]*)
-                        if [ $hour -eq $value ] ; then
+                        if [ $hour -eq $hourspec ] ; then
                             new="$value"
                             break
                         fi
