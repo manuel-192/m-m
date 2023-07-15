@@ -52,6 +52,7 @@ xbacklight() {
 
             if [ $curr -ne $new ] ; then
                 brightness-intel =$new
+                echo "Brightness: $curr --> $new %" >&2
             fi
             ;;
         *)
