@@ -55,6 +55,18 @@ xbacklight() {
                 echo "$curr --> $new" >&2
             fi
             ;;
+        service)
+            local dir="$HOME/.config/systemd/user"
+            local suffix
+
+            mkdir -p "$dir/OLD"
+            for suffix in timer service ; do
+                [ -r "$dir"/xbacklight.$suffix ] && mv -f "$dir"/xbacklight.$suffix "$dir"/OLD/
+                cp /etc/skel/eos-brightness/xbacklight.$suffix "$dir"
+            done
+            systemctl --user daemon-reload
+            echo "Service initialized." >&2
+            ;;
         *)
             brightness-intel "$@"
             ;;

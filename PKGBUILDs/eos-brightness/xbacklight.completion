@@ -24,8 +24,8 @@ _xbacklight_()
                     # EI TOIMI !!!
                     _xbacklight_complete "$(echo {1..100} | sed -E 's|([0-9]+)|-\1|g')"
                     ;;
-                a*)
-                    _xbacklight_complete "auto"
+                a* | s*)
+                    _xbacklight_complete "auto service"
                     ;;
                 [0-9]*)
                     _xbacklight_complete "$(echo {1..100})"

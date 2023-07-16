@@ -2,10 +2,8 @@
 Description=Change brightness hourly
 
 [Timer]
-OnStartupSec=30 seconds
+OnStartupSec=10s
 OnCalendar=hourly
-#OnCalendar=*:01:00
-#Persistent=true
  
 [Install]
 WantedBy=timers.target

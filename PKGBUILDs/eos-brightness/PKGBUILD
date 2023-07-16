@@ -5,7 +5,7 @@ pkgname=eos-brightness
 pkgdesc="Simple app to set the brightness level of the screen."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=5.2
+pkgrel=5.3
 
 arch=('any')
 license=('GPL')
@@ -31,10 +31,10 @@ source=(
 sha512sums=('4d24b3b9994c68545d7cc54089f7cde9ba634f7e591d1a8ef22393b864fd53b3b8c3f81145e5361193188ab8240256eb62ad5a891b298e91293186994a0b242d'
             '465f9e6e1221d3461ef9036eada4e01d01d081742c42f3cea49c54ceb6ac3a18c64ee793b6408f1459059981355561cc78f4a455bb778f00e719de64e6dcb17a'
             '81fad332910c605bea5c29db84da4d2847dbc5f95bc19c74bae1bf9b661e152744e10a98f09d33cc17071e36483edd53b6a17c36997a4b315156fd700d8afde9'
-            'b612cb7ef62fd8a99c6a362800d949e38ab4077a98937221381f8bddb5a630e20f4850ff23a22b7f6fb86f9fa313382b90e36de5ae8f2a6b8cb4df33b1167595'
+            'c0dd3e301edcd912fabb7b618545f17d2c6ecb502f864b9fe2b244f485c1bc00a836def1439bda6a0b5cfca04eb17e0b63c62670aa40875b4fe1e60971620700'
             '52ef8e838888def96f71b2aff876c4350d653c640f4f02ab80dfa3301d9f4b2b8eb29ad52999ebf33ecc1b153418d6cbf66ac5c0bdc1a726fdf20092c99be496'
-            '55d1742a2c2dd981ed77a6733b65a3928b8d7a826ca3fecb9644ec3cde37446ec9b2f2ea7aabb75430ebd2bc4c51a4ff525db7b8888f4aed4ac6b3528af4f22b'
-            'c675425a972595874cd6eb95e84e902a600428252988d2c3d379f458e8484bf41cbaa88427f34852c86b1648d3ad4500b337e73172fd55236d539904aa59c250'
+            'f1a40bc7d74e9a5af66f7f3c5a369a3f7664a46a6c2246cb87bed5f2a1f4432b75d330731a1b134398395558b4dd148e522aa004402a8e2f2624d370946e943f'
+            '7d934ecfd6ac87f1854d6b08165e9d7c984fcdf6389ffe83e695a1be943e13ef282da42666e7a902f0bc0095bbbb080d0e0f761605d4a202c2bfa192bec72aa3'
             '9516213ba8e23656443ad9fb3dfd826cbe6a6ad740d45634677e1ee7c8e137f6086049475331880f6abd0689ef7889f50fb67981f7587aaf74df67b0c4701df7')
 
 package() {
@@ -44,4 +44,6 @@ package() {
   install -Dm755 xbacklight                  $pkgdir/usr/bin/xbacklight
   install -Dm644 xbacklight.conf             $pkgdir/etc/xbacklight.conf
   install -Dm644 xbacklight.completion       $pkgdir/usr/share/bash-completion/completions/xbacklight
+  install -Dm644 xbacklight.timer            $pkgdir/etc/skel/eos-brightness/xbacklight.timer
+  install -Dm644 xbacklight.service          $pkgdir/etc/skel/eos-brightness/xbacklight.service
 }
