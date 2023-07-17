@@ -3,7 +3,7 @@
 pkgname=grub-tweaks
 pkgdesc="Fixes, additions and enhancements to grub."
 pkgver=23
-pkgrel=1
+pkgrel=2
 arch=('any')
 license=('GPL')
 # depends=(grub)
@@ -16,6 +16,7 @@ source=(
   $url/${pkgname}.conf
   $url/${pkgname}.hook
   $url/${pkgname}-pre.hook
+  $url/create-grub-install-command
 )
 sha512sums=('4af7beeb69c5a2eab12583a710687a417ee56ca70401bf912879e5bcfd680cdf704d33d84e1d33d381fcd532896303ebec7a9d55652418045d7d84c09da86ef7'
             'a8c58c5de1adeecad2d1ef6fa3dca1f88e15873a05cbbc617208e473220d000ef32b4b3544cbccc008c5de916936e7344a8eed68515f1ff74d781b8b2f85cf45'
@@ -28,7 +29,8 @@ package() {
   install -d $pkgdir/etc/pacman.d/hooks
   install -d $pkgdir/usr/bin
 
-  install -Dm755 ${pkgname}          $pkgdir/usr/bin/${pkgname}
+  install -Dm755 ${pkgname}                     $pkgdir/usr/bin/${pkgname}
+  install -Dm755 create-grub-install-command    $pkgdir/usr/bin/create-grub-install-command
 
   install -Dm644 ${pkgname}.hook     $pkgdir/etc/pacman.d/hooks/${pkgname}.hook
   install -Dm644 ${pkgname}-pre.hook $pkgdir/etc/pacman.d/hooks/${pkgname}-pre.hook
