@@ -34,13 +34,16 @@ Main() {
         esac
     done
     [ $collect = no ] && DIE "grub-install not found in the install log."
-    local savefile="$HOME/grub-install-from-install-log"
-    echo "${cmd[*]}" > "$savefile"
-    echo "sudo grub-mkconfig -o /boot/grub/grub.cfg" >> "$savefile"
-    chmod u+x,go-rwx "$savefile"
+    local grub_install_file=/bin/grub-install-from-install-log
+    local tmpfile=$(mktemp)
+    echo "${cmd[*]}" > $tmpfile
+    echo "sudo grub-mkconfig -o /boot/grub/grub.cfg" >> $tmpfile
+    chmod 755 $tmpfile
+    sudo cp $tmpfile $grub_install_file
+    rm -f $tmpfile
     cat <<EOF
 
-File '${savefile/$HOME/\~}' created.
+File '$grub_install_file' created.
 
 The parameters were gathered from the install log '$log'.
 Because the parameters are highly system dependent,
