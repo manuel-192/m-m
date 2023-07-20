@@ -33,7 +33,8 @@ HandleCdpathMatches() {
 
 Main() {
     case "$1" in
-        "" | .* | /* | -*)
+        "") echo "$HOME" ;;
+        .* | /* | -*)
             echo "$@" ;;                    # handled by builtin cd
         *)
             if [ -d "./$1" ] ; then
