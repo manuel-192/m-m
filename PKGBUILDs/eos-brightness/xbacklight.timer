@@ -1,0 +1,9 @@
+[Unit]
+Description=Change brightness hourly
+
+[Timer]
+OnStartupSec=10s
+OnCalendar=hourly
+ 
+[Install]
+WantedBy=timers.target

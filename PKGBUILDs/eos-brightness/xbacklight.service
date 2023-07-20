@@ -1,0 +1,10 @@
+[Unit]
+Description=Change brightness hourly
+
+[Service]
+Type=oneshot
+#Environment=DISPLAY=:0
+ExecStart=/bin/xbacklight auto
+
+[Install]
+WantedBy=xbacklight.timer

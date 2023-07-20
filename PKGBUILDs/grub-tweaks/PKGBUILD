@@ -3,7 +3,7 @@
 pkgname=grub-tweaks
 pkgdesc="Fixes, additions and enhancements to grub."
 pkgver=23
-pkgrel=1
+pkgrel=3
 arch=('any')
 license=('GPL')
 # depends=(grub)
@@ -16,11 +16,13 @@ source=(
   $url/${pkgname}.conf
   $url/${pkgname}.hook
   $url/${pkgname}-pre.hook
+  $url/create-grub-install-command
 )
 sha512sums=('4af7beeb69c5a2eab12583a710687a417ee56ca70401bf912879e5bcfd680cdf704d33d84e1d33d381fcd532896303ebec7a9d55652418045d7d84c09da86ef7'
             'a8c58c5de1adeecad2d1ef6fa3dca1f88e15873a05cbbc617208e473220d000ef32b4b3544cbccc008c5de916936e7344a8eed68515f1ff74d781b8b2f85cf45'
             'c4385129b97f9ce2d92b095c1d87f0e10ed071ad04523106a08c0caffe5ef036a3ec2ce6d22610221b7bdbbd0334bf8baa6a536a9db8a6899fbdac44c615efd0'
-            'b937b08358c3a7e7e9fd0696434dc3e97356bc0fb36b850f846bef48d4b8773d7a961051525e225058d005cb93ee339a1980f4dcc52daaafdb555dee96bbef23')
+            'b937b08358c3a7e7e9fd0696434dc3e97356bc0fb36b850f846bef48d4b8773d7a961051525e225058d005cb93ee339a1980f4dcc52daaafdb555dee96bbef23'
+            '407268bf7bd5fe8f241c747a9f9ea1adf6865bc330f6fcf1c46296156a45f427e52ec3e32834f4092daf8f032df4851ad18e8092f899860862dfcee891ad5194')
 
 package() {
   cd $srcdir
@@ -28,7 +30,8 @@ package() {
   install -d $pkgdir/etc/pacman.d/hooks
   install -d $pkgdir/usr/bin
 
-  install -Dm755 ${pkgname}          $pkgdir/usr/bin/${pkgname}
+  install -Dm755 ${pkgname}                     $pkgdir/usr/bin/${pkgname}
+  install -Dm755 create-grub-install-command    $pkgdir/usr/bin/create-grub-install-command
 
   install -Dm644 ${pkgname}.hook     $pkgdir/etc/pacman.d/hooks/${pkgname}.hook
   install -Dm644 ${pkgname}-pre.hook $pkgdir/etc/pacman.d/hooks/${pkgname}-pre.hook

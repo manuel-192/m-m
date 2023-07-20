@@ -1,0 +1,55 @@
+#!/bin/bash
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main() {
+    local progname="${0##*/}"
+    local log=/var/log/Calamares.log
+    [ -f $log ] || log=/var/log/endeavour-install.log
+    [ -f $log ] || DIE "install log not found."
+    local params=$(sudo grep grub-install $log)
+    local cmd=(sudo grub-install) opt
+    local xx collect=no
+
+    for xx in $params ; do
+        case "$xx" in
+            *grub-install*)
+                collect=yes
+                continue
+                ;;
+            *)
+                if [ $collect = yes ] ; then
+                    opt="${xx:1}"
+                    case "$xx" in
+                        *'",') opt="${opt:: -2}" ;;
+                        *'")') opt="${opt:: -2}" ;;
+                        *'"')  opt="${opt:: -1}" ;;
+                    esac
+                    [ "$opt" = "--force" ] || cmd+=("$opt")
+                fi
+                ;;
+        esac
+    done
+    [ $collect = no ] && DIE "grub-install not found in the install log."
+    local grub_install_file=/bin/grub-install-from-install-log
+    local tmpfile=$(mktemp)
+    echo "${cmd[*]}" > $tmpfile
+    echo "sudo grub-mkconfig -o /boot/grub/grub.cfg" >> $tmpfile
+    chmod 755 $tmpfile
+    sudo cp $tmpfile $grub_install_file
+    rm -f $tmpfile
+    cat <<EOF
+
+File '$grub_install_file' created.
+
+The parameters were gathered from the install log '$log'.
+Because the parameters are highly system dependent,
+*you* must make sure the parameters are still valid!
+
+EOF
+}
+
+Main "$@"

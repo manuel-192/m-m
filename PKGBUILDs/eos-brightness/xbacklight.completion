@@ -1,0 +1,40 @@
+# bash completion for xbacklight        -*- shell-script -*-
+
+_xbacklight_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_xbacklight_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    # printf "\nprev='$prev' cur='$cur'\n" >&2
+
+    case "$prev" in
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -* | +* | =* | [1-9]*)
+                    # EI TOIMI !!!
+                    _xbacklight_complete "$(echo {1..100} | sed -E 's|([0-9]+)|-\1|g')"
+                    ;;
+                a* | s*)
+                    _xbacklight_complete "auto service"
+                    ;;
+                [0-9]*)
+                    _xbacklight_complete "$(echo {1..100})"
+                    ;;
+                "")
+                    _xbacklight_complete "auto - + = $(echo {1..100})"
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _xbacklight_ xbacklight
