@@ -325,8 +325,7 @@ InitialBanner() {
         cat <<EOF
 $progname: A pacman wrapper with additional features.
 
-Additional features and their defaults:
-   - configuration file /etc/$progname.conf
+Additional features and their defaults (see file /etc/$progname.conf):
    - $(_DefVal $EXTRAS_PW_WHEN_NEEDED) require password only when needed
    - $(_DefVal $EXTRAS_PACMAN_LOCK_CHECK) db lock file check
    - $(_DefVal $EXTRAS_NVIDIA_CHECK) nvidia & kernel update check
