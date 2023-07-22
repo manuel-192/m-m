@@ -89,7 +89,7 @@ CheckDiff() {
             git_adds="$(basename "$dstdir")"
             ;;
         *)
-            srcdir="$PWD/../_BUILD_/$reponame"
+            srcdir="$ASSETSDIR"
             dstdir="$PWD/repo"
             git_adds="$(basename "$dstdir")"
             ;;
