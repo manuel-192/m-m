@@ -33,6 +33,10 @@ HandleCdpathMatches() {
 
 Main() {
     case "$1" in
+        --) shift ;;
+    esac
+
+    case "$1" in
         "") echo "$HOME" ;;
         .* | /* | -*)
             echo "$@" ;;                    # handled by builtin cd
