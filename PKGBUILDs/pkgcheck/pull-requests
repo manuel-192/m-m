@@ -49,7 +49,7 @@ Main2()
         result="$(echo "$data" | grep -A1 "$str</span>" | tail -n 1 | sed 's|^.*>\([0-9][0-9]*\)</span>$|\1|')"
         comments=0
         case "$result" in
-            [0-9] | [0-9][0-9] | [0-9][0-9][0-9]*)
+            [1-9] | [1-9][0-9] | [1-9][0-9][0-9] | [1-9][0-9][0-9][0-9]*)
 		comments=$(curl -s $url2 | grep -E '"[0-9]+ comment' | sed -E 's|.*/issues/([0-9]+)".* aria-label="([0-9]+) comment.*|issue \1: \2 comments|')
                 ;;
             *)
@@ -57,15 +57,13 @@ Main2()
                 ;;
         esac
         case "$result" in
-	    "" | none) printf2 "$result " ;;
-	    0) printf2 "$result " ;;
-            *) printf2 "$result: " ;;
+	    "" | none | 0)
+                printf2 "$result " ;;
+            *)
+                printf2 "$result, " ;;
         esac
         if [ "$str" = "Issues" ] ; then
-            if [ -n "$comments" ] ; then   # && [ "$comments" != "0" ] ; then
-                # printf2 ", %d comments" "$comments"
-                printf2 "%s" "$comments"
-            fi
+            [ -n "$comments" ] && printf2 "%s" "$comments"
         fi
         printf2 "\n"
     done
