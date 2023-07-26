@@ -24,6 +24,7 @@ pc() {
     local op=""
     local dir1 dir2 dirs
     local supported_folders="endeavouros endeavouros-testing-dev m-m m-more2 m-aur MAN EOS"
+    local pkgnames_para=""
 
     while [ -n "$1" ] ; do
         case "$1" in
@@ -43,12 +44,15 @@ Params:
 
 Options:
     -h, --help        This help.
-    -n                Check if build is needed, using local packages.
+    -n, ""            Check if build is needed, using local packages.
     -nn               Check if build is needed, using remote packages.
     -b                Directly try to build packages.
-    ""                Same as -n.
+    --pkgnames="X"    X is a space separated list of packages to build.
 EOF
                 return
+                ;;
+            --pkgnames=*)
+                pkgnames_para="${1#*=}"
                 ;;
             -*) op="$1" ;;
             pull)
@@ -123,7 +127,14 @@ EOF
             return 1
         fi
     fi
-    assets.make $op
+
+    echo "params = $op $pkgnames_para" >&2
+
+    if [ -n "$pkgnames_para" ] ; then
+        /bin/assets.make $op --pkgnames="$pkgnames_para"
+    else
+        /bin/assets.make $op
+    fi
     exit_code=$?
     cd "$cwd"
     case $exit_code in
