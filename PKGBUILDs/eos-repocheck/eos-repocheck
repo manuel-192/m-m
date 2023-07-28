@@ -1,0 +1,77 @@
+#!/bin/bash
+
+echo2()   { echo "$@" >&2 ; }
+Warning() { echo2 "==> $progname: warning: $1" ; }
+Info()    { echo2 "==> $progname: info: $1" ; }
+
+Main()
+{
+    local progname=${0##*/}
+    declare -A indices
+    local old=()
+    local repo ix endeavouros_ix
+    local repos
+    local warnings=0
+    local supported_arch_repos=(
+        core
+        core-testing
+        extra
+        extra-testing
+        multilib
+        multilib-testing
+        kde-unstable
+    )
+
+    readarray -t repos <<< $(pacconf --repo-list)
+
+    # initialize the array
+    for repo in "${supported_arch_repos[@]}" ; do
+        indices[$repo]=""
+    done
+
+    ix=0
+    for repo in "${repos[@]}" ; do
+        case "$repo" in
+            # unsupported old repos
+            testing | community-testing | community)
+                old+=($repo) ;;
+
+            # supported repos
+            # we give ix only to the supported repos to help checking their mutual order
+            endeavouros)
+                endeavouros_ix=$((ix++)) ;;
+            *)
+                for arepo in "${supported_arch_repos[@]}" ; do
+                    if [ "$repo" = "$arepo" ] ; then
+                        indices[$repo]=$((ix++))
+                        break
+                    fi
+                done
+                ;;
+        esac
+    done
+
+    # ad hoc sanity checks
+    for repo in "${old[@]}" ; do
+        Warning "repo [$repo] in /etc/pacman.conf is outdated and should be removed."
+        ((warnings++))
+    done
+    for repo in "${supported_arch_repos[@]}" ; do
+        if [ -n "${indices[$repo]}" ] ; then
+            if [ ${indices[$repo]} -lt $endeavouros_ix ] ; then
+                Warning "repo [$repo] in /etc/pacman.conf is listed before repo [endeavouros]."
+                ((warnings++))
+            fi
+        fi
+    done
+
+    #echo2 ""
+    if [ $warnings -eq 0 ] ; then
+        Info "/etc/pacman.conf is OK."
+    else
+        Info "$warnings warnings found."
+        return $warnings
+    fi
+}
+
+Main "$@"

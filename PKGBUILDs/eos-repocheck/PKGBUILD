@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-repocheck
+pkgdesc="Check validity of repos in /etc/pacman.conf"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=()
+backup=()
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('00c993bbe7a9dcd31c5c9500bf495f70e690e56f4d4fad740bbb6c106e40bef6ad718a0c51d59dfde3fbf2947f18df306cc0544c1cec51b2a894fdcf7cac02d2')
+
+package() {
+    local xx name
+    for xx in "${source[@]}" ; do
+        name=${xx##*/}
+        case "$name" in
+            *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
+            *.conf)       install -Dm644 $name   $pkgdir/etc/$name ;;
+            *)            install -Dm755 $name   $pkgdir/usr/bin/$name ;;
+        esac
+    done
+}
