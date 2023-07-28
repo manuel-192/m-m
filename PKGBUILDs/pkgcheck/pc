@@ -3,6 +3,12 @@
 # - help build endeavouros and other packages
 # - help update sources
 
+DIE() {
+    local progname=${0##*/}
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
 pc() {
     pc_IsSupportedFolderName() {
         local folder
@@ -57,6 +63,14 @@ EOF
             -*) op="$1" ;;
             pull)
                 pull-requests
+                return
+                ;;
+            check-all)
+                for folder in MAN EOS endeavouros endeavouros-testing-dev m-m m-more2 m-aur pull
+                do
+                    echo "==> pc $folder" >&2
+                    pc $folder || DIE "'pc $folder' failed."
+                done
                 return
                 ;;
             *)  repodir="$1" ;;

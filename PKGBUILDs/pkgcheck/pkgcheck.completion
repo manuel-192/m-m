@@ -24,7 +24,7 @@ _pkgcheck_() {
     _init_completion -s || return
 
     local -r repos="$(pkgcheck --reponames)"
-    local -r operations="--dryrun --dryrun-local --build --repoup"
+    local -r operations="--check-all --dryrun --dryrun-local --build --repoup"
     local -r options="--allow-downgrade --pkgnames="
     local -r extras="pull"
     local askfor=""
