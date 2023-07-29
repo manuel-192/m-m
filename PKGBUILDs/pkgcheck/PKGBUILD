@@ -6,7 +6,7 @@ pkgname=pkgcheck
 pkgdesc="Package build helper"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23.1
-pkgrel=7
+pkgrel=7.1
 
 arch=('any')
 license=('GPL')
