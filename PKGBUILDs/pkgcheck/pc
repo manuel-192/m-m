@@ -11,17 +11,17 @@ DIE() {
 
 pc() {
     pc_IsSupportedFolderName() {
-        local folder
+        local folder sf
         case "$1" in
             "" | ".") folder="${PWD}" ;;
             *)        folder="${1}" ;;
         esac
-        case "${folder##*/}" in
-            endeavouros | endeavouros-testing-dev | m-m | m-more2 | m-aur | MAN | EOS)
+        for sf in $supported_folders ; do
+            if [ "${folder##*/}" = "$sf" ] ; then
                 repodir=$folder  #"${folder##*/}"
                 return 0
-                ;;
-        esac
+            fi
+        done
         printf "${FUNCNAME[1]}: folder '$folder' is not supported.\nSupported: $supported_folders\n" >&2
         return 1
     }
@@ -29,7 +29,7 @@ pc() {
     local repodir=""
     local op=""
     local dir1 dir2 dirs
-    local supported_folders="endeavouros endeavouros-testing-dev m-m m-more2 m-aur MAN EOS"
+    local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-' | tr '\n' ' ') MAN EOS"
     local pkgnames_para=""
 
     while [ -n "$1" ] ; do
@@ -47,6 +47,8 @@ Params:
         - One of: $supported_folders
     pull
         Show potential pull requests and issues. Options ignored.
+    check-all
+        Check all supported folders.
 
 Options:
     -h, --help        This help.
@@ -54,11 +56,16 @@ Options:
     -nn               Check if build is needed, using remote packages.
     -b                Directly try to build packages.
     --pkgnames="X"    X is a space separated list of packages to build.
+    --reponames       Show names of supported repos and folders.
 EOF
                 return
                 ;;
             --pkgnames=*)
                 pkgnames_para="${1#*=}"
+                ;;
+            --reponames)
+                echo "$supported_folders"
+                return
                 ;;
             -*) op="$1" ;;
             pull)
@@ -66,7 +73,7 @@ EOF
                 return
                 ;;
             check-all)
-                for folder in MAN EOS endeavouros endeavouros-testing-dev m-m m-more2 m-aur pull
+                for folder in $supported_folders pull
                 do
                     echo "==> pc $folder" >&2
                     pc $folder || DIE "'pc $folder' failed."

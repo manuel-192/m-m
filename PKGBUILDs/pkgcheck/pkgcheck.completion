@@ -23,9 +23,10 @@ _pkgcheck_() {
     local cur prev words cword split
     _init_completion -s || return
 
-    local -r repos="$(pkgcheck --reponames)"
+    #local -r repos="$(pkgcheck --reponames)"
+    local -r repos=$(pc --reponames)
     local -r operations="--check-all --dryrun --dryrun-local --build --repoup"
-    local -r options="--allow-downgrade --pkgnames="
+    local -r options="--allow-downgrade --pkgnames= --reponames"
     local -r extras="pull"
     local askfor=""
 
