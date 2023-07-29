@@ -22,7 +22,7 @@ pc() {
                 return 0
             fi
         done
-        printf "${FUNCNAME[1]}: folder '$folder' is not supported.\nSupported: $supported_folders\n" >&2
+        printf "${FUNCNAME[1]}: repo/folder '$folder' is not supported.\nSupported: $supported_folders\n" >&2
         return 1
     }
 
