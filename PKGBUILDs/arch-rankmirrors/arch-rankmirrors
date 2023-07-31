@@ -250,6 +250,10 @@ Options() {
     [ -z "$max_mirrors_to_show" ]  && max_mirrors_to_show=$def_max_mirrors_to_show
     [ $max_mirrors_to_show -lt 1 ] && max_mirrors_to_show=$def_max_mirrors_to_show
 
+    if [ ${#USER_PREFERRED_COUNTRIES[@]} -gt 0 ] ; then
+        AddCountries "${USER_PREFERRED_COUNTRIES[@]}"
+    fi
+
     if [ -n "$1" ] ; then
         AddCountries "$@"
     fi
