@@ -6,7 +6,8 @@
 
 _nvidia_check_needed() {
     if lspci -k | grep -P "Display|VGA|3D" | grep -w NVIDIA >/dev/null ; then
-        pacman -Qq | grep -P '^nvidia$|^nvidia-lts$' > /dev/null
+        #pacman -Qq | grep -P '^nvidia$|^nvidia-lts$' > /dev/null
+        expac -Q %n nvidia nvidia-lts >/dev/null
     fi
 }
 _nvidia_check() {

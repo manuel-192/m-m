@@ -103,7 +103,9 @@ special_update() {
 
     # nvidia and keyring checks
 
-    [ "$EXTRAS_NVIDIA_CHECK" = "yes" ] && nvidia="--nvidia"
+    if [ "$EXTRAS_NVIDIA_CHECK" = "yes" ] && [ -n "$(device-info --graphics | grep -w NVIDIA)" ] ; then
+       nvidia="--nvidia"
+    fi
 
     if [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] ; then
         verbose2 "will check all keyrings first ..."
