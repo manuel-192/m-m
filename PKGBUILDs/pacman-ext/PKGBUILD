@@ -67,10 +67,10 @@ package() {
         esac
     done
 
-    _changelog_generate
+    #_changelog_generate
 }
 
-changelog=changelog.md
+#changelog=changelog.md
 
 _changelog_generate() {
     local version
