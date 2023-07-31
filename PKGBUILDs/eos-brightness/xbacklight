@@ -1,13 +1,16 @@
 #!/bin/bash
 
+echo2() { echo "$@" >&2 ; }
+
 DIE() {
-    echo "$1" >&2
-    [ -n "$2" ] && echo "  ==> $2" >&2
+    echo2 "$progname: error: $1"
+    [ -n "$2" ] && echo2 "  ==> $2"
     exit 1
 }
 
 xbacklight() {
-    local error="$FUNCNAME: error in values of variable AUTO_BRIGHTNESS_TIMED_VALUES"
+    local progname="${0##*/}"
+    local error="$progname: error in values of variable AUTO_BRIGHTNESS_TIMED_VALUES"
 
     case "$1" in
         auto)
@@ -16,7 +19,7 @@ xbacklight() {
             local new=""
             local hourspec h1 h2 value ix
 
-            source /etc/xbacklight.conf || DIE "$FUNCNAME: cannot read /etc/xbacklight.conf"
+            source /etc/xbacklight.conf || DIE "$progname: cannot read /etc/xbacklight.conf"
 
             for ((ix=0; ix < ${#AUTO_BRIGHTNESS_TIMED_VALUES[@]}; )) ; do
                 hourspec="${AUTO_BRIGHTNESS_TIMED_VALUES[$((ix++))]}"
@@ -51,8 +54,8 @@ xbacklight() {
             [ -n "$new" ] || DIE "$error" "new = ''"
 
             if [ $curr -ne $new ] ; then
+                echo2 "==> xbacklight: $curr --> $new"
                 brightness-intel =$new
-                echo "$curr --> $new" >&2
             fi
             ;;
         service)
