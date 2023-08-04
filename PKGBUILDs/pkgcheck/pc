@@ -3,9 +3,11 @@
 # - help build endeavouros and other packages
 # - help update sources
 
+echo2() { echo "$@" >&2 ; }
+
 DIE() {
     local progname=${0##*/}
-    echo "$progname: error: $1" >&2
+    echo2 "$progname: error: $1"
     exit 1
 }
 
@@ -26,6 +28,11 @@ pc() {
         return 1
     }
 
+    [ -n "$CODEDIR" ] || DIE "variable CODEDIR cannot be empty."
+
+    local MAN="$CODEDIR/MAN" ; [ -d "$MAN" ] || DIE "folder $MAN does not exist."
+    local EOS="$CODEDIR/EOS" ; [ -d "$EOS" ] || DIE "folder $EOS does not exist."
+
     local repodir=""
     local op=""
     local dir1 dir2 dirs
@@ -45,10 +52,12 @@ Params:
     repodir
         - "": uses current folder
         - One of: $supported_folders
-    pull
+    --pull
         Show potential pull requests and issues. Options ignored.
-    check-all
+    --check-all
         Check all supported folders.
+    --check-assets-conf
+        Check for changes of file assets.conf.
 
 Options:
     -h, --help        This help.
@@ -67,19 +76,36 @@ EOF
                 echo "$supported_folders"
                 return
                 ;;
-            -*) op="$1" ;;
-            pull)
+            --pull)
                 pull-requests
                 return
                 ;;
-            check-all)
+            --check-all)
                 for folder in $supported_folders pull
                 do
-                    echo "==> pc $folder" >&2
+                    echo2 "==> pc $folder"
                     pc $folder || DIE "'pc $folder' failed."
                 done
                 return
                 ;;
+            --check-assets-conf)
+                local ret=0
+                for folder in "$EOS/PKGBUILDS/eos-pkgbuild-setup" "$MAN/b-assets"
+                do
+                    pushd $folder >/dev/null || DIE "folder '$folder' does not exist."
+                    if [ -n "$(git diff)" ] ; then
+                        ret=1
+                        meld-rcs
+                    fi
+                    popd >/dev/null
+                done
+                case $ret in
+                    0) echo2 "No changes in assets.conf(s)." ;;
+                    1) echo2 "Changes detected in assets.conf(s)." ;;
+                esac
+                return $ret
+                ;;
+            -*) op="$1" ;;
             *)  repodir="$1" ;;
         esac
         shift
@@ -131,7 +157,7 @@ EOF
         # -nn = check remote
         -b) op="" ;;                  # -b  = build
         *)
-            echo "$FUNCNAME: unsupported option '$op'" >&2
+            echo2 "$FUNCNAME: unsupported option '$op'"
             $FUNCNAME -h
             return 1
             ;;
@@ -143,13 +169,13 @@ EOF
     if [ -n "$repodir" ] ; then
         cd "$repodir" || return 1
         if [ ! -L .git ] ; then
-            echo "$FUNCNAME: '$PWD/.git' does not exist or is not a symlink." >&2
+            echo2 "$FUNCNAME: '$PWD/.git' does not exist or is not a symlink."
             cd "$cwd"
             return 1
         fi
     fi
 
-    echo "params = $op $pkgnames_para" >&2
+    echo2 "params = $op $pkgnames_para"
 
     if [ -n "$pkgnames_para" ] ; then
         /bin/assets.make $op --pkgnames="$pkgnames_para"
