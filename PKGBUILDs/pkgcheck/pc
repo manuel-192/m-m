@@ -4,16 +4,43 @@
 # - help update sources
 
 echo2() { echo "$@" >&2 ; }
+Which() { which "$1" &>/dev/null ; }
 
 DIE() {
-    local progname=${0##*/}
     echo2 "$progname: error: $1"
     exit 1
+}
+DIEF() {
+    printf2 "%s: error:\n" "$progname"
+    printf2 "%s\n" "$@"
+    exit 1
+}
+
+AskFolder() {
+    local name
+
+    Which fzf || DIE "this operation needs 'fzf' installed."
+
+    if [ -n "$repodir" ] ; then
+        echo2 "Folder '${repodir/$HOME/\~}' is not supported. "
+    else
+        echo2 "Current folder (${PWD/$HOME/\~}) is not supported."
+    fi
+    printf2 "Supported folders:\n   $(pc --reponames)\n"
+    read -p "ENTER continues: " >&2
+
+    name=$(printf "%s\n" $(pc --reponames) | fzf)
+    if [ -n "$name" ] ; then
+        sleep 1
+        pc $name
+    fi
+    exit
 }
 
 pc() {
     pc_IsSupportedFolderName() {
-        local folder sf
+        local sf
+        local folder=""
         case "$1" in
             "" | ".") folder="${PWD}" ;;
             *)        folder="${1}" ;;
@@ -24,15 +51,16 @@ pc() {
                 return 0
             fi
         done
-        printf "${FUNCNAME[1]}: repo/folder '$folder' is not supported.\nSupported: $supported_folders\n" >&2
         return 1
     }
+    local progname=${0##*/}
 
     [ -n "$CODEDIR" ] || DIE "variable CODEDIR cannot be empty."
 
     local MAN="$CODEDIR/MAN" ; [ -d "$MAN" ] || DIE "folder $MAN does not exist."
     local EOS="$CODEDIR/EOS" ; [ -d "$EOS" ] || DIE "folder $EOS does not exist."
 
+    local folder="$PWD"
     local repodir=""
     local op=""
     local dir1 dir2 dirs
@@ -111,7 +139,10 @@ EOF
         shift
     done
 
-    pc_IsSupportedFolderName "$repodir" || return 1
+    if ! pc_IsSupportedFolderName "$repodir" ; then
+        # DIEF "repo/folder '$folder' is not supported." "Supported: $supported_folders"
+        AskFolder "$repodir"
+    fi
 
     case "$repodir" in
         MAN | EOS | */MAN | */EOS)
