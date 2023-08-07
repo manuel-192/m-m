@@ -14,7 +14,7 @@ Main()
 {
     local pkgnames="$*"                  # as parameters
     if [ -z "$pkgnames" ] ; then
-        pkgnames="$(cat)"                # piped
+        pkgnames="$(pacman -Quq)"        # assume pacman -Sy executed
         [ -z "$pkgnames" ] && return
     fi
 
