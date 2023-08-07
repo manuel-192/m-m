@@ -10,7 +10,8 @@ Cmd() {
 }
 
 show-updates-and-descriptions() {
-    local updates=$(pacman -Su --print-format '%n')
+    # local updates=$(pacman -Su --print-format '%n')
+    local updates=$(pacman -Quq)
     if [ -n "$updates" ] ; then
         hook-update-description $updates
         return 0
