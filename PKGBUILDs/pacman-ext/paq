@@ -9,16 +9,13 @@ Cmd() {
     "$@"
 }
 
-show-updates-and-descriptions() {
-    # local updates=$(pacman -Su --print-format '%n')
-    local updates=$(pacman -Quq)
-    if [ -n "$updates" ] ; then
-        hook-update-description $updates
-        return 0
-    else
-        echo "No updates." >&2
-        return 0
-    fi
+UpdateKeyrings() {
+    local kr
+
+    for kr in archlinux-keyring endeavouros-keyring ; do
+        echo "$updates" | grep -w $kr >/dev/null && keyrings+=($kr)
+    done
+    [ ${#keyrings[@]} -gt 0 ] && Cmd pacman -S --noconfirm "${keyrings[@]}"
 }
 
 Main() {
@@ -30,10 +27,20 @@ Main() {
             ;;
     esac
     local verbose=yes
+    local updates=""
+    local keyrings=()
 
     Cmd pacman -Sy
-    Cmd show-updates-and-descriptions
-    Cmd pacman -Su
+    updates=$(pacman -Quq)         # updates=$(pacman -Su --print-format '%n')
+    if [ -n "$updates" ] ; then
+        UpdateKeyrings             # Update keyrings first,
+        Cmd pacman -Su             # then other updates.
+        Cmd hook-update-description $updates
+    else
+        echo "No updates." >&2
+    fi
+
+    # extras
     Cmd pacman -Qm
     Cmd eos-pacdiff
 }
