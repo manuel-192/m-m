@@ -122,7 +122,11 @@ BuildNeeded() {
     # TODO: handle multipackage PKGBUILDs
 
     local pkgname="$1"
-    local archive="$repodir/PKG_ARCHIVE"
+    if [ "$VERSION_COMPAT" -ge 2 ] ; then
+        local archive="$PKG_ARCHIVE"
+    else
+        local archive="$repodir/PKG_ARCHIVE"
+    fi
 
     old_version=$(ls -1 "$repodir/$pkgname"-*.pkg.tar.zst 2>/dev/null)
     old_version=$(echo "$old_version" | tail -n1 | pkg-name-components --real EVR)
@@ -133,7 +137,8 @@ BuildNeeded() {
 
     case "$(vercmp "$new_version" "$old_version")" in
         1)  mkdir -p "$archive"
-            mv "$pkgname"-*.pkg.tar.zst{,.sig} "$archive" 2>/dev/null
+            # mv "$pkgname"-*.pkg.tar.zst{,.sig} "$archive" 2>/dev/null
+            mv "$pkgname"-*.pkg.tar.* "$archive" 2>/dev/null
             return 0
             ;;
         *)  return 1
