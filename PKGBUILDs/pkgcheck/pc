@@ -16,6 +16,13 @@ DIEF() {
     exit 1
 }
 
+tar-name-components() {
+    # show components of names as of the output of:
+    #     tar -tf "db-file" | grep -v /desc$ | sed 's|/$||'
+    sed -E 's/([a-zA-Z0-9@_+][a-zA-Z0-9@._+-]+)-([0-9:]*[^:/\-\ \t]+)-([0-9\.]+)/\1|\2-\3/'
+    #          name...........................   epoch..pkgver......   pkgrel..
+}
+
 AskFolder() {
     local name
 
@@ -86,19 +93,24 @@ Params:
         Check all supported folders.
     --check-assets-conf
         Check for changes of file assets.conf.
+    --pkgdb <db-filename>
+        Show the contents of the given package database (*.db.tar.xz).
 
 Options:
     -h, --help        This help.
     -n, ""            Check if build is needed, using local packages.
     -nn               Check if build is needed, using remote packages.
     -b                Directly try to build packages.
-    --pkgnames="X"    X is a space separated list of packages to build.
+    --pkgnames "X"    X is a space separated list of packages to build.
     --reponames       Show names of supported repos and folders.
 EOF
                 return
                 ;;
-            --pkgnames=*)
-                pkgnames_para="${1#*=}"
+            --pkgnames=* | --pkgnames)
+                case "$1" in
+                    --pkgnames) pkgnames_para="$2" ; shift ;;
+                    *)          pkgnames_para="${1#*=}" ;;
+                esac
                 ;;
             --reponames)
                 echo "$supported_folders"
@@ -132,6 +144,16 @@ EOF
                     1) echo2 "Changes detected in assets.conf(s)." ;;
                 esac
                 return $ret
+                ;;
+            --pkgdb=* | --pkgdb)
+                local pkgdb
+                case "$1" in
+                    --pkgdb) pkgdb="$2" ; shift ;;
+                    *)       pkgdb=${1#*=} ;;
+                esac
+                [ -e "$pkgdb" ] || DIE "option --pkgdb: file '$pkgdb' cannot be read."
+                tar -tf "$pkgdb" | grep -v /desc$ | sed 's|/$||' | tar-name-components | column -t -s"|"
+                return
                 ;;
             -*) op="$1" ;;
             *)  repodir="$1" ;;

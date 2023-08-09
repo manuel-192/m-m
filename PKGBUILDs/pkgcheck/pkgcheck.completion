@@ -26,7 +26,7 @@ _pkgcheck_() {
     #local -r repos="$(pkgcheck --reponames)"
     local -r repos=$(pc --reponames)
     local -r operations="--dryrun --dryrun-local --build --repoup"
-    local -r options="--allow-downgrade --pkgnames= --reponames"
+    local -r options="--allow-downgrade --pkgnames= --reponames --pkgdb="
     local -r extras="--pull --check-all --check-assets-conf"
     local askfor=""
 
