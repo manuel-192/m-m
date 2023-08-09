@@ -326,6 +326,7 @@ Options:
           -v, --verbose          More verbose output.
           --rmdeps               Remove dependencies installed during build.
 EOF
+                exit 0
                 ;;
 
             -f | --build-force) force_rebuild=yes ;;
