@@ -8,7 +8,7 @@ DIE()     { echo2 "$progname: error: $1" ; Usage 1 ; }
 WARN()    { echo2 "$progname: warning: $1" ; MayExit "$2" ; }
 MayExit() { [ -n "$1" ] && exit $1 ; }
 verbose2() {
-    if [ "$verbose" = "yes" ] ; then
+    if [ "$VERBOSE" = "yes" ] ; then
         case "$1" in
             -n) echo2 "$1" "==>" "$@" ;;  # support echo option -n
             *)  echo2 "==>" "$@" ;;
@@ -136,7 +136,7 @@ special_update() {
     local -r last_cmd="${sudo_cmd[@]: -1}"
     sudo_cmd=($(printf "%s\n" "${sudo_cmd[@]}" | sed "/^$last_cmd$/!s/$/ \&\&/" ))  # see 'info sed', chapter 6.4 for details!
     echo "$(date +%Y%m%d-%H%M): ${sudo_cmd[@]}" >> "$logfile"
-    [ "$show_cmd" = "yes" ] && echo "sudo bash -c \"${sudo_cmd[*]}\""
+    [ "$SHOW_CMD" = "yes" ] && echo "sudo bash -c \"${sudo_cmd[*]}\""
     sudo bash -c "${sudo_cmd[*]}"
     return $?
 }
@@ -355,6 +355,7 @@ Usage:       $progname
 
 <option2>:   --wait-enter             Waits for user to press the Enter key to continue in the end.
              --dg, --downgrade        (Experimental) Downgrades given Arch or EndeavourOS packages.
+             --banner                 Show the intial banner that tells about $progname.
              --no-banner              Do not show the intial banner that tells about $progname.
              --show-cmd               Shows the actual commands to be executed.
              --build                  Builds and installs a package using a local PKGBUILD (advanced).
@@ -364,7 +365,8 @@ Usage:       $progname
              --checkupdates           Use 'checkupdates' for checking updates from the repos.
              --checkupdatesext        Use 'checkupdatesext' for checking updates from the repos.
              --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
-             --updates="Updates"     'Updates' is the output of 'checkupdates'. Useful in scripts.
+             --updates="Updates"      'Updates' is the output of 'checkupdates'. Useful in scripts.
+             -v, --verbose            Be more verbose, show commands etc.
 
 If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
@@ -398,10 +400,8 @@ Main() {
     source /etc/$progname.conf || WARN "/etc/$progname.conf not found, using defaults"
 
     local wait_enter="no"
-    local show_cmd="$SHOW_CMD"
     local retval
     local args=() arg
-    local verbose="$VERBOSE"
     local show_help_now=no
     local just_checkupdates=no
     #local extra_checks="$RUN_MORE_EXTRAS"
@@ -431,14 +431,14 @@ Main() {
                 args+=("$arg")
                 ;;
             -v | --verbose)
-                verbose=yes
+                VERBOSE=yes
                 args+=("$arg")
                 ;;
             --wait-enter)
                 wait_enter=yes                                # useful for pacseek
                 ;;
             --show-cmd)
-                show_cmd=yes
+                SHOW_CMD=yes
                 ;;
             --aur)
                 helper=$aur_helper
@@ -448,6 +448,9 @@ Main() {
             --paru | --yay)
                 helper=/usr/bin/${arg#*--}
                 [ -x $helper ] || DIE "AUR helper '$helper' not found."
+                ;;
+            --banner)
+                BANNER_INITIAL=yes
                 ;;
             --no-banner)
                 BANNER_INITIAL=no
