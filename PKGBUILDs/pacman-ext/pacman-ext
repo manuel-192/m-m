@@ -332,7 +332,7 @@ Additional features and their defaults (see file /etc/$progname.conf):
    - $(_DefVal $EXTRAS_PACMAN_LOCK_CHECK) db lock file check
    - $(_DefVal $EXTRAS_NVIDIA_CHECK) nvidia & kernel update check
    - $(_DefVal $EXTRAS_VIRTUALBOX_CHECK) check virtualbox vs. virtualbox-ext-oracle version compatibility
-   - $(_DefVal $EXTRAS_KEYRINGS_FIRST) update keyrings first if archlinux-keyring-wkd-sync.timer is not active
+   - $(_DefVal $EXTRAS_KEYRINGS_FIRST) update keyrings first
    - $(_DefVal $EXTRAS_SYNC_AT_END) 'sync' at end
 
 EOF
@@ -382,15 +382,19 @@ EOF
 Main() {
     local -r progname="$(basename "$0")"   # $progname used by various functions here
 
+    # "basic" fetures
     local   EXTRAS_PW_WHEN_NEEDED=yes          # yes=ask password only when needed, no=user handles privileges
-    local   EXTRAS_KEYRINGS_FIRST=no           # if yes, update Arch keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
-    local   EXTRAS_NVIDIA_CHECK=yes            # runs only if nvidia gpu is detected
-    local   EXTRAS_VIRTUALBOX_CHECK=yes
-    local   EXTRAS_PACMAN_LOCK_CHECK=yes
-    local   EXTRAS_SYNC_AT_END=yes
+    local   EXTRAS_KEYRINGS_FIRST=yes          # if yes, update Arch keyring packages first; if no, rely on systemd archlinux-keyring-wkd-sync.timer
+    local   EXTRAS_NVIDIA_CHECK=yes            # check nvidia driver and kernel "update compatibility" (runs only if nvidia gpu is detected)
+    local   EXTRAS_VIRTUALBOX_CHECK=yes        # check virtualbox and virtualbox-ext-oracle version compatibility
+    local   EXTRAS_PACMAN_LOCK_CHECK=yes       # check and manage file /var/lib/pacman/db.lck
+    local   EXTRAS_SYNC_AT_END=yes             # may add the 'sync' command as last
+
+    # additional features
     local RUN_MORE_EXTRAS=no
     local   EXTRAS_PACMAN_QM=yes
     local   EXTRAS_PACDIFF=yes
+
     local CHECKUPDATES=checkupdates
     local SHOW_CMD=no
     local VERBOSE=no
@@ -410,8 +414,7 @@ Main() {
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local given_checkupdates=""
 
-    if [ "$EXTRAS_KEYRINGS_FIRST" = "no" ] ; then
-        #if [ -z "$(systemctl show archlinux-keyring-wkd-sync.timer | grep ^NextElapseUSecRealtime=)" ] ; then
+    if false && [ "$EXTRAS_KEYRINGS_FIRST" = "no" ] ; then
         if [ -z "$(systemctl status archlinux-keyring-wkd-sync.timer | grep " Active: active ")" ] ; then
             EXTRAS_KEYRINGS_FIRST=yes
         fi
