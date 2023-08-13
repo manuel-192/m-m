@@ -1,0 +1,12 @@
+#!/bin/bash
+
+case "$(id)" in
+    *"(root)"* | *"(wheel)"*)
+        # Normal sudo for users in root or wheel group.
+        /usr/bin/sudo "$@"
+        ;;
+    *)
+        # Others get su-based but sudo-like command without any sudo options.
+        su-c_wrapper "$@"
+        ;;
+esac
