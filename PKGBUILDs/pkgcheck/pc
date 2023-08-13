@@ -228,7 +228,7 @@ EOF
         fi
     fi
 
-    echo2 "params = $op $pkgnames_para"
+    # echo2 "params = $op $pkgnames_para"
 
     if [ -n "$pkgnames_para" ] ; then
         /bin/assets.make $op --pkgnames="$pkgnames_para"
