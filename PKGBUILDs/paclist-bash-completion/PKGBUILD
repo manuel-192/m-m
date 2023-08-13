@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=paclist-bash-completion
+pkgdesc="Bash command completion for 'paclist'."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(bash)
+
+source=(
+    $url/paclist.completion
+)
+sha512sums=('9e966c146be5d23eb736779a68e9e9ed98b91fa155e9c1d224fc740563ff923f0c130a7f82f8b58a264a1d3da6ed03ca07f2f262310b704a7202bed6222158b3')
+
+package() {
+    local name
+    for name in "${source[@]}" ; do
+        name="${name##*/}"                 # drop "dirname"
+        case "$name" in
+            *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
+        esac
+    done
+}
