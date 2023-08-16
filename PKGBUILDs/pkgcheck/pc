@@ -132,6 +132,7 @@ EOF
                 local ret=0
                 for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets"
                 do
+                    echo "$folder" >&2
                     pushd $folder >/dev/null || DIE "folder '$folder' does not exist."
                     if [ -n "$(git diff)" ] ; then
                         ret=1
