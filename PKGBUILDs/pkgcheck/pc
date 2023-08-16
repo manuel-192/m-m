@@ -130,7 +130,7 @@ EOF
                 ;;
             --check-assets-conf)
                 local ret=0
-                for folder in "$EOS/PKGBUILDS/eos-pkgbuild-setup" "$MAN/b-assets"
+                for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets"
                 do
                     pushd $folder >/dev/null || DIE "folder '$folder' does not exist."
                     if [ -n "$(git diff)" ] ; then
