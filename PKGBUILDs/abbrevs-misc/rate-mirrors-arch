@@ -1,0 +1,82 @@
+#!/bin/bash
+
+    IsNum() { [ -n "$1" ] && [ -z "${1//[0-9]/}" ] ; }
+
+    BannerLine() {
+        local len="$1"
+        local str="$2"
+        local newlines="$3"                      # ^ = newline to head, $ = newline to tail (~like in grep)
+
+        if [ -z "$len" ] ; then
+            len=$((COLUMNS / 2))
+        elif [ -n "$(echo "$len" | tr -d '[0-9]')" ] ; then
+            echo "$FUNCNAME: first parameter is not a number" >&2
+            return 1
+        fi
+        case "$str" in
+            "" | default) str="=" ;;
+        esac
+
+        case "$newlines" in
+            "^" | "^$") echo "" ;;
+        esac
+        printf "%.0s$str" $(seq $len)
+        case "$newlines" in
+            "^$" | "$" | "") echo "" ;;
+        esac
+    }
+
+rate-mirrors-arch() {
+        local delay_def=250
+        local count_def=6
+        local delay=$delay_def        # --delay=Y
+        local count=$count_def        # --count=X
+
+        # optspecs: c:d:h count:,delay:,help
+        while [ -n "$1" ] ; do
+            case "$1" in
+                --count=* | -c=*) count=${1#*=} ;;
+                --count   | -c  ) count="$2"; shift ;;
+                -c*             ) count=${1:2} ;;       # no --count* ...
+                --delay=* | -d=*) delay=${1#*=} ;;
+                --delay   | -d  ) delay="$2"; shift ;;
+                -d*             ) delay=${1:2} ;;
+                --help    | -h  )
+                    cat <<EOF
+Usage: $FUNCNAME [options]
+Options:
+    -c | --count <number>   Mirrors per country. Default: $count_def.
+    -d | --delay <number>   Max time in seconds after the last sync. Default: $delay_def.
+EOF
+                    return 0
+                    ;;
+                *) echo "$FUNCNAME: parameter '$1' unrecognized" >&2; return 1 ;;
+            esac
+            shift
+        done
+
+        IsNum "$delay" || { echo "$FUNCNAME: parameter '$delay' of --delay unrecognized" >&2; return 1; }
+        IsNum "$count" || { echo "$FUNCNAME: parameter '$count' of --count unrecognized" >&2; return 1; }
+
+        local cmd=(
+            rate-mirrors
+            #--disable-comments
+            --disable-comments-in-file
+            --protocol https
+            --save /tmp/mirrorlist
+            --entry-country DE
+            --country-test-mirrors-per-country $count
+            --country-neighbors-per-country 0
+            arch
+            --max-delay=$delay
+        )
+        "${cmd[@]}" | grep -v "^Server = "
+        printf "\n" >&2
+        local banner=$(BannerLine 70 '~')
+        echo "$banner" >&2
+        grep "^# ARGS: " /tmp/mirrorlist
+        cat /tmp/mirrorlist
+        echo "$banner" >&2
+}
+
+rate-mirrors-arch "$@"
