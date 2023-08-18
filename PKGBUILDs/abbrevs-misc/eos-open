@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Open any file (based on mime stuff).
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    eos-open -h
+    exit 1
+}
+
+OptVal() {
+    local -n _var="$1"
+    local opt="$2"
+    local next="$3"
+
+    case "$opt" in
+        -*=*)    _var=${opt#*=} ; return 0 ;;
+        -*)      _var="$next"   ; return 1 ;;  # needs extra shift
+        *)       DIE "please check given parameters near '$opt'" ;;
+    esac
+}
+
+eos-open() {
+    local progname=${0##*/}
+    local pref_app="exo-open"
+    local app
+    local apps=(exo-open kde-open xdg-open)
+
+    while [ -n "$1" ] ; do
+        case "$1" in
+            --pref=* | --pref)
+                OptVal "pref_app" "$1" "$2" || shift
+                if [ -n "$pref_app" ] ; then
+                    which "$pref_app" &> /dev/null || DIE "command '$pref_app' is not found"
+                    apps=("$pref_app" $(printf "%s\n" "${apps[@]}" | grep -v "$pref_app"))
+                fi
+                ;;
+            -h | --help)
+                cat <<EOF
+Usage: $FUNCNAME [options] URLs
+Options:
+    --pref=APP     Sets the preferred mime open app. Defaults (in this order): ${apps[*]}
+    -h, --help     This help.
+EOF
+                return 0
+                ;;
+            -*)
+                DIE "unsupported option '$1'"
+                ;;
+            *)
+                break   # done with options
+                ;;
+        esac
+        shift
+    done
+    for app in "${apps[@]}" ; do
+        if which $app &> /dev/null ; then
+            case "$app" in
+                xdg-open | kde-open)             # these need a loop for opening many items
+                    local item
+                    for item in "$@" ; do
+                        echo "==> $app $item" >&2
+                        setsid $app "$item" &>/dev/null
+                    done
+                    ;;
+                exo-open | *)                    # boldly assume other mime apps don't need a loop...
+                    echo "==> $app $*" >&2
+                    setsid $app "$@" &>/dev/null
+                    ;;
+            esac
+            return
+        fi
+    done
+}
+
+eos-open "$@"
