@@ -69,6 +69,7 @@ pc() {
 
     local folder="$PWD"
     local repodir=""
+    local repodirs=()
     local op=""
     local dir1 dir2 dirs
     local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-' | tr '\n' ' ') MAN EOS"
@@ -157,11 +158,17 @@ EOF
                 return
                 ;;
             -*) op="$1" ;;
-            *)  repodir="$1" ;;
+            *)  repodirs+=("$1") ;;
         esac
         shift
     done
 
+    for repodir in "${repodirs[@]}" ; do
+        pc2
+    done
+}
+
+pc2() {
     if ! pc_IsSupportedFolderName "$repodir" ; then
         # DIEF "repo/folder '$folder' is not supported." "Supported: $supported_folders"
         AskFolder "$repodir"

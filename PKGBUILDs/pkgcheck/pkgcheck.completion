@@ -34,7 +34,7 @@ _pkgcheck_() {
     _pkgcheck_has_in_words "local-repo" && return
     _pkgcheck_has_in_words "pull" && return
 
-    _pkgcheck_has_in_words "$repos"      || askfor+="$repos "
+    askfor+="$repos "
     _pkgcheck_has_in_words "$extras"     || askfor+="$extras "
     _pkgcheck_has_in_words "$operations" || askfor+="$operations "
     _pkgcheck_has_in_words "$options"    || askfor+="$options "
