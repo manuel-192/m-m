@@ -163,6 +163,8 @@ EOF
         shift
     done
 
+    [ ${#repodirs[@]} -eq 0 ] && repodirs=("$PWD")
+
     for repodir in "${repodirs[@]}" ; do
         pc2
     done
