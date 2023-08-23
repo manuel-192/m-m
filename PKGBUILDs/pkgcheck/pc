@@ -44,7 +44,7 @@ AskFolder() {
     exit
 }
 
-pc() {
+_pc() {
     pc_IsSupportedFolderName() {
         local sf
         local folder=""
@@ -99,12 +99,36 @@ Params:
 
 Options:
     -h, --help        This help.
+    -e, --editme      Edit this file.
     -n, ""            Check if build is needed, using local packages.
     -nn               Check if build is needed, using remote packages.
     -b                Directly try to build packages.
     --pkgnames "X"    X is a space separated list of packages to build.
     --reponames       Show names of supported repos and folders.
 EOF
+                return
+                ;;
+            --editme | -e)
+                for op in $EDITOR qute emacs kate xed geany adie mousepad gedit ; do
+                    if type $op &>/dev/null ; then
+                        $op "$0"
+                        return
+                    fi
+                done
+                DIE "option '--edit': no editor found."
+                ;;
+            --dump-options)
+                op="--pkgnames= --dryrun --dryrun-local --build --repoup --allow-downgrade"
+                op+=" -n -nn -b"
+                #op+=" $($FUNCNAME --dump-options-single)"
+                echo $op
+                return
+                ;;
+            --dump-options-single)
+                # "single" options will ignore other parameters!
+                op="--dump-options --dump-options-single --editme -e --help -h --reponames --pull"
+                op+=" --check-all --check-assets-conf --pkgdb="
+                echo $op
                 return
                 ;;
             --pkgnames=* | --pkgnames)
@@ -117,7 +141,7 @@ EOF
                 echo "$supported_folders"
                 return
                 ;;
-            --pull)
+            --pull | pull)
                 pull-requests
                 return
                 ;;
@@ -166,11 +190,11 @@ EOF
     [ ${#repodirs[@]} -eq 0 ] && repodirs=("$PWD")
 
     for repodir in "${repodirs[@]}" ; do
-        pc2
+        _pc2
     done
 }
 
-pc2() {
+_pc2() {
     if ! pc_IsSupportedFolderName "$repodir" ; then
         # DIEF "repo/folder '$folder' is not supported." "Supported: $supported_folders"
         AskFolder "$repodir"
@@ -253,4 +277,4 @@ pc2() {
     esac
 }
 
-pc "$@"
+_pc "$@"

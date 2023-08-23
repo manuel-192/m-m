@@ -3,7 +3,7 @@
 _pkgcheck_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
-    compopt -o nosort
+    # compopt -o nosort
 }
 
 _pkgcheck_has_in_words() {
@@ -23,23 +23,16 @@ _pkgcheck_() {
     local cur prev words cword split
     _init_completion -s || return
 
-    #local -r repos="$(pkgcheck --reponames)"
+    local -r single_options="$(pc --dump-options-single) local-repo"
+    _pkgcheck_has_in_words "$single_options" && return      # nothing more needed with these!
+
     local -r repos=$(pc --reponames)
-    local -r operations="--dryrun --dryrun-local --build --repoup"
-    local -r options="--allow-downgrade --pkgnames= --reponames --pkgdb="
-    local -r extras="--pull --check-all --check-assets-conf"
-    local askfor=""
+    local -r options="$(pc --dump-options) $single_options"
+    local askfor=($repos)
 
-    # nothing more needed with these!
-    _pkgcheck_has_in_words "local-repo" && return
-    _pkgcheck_has_in_words "pull" && return
+    _pkgcheck_has_in_words "$options" || askfor+=($options)
 
-    askfor+="$repos "
-    _pkgcheck_has_in_words "$extras"     || askfor+="$extras "
-    _pkgcheck_has_in_words "$operations" || askfor+="$operations "
-    _pkgcheck_has_in_words "$options"    || askfor+="$options "
-
-    [ -n "$askfor" ] && _pkgcheck_complete "$askfor"
+    [ ${#askfor} -gt 0 ] && _pkgcheck_complete "${askfor[*]}"
 }
 
 complete -F _pkgcheck_ pkgcheck
