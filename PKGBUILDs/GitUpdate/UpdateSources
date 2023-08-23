@@ -7,8 +7,8 @@ DIE() {
     exit 1
 }
 
-pushd() { /bin/pushd "$@" >/dev/null || DIE "'pushd $*' failed." ; }
-popd()  { /bin/popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
+pushd() { builtin pushd "$@" >/dev/null || DIE "'pushd $*' failed." ; }
+popd()  { builtin popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
 
 _git_check() {
     local ret=0
