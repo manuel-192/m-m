@@ -367,6 +367,7 @@ Usage:       $progname
              --expac                  Use 'checkupdates' and 'expac' for checking updates from the repos.
              --updates="Updates"      'Updates' is the output of 'checkupdates'. Useful in scripts.
              -v, --verbose            Be more verbose, show commands etc.
+             -c, --connection-check   Check internet connection first.
 
 If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
@@ -459,7 +460,7 @@ Main() {
                 BANNER_INITIAL=no
                 ;;
             --show-native-options)
-                echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd --build --show-native-options $arg"
+                echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd --build --show-native-options --connection-check $arg"
                 exit
                 ;;
             --build)
@@ -483,6 +484,10 @@ Main() {
                 shift
                 mirror-swap-eos "$1" "$2"
                 exit $?
+                ;;
+            -c | --connection-check)
+                echo2 "Checking internet connection..."
+                eos-connection-checker || DIE "no internet connection!"
                 ;;
             *)
                 args+=("$arg")
