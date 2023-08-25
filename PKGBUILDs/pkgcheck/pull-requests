@@ -15,7 +15,7 @@ Main2()
 {
     local url="$1"
     local url2="$url/issues"
-    local result
+    local main_count
     local comments
     local strings=(
         "Pull requests"
@@ -46,26 +46,32 @@ Main2()
 
         printf2 "%-*s for %-*s : " "$maxstrlen" "$str" "$maxurllen" "$url"
 
-        result="$(echo "$data" | grep -A1 "$str</span>" | tail -n 1 | sed 's|^.*>\([0-9][0-9]*\)</span>$|\1|')"
+        main_count="$(echo "$data" | grep -A1 "$str</span>" | tail -n 1 | sed -E 's|.*>([0-9]+)</span>$|\1|')"
         comments=0
-        case "$result" in
-            [1-9] | [1-9][0-9] | [1-9][0-9][0-9] | [1-9][0-9][0-9][0-9]*)
-		comments=$(curl -s $url2 | grep -E '"[0-9]+ comment' | sed -E 's|.*/issues/([0-9]+)".* aria-label="([0-9]+) comment.*|issue \1: \2 comments|')
-                ;;
-            *)
-                result=none
-                ;;
-        esac
-        case "$result" in
-	    "" | none | 0)
-                printf2 "$result " ;;
-            *)
-                printf2 "$result, " ;;
-        esac
-        if [ "$str" = "Issues" ] ; then
-            [ -n "$comments" ] && printf2 "%s" "$comments"
+
+        if true ; then
+            echo2 "$main_count"
+        else
+            # not working...
+            case "$main_count" in
+                [1-9] | [1-9][0-9] | [1-9][0-9][0-9] | [1-9][0-9][0-9][0-9]*)
+		    comments=$(curl -s $url2 | grep -E '"[0-9]+ comment' | sed -E 's|.*/issues/([0-9]+)".* aria-label="([0-9]+) comment.*|issue \1: \2 comments|')
+                    ;;
+                *)
+                    main_count=none
+                    ;;
+            esac
+            case "$main_count" in
+	        "" | none | 0)
+                    printf2 "$main_count " ;;
+                *)
+                    printf2 "$main_count, " ;;
+            esac
+            if [ "$str" = "Issues" ] ; then
+                [ -n "$comments" ] && printf2 "%s" "$comments"
+            fi
+            printf2 "\n"
         fi
-        printf2 "\n"
     done
 }
 
