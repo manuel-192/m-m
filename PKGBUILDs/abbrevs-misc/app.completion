@@ -1,0 +1,30 @@
+# bash completion for app        -*- shell-script -*-
+
+_app_() {
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    local apps=$(app --dump-apps)
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        --dump-apps)
+            ;;
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -*)
+                    # Any option or nothing yet.
+                    COMPREPLY=($(compgen -W "--dump-apps" -- "$cur"))
+                    ;;
+                *)
+                    # Non-option parameters.
+                    COMPREPLY=($(compgen -W "$apps" -- "$cur"))
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _app_ app

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Collection of apps under one command and bash completion.
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+AppExists() { which "$1" &> /dev/null || DIE "app '$1' is not available." ; }
+RunApp() { AppExists "$1" && setsid "$@" &> /dev/null ; }
+
+kde() {
+    local app="$1"
+    shift
+    case "$app" in
+        screenshooter) RunApp spectacle -l "$@" ;;
+        office)        RunApp libreoffice "$@" ;;
+        editor)        RunApp kate "$@" ;;
+        pdf)           RunApp okular "$@" ;;
+    esac
+}
+
+xfce() {
+    local app="$1"
+    shift
+    case "$app" in
+        screenshooter) RunApp xfce4-screenshooter "$@" ;;
+        office)        RunApp libreoffice "$@" ;;
+        editor)        RunApp qtcreator -client "$@" ;;
+        pdf)           RunApp atril "$@" ;;
+    esac
+}
+
+Main()
+{
+    case "$1" in
+        --dump-apps)
+            echo "screenshooter office editor pdf"
+            return 0
+            ;;
+    esac
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
+    local desktop=""
+    GetCurrentDesktop desktop
+
+    $desktop "$@"
+}
+
+Main "$@"
