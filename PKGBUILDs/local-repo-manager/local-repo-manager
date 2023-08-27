@@ -2,7 +2,7 @@
 
 # Create a local repo from certain AUR PKGBUILDs.
 
-Pushd()  { pushd "$@" >/dev/null ; }
+Pushd()  { pushd "$@" &>/dev/null || DIE "'$FUNCNAME $*' failed" "${BASH_LINENO[0]}" ; }
 Popd()   { popd  "$@" >/dev/null ; }
 echo2()  { echo "$@" >&2 ; }
 printf2()  { printf "$@" >&2 ; }
@@ -12,13 +12,18 @@ printf2v() { [ $verbose = yes ] && printf2 "$@" ; }
 
 ASSERT() { "$@" || DIE "'$*' failed" ; }
 DIE()    {
-    local msg="$progname: error: $1"
+    case "$2" in
+        "") local msg="$progname: error: $1" ;;
+        *)  local msg="$progname (L:$2): error: $1" ;;
+    esac
+
     echo2 "$msg"
 
     local date="$(date +%Y%m%d-%H%M)"
     echo "$date: $msg" > "$errlog"
     exit 1
 }
+DIELINE() { DIE "$1" "${BASH_LINENO[0]}" ; }
 INFO() {
     echo2 "==> $progname: info: $@"
 }
@@ -70,7 +75,7 @@ BuildPackages() {
     Pushd "$pkgbuilddir"
     
     for pkgname in "${build_needed[@]}" ; do
-        [ -r "$pkgname/PKGBUILD" ] || DIE "no PKGBUILD for '$pkgname'"
+        [ -r "$pkgname/PKGBUILD" ] || DIELINE "no PKGBUILD for '$pkgname'"
         ASSERT Pushd "$pkgname"
 
         depsfile=/tmp/$pkgname.tmp.deps
@@ -121,7 +126,8 @@ BuildPackages() {
 BuildNeeded() {
     # TODO: handle multipackage PKGBUILDs
 
-    local pkgname="$1"
+    local pkgname="$1"     # extracted real pkgname
+    local pkgname1="$2"    # pkgname in PKGNAMES[]
     if [ "$VERSION_COMPAT" -ge 2 ] ; then
         local archive="$PKG_ARCHIVE"
     else
@@ -130,19 +136,41 @@ BuildNeeded() {
 
     old_version=$(ls -1 "$repodir/$pkgname"-*.pkg.tar.zst 2>/dev/null)
     old_version=$(echo "$old_version" | tail -n1 | pkg-name-components --real EVR)
-    [ -n "$old_version" ] || return 0
+    [ "$old_version" = "-" ] && old_version=""
 
-    new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
-    [ -n "$new_version" ] || DIE "cannot determine the latest available version of package '$pkgname'"
+    case "$pkgname1" in
+        */local)
+            new_version=$(GetPkgVersion "$localroot/$pkgname/PKGBUILD")
+            [ -n "$new_version" ] || DIELINE "cannot find the latest available version of package '$pkgname1'"
+            ;;
+        *)
+            new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
+            [ -n "$new_version" ] || DIELINE "'$helper_Sia' cannot find the latest available version of package '$pkgname1'"
+            ;;
+    esac
 
     case "$(vercmp "$new_version" "$old_version")" in
-        1)  mkdir -p "$archive"
-            # mv "$pkgname"-*.pkg.tar.zst{,.sig} "$archive" 2>/dev/null
-            mv "$pkgname"-*.pkg.tar.* "$archive" 2>/dev/null
+        1)
+            if [ -n "$old_version" ] ; then
+                mkdir -p "$archive"
+                mv "$pkgname"-*.pkg.tar.* "$archive" 2>/dev/null
+            fi
             return 0
             ;;
         *)  return 1
             ;;
+    esac
+}
+
+GetPkgVersion() {
+    local PKGBUILD="$1"
+    source "$PKGBUILD"
+    echo "$pkgver"-"$pkgrel"   # assume pkgver() does not exist !!!
+}
+RealName() {
+    case "$1" in
+        */local) echo "${1%/local}" ;;
+        *)       echo "$1" ;;
     esac
 }
 
@@ -153,16 +181,20 @@ FetchPkgbuilds() {
         echo2v "...done."
     }
 
-    local pkgname
+    local pkgname pkgname1
     local constructor
     local old_version new_version
 
     Pushd "$pkgbuilddir"
 
-    for pkgname in "${PKGNAMES[@]}" ; do
-        printf2v "==> %-40s: " "$pkgname"
+    for pkgname1 in "${PKGNAMES[@]}" ; do
+        pkgname=$(RealName $pkgname1)
+        printf2v "==> %-40s: " "$pkgname1"
+        case "$pkgname1" in
+            */local) [ -r "$localroot/$pkgname/PKGBUILD" ] || DIELINE "no PKGBUILD for $pkgname1" ;;
+        esac
         if [ "$force_rebuild" = "no" ] ; then
-            if ! BuildNeeded "$pkgname" ; then
+            if ! BuildNeeded "$pkgname" "$pkgname1" ; then
                 echo2v "OK ($old_version)"
                 continue
             fi
@@ -173,7 +205,13 @@ FetchPkgbuilds() {
         if [ $dryrun = no ] ; then
             build_needed+=("$pkgname")
             rm -rf "$pkgname"                        # remove possible old pkg folder
-            FetchAurPackage "$pkgname" >/dev/null
+            case "$pkgname1" in
+                */local)
+                    cp -a "$localroot/$pkgname" ./
+                    echo2v ""
+                    ;;
+                *) FetchAurPackage "$pkgname" >/dev/null ;;
+            esac
             constructor="${PKG_BEFORE_AFTER[$pkgname]}"
             if [ -n "$constructor" ] ; then
                 ASSERT Pushd "$pkgname"
@@ -301,8 +339,9 @@ Main() {
 
     source "$conf" || return 1    # $conf file must fill the required variables above
 
-    local repodir="$WORKDIR"    # "$PWD"
-    local pkgbuilddir="$WORKDIR/PKGBUILDS"
+    local repodir="$WORKDIR"                              # usually the same as $PWD
+    local pkgbuilddir="$repodir/PKGBUILDS"                # contains temporary AUR dirs
+    local localroot="$repodir/LOCAL"                      # contains permanent local dirs, don't delete any!
     local buildlog="$HOME/.cache/$progname.buildlog"
     local errlog="$HOME/.cache/$progname.errlog"
     local build_needed=()
@@ -342,14 +381,14 @@ EOF
     local helper_Sia="yay -Sia"   # because yay does this faster than paru
     local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
 
-    [ -n "$REPONAME" ]        || DIE "REPONAME in the config file is empty or not set"
-    [ -n "$WORKDIR" ]         || DIE "WORKDIR is missing, cannot build packages"
-    [ ${#PKGNAMES[@]} -gt 0 ] || DIE "PKGNAMES array in the config file is empty or not set"
+    [ -n "$REPONAME" ]        || DIELINE "REPONAME in the config file is empty or not set"
+    [ -n "$WORKDIR" ]         || DIELINE "WORKDIR is missing, cannot build packages"
+    [ ${#PKGNAMES[@]} -gt 0 ] || DIELINE "PKGNAMES array in the config file is empty or not set"
 
     [ -n "$PACKAGED_BY" ]     && export PACKAGER="$PACKAGED_BY"
     
 
-    cd "$WORKDIR"
+    cd "$repodir"
 
     FetchPkgbuilds
 
