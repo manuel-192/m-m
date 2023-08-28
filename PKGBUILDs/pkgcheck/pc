@@ -8,12 +8,21 @@ Which() { which "$1" &>/dev/null ; }
 
 DIE() {
     echo2 "$progname: error: $1"
+    WaitToQuit 1
     exit 1
 }
 DIEF() {
     printf2 "%s: error:\n" "$progname"
     printf2 "%s\n" "$@"
+    WaitToQuit 1
     exit 1
+}
+
+WaitToQuit() {
+    if [ "$WaitToQuit" = "yes" ] ; then
+        read -p "Press ENTER to quit: " >&2
+        exit $1
+    fi
 }
 
 tar-name-components() {
@@ -41,6 +50,7 @@ AskFolder() {
         sleep 1
         pc $name
     fi
+    WaitToQuit
     exit
 }
 
@@ -61,6 +71,7 @@ _pc() {
         return 1
     }
     local progname=${0##*/}
+    local WaitToQuit=no
 
     [ -n "$CODEDIR" ] || DIE "variable CODEDIR cannot be empty."
 
@@ -106,6 +117,7 @@ Options:
     --pkgnames "X"    X is a space separated list of packages to build.
     --reponames       Show names of supported repos and folders.
 EOF
+                WaitToQuit
                 return
                 ;;
             --editme | -e)
@@ -131,6 +143,9 @@ EOF
                 echo $op
                 return
                 ;;
+            --wait-to-quit)
+                WaitToQuit=yes
+                ;;
             --pkgnames=* | --pkgnames)
                 case "$1" in
                     --pkgnames) pkgnames_para="$2" ; shift ;;
@@ -143,6 +158,7 @@ EOF
                 ;;
             --pull | pull)
                 pull-requests
+                WaitToQuit
                 return
                 ;;
             --check-all)
@@ -151,6 +167,7 @@ EOF
                     echo2 "==> pc $folder"
                     pc $folder || DIE "'pc $folder' failed."
                 done
+                WaitToQuit
                 return
                 ;;
             --check-assets-conf)
@@ -169,6 +186,7 @@ EOF
                     0) echo2 "No changes in assets.conf(s)." ;;
                     1) echo2 "Changes detected in assets.conf(s)." ;;
                 esac
+                WaitToQuit $ret
                 return $ret
                 ;;
             --pkgdb=* | --pkgdb)
@@ -179,6 +197,7 @@ EOF
                 esac
                 [ -e "$pkgdb" ] || DIE "option --pkgdb: file '$pkgdb' cannot be read."
                 tar -tf "$pkgdb" | grep -v /desc$ | sed 's|/$||' | tar-name-components | column -t -s"|"
+                WaitToQuit
                 return
                 ;;
             -*) op="$1" ;;
@@ -206,6 +225,7 @@ _pc2() {
             pushd "$repodir" >/dev/null
             UpdateSources
             popd >/dev/null
+            WaitToQuit
             return
             ;;
     esac
@@ -246,6 +266,7 @@ _pc2() {
         *)
             echo2 "$FUNCNAME: unsupported option '$op'"
             $FUNCNAME -h
+            WaitToQuit 1
             return 1
             ;;
     esac
@@ -254,10 +275,14 @@ _pc2() {
     local exit_code=0
 
     if [ -n "$repodir" ] ; then
-        cd "$repodir" || return 1
+        cd "$repodir" || {
+            WaitToQuit
+            return 1
+        }
         if [ ! -L .git ] ; then
             echo2 "$FUNCNAME: '$PWD/.git' does not exist or is not a symlink."
             cd "$cwd"
+            WaitToQuit 1
             return 1
         fi
     fi
@@ -273,8 +298,12 @@ _pc2() {
     cd "$cwd"
     case $exit_code in
         100 | 0) ;;
-        *)       return $exit_code ;;
+        *)
+            WaitToQuit $exit_code
+            return $exit_code
+            ;;
     esac
+    WaitToQuit
 }
 
 _pc "$@"
