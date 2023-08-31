@@ -31,8 +31,9 @@ eos-open() {
             --pref=* | --pref)
                 OptVal "pref_app" "$1" "$2" || shift
                 if [ -n "$pref_app" ] ; then
-                    which "$pref_app" &> /dev/null || DIE "command '$pref_app' is not found"
-                    apps=("$pref_app" $(printf "%s\n" "${apps[@]}" | grep -v "$pref_app"))
+                    if which "$pref_app" &> /dev/null ; then     #|| DIE "command '$pref_app' is not found"
+                        apps=("$pref_app" $(printf "%s\n" "${apps[@]}" | grep -v "$pref_app"))
+                    fi
                 fi
                 ;;
             -h | --help)
