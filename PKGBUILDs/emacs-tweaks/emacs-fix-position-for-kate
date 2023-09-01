@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Run the given command after increasing line and column number value(s) by one
+# on parameter +line[:column].
+
+fix-numbers() {
+    # increase numbers of +line[:column]
+    local column="${1#*:}"
+    local line="${1:1}"
+    line="${line%:*}"
+
+    ((line++))
+    [ -n "$column" ] && ((column++))
+
+    line="+$line"
+    [ -n "$column" ] && column=":$column"
+    
+    echo "$line$column"
+}
+
+Main()
+{
+    local cmd=()
+    local arg
+    for arg in "$@" ; do
+        case "$arg" in
+            +*) cmd+=("$(fix-numbers "$arg")") ;;
+            *) cmd+=("$arg") ;;
+        esac
+    done
+    "${cmd[@]}"
+}
+
+Main "$@"

@@ -3,7 +3,7 @@
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
 pkgver=23
-pkgrel=2
+pkgrel=3
 arch=('any')
 license=('GPL')
 depends=(emacs)
@@ -11,10 +11,15 @@ depends=(emacs)
 url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
 
 source=(
-  $url/emacs
+    $url/emacs
+    $url/emacs-fix-position-for-kate
 )
-sha512sums=('2f2977cd2d46ab2a2dfadb75c56a52e1468fa23fe951b58093ec1f7a40cd7f7bc6953935386212bdd55764aebab6a811b4f5789ae13df40cd0be95e09932944d')
+sha512sums=('2f2977cd2d46ab2a2dfadb75c56a52e1468fa23fe951b58093ec1f7a40cd7f7bc6953935386212bdd55764aebab6a811b4f5789ae13df40cd0be95e09932944d'
+            '2c4003a729802a92f3875d3135bb5a5185dfa8f8124986af7cd54346529dfee6497c98e1b46eeaeea326c2ebffca43865757cd5844296a9446b493fb04f87dee')
 
 package() {
-  install -Dm755 emacs          $pkgdir/usr/local/bin/emacs
+    local _dir=$pkgdir/usr/local/bin
+
+    install -Dm755 emacs                         $_dir/emacs
+    install -Dm755 emacs-fix-position-for-kate   $_dir/emacs-fix-position-for-kate
 }
