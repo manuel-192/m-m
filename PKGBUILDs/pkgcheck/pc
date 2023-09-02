@@ -43,7 +43,7 @@ AskFolder() {
         echo2 "Current folder (${PWD/$HOME/\~}) is not supported."
     fi
     printf2 "Supported folders:\n   $(pc --reponames)\n"
-    read -p "ENTER continues: " >&2
+    read -p "[ENTER] continue, [Ctrl-C] quit: " >&2
 
     name=$(printf "%s\n" $(pc --reponames) | fzf)
     if [ -n "$name" ] ; then
@@ -109,36 +109,35 @@ Params:
         Show the contents of the given package database (*.db.tar.xz).
 
 Options:
+    -b                Directly try to build packages.
+    --editme          Edit this file.
     -h, --help        This help.
-    -e, --editme      Edit this file.
     -n, ""            Check if build is needed, using local packages.
     -nn               Check if build is needed, using remote packages.
-    -b                Directly try to build packages.
     --pkgnames "X"    X is a space separated list of packages to build.
     --reponames       Show names of supported repos and folders.
 EOF
                 WaitToQuit
                 return
                 ;;
-            --editme | -e)
-                for op in $EDITOR qute emacs kate xed geany adie mousepad gedit ; do
+            --editme)
+                for op in kate $EDITOR emacs kate qute xed geany adie mousepad gedit ; do
                     if type $op &>/dev/null ; then
                         $op "$0"
                         return
                     fi
                 done
-                DIE "option '--edit': no editor found."
+                DIE "option '$1': no editor found."
                 ;;
             --dump-options)
                 op="--pkgnames= --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
-                #op+=" $($FUNCNAME --dump-options-single)"
                 echo $op
                 return
                 ;;
             --dump-options-single)
                 # "single" options will ignore other parameters!
-                op="--dump-options --dump-options-single --editme -e --help -h --reponames --pull"
+                op="--dump-options --dump-options-single --editme --help -h --reponames --pull"
                 op+=" --check-all --check-assets-conf --pkgdb="
                 echo $op
                 return
@@ -146,11 +145,11 @@ EOF
             --wait-to-quit)
                 WaitToQuit=yes
                 ;;
-            --pkgnames=* | --pkgnames)
-                case "$1" in
-                    --pkgnames) pkgnames_para="$2" ; shift ;;
-                    *)          pkgnames_para="${1#*=}" ;;
-                esac
+            --pkgnames)
+                pkgnames_para="$2" ; shift
+                ;;
+            --pkgnames=*)
+                pkgnames_para="${1#*=}"
                 ;;
             --reponames)
                 echo "$supported_folders"

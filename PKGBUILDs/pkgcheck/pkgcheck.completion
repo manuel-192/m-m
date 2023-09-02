@@ -36,4 +36,3 @@ _pkgcheck_() {
 }
 
 complete -F _pkgcheck_ pkgcheck
-
