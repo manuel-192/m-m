@@ -90,6 +90,15 @@ special_update() {
     local sudo_cmd=()
     local keyrings=""
     local nvidia=""
+    local descr=""
+    local ret=0
+
+    if [ $just_checkupdates = yes ] ; then
+        checkupdatesext
+        return
+    fi
+
+    [ $show_descriptions = yes ] && descr="--descriptions"
 
     # Build the command for sudo
 
@@ -109,8 +118,8 @@ special_update() {
 
     if [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] ; then
         verbose2 "will check all keyrings first ..."
-        [ "$EXTRAS_KEYRINGS_FIRST" = "yes" ] && keyrings="archlinux-keyring endeavouros-keyring"
-        sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks $nvidia $keyrings && /usr/bin/pacman -Su")
+        keyrings="archlinux-keyring endeavouros-keyring"
+        sudo_cmd+=("/usr/bin/pacman $db_opt && pacman-ext-checks $nvidia $descr $keyrings && /usr/bin/pacman -Su")
     else
         if false ; then
             sudo_cmd+=("/usr/bin/pacman ${db_opt}u")
@@ -138,7 +147,9 @@ special_update() {
     echo "$(date +%Y%m%d-%H%M): ${sudo_cmd[@]}" >> "$logfile"
     [ "$SHOW_CMD" = "yes" ] && echo "sudo bash -c \"${sudo_cmd[*]}\""
     sudo bash -c "${sudo_cmd[*]}"
-    return $?
+    ret=$?
+    
+    return $ret
 }
 
 CheckUpdatesFunc() {
@@ -273,15 +284,6 @@ SpecialUpdateAndExtras() {
 }
 
 pacman_ext() {
-    if [ -z "$1" ] ; then
-        CheckUpdates
-        [ "$just_checkupdates" = "yes" ] && return 0
-        if [ $retval -eq 0 ] ; then
-            ExtraChecks
-            return 0
-        fi
-    fi
-
     local db_opt="-Sy"                     # $db_opt used by special_update()
 
     case "$helper" in
@@ -368,6 +370,7 @@ Usage:       $progname
              --updates="Updates"      'Updates' is the output of 'checkupdates'. Useful in scripts.
              -v, --verbose            Be more verbose, show commands etc.
              -c, --connection-check   Check internet connection first.
+             -d, --show-descriptions  Show the descriptions of the updated packages.
 
 If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
@@ -414,6 +417,7 @@ Main() {
     local aur_helper="/usr/bin/${AUR_HELPER##*/}"
     local helper=/usr/bin/pacman           # $helper used by special_update()
     local given_checkupdates=""
+    local show_descriptions=no
 
     if false && [ "$EXTRAS_KEYRINGS_FIRST" = "no" ] ; then
         if [ -z "$(systemctl status archlinux-keyring-wkd-sync.timer | grep " Active: active ")" ] ; then
@@ -443,6 +447,9 @@ Main() {
                 ;;
             --show-cmd)
                 SHOW_CMD=yes
+                ;;
+            --show-descriptions | -d)
+                show_descriptions=yes
                 ;;
             --aur)
                 helper=$aur_helper
