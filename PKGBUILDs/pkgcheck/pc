@@ -54,6 +54,17 @@ AskFolder() {
     exit
 }
 
+ChangeLog() {
+    local pkgname="$1"
+    local url=${PKG_CHANGELOGS["$pkgname"]}
+
+    if [ -n "$url" ] ; then
+        firefox "$url"
+    else
+        echo2 "$progname: no changelog for $pkgname."
+    fi
+}
+
 _pc() {
     pc_IsSupportedFolderName() {
         local sf
@@ -85,6 +96,7 @@ _pc() {
     local dir1 dir2 dirs
     local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-' | tr '\n' ' ') MAN EOS"
     local pkgnames_para=""
+    local changelogfor=""
 
     while [ -n "$1" ] ; do
         case "$1" in
@@ -116,6 +128,7 @@ Options:
     -nn               Check if build is needed, using remote packages.
     --pkgnames "X"    X is a space separated list of packages to build.
     --reponames       Show names of supported repos and folders.
+    -c, --changelog   Show the changelog of a package, if available.
 EOF
                 WaitToQuit
                 return
@@ -138,15 +151,23 @@ EOF
             --dump-options-single)
                 # "single" options will ignore other parameters!
                 op="--dump-options --dump-options-single --editme --help -h --reponames --pull"
-                op+=" --check-all --check-assets-conf --pkgdb="
+                op+=" --check-all --check-assets-conf --pkgdb= --changelog"
                 echo $op
                 return
+                ;;
+            --changelog | -c)
+                changelogfor="$2"
+                shift
+                ;;
+            --changelog=* | -c=*)
+                changelogfor="${1#*=}"
                 ;;
             --wait-to-quit)
                 WaitToQuit=yes
                 ;;
             --pkgnames)
-                pkgnames_para="$2" ; shift
+                pkgnames_para="$2"
+                shift
                 ;;
             --pkgnames=*)
                 pkgnames_para="${1#*=}"
@@ -257,6 +278,17 @@ _pc2() {
                 ;;
         esac
     done
+
+    if [ -n "$changelogfor" ] ; then
+        pushd "$repodir" >/dev/null
+        source assets.conf || DIE "cannot find assets.conf in '$repodir'"
+        ChangeLog "$changelogfor"
+        popd >/dev/null
+        exit
+    else
+        DIE "no changelog for '$changelogfor'"
+    fi
+
     case "$op" in
         "") op="-n" ;;                # ""  = check local
         -n | -nn) ;;                  # -n  = check local
