@@ -285,8 +285,6 @@ _pc2() {
         ChangeLog "$changelogfor"
         popd >/dev/null
         exit
-    else
-        DIE "no changelog for '$changelogfor'"
     fi
 
     case "$op" in
