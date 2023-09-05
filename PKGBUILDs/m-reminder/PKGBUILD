@@ -5,11 +5,12 @@ pkgname=m-reminder
 pkgdesc="Simple configurable reminder of a single thing"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=1.1
 
 arch=('any')
 license=('GPL')
 depends=(bash)
+backup=(etc/$pkgname.conf)
 
 source=(
     $url/$pkgname
