@@ -1,0 +1,10 @@
+[Unit]
+Description=Notify something periodically
+
+[Timer]
+OnCalendar=hourly
+# OnCalendar=*:0/2:0
+Persistent=true
+ 
+[Install]
+WantedBy=timers.target

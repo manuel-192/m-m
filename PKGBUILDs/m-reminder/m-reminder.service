@@ -1,0 +1,10 @@
+[Unit]
+Description=Notify something periodically
+
+[Service]
+Type=oneshot
+Environment=DISPLAY=:0
+ExecStart=/usr/local/bin/m-reminder
+
+[Install]
+WantedBy=aaa.timer

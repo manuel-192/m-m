@@ -1,0 +1,30 @@
+#!/bin/bash
+
+Main()
+{
+    local progname=${0##*/}
+    local config=/etc/$progname.conf
+    source $config || return 1
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
+
+    #[ -z "$ICON" ]    && ICON=/usr/share/endeavouros/EndeavourOS-icon.png
+    [ -z "$URGENCY" ] && URGENCY=critical
+    #[ -z "$TITLE" ]   && TITLE="title"
+    [ -z "$MESSAGE" ] && MESSAGE="message"
+    #[ -z "$COLOR" ]   && COLOR="RED"
+
+    local cmd=(
+        eos_notification_all
+
+        "$ICON"
+        "$URGENCY"
+        0
+        $progname
+        "$TITLE"
+        "$MESSAGE"
+        "$COLOR"          # for TTY: RED, YELLOW, or empty
+    )
+    "${cmd[@]}"
+}
+
+Main "$@"
