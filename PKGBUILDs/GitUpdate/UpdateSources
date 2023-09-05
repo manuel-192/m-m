@@ -17,7 +17,7 @@ _git_check() {
     local diffs="$(git diff)"
     if [ -n "$diffs" ] ; then
         # Some files have changed. Show the full paths of the changed files.
-        if git pull >/dev/null ; then
+        if git pull &>/dev/null ; then
             echo "Info: local changes detected in files:"
         else
             echo "Warning: updates are available but cannot update due to local changes in files:"
