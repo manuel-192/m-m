@@ -41,8 +41,11 @@ GetBrightness() {
 }
 
 CheckDependencies() {
-    local pkgs=( xorg-xrandr bc )
-    pacman -Q ${pkgs[*]} &>/dev/null || DIE "required dependencies: ${pkgs[*]}"
+    local pkg
+    for pkg in xorg-xrandr bc
+    do
+        expac -Q %n $pkg >/dev/null || DIE "required package: $pkg"
+    done
 }
 
 Usage() {
@@ -57,27 +60,29 @@ EOF
 }
 
 MainXrandr() {
-    local -r progname="$(basename "$0")"
+    local -r progname="${0##*/}"
     local -r min=5
     local -r max=100
     local brightness=""
     local data=""
     local outdev=""
+    local percentage="$1"
 
     CheckDependencies
 
     GetData
     GetOutputDevice
 
-    case "$1" in
+    case "$percentage" in
         "") GetBrightness
             echo "$brightness"
             ;;
         *)
-            if [ -z "$(echo "$1" | sed 's|[0-9]||g')" ] ; then
-                brightness="$1"
+            if [ -z "$(echo "$percentage" | sed 's|[0-9]||g')" ] ; then
+                brightness="$percentage"
                 CheckValue1
                 xrandr --output "$outdev" --brightness "$brightness" || DIE "failed to set brightness to '$brightness'."
+                notify-send --expire-time=3000 --app-name="$progname" "Brightness" "$percentage"
             else
                 DIE "sorry, value can contain only numbers in the range of $min to $max."
             fi

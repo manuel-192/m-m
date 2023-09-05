@@ -46,10 +46,16 @@ MainXbacklight()
 }
 
 Main() {
-    case "$(device-info --graphics)" in
-        NVIDIA*) brightness-xrandr "$@" ;;
-        *)       MainXbacklight "$@" ;;
-    esac
+    if [ -d /sys/class/backlight/intel_backlight ] ; then
+        brightness-intel "$@"
+    else
+        brightness-xrandr "$@"
+
+        #case "$(device-info --graphics)" in
+        #    *NVIDIA*) brightness-xrandr "$@" ;;
+        #    *)        MainXbacklight "$@" ;;
+        #esac
+    fi
 }
 
 Main "$@"
