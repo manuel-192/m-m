@@ -12,9 +12,22 @@ popd()  { builtin popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
 
 _git_check() {
     local ret=0
-    printf "====> %-30s: " "$folder"
+    printf "==> %-30s: " "$folder"
     pushd "$PWD/$folder"               # using $PWD because $CDPATH may confuse 'cd' !
-    git pull || ret=$?
+    local diffs="$(git diff)"
+    if [ -n "$diffs" ] ; then
+        # Some files have changed. Show the full paths of the changed files.
+        if git pull >/dev/null ; then
+            echo "Info: local changes detected in files:"
+        else
+            echo "Warning: updates are available but cannot update due to local changes in files:"
+            ret=1
+        fi
+        diffs="$(echo "$diffs" | grep "^diff --git " | awk '{print $NF}' | sed 's|^./||')"
+        echo "$diffs" | sed "s|^|    $PWD/|"
+    else
+        git pull || ret=$?
+    fi
     popd
     return $ret
 }
@@ -31,13 +44,11 @@ Main()
 
         if [ -e $folder/.ask-auto-update ] ; then
             read -p "want to check folder '$folder' (y/N)? " >&2
-            case "$REPLY" in
-                [yY]*) which logstuff >& /dev/null && logstuff on ;;
-                *) continue ;;
-            esac
+            [ "${REPLY,,}" != "y" ] && continue
+            which logstuff >& /dev/null && logstuff on
         fi
 
-        _git_check
+        _git_check || return 1
     done
 }
 
