@@ -13,6 +13,11 @@ popd()  { builtin popd  "$@" >/dev/null || DIE "'popd $*' failed." ; }
 _git_check() {
     local ret=0
     printf "==> %-30s: " "$folder"
+    if [ $pause = yes ] ; then
+        read -s -n1 -p "Press any key: " >&2
+    elif [ "$timeout" != "0" ] ; then
+        sleep "$timeout"
+    fi
     pushd "$PWD/$folder"               # using $PWD because $CDPATH may confuse 'cd' !
     local diffs="$(git diff)"
     if [ -n "$diffs" ] ; then
@@ -32,10 +37,34 @@ _git_check() {
     return $ret
 }
 
+Usage() {
+    cat <<EOF
+Usage:    $progname [options]
+Options:  -t=X, --timeout=X   Wait time in seconds between checking repos. Syntax of 'sleep'.
+	  -p, --pause	      Prompt for keyboard input between checking repos.
+	  -h, --help	      This help.
+Info:     Check and possibly pull git repos from remote to local subfolders.
+	  Without options repos are checked without delay.
+          Note that options -p and -t are mutually exclusive;
+          if both are added, only -p is used.
+EOF
+}
+
 Main()
 {
     local progname="$(basename "$0")"
     local folder
+    local timeout=0
+    local pause=no
+
+    while [ -n "$1" ] ; do
+	case "$1" in
+	    -t=* | --timeout=*) timeout=${1#*=} ;;
+	    -p | --pause) pause=yes ;;
+	    -h | --help) Usage; return ;;
+	esac
+	shift
+    done
 
     for folder in $(/usr/bin/ls -1) ; do
         [ -e $folder/.skip-auto-update ] && continue
