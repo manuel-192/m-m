@@ -5,7 +5,7 @@
 pkgname=pkgcheck
 pkgdesc="Package build helper"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=23.7
+pkgver=23.8
 pkgrel=1
 
 arch=('any')
@@ -21,7 +21,7 @@ source=(
     $url/pull-requests
 )
 sha512sums=('ad83196577af554359e8547e5694de58efd7770de51509e227fef16ec56a3f2bafb148b4ec12453fdbda7c0f0bac57dfa83a5ab5376376c9adea99cb6e97a0d3'
-            'cebf588760a97e161579dee52e2840f89eefd448f94e7f789513bad569d8e44b9e51a3ca4eb96ccab49ecc9aeedc2303f3b45eb995dc94643455f4486bfc99be'
+            '6e8f751e5adc1738b0893dbe2b98eb6a09decfcc0c44c289c0c2f7d79c4c46357ba7e7c1b0953de90643cd39c0011b7dfb4f0a1e1aa64afd255ef44cae03a128'
             '088d71b0b10ca859af78fba163f5d3e5172a6632c678cec3bce72526a4fdcb7372fcb8628360bce70471bb6b58748842fcc353d37cc28021add7b86ad57191a4'
             '6b2a2e0f8eea06e89fd3d7fa49ca805f63464452d9d5b035c16baa9da0535d0ff6c6d441bbe3ff765f02c4dd8b99424e021b5ae1f837bafdc901bc203a8f2816'
             '26e6c9c0aa57825cef8333f42f412459a1c48b0dffe6c84567e779223a7acf87594a4b2dd9f9b39fb79277e0b475242f6803afdfd5a5ad579ebe3bf15f6b6978')
