@@ -3,6 +3,7 @@
 # - help build endeavouros and other packages
 # - help update sources
 
+
 echo2() { echo "$@" >&2 ; }
 Which() { which "$1" &>/dev/null ; }
 
