@@ -6,7 +6,7 @@ pkgname=local-repo-manager
 pkgdesc="Manage local repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=18
+pkgrel=19
 
 arch=(any)
 license=(GPL)
@@ -15,9 +15,11 @@ backup=(etc/$pkgname.conf)
 
 source=(
     $url/$pkgname
+    $url/$pkgname.bash-completion
     $url/$pkgname.conf
 )
-sha512sums=('c6cacf7c714fee57d78179d2353befaba839b25eb0550b781cb93c973a682439c11c34f258fca90fc1ba50450776db6674a0151646d9af983111f7fe0e96c2ea'
+sha512sums=('23fd5ffcc0c39642b2edec89e8d780c733ed3d1bfaf394fb0504edebb3ff5d6052e02924a688da26a525209ba482df5e742996737bcea8bd74496cc522b9a877'
+            'c7499d052a1d68f1628160e997ce50b1d1585cb660946989beb317def3225127ed91d1b506c581df8c43374c04bd1f187fe4c4276fd9bae1136ed90884b3c792'
             '695ee279d084584407c0bfc195226f66aea90a7346c88dfc5dcb524caa6e47e5bc0edaa7ecbf8c2dddb1de9303a8efec0e7f46791ce30d9f52e8e14a9715f7c8')
 
 package() {
@@ -26,8 +28,8 @@ package() {
     for src in "${source[@]}" ; do
         item="${src##*/}"
         case "$item" in
-            *.completion)
-                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
+            *.completion | *.bash-completion)
+                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/${item%.*}" ;;
             *.conf)
                 install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
             *)

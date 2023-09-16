@@ -153,7 +153,9 @@ BuildNeeded() {
         1)
             if [ -n "$old_version" ] ; then
                 mkdir -p "$archive"
+                chmod u+w "$archive"
                 mv "$pkgname"-*.pkg.tar.* "$archive" 2>/dev/null
+                chmod -w "$archive"                                  # prevent accidental removal
             fi
             return 0
             ;;
@@ -204,6 +206,9 @@ FetchPkgbuilds() {
         fi
         if [ $dryrun = no ] ; then
             build_needed+=("$pkgname")
+            if [ $show_changelog = yes ] && [ ${#PKG_CHANGELOG[@]} -gt 0 ] ; then
+                changelog_pkgs+=("$pkgname")
+            fi
             rm -rf "$pkgname"                        # remove possible old pkg folder
             case "$pkgname1" in
                 */local)
@@ -318,6 +323,29 @@ RemoveInstalledDeps() {
     fi
 }
 
+ShowChangelogs() {
+    if [ $show_changelog = yes ] ; then
+        local urls=() pkg
+        local pkgs=()
+        if [ $show_changelog_all = yes ] ; then
+            pkgs=("${PKGNAMES[@]}")               # show all supported packages
+        else
+            pkgs=("${changelog_pkgs[@]}")         # show only changed packages
+        fi
+        for pkg in "${pkgs[@]}" ; do
+            [ -n "${PKG_CHANGELOG[$pkg]}" ] && urls+=("${PKG_CHANGELOG[$pkg]}")
+        done
+        if [ ${#urls[@]} -gt 0 ] ; then
+            firefox "${urls[@]}"
+        fi
+    fi
+}
+
+tar-name-components() {
+    # show components of names as of the output of:
+    sed -E 's/([a-zA-Z0-9@_+][a-zA-Z0-9@._+-]+)-([0-9:]*[^:/\-\ \t]+)-([0-9\.]+)/\1|\2-\3/'
+}
+
 #### Backwards compatibility stuff:
 # VERSION_COMPAT == 0:
 Add_before-after_func()  { Add_BeforeAfter_func "$@" ; }
@@ -336,6 +364,7 @@ Main() {
     local VERSION_COMPAT=0        # compatibility of the config file, 0=first
     declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
     declare -A MAKEPKG_EXTRA_OPTS
+    declare -A PKG_CHANGELOG
 
     source "$conf" || return 1    # $conf file must fill the required variables above
 
@@ -345,37 +374,105 @@ Main() {
     local buildlog="$HOME/.cache/$progname.buildlog"
     local errlog="$HOME/.cache/$progname.errlog"
     local build_needed=()
+    local changelog_pkgs=()
+    local show_changelog=no
+    local show_changelog_all=no
     local force_rebuild=no
     local verbose=no
     local add_cache=no
     local dryrun=no
     local remove_deps=no
-    local arg
+    local pkgdb=local-repo.db.tar.xz
 
-    for arg in "$@" ; do
-        case "$arg" in
+    cd "$repodir" || DIE "'cd $repodir' failed."
+
+    [ -r "$pkgdb" ] || DIE "$pkgdb not found."
+
+    while [ -n "$1" ] ; do
+        case "$1" in
             -h | --help)
                 cat <<EOF
 Usage:    $progname [options]
 Options:
-          -b, --build            Build updated packages. Default.
-          -f, --build-force      Re-build all packages.
-          -c, --add-cache        Add builts packages to system's package cache.
-          -n, --dryrun           Show what would be done, but change nothing. Implies --verbose.
-          -v, --verbose          More verbose output.
-          --rmdeps               Remove dependencies installed during build.
+          -h, --help                This help.
+          -b, --build               Build updated packages. Default.
+          -f, --build-force         Re-build all packages.
+          -c, --add-cache           Add built packages to system's package cache.
+          -n, --dryrun              Show what would be done, but change nothing. Implies --verbose.
+          -v, --verbose             More verbose output.
+          -c, --changelog-included  Show changelogs of changed packages.
+          --changelog-all           Show changelogs of all supported packages.
+          --rmdeps                  Remove dependencies installed during build.
+          --rm-pkg                  Remove a package from the repo database.
 EOF
                 exit 0
                 ;;
-
-            -f | --build-force) force_rebuild=yes ;;
-            -v | --verbose)     verbose=yes ;;
-            -c | --add-cache)   add_cache=yes ;;
+            --dump-options)
+                local options=(
+                    --add-cache
+                    --build
+                    --build-force
+                    --changelog-all
+                    --changelog-included
+                    --dryrun
+                    --help
+                    --rm-pkg
+                    --rmdeps
+                    --verbose
+                )
+                echo "${options[*]}"
+                exit 0
+                ;;
+            -c | --changelog-included | --changelog-all)
+                [ "$1" = "--changelog-all" ] && show_changelog_all=yes
+                if [ ${#PKG_CHANGELOG[@]} -gt 0 ] ; then
+                    show_changelog=yes
+                    if [ $show_changelog_all = yes ] ; then
+                        ShowChangelogs
+                    fi
+                else
+                    INFO "sorry, PKG_CHANGELOG array is not available"
+                fi
+                [ $show_changelog_all = yes ] && exit 0
+                ;;
+            -f | --build-force)
+                force_rebuild=yes
+                ;;
+            -v | --verbose)
+                verbose=yes
+                ;;
+            -c | --add-cache)
+                add_cache=yes
+                ;;
             -n | --dryrun | --dryrun-local)
-                                dryrun=yes; verbose=yes ;;
-            -b | --build)       dryrun=no ;;
-            --rmdeps)           remove_deps=yes ;;
+                dryrun=yes
+                verbose=yes
+                ;;
+            -b | --build)
+                [ $dryrun = yes ] && INFO "you had option --dryrun, setting it to 'no'."
+                dryrun=no
+                ;;
+            --rmdeps)
+                remove_deps=yes
+                ;;
+            --rm-pkg)
+                local pkgname="$2"
+                [ -n "$pkgname" ] || DIE "no package name for option $1"
+                shift
+                local pkgs=$($FUNCNAME --dump-db-pkgs)
+                if echo "$pkgs" | grep "$pkgname" >/dev/null; then
+                    repo-remove "$pkgdb" "$pkgname"
+                    exit
+                else
+                    DIE "package '$pkgname' is not in the database '$pkgdb'"
+                fi
+                ;;
+            --dump-db-pkgs)
+                tar -tf "$pkgdb" | grep -v /desc$ | sed 's|/$||' | tar-name-components | column -t -s"|" | awk '{print $1}'
+                exit 0
+                ;;
         esac
+        shift
     done
 
     local helper_Sia="yay -Sia"   # because yay does this faster than paru
@@ -386,13 +483,11 @@ EOF
     [ ${#PKGNAMES[@]} -gt 0 ] || DIELINE "PKGNAMES array in the config file is empty or not set"
 
     [ -n "$PACKAGED_BY" ]     && export PACKAGER="$PACKAGED_BY"
-    
-
-    cd "$repodir"
 
     FetchPkgbuilds
-
     echo2v ""
+
+    ShowChangelogs
 
     BuildPackages
 }

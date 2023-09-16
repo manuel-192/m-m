@@ -1,0 +1,39 @@
+# bash completion for local-repo-manager        -*- shell-script -*-
+
+_local-repo-manager_complete_static() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    # compopt -o nosort
+}
+
+_local-repo-manager_complete_variable() {
+    COMPREPLY=($(compgen "$@"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+_local-repo-manager_() {
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        --rm-pkg)
+            _local-repo-manager_complete_static "$(local-repo-manager --dump-db-pkgs)"
+            ;;
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -* | "")
+                    # Any option or nothing yet.
+                    _local-repo-manager_complete_static "$(local-repo-manager --dump-options)"
+                    ;;
+                *)
+                    # Non-option parameters.
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _local-repo-manager_ local-repo-manager
