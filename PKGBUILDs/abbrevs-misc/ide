@@ -23,10 +23,10 @@ IdeDebugBash() {
 
     local bash_file_to_debug="$1"
     shift
-    local src=($HOME/.config/VSCod*/User/settings.json)   # we may have several vscodium versions!
+    local src=($HOME/.config/VSCod*/User/settings.json.ref)     # we have a reference file
     local params=""
     local arg
-    local link
+    local jsonfile ref
 
     # make parameters suitable for 'args'
     for arg in "$@" ; do
@@ -37,29 +37,34 @@ IdeDebugBash() {
         fi
     done
 
-    # We don't want to change the original settings.json (target) so we have a symlink (link) to it.
-    # Now copy the 'target' over the 'link' file and change the 'link' file, then call vscodium.
-    # Finally put 'link' back as it was.
+    # We have a settings.json.ref and we copy its contents to settings.json.
+    # Then we change settings.json, and call vscodium.
+    # Finally make settings.json back to how it was.
 
-    for link in "${src[@]}" ; do
-        if [ -L "$link" ] ; then
-            target=$(ls -l "$link" | awk '{print $NF}')
-            rm -f "$link"
-            cp "$target" "$link"
+    for ref in "${src[@]}" ; do
+        if [ -r "$ref" ] ; then
+            # found the reference file
+            jsonfile=${ref%.ref}
+
+            rm -f "$jsonfile"
+            cp "$ref" "$jsonfile"
 
             # now we can modify 'args' in settings.json
 
-            sed -E -i "$link" -e "s|^([ ]*\"args\":).*|\1 [$params]|"
+            sed -E -i "$jsonfile" -e "s|^([ ]*\"args\":).*|\1 [$params]|"
 
             $vscodium --wait "$bash_file_to_debug"
 
-            # and return changed stuff as it was
+            # save json file(s) in case we need the changes later
 
-            rm -f "$link"
-            ln -s "$target" "$link"
+            local weekday="$(date +%a)"
+            rm -f "$jsonfile.$weekday"
+            mv "$jsonfile" "$jsonfile.$weekday"
+            cp "$ref" "$jsonfile"
             return
         fi
     done
+    DIE "‰FUNCNAME: reference file for 'settings.json' not found."
 }
 
 Main() {
