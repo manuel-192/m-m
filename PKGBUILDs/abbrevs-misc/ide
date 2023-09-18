@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Starts vscodium for bash scripts, supports bashdb usage.
+
+DIE() {
+    echo "$progname - error: $1" >&2
+    exit 1
+}
+
+GetVscodium() {
+    local app
+    for app in codium codium-insiders ; do
+        if [ -x "/bin/$app" ] ; then
+            vscodium="$app"
+            return 0
+        fi
+    done
+    DIE "codium (or alternative) not available"
+}
+
+IdeDebugBash() {
+    # Change the 'args' contents in settings.json and call vscodium.
+
+    local bash_file_to_debug="$1"
+    shift
+    local src=($HOME/.config/VSCod*/User/settings.json)   # we may have several vscodium versions!
+    local params=""
+    local arg
+    local link
+
+    # make parameters suitable for 'args'
+    for arg in "$@" ; do
+        if [ -z "$params" ] ; then
+            params="\"$arg\""
+        else
+            params+=",\"$arg\""
+        fi
+    done
+
+    # We don't want to change the original settings.json (target) so we have a symlink (link) to it.
+    # Now copy the 'target' over the 'link' file and change the 'link' file, then call vscodium.
+    # Finally put 'link' back as it was.
+
+    for link in "${src[@]}" ; do
+        if [ -L "$link" ] ; then
+            target=$(ls -l "$link" | awk '{print $NF}')
+            rm -f "$link"
+            cp "$target" "$link"
+
+            # now we can modify 'args' in settings.json
+
+            sed -E -i "$link" -e "s|^([ ]*\"args\":).*|\1 [$params]|"
+
+            $vscodium --wait "$bash_file_to_debug"
+
+            # and return changed stuff as it was
+
+            rm -f "$link"
+            ln -s "$target" "$link"
+            return
+        fi
+    done
+}
+
+Main() {
+    # Vscodium that supports bash debugging.
+    # Delivers app parameters by changing 'args' in settings.json.
+    # Usage:
+    #    ide {--bashdb | -b} "bash-script-file-to-debug" parameters-for-the-bash-script
+    #    ide files-to-edit
+
+    local debug=no
+
+    case "$1" in
+        --bashdb | -b) debug=yes; shift ;;     # forces debug
+    esac
+
+    local vscodium=""
+    GetVscodium vscodium
+
+    case "$debug" in
+        yes) IdeDebugBash "$@" ;;    # adjust parameters for the debugger
+        no)  $vscodium    "$@" ;;    # nothing to change about parameters
+    esac
+}
+
+Main "$@"
