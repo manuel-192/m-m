@@ -1,0 +1,63 @@
+#!/bin/bash
+
+
+Append() {
+    local -n _var="$1"
+    _var+=" && $2"
+}
+
+system-update() {
+    local prepare=":"
+    local init="pacman -Sy && pacman -Quq >/dev/null && pacman -S --needed --noconfirm archlinux-keyring endeavouros-keyring"
+    local middle=":"
+    local up="pacman -Su"
+    local end=":"
+
+    while [ -n "$1" ] ; do
+        case "$1" in
+            -b | --begin)  Append prepare "$2" ; shift ;;
+            -m | --middle) Append middle  "$2" ; shift ;;
+            -e | --end)    Append end     "$2" ; shift ;;
+            -h | --help)
+                cat <<EOF
+Description
+    A system update script using 'pacman' and 'yay'.
+    Additional features:
+      - runs 'pacman -Sy' separately before 'pacman -Su'
+      - checks database lock file (db.lck) first and deletes it if not in use
+      - updates keyrings before other packages, if needed
+      - provides options for adding commands in the beginning, middle, and/or end
+Usage
+    $FUNCNAME [options]
+    Options:
+        -h, --help      This help.
+        -b, --begin     Adds a given command before 'pacman -Sy'.
+        -m, --middle    Adds a given command between 'pacman -Sy' and 'pacman -Su'.
+        -e, --end       Adds a given command after 'pacman -Su'.
+    Note that any command with exit code != 0 stops execution.
+Examples
+    $FUNCNAME
+    $FUNCNAME -e "pwd"
+EOF
+                return 0
+                ;;
+        esac
+        shift
+    done
+
+    local lck=/var/lib/pacman/db.lck
+    if [ -e $lck ] ; then
+        if fuser $lck &>/dev/null ; then
+            echo "error: $lck is in use." >&2
+            return 1
+        fi
+        prepare="rm -f $lck"
+    fi
+
+    local cmd="$prepare && $init && $middle && $up && $end"
+
+    sudo bash -c "$cmd"
+    yay -Qua && yay -Sua
+}
+
+system-update "$@"
