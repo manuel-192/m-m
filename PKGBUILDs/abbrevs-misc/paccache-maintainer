@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# Simple paccache GUI wrapper.
+#
+# Requires packages:
+#   pacman-contrib   (for paccache)
+#   yad              (for yad)
+#   pkexec           (for elevated privileges)
+#
+# Write the contents of this script to file /usr/local/bin/paccache-gui
+# and make it executable with command:
+#   sudo chmod +x /usr/local/bin/paccache-gui
+#
+
+GetValue() {
+    local -n from="$1"
+    local -n to="$2"
+    to="${from%%|*}"
+    from="${from#*|}"
+}
+
+_paccache_gui() {
+    local cmd=(
+        yad --form --width=400
+        --title='Remove package files from cache'
+        --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png
+        --field='Number of installed package versions to keep!Count package versions to keep':NUM "3"
+        --field='Number of uninstalled package versions to keep!Count of uninstalled package versions to keep':NUM "1"
+        --field="Only show what to do, change nothing!Dry-run":CHK "false"
+    )
+    local out=$( "${cmd[@]}" )    # out = "keep_installed|keep_uninstalled|dryrun"
+    local paccache=/usr/bin/paccache
+
+    if [ -n "$out" ] ; then
+        local keep_installed keep_uninstalled dryrun
+        local op="r"
+
+        # get values to variables from 'out'
+        GetValue out keep_installed
+        GetValue out keep_uninstalled
+        GetValue out dryrun
+
+        [ "$dryrun" = "TRUE" ] && op="d"
+
+        cmd="$paccache -${op}vk$keep_installed && $paccache -${op}vuk$keep_uninstalled"
+
+        pkexec bash -c "$cmd"
+    fi
+}
+
+_paccache_gui "$@"
