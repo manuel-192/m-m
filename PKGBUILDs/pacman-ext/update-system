@@ -57,7 +57,11 @@ EOF
     local cmd="$prepare && $init && $middle && $up && $end"
 
     sudo bash -c "$cmd"
-    yay -Qua && yay -Sua
+    if false ; then
+        yay -Sua                  # shows AUR check
+    else
+        yay -Qua && yay -Sua      # does not show AUR check
+    fi
 }
 
 system-update "$@"
