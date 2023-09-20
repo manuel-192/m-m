@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=11
+pkgrel=12
 
 arch=('any')
 license=('GPL')
@@ -26,12 +26,14 @@ source=(
     $url/echo2
     $url/eos-open
     $url/ide
+    $url/kde-open
     $url/ncdu
     $url/rate-mirrors-arch
     $url/paccache-maintainer
     $url/pkgfind
     $url/Power-routines
     $url/printf2
+    $url/terminal-at-start
 #    $url/update-grub
 )
 sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc2905cbde967fd2e0a6be430a5ad98270a396b05937b3f5343f6639370d85f790'
@@ -40,12 +42,14 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '9efae914b6a100cf41f30a554ff83592e0805e040f8167d3cc8bf3d049a247bd2166013f8a3a52d9fdde070bd485ba8bccf2fcbcc76ffdfeaf2a1d405ee64e05'
             '9b7d04b1a571cca1a460505019128824832adfbb7228b7b26da5c64d9a89f554321aa06a8c9d5b6e73f52cc9fd911d7cc8f9b1b51959a33c115bbdada23d2804'
             'aa93c28904d4422cf7d424a77fc0a04649ebabbf4d5d33c614dbec2475dc3b45820dd4a813077ecb868cbe0867c95db6c55fc8aef8426a0200c611aceb824dcc'
+            '684c0e594c8638f29727e7c92fd4d60027fca678868ee608da5c19d262fc30ba3575d46db8da606269310a9d58d50bcfea7ed53650eb33c959f2df5fdaeed2cc'
             'be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
             '4aad92018267a1db65b80d3c81571e2a1b615f64700179428d19a9f18e78b8e9f02fd68f9eb36811fc3981de87f73ba432cf36134e4e434fa345fd2a5f9bc560'
             '263548655423b34dc3af7dde44bbe2fe167ce7e256f12138cd4438dd091e35e5ce3f4de969d02b876ef7ff09957cc9056b6f7e698acf82c59e2a67098a8ebac7'
             'c1a6480300a4ff9d7c6aa7a521873d2b38373d74e8a6750f69bf90fba41f16d54b63f09a56a961e997a115cecc3d7944086d5d7b0834187e16e57b24bb088bfa'
             '50f374008fb4fad020d7f60c1cfd4c96da79d4503fb0eecc6c0f8e7e3bf97c7a49fbadca0b72a2528f151a5b3a62d5a4ff3f071d7844552e32a82e0576166d69'
-            'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9')
+            'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
+            '1cac8c1fa27bf05c8bb7503a9a1523c6d7c65d351753951fc1942d229c9ec209337218e5dbbeac0e9c6ee635a5160beb6d8ce59ac20290786e6ee59c8af83d07')
 
 package() {
     local item

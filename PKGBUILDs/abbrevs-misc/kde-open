@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# for firefox / mesa issue???
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1744389#c22
+# unset mesa_glthread
+# alias kde-open='MESA_DEBUG=silent /bin/kde-open'
+# export MESA_DEBUG=silent
+
+/bin/kde-open "$@" 2>/dev/null
