@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# System update - run using sudo.
+
+DIE() { printf "$progname: error: %s\n\n" "$1" >&2 ; Options -h ; exit 1 ; }
+
+Cmd() {
+    local -r c_red=$'\e[0;91m'      # bright red color
+    local -r c_reset=$'\e[0m'
+    [ $verbose = yes ] && echo "${c_red}COMMAND:" "$@" "${c_reset}" >&2
+    "$@"
+}
+
+InUpdates() { echo "$pacman_updates" | grep "^$1$" >/dev/null ; }
+
+UpdateKeyrings() {
+    [ "$keyrings" = "yes" ] || return
+    local keyr
+    for keyr in archlinux-keyring endeavouros-keyring ; do
+        InUpdates "$keyr" && Cmd pacman -S --noconfirm "$keyr"
+    done
+}
+
+CheckNvidia() {
+    [ "$nvidia" = "yes" ] || return
+    if InUpdates nvidia && ! InUpdates linux  ; then
+        DIE "packages 'nvidia' and 'linux' must be updated together"
+    fi
+    if InUpdates nvidia.lts && ! InUpdates linux-lts  ; then
+        DIE "packages 'nvidia-lts' and 'linux-lts' must be updated together"
+    fi
+}
+
+CheckVirtualbox() {
+    [ "$virtualbox" = "yes" ] || return
+    if Installed virtualbox ; then
+        if Installed virtualbox-ext-oracle ; then
+            if InUpdates virtualbox || InUpdates virtualbox-ext-oracle ; then
+                local version_vb=$(expac -S %v virtualbox)
+                local version_vbext=$(LANG=C yay -Si virtualbox-ext-oracle | grep "^Version")
+                version_vbext=${version_vbext##* }
+                [ "${version_vb%-*}" = "${version_vbext%-*}" ] || DIE "versions of virtualbox and virtualbox-ext-oracle do not match"
+            fi
+        else
+            DIE "'virtualbox' is installed but 'virtualbox-ext-oracle' is not"
+        fi
+    fi
+}
+
+CheckPrivileges() { [ "$EUID" = "0" ] || DIE "sorry, must run with elevated privileges." ; }
+
+CheckDbLock() {
+    local lck=/var/lib/pacman/db.lck
+    if [ -e $lck ] ; then
+        if fuser $lck &>/dev/null ; then
+            DIE "sorry, $lck is in use."
+        fi
+        Cmd rm -f $lck
+    fi
+}
+
+CheckAUR() {
+    [ "$aur" = "yes" ] || return
+    [ -x /bin/yay ] && Cmd $as_plain_user yay -Sua
+}
+
+Extras() {
+    [ "$extras" = "yes" ] || return
+    Cmd pacman -Qm
+    Cmd eos-pacdiff
+}
+
+CheckConnection() {
+    [ "$connection" = "yes" ] || return
+    $as_plain_user eos-connection-checker || DIE "no internet connection."
+}
+
+AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
+
+Defaults() {
+    defaults=(
+        aur        no
+        connection no
+        extras     no
+        keyrings   yes
+        nvidia     no
+        verbose    yes
+        virtualbox no
+    )
+    aur="${defaults[aur]}"
+    connection="${defaults[connection]}"
+    extras="${defaults[extras]}"
+    keyrings="${defaults[keyrings]}"
+    nvidia="${defaults[nvidia]}"
+    verbose="${defaults[verbose]}"
+    virtualbox="${defaults[virtualbox]}"
+}
+
+Options() {
+    local repo quiet
+    Defaults
+    [ "$aur"     = "yes" ] && repo=no  || repo=yes
+    [ "$verbose" = "yes" ] && quiet=no || quiet=yes
+
+    local lopts="aur,begin:,connection,end:,extras,help,loud,middle:,no-keyrings,nvidia,quiet,repo,verbose,vb,virtuabox"
+    local sopts="achnqrv"
+    local opts
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
+        Options -h
+        return 1
+    }
+    eval set -- "$opts"
+
+    while [ -n "$1" ] ; do
+        case "$1" in
+            -h | --help)
+                cat <<EOF | column -t -s'|' -o"  "
+Purpose:|Updater using pacman&yay
+|+ more features.
+Usage:|$progname [options]
+Note:|sudo/root required.
+Options:
+|option|default|description
+|~~~~~~|~~~~~~~|~~~~~~~~~~~
+|-a, --aur|${defaults[aur]}|Update AUR packages too.
+|-c, --connection|${defaults[connection]}|Check internet connection first.
+|-h, --help||This help.
+|-n, --nvidia|${defaults[nvidia]}|Check validity of nvidia & linux updates.
+|    --no-keyrings|${defaults[keyrings]}|Do not update keyrings before other packages.
+|-q, --quiet|$quiet|Be more quiet.
+|-r, --repo|$repo|Only update native packages, not foreign (e.g. AUR).
+|-v, --verbose, --loud|${defaults[verbose]}|Show what is being done.
+|    --vb, --virtualbox|${defaults[virtualbox]}|Check validity of virtualbox updates in host.
+advanced:
+|    --begin||Adds the user-given command before 'pacman -Sy'.
+|    --end||Adds the user-given command after 'pacman -Su'.
+|    --middle||Adds the user-given command between 'pacman -Sy'
+|||and 'pacman -Su'.
+|    --extras|${defaults[extras]}|Run some predefined extras too.
+EOF
+                exit 0
+                ;;
+            -a | --aur)              aur=yes ;;
+            -c | --connection)       connection=yes ;;
+            -e | --extras)           extras=yes ;;
+            --no-keyrings)           keyrings=no ;;
+            -n | --nvidia)           nvidia=yes ;;
+            -q | --quiet)            verbose=no ;;
+            -r | --repo)             aur=no ;;
+            -v | --verbose | --loud) verbose=yes ;;
+            --vb | --virtuabox)      virtualbox=yes ;;
+            --begin)                 AppendCmd begin  "$2" ; shift ;;
+            --middle)                AppendCmd moddle "$2" ; shift ;;
+            --end)                   AppendCmd end    "$2" ; shift ;;
+        esac
+        shift
+    done
+}
+
+Xadditions() {
+    local cmd="$1"
+    if [ "$cmd" != ":" ] ; then
+        cmd="${cmd#: && }"
+        Cmd bash -c "$cmd"
+    fi
+}
+
+Main() {
+    local progname="${0##*/}"
+    local pacman_updates=""
+    local as_plain_user="/bin/sudo -u $SUDO_USER"          # for running as a non-privileged user
+    local aur connection extras keyrings nvidia quiet verbose virtualbox
+    local begin=":" end=":" middle=":"
+    declare -A defaults=()
+
+    Options "$@"
+
+    CheckConnection
+    CheckPrivileges
+    CheckDbLock
+    Xadditions "$begin"
+    Cmd pacman -Sy
+    pacman_updates=$(pacman -Quq)
+    if [ -n "$pacman_updates" ] ; then
+        UpdateKeyrings
+        Xadditions "$middle"
+        Cmd pacman -Su
+        Xadditions "$end"
+    fi
+    CheckAUR
+    Extras
+}
+
+Main "$@"
