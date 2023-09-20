@@ -57,10 +57,12 @@ EOF
     local cmd="$prepare && $init && $middle && $up && $end"
 
     sudo bash -c "$cmd"
-    if false ; then
-        yay -Sua                  # shows AUR check
-    else
-        yay -Qua && yay -Sua      # does not show AUR check
+    if [ -x /bin/yay ] ; then
+        if false ; then
+            yay -Sua                  # shows AUR check
+        else
+            yay -Qua && yay -Sua      # does not show AUR check
+        fi
     fi
 }
 
