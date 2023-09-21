@@ -89,6 +89,10 @@ Main() {
 
         # https://github.com/endeavouros-team/User-contributions
         # https://github.com/rogalmic/vscode-bash-debug
+
+        https://github.com/manuel-192/m-m
+        https://github.com/manuel-192/m-aur2
+        https://github.com/manuel-192/m-more2
     )
     local url
     for url in "${urls[@]}" "$@" ; do

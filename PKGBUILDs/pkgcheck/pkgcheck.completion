@@ -28,6 +28,23 @@ _pkgcheck_() {
 
     local -r repos=$(pc --reponames)
     local -r options="$(pc --dump-options) $single_options"
+
+    case "$prev" in
+        --pkgnames) _pkgcheck_complete "" ;;
+        --pkgdb) _pkgcheck_complete "" ;;
+        --changelog) _pkgcheck_complete "" ;;
+    esac
+}
+
+_pkgcheck_old() {
+    local cur prev words cword split
+    _init_completion -s || return
+
+    local -r single_options="$(pc --dump-options-single) local-repo"
+    _pkgcheck_has_in_words "$single_options" && return      # nothing more needed with these!
+
+    local -r repos=$(pc --reponames)
+    local -r options="$(pc --dump-options) $single_options"
     local askfor=()
 
     _pkgcheck_has_in_words "$options" || askfor+=($options $repos)
