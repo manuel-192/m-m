@@ -37,7 +37,7 @@ CheckVirtualbox() {
         if Installed virtualbox-ext-oracle ; then
             if InUpdates virtualbox || InUpdates virtualbox-ext-oracle ; then
                 local version_vb=$(expac -S %v virtualbox)
-                local version_vbext=$(LANG=C yay -Si virtualbox-ext-oracle | grep "^Version")
+                local version_vbext=$(LANG=C $helper -Si virtualbox-ext-oracle | grep "^Version")
                 version_vbext=${version_vbext##* }
                 [ "${version_vb%-*}" = "${version_vbext%-*}" ] || DIE "versions of virtualbox and virtualbox-ext-oracle do not match"
             fi
@@ -61,7 +61,7 @@ CheckDbLock() {
 
 CheckAUR() {
     [ "$aur" = "yes" ] || return
-    [ -x /bin/yay ] && Cmd $as_plain_user yay -Sua
+    [ -x /bin/$helper ] && Cmd $as_plain_user $helper -Sua
 }
 
 Extras() {
@@ -102,7 +102,7 @@ Options() {
     [ "$aur"     = "yes" ] && repo=no  || repo=yes
     [ "$verbose" = "yes" ] && quiet=no || quiet=yes
 
-    local lopts="aur,begin:,connection,end:,extras,help,loud,middle:,no-keyrings,nvidia,quiet,repo,verbose,vb,virtuabox"
+    local lopts="aur,begin:,connection,end:,extras,help,loud,middle:,no-keyrings,nvidia,paru,quiet,repo,verbose,vb,virtuabox"
     local sopts="achnqrv"
     local opts
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
@@ -127,6 +127,7 @@ Options:
 |-h, --help||This help.
 |-n, --nvidia|${defaults[nvidia]}|Check validity of nvidia & linux updates.
 |    --no-keyrings|${defaults[keyrings]}|Do not update keyrings before other packages.
+|    --paru||Use 'paru' instead of 'yay'.
 |-q, --quiet|$quiet|Be more quiet.
 |-r, --repo|$repo|Only update native packages, not foreign (e.g. AUR).
 |-v, --verbose, --loud|${defaults[verbose]}|Show what is being done.
@@ -145,6 +146,7 @@ EOF
             -e | --extras)           extras=yes ;;
             --no-keyrings)           keyrings=no ;;
             -n | --nvidia)           nvidia=yes ;;
+            --paru)                  helper=paru ;;
             -q | --quiet)            verbose=no ;;
             -r | --repo)             aur=no ;;
             -v | --verbose | --loud) verbose=yes ;;
@@ -170,6 +172,7 @@ Main() {
     local pacman_updates=""
     local as_plain_user="/bin/sudo -u $SUDO_USER"          # for running as a non-privileged user
     local aur connection extras keyrings nvidia quiet verbose virtualbox
+    local helper=yay
     local begin=":" end=":" middle=":"
     declare -A defaults=()
 
