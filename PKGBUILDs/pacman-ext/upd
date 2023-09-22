@@ -11,6 +11,21 @@ Cmd() {
     "$@"
 }
 
+Cmd2() {
+    local -r c_red=$'\e[0;91m'      # bright red color
+    local -r c_reset=$'\e[0m'
+    [ $verbose = yes ] && echo "${c_red}COMMAND: bash -c '$*'${c_reset}" >&2
+    bash -c "$*"
+}
+
+Xadditions() {
+    local cmd="$1"
+    if [ "$cmd" != ":" ] ; then
+        cmd="${cmd#: && }"
+        Cmd2 "$cmd"
+    fi
+}
+
 InUpdates() { echo "$pacman_updates" | grep "^$1$" >/dev/null ; }
 
 UpdateKeyrings() {
@@ -50,6 +65,7 @@ CheckVirtualbox() {
 CheckPrivileges() { [ "$EUID" = "0" ] || DIE "sorry, must run with elevated privileges." ; }
 
 CheckDbLock() {
+    [ "$lock_check" = "yes" ] || return
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
         if fuser $lck &>/dev/null ; then
@@ -96,13 +112,24 @@ Defaults() {
     virtualbox="${defaults[virtualbox]}"
 }
 
+DumpOptions() {
+    local l=" ${lopts//,/ }"
+    l="${l//:/}"
+    l="${l// / --}"
+    l="${l:1}"
+    local s=$(echo "$sopts" | sed -E 's|(.)[:]*| -\1|g')
+    echo "$l$s"
+    exit 0
+}
+
 Options() {
     local repo quiet
     Defaults
     [ "$aur"     = "yes" ] && repo=no  || repo=yes
     [ "$verbose" = "yes" ] && quiet=no || quiet=yes
 
-    local lopts="aur,begin:,connection,end:,extras,help,loud,middle:,no-keyrings,nvidia,paru,quiet,repo,verbose,vb,virtuabox"
+    local lopts="aur,begin:,connection,dump-options,end:,extras,help,loud,middle:,no-keyrings"
+    lopts+=",no-lock,nvidia,paru,quiet,repo,verbose,vb,virtuabox"
     local sopts="achnqrv"
     local opts
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
@@ -127,6 +154,7 @@ Options:
 |-h, --help||This help.
 |-n, --nvidia|${defaults[nvidia]}|Check validity of nvidia & linux updates.
 |    --no-keyrings|${defaults[keyrings]}|Do not update keyrings before other packages.
+|    --no-lock||Do not check pacman database lock.
 |    --paru||Use 'paru' instead of 'yay'.
 |-q, --quiet|$quiet|Be more quiet.
 |-r, --repo|$repo|Only update native packages, not foreign (e.g. AUR).
@@ -141,10 +169,12 @@ advanced:
 EOF
                 exit 0
                 ;;
+            --dump-options)          DumpOptions ;;
             -a | --aur)              aur=yes ;;
             -c | --connection)       connection=yes ;;
             -e | --extras)           extras=yes ;;
             --no-keyrings)           keyrings=no ;;
+            --no-lock)               lock_check=no ;;
             -n | --nvidia)           nvidia=yes ;;
             --paru)                  helper=paru ;;
             -q | --quiet)            verbose=no ;;
@@ -159,21 +189,13 @@ EOF
     done
 }
 
-Xadditions() {
-    local cmd="$1"
-    if [ "$cmd" != ":" ] ; then
-        cmd="${cmd#: && }"
-        Cmd bash -c "$cmd"
-    fi
-}
-
 Main() {
     local progname="${0##*/}"
     local pacman_updates=""
     local as_plain_user="/bin/sudo -u $SUDO_USER"          # for running as a non-privileged user
     local aur connection extras keyrings nvidia quiet verbose virtualbox
-    local helper=yay
-    local begin=":" end=":" middle=":"
+    local helper=yay lock_check=yes
+    local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
 
     Options "$@"
