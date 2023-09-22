@@ -95,8 +95,8 @@ _pc() {
     local repodirs=()
     local op=""
     local dir1 dir2 dirs
-    local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-' | tr '\n' ' ') MAN EOS"
-    local pkgnames_para=""
+    local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ') MAN EOS"
+    local pkgnames_para=()
     local changelogfor=""
 
     while [ -n "$1" ] ; do
@@ -127,7 +127,7 @@ Options:
     -h, --help        This help.
     -n, ""            Check if build is needed, using local packages.
     -nn               Check if build is needed, using remote packages.
-    --pkgnames "X"    X is a space separated list of packages to build.
+    -p, --pkgnames "X"    X is a space separated list of packages to build.
     --reponames       Show names of supported repos and folders.
     -c, --changelog   Show the changelog of a package, if available.
 EOF
@@ -144,15 +144,10 @@ EOF
                 DIE "option '$1': no editor found."
                 ;;
             --dump-options)
-                op="--pkgnames= --dryrun --dryrun-local --build --repoup --allow-downgrade"
+                op="-p --pkgnames= --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
-                echo $op
-                return
-                ;;
-            --dump-options-single)
-                # "single" options will ignore other parameters!
-                op="--dump-options --dump-options-single --editme --help -h --reponames --pull"
-                op+=" --check-all --check-assets-conf --pkgdb= --changelog"
+                op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
+                op+=" --check-all --check-assets-conf --pkgdb --changelog"
                 echo $op
                 return
                 ;;
@@ -166,12 +161,12 @@ EOF
             --wait-to-quit)
                 WaitToQuit=yes
                 ;;
-            --pkgnames)
-                pkgnames_para="$2"
+            -p | --pkgnames)
+                pkgnames_para+=("$2")
                 shift
                 ;;
-            --pkgnames=*)
-                pkgnames_para="${1#*=}"
+            -p=* | --pkgnames=*)
+                pkgnames_para+=("${1#*=}")
                 ;;
             --reponames)
                 echo "$supported_folders"
@@ -319,8 +314,8 @@ _pc2() {
 
     # echo2 "params = $op $pkgnames_para"
 
-    if [ -n "$pkgnames_para" ] ; then
-        /bin/assets.make $op --pkgnames="$pkgnames_para"
+    if [ ${#pkgnames_para[@]} -gt 0 ] ; then
+        /bin/assets.make $op --pkgnames="${pkgnames_para[*]}"
     else
         /bin/assets.make $op
     fi
