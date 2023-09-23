@@ -2,19 +2,27 @@
 
 # System update - run using sudo.
 
-DIE() { printf "$progname: error: %s\n\n" "$1" >&2 ; Options -h ; exit 1 ; }
+echo2()   { echo "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
+DIE()     { printf2 "$progname: error: %s\n\n" "$1" ; Options -h ; exit 1 ; }
+
+RED2() {
+    local -r red=$'\e[0;91m'      # bright red color
+    local -r reset=$'\e[0m'
+    echo2 -n "${red}==> "
+    echo2 -n "$@"
+    echo2 "${reset}"
+}
 
 Cmd() {
-    local -r c_red=$'\e[0;91m'      # bright red color
-    local -r c_reset=$'\e[0m'
-    [ $verbose = yes ] && echo "${c_red}COMMAND:" "$@" "${c_reset}" >&2
+    [ $verbose = yes ] && RED2 "$@:"
     "$@"
 }
 
 Cmd2() {
     local -r c_red=$'\e[0;91m'      # bright red color
     local -r c_reset=$'\e[0m'
-    [ $verbose = yes ] && echo "${c_red}COMMAND: bash -c '$*'${c_reset}" >&2
+    [ $verbose = yes ] && echo2 "${c_red}COMMAND: bash -c '$*'${c_reset}"
     bash -c "$*"
 }
 
@@ -30,6 +38,7 @@ InUpdates() { echo "$pacman_updates" | grep "^$1$" >/dev/null ; }
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
+    RED2 "Check keyrings."
     local keyr
     for keyr in archlinux-keyring endeavouros-keyring ; do
         InUpdates "$keyr" && Cmd pacman -S --noconfirm "$keyr"
@@ -38,6 +47,7 @@ UpdateKeyrings() {
 
 CheckNvidia() {
     [ "$nvidia" = "yes" ] || return
+    RED2 "Check Nvidia & kernel."
     if InUpdates nvidia && ! InUpdates linux  ; then
         DIE "packages 'nvidia' and 'linux' must be updated together"
     fi
@@ -48,6 +58,7 @@ CheckNvidia() {
 
 CheckVirtualbox() {
     [ "$virtualbox" = "yes" ] || return
+    RED2 "Check virtualbox."
     if Installed virtualbox ; then
         if Installed virtualbox-ext-oracle ; then
             if InUpdates virtualbox || InUpdates virtualbox-ext-oracle ; then
@@ -66,6 +77,7 @@ CheckPrivileges() { [ "$EUID" = "0" ] || DIE "sorry, must run with elevated priv
 
 CheckDbLock() {
     [ "$lock_check" = "yes" ] || return
+    RED2 "Check database lock."
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
         if fuser $lck &>/dev/null ; then
@@ -88,6 +100,7 @@ Extras() {
 
 CheckConnection() {
     [ "$connection" = "yes" ] || return
+    RED2 "Check connection."
     $as_plain_user eos-connection-checker || DIE "no internet connection."
 }
 
@@ -197,6 +210,8 @@ Main() {
     local helper=yay lock_check=yes
     local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
+
+    RED2 "COMMAND: $progname $*"
 
     Options "$@"
 
