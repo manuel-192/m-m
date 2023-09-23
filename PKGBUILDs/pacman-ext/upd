@@ -129,7 +129,7 @@ Options() {
     [ "$verbose" = "yes" ] && quiet=no || quiet=yes
 
     local lopts="aur,begin:,connection,dump-options,end:,extras,help,loud,middle:,no-keyrings"
-    lopts+=",no-lock,nvidia,paru,quiet,repo,verbose,vb,virtuabox"
+    lopts+=",no-lock,nvidia,paru,quiet,repo,verbose,vb,virtualbox"
     local sopts="achnqrv"
     local opts
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
@@ -180,7 +180,7 @@ EOF
             -q | --quiet)            verbose=no ;;
             -r | --repo)             aur=no ;;
             -v | --verbose | --loud) verbose=yes ;;
-            --vb | --virtuabox)      virtualbox=yes ;;
+            --vb | --virtualbox)     virtualbox=yes ;;
             --begin)                 AppendCmd begin  "$2" ; shift ;;
             --middle)                AppendCmd moddle "$2" ; shift ;;
             --end)                   AppendCmd end    "$2" ; shift ;;
