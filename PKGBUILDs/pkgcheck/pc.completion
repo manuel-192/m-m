@@ -1,0 +1,64 @@
+# bash completion for pc        -*- shell-script -*-
+
+_pc_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_pc_complete_pkgnames() {
+    if [ -r assets.conf ] ; then
+        local pkgnames="$(_pc_GetPkgnames)"
+        COMPREPLY=( $(compgen -W "${pkgnames}" -- "$cur") )
+        compopt -o nosort
+        #compopt -o nospace
+        #compopt -o filenames
+    fi
+}
+
+_pc_complete_pkgnames_list() {
+    if [ -r assets.conf ] ; then
+        local pkgnames="$(_pc_GetPkgnames)"
+        COMPREPLY=( $(compgen -S"," -W "${pkgnames}" -- "$cur") )
+        compopt -o nosort
+        compopt -o nospace
+        #compopt -o filenames
+    fi
+}
+
+_pc_GetPkgnames() {
+    if [ -r assets.conf ] ; then
+        source assets.conf
+        echo "${PKGNAMES[*]}"
+    fi
+}
+
+_pc_GetRepo() {
+    if [ -e assets.conf ] ; then
+        local repo=(*.db.tar.xz)
+        echo "${repo[*]}"
+    fi
+}
+
+_pc_() {
+    local cur prev words cword split
+    _init_completion -s || return
+
+    local -r repos=$(pc --reponames)
+    local -r options=$(pc --dump-options)
+
+    case "$prev" in
+        -p | --pkgnames)       _pc_complete_pkgnames ;;
+        -p=* | --pkgnames=*)   _pc_complete_pkgnames_list ;;
+        --pkgdb)               _pc_complete "$(_pc_GetRepo)" ;;
+        --changelog)           _pc_complete "$(_pc_GetPkgnames)" ;;
+        -*)                    _pc_complete "$repos $options" ;;
+        *)
+            case "$cur" in
+                -*)            _pc_complete "$options" ;;
+                 *)            _pc_complete "$repos $options" ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _pc_ pc

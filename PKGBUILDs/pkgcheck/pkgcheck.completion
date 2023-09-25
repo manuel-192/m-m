@@ -51,7 +51,7 @@ _GetRepo() {
     fi
 }
 
-_FoobarDebug() { true && echo "$1" >> /tmp/foobar ; }
+_FoobarDebug() { false && echo "$1" >> /tmp/foobar ; }
 
 _pkgcheck_() {
     local cur prev words cword split
@@ -77,23 +77,4 @@ _pkgcheck_() {
             ;;
     esac
 } &&
-complete -F _pkgcheck_ pkgcheck pc
-
-
-###########################################################################
-_pkgcheck_old() {
-    local cur prev words cword split
-    _init_completion -s || return
-
-    local -r single_options="$(pc --dump-options-single) local-repo"
-    _pkgcheck_has_in_words "$single_options" && return      # nothing more needed with these!
-
-    local -r repos=$(pc --reponames)
-    local -r options="$(pc --dump-options) $single_options"
-    local askfor=()
-
-    _pkgcheck_has_in_words "$options" || askfor+=($options $repos)
-
-    [ ${#askfor} -gt 0 ] && _pkgcheck_complete "${askfor[*]}"
-}
-
+complete -F _pkgcheck_ pkgcheck
