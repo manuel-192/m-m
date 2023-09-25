@@ -96,7 +96,7 @@ _pc() {
     local op=""
     local dir1 dir2 dirs
     local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ') MAN EOS"
-    local pkgnames_para=()
+    local pkgnames_para=""
     local changelogfor=""
 
     while [ -n "$1" ] ; do
@@ -127,7 +127,7 @@ Options:
     -h, --help        This help.
     -n, ""            Check if build is needed, using local packages.
     -nn               Check if build is needed, using remote packages.
-    -p, --pkgnames "X"    X is a space separated list of packages to build.
+    -p, --pkgnames "X"    X is a comma separated list of packages to build.
     --reponames       Show names of supported repos and folders.
     -c, --changelog   Show the changelog of a package, if available.
 EOF
@@ -144,7 +144,7 @@ EOF
                 DIE "option '$1': no editor found."
                 ;;
             --dump-options)
-                op="-p --pkgnames= --dryrun --dryrun-local --build --repoup --allow-downgrade"
+                op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
                 op+=" --check-all --check-assets-conf --pkgdb --changelog"
@@ -162,11 +162,11 @@ EOF
                 WaitToQuit=yes
                 ;;
             -p | --pkgnames)
-                pkgnames_para+=("$2")
+                pkgnames_para="$2"
                 shift
                 ;;
             -p=* | --pkgnames=*)
-                pkgnames_para+=("${1#*=}")
+                pkgnames_para="${1#*=}"
                 ;;
             --reponames)
                 echo "$supported_folders"
@@ -312,10 +312,8 @@ _pc2() {
         fi
     fi
 
-    # echo2 "params = $op $pkgnames_para"
-
-    if [ ${#pkgnames_para[@]} -gt 0 ] ; then
-        /bin/assets.make $op --pkgnames="${pkgnames_para[*]}"
+    if [ -n "$pkgnames_para" ] ; then
+        /bin/assets.make $op --pkgnames="${pkgnames_para//,/ }"
     else
         /bin/assets.make $op
     fi

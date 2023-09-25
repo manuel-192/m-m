@@ -1,5 +1,25 @@
 # bash completion for pc        -*- shell-script -*-
 
+_mylistselector()
+{
+    local cur="$1"
+    local list_elems_all="$2"
+
+    local realcur="${cur##*,}"
+    local prefix="${cur%$realcur}"
+    local elems word
+
+    for word in $list_elems_all
+    do
+        if ! [[ $prefix == *"$word"* ]]; then
+            elems="$word $elems"
+        fi
+    done
+    COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -S ',' -- $realcur) )
+    compopt -o nospace
+    echo "COMPREPLY = ${COMPREPLY[0]}" >> /tmp/foo
+}
+
 _pc_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
@@ -18,11 +38,8 @@ _pc_complete_pkgnames() {
 
 _pc_complete_pkgnames_list() {
     if [ -r assets.conf ] ; then
-        local pkgnames="$(_pc_GetPkgnames)"
-        COMPREPLY=( $(compgen -S"," -W "${pkgnames}" -- "$cur") )
-        compopt -o nosort
-        compopt -o nospace
-        #compopt -o filenames
+        _mylistselector "$cur" "$(_pc_GetPkgnames)"
+        COMPREPLY[0]=${COMPREPLY[0]%,}   # remove comma if it is the last char
     fi
 }
 
@@ -48,11 +65,10 @@ _pc_() {
     local -r options=$(pc --dump-options)
 
     case "$prev" in
-        -p | --pkgnames)       _pc_complete_pkgnames ;;
-        -p=* | --pkgnames=*)   _pc_complete_pkgnames_list ;;
+        -p | --pkgnames)       _pc_complete_pkgnames_list ;;
         --pkgdb)               _pc_complete "$(_pc_GetRepo)" ;;
         --changelog)           _pc_complete "$(_pc_GetPkgnames)" ;;
-        -*)                    _pc_complete "$repos $options" ;;
+        #-*)                    _pc_complete "$repos $options" ;;
         *)
             case "$cur" in
                 -*)            _pc_complete "$options" ;;
