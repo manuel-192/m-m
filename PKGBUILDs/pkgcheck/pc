@@ -93,7 +93,7 @@ _pc() {
     local folder="$PWD"
     local repodir=""
     local repodirs=()
-    local op=""
+    local op="-n"
     local dir1 dir2 dirs
     local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ') MAN EOS"
     local pkgnames_para=""
@@ -147,13 +147,16 @@ EOF
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
-                op+=" --check-all --check-assets-conf --pkgdb --changelog"
+                op+=" --check-all --check-assets-conf --pkgdb --changelog --changelog-modified"
                 echo $op
                 return
                 ;;
             --changelog | -c)
                 changelogfor="$2"
                 shift
+                ;;
+            --changelog-modified)
+                op="--pkgdiff"
                 ;;
             --changelog=* | -c=*)
                 changelogfor="${1#*=}"
@@ -216,7 +219,10 @@ EOF
                 WaitToQuit
                 return
                 ;;
-            -*) op="$1" ;;
+            --repoup | -n | -nn | -nl | --dryrun-local | -nr | --dryrun | --pkgdiff | -ad | --allow-downgrade)
+                op="$1" ;;
+            -b) op="" ;;
+            -*) DIE "unsupported option '$1'" ;;
             *)  repodirs+=("$1") ;;
         esac
         shift
@@ -282,19 +288,6 @@ _pc2() {
         popd >/dev/null
         exit
     fi
-
-    case "$op" in
-        "") op="-n" ;;                # ""  = check local
-        -n | -nn) ;;                  # -n  = check local
-        # -nn = check remote
-        -b) op="" ;;                  # -b  = build
-        *)
-            echo2 "$FUNCNAME: unsupported option '$op'"
-            $FUNCNAME -h
-            WaitToQuit 1
-            return 1
-            ;;
-    esac
 
     local cwd="$PWD"
     local exit_code=0
