@@ -351,43 +351,7 @@ tar-name-components() {
 Add_before-after_func()  { Add_BeforeAfter_func "$@" ; }
 PutPkgbuildValueSimple() { PutPkgbuildValue "$@" ; }
 
-Main() {
-    local progname="local-repo-manager"
-    local conf="/etc/$progname.conf"
-
-    # to be filled by the config file
-    local REPONAME=""             # the reponame for /etc/pacman.conf
-    local SIGNER=""               # the package signer, for option --local-user in gpg
-    local WORKDIR=""              # where the package building occurs
-    local PACKAGED_BY=""          # who built the packages (gpg)
-    local PKGNAMES=()             # AUR package names for the local repo
-    local VERSION_COMPAT=0        # compatibility of the config file, 0=first
-    declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
-    declare -A MAKEPKG_EXTRA_OPTS
-    declare -A PKG_CHANGELOG
-
-    source "$conf" || return 1    # $conf file must fill the required variables above
-
-    local repodir="$WORKDIR"                              # usually the same as $PWD
-    local pkgbuilddir="$repodir/PKGBUILDS"                # contains temporary AUR dirs
-    local localroot="$repodir/LOCAL"                      # contains permanent local dirs, don't delete any!
-    local buildlog="$HOME/.cache/$progname.buildlog"
-    local errlog="$HOME/.cache/$progname.errlog"
-    local build_needed=()
-    local changelog_pkgs=()
-    local show_changelog=no
-    local show_changelog_all=no
-    local force_rebuild=no
-    local verbose=no
-    local add_cache=no
-    local dryrun=no
-    local remove_deps=no
-    local pkgdb=local-repo.db.tar.xz
-
-    cd "$repodir" || DIE "'cd $repodir' failed."
-
-    [ -r "$pkgdb" ] || DIE "$pkgdb not found."
-
+Options() {
     while [ -n "$1" ] ; do
         case "$1" in
             -h | --help)
@@ -471,9 +435,71 @@ EOF
                 tar -tf "$pkgdb" | grep -v /desc$ | sed 's|/$||' | tar-name-components | column -t -s"|" | awk '{print $1}'
                 exit 0
                 ;;
+            *)
+                echo "unsupported parameter '$1'" >&2
+                ;;
         esac
         shift
     done
+}
+
+Main() {
+    local progname="local-repo-manager"
+    local conf="/etc/$progname.conf"
+
+    # to be filled by the config file
+    local REPONAME=""             # the reponame for /etc/pacman.conf
+    local SIGNER=""               # the package signer, for option --local-user in gpg
+    local WORKDIR=""              # where the package building occurs
+    local PACKAGED_BY=""          # who built the packages (gpg)
+    local PKGNAMES=()             # AUR package names for the local repo
+    local VERSION_COMPAT=0        # compatibility of the config file, 0=first
+    declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
+    declare -A MAKEPKG_EXTRA_OPTS
+    declare -A PKG_CHANGELOG
+
+    source "$conf" || return 1    # $conf file must fill the required variables above
+
+    local repodir="$WORKDIR"                              # usually the same as $PWD
+    local pkgbuilddir="$repodir/PKGBUILDS"                # contains temporary AUR dirs
+    local localroot="$repodir/LOCAL"                      # contains permanent local dirs, don't delete any!
+    local buildlog="$HOME/.cache/$progname.buildlog"
+    local errlog="$HOME/.cache/$progname.errlog"
+    local build_needed=()
+    local changelog_pkgs=()
+    local show_changelog=no
+    local show_changelog_all=no
+    local force_rebuild=no
+    local verbose=no
+    local add_cache=no
+    local dryrun=no
+    local remove_deps=no
+    local pkgdb=local-repo.db.tar.xz
+
+    cd "$repodir" || DIE "'cd $repodir' failed."
+
+    [ -r "$pkgdb" ] || DIE "$pkgdb not found."
+
+    # Note: we can have parameters either
+    #   - 'Normally' like $1 $2 $3 ...
+    #        or
+    #   - All inside the first one ($1) separated by the $sep character.
+    #     In this case we probably are debugging.
+    #     The value comes from an environment variable 'PARAMETERS'.
+    #     See also file settings.json.
+    # Below we check this and may separate parameters from $1.
+
+    local args=()
+    local sep="|"
+
+    if [ "${1//$sep/}" = "$1" ] ; then
+        args=("$@")                                        # all parameters normally
+    else
+        readarray -t args <<< $(echo "$1" | tr '|' '\n')   # all parameters in "$1" separated by '|' ($sep)
+        verbose=yes                                        # debugging verbosely...
+    fi
+
+    Options "${args[@]}"
 
     local helper_Sia="yay -Sia"   # because yay does this faster than paru
     local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
