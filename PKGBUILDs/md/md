@@ -3,7 +3,7 @@
 md() {
   local prog
 
-  for prog in ghostwriter vscodium code-oss code
+  for prog in vscodium codium code-oss code ghostwriter
   do
     if [ -x /usr/bin/$prog ] ; then
         echo "$prog" "$@" >&2

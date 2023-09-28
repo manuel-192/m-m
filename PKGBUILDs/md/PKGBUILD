@@ -6,7 +6,7 @@ pkgname=md
 pkgdesc="Markdown editor using Visual Studio Code"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=2
+pkgrel=3
 
 arch=('any')
 license=('GPL')
@@ -19,7 +19,7 @@ source=(
     $url/md
     $url/md.completion
 )
-sha256sums=('9f46fe650898206d83209e4f10e35d93b302891851e6bf3247b6f6b7f1ccf8bf'
+sha256sums=('9666769a4ee9a87ff96978391c28f017e9dc2a08b901b3671bc3f4f1ea33af33'
             'ea6efaec30a7d30d29accad5efc777d3c4aa038dbdd6e7fdf97d9b040e8ce7b3')
 
 package() {
