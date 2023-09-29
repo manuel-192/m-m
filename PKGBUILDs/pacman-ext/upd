@@ -15,6 +15,7 @@ printf2() { printf "$@" >&2 ; }
 CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$RESET"; }
 DIE()     { CMSG "$RED"  error   "$1";  Options -h ; exit 1 ; }
 WARN()    { CMSG "$BLUE" warning "$1"; }
+RESULT()  { echo2 " $1" ; }
 
 EMPHASIZED2() {
     echo2 -n "${GREEN}==> "
@@ -98,21 +99,27 @@ CheckPrivileges() { [ "$EUID" = "0" ] || DIE "sorry, must run with elevated priv
 
 CheckDbLock() {
     [ "$lock_check" = "yes" ] || return
-    EMPHASIZED2 "Check database lock."
+    EMPHASIZED2 "Check database lock:"
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
         if fuser $lck &>/dev/null ; then
             DIE "sorry, $lck is in use."
         fi
         Cmd rm -f $lck
+    else
+        RESULT "no lock."
     fi
 }
 
 CheckAUR() {
     [ "$aur" = "yes" ] || return
     if [ -x /bin/$helper ] ; then
-        EMPHASIZED2 "Check AUR updates (as '$PLAIN_USER')."
-        AsPlainUser --quiet $helper -Sua
+        if false ; then
+            EMPHASIZED2 "Check AUR updates $as_plain_user."
+            AsPlainUser --quiet $helper -Sua
+        else
+            AsPlainUser $helper -Sua
+        fi
     else
         WARN "'$helper' not installed, cannot check AUR updates."
     fi
@@ -120,17 +127,17 @@ CheckAUR() {
 
 Extras() {
     [ "$extras" = "yes" ] || return
-    Cmd pacman -Qm
-    Cmd eos-pacdiff
+    Cmd pacman -Qm  | sed 's|^| |'
+    Cmd eos-pacdiff |& sed -E 's|^(eos-pacdiff:)| \1|'
 }
 
 CheckConnection() {
     [ "$connection" = "yes" ] || return
-    if true ; then
-        EMPHASIZED2 "Check connection (as '$PLAIN_USER')."
+    if false ; then
+        EMPHASIZED2 "Check connection $as_plain_user."
         AsPlainUser --quiet eos-connection-checker || DIE "no internet connection."
     else
-        AsPlainUser eos-connection-checker || DIE "no internet connection."
+        AsPlainUser eos-connection-checker && RESULT "internet connection OK." || DIE "no internet connection."
     fi
 }
 
@@ -233,17 +240,15 @@ EOF
 }
 
 Main() {
-    local progname="${0##*/}"
+    local -r progname="${0##*/}"
     local pacman_updates=""
     local aur connection extras keyrings nvidia quiet verbose virtualbox
     local helper=yay lock_check=yes
     local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
     local PLAIN_USER="$SUDO_USER"
-
-    case "$SUDO_USER" in
-        "") PLAIN_USER="$LOGNAME" ;;
-    esac
+    [ -z "$SUDO_USER" ] && PLAIN_USER="$LOGNAME"
+    local -r as_plain_user="(as user '$PLAIN_USER')"
 
     EMPHASIZED2 "COMMAND: $progname $*"
 
