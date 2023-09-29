@@ -7,9 +7,22 @@ DIE() {
     exit 1
 }
 
+# Supported tools:
+
+APPS=(
+    codium
+    codium-insiders
+)
+declare -A APPINFOS=(
+    # app-name        config-folder
+    # -----------------------------
+    codium            "$HOME/.config/VSCodium/User"
+    codium-insiders   "$HOME/.config/VSCodium - Insiders/User"    # check this path !!
+)
+
 GetVscodium() {
     local app
-    for app in codium codium-insiders ; do
+    for app in "${APPS[@]}" ; do
         if [ -x "/bin/$app" ] ; then
             vscodium="$app"
             return 0
@@ -23,48 +36,42 @@ IdeDebugBash() {
 
     local bash_file_to_debug="$1"
     shift
-    local src=($HOME/.config/VSCod*/User/settings.json.ref)     # we have a reference file
+    local refs=()
     local params=""
     local arg
     local jsonfile ref
 
-    # make parameters suitable for 'args'
-    for arg in "$@" ; do
-        if [ -z "$params" ] ; then
-            params="\"$arg\""
-        else
-            params+=",\"$arg\""
-        fi
+    for arg in "${APPS[@]}" ; do
+        ref="${APPINFOS[$arg]}"/settings.json.ref
+        [ -e "$ref" ] && refs+=("$ref")
     done
+
+    # convert parameters suitable for 'args'
+    for arg in "$@" ; do
+        params+=",\"$arg\""
+    done
+    params=${params#,}
 
     # We have a settings.json.ref and we copy its contents to settings.json.
     # Then we change settings.json, and call vscodium.
     # Finally make settings.json back to how it was.
 
-    for ref in "${src[@]}" ; do
-        if [ -r "$ref" ] ; then
-            # found the reference file
-            jsonfile=${ref%.ref}
+    for ref in "${refs[@]}" ; do
+        if [ -r "$ref" ] ; then                                                      # found the reference file, will use it as settings.json
+            jsonfile=${ref%.ref}                                                     # get the reference settings file name
+            /bin/mv -f "$jsonfile" "$jsonfile".previous                              # save current for restoring it below
+            /bin/cp -f "$ref" "$jsonfile"                                            # use the reference settings file
+            sed -E -i "$jsonfile" -e "s|^([ ]*\"args\":).*|\1 [$params]|"            # modify 'args' in settings.json
 
-            rm -f "$jsonfile"
-            cp "$ref" "$jsonfile"
+            $vscodium --wait "$bash_file_to_debug"                                   # start vscodium
 
-            # now we can modify 'args' in settings.json
-
-            sed -E -i "$jsonfile" -e "s|^([ ]*\"args\":).*|\1 [$params]|"
-
-            $vscodium --wait "$bash_file_to_debug"
-
-            # save json file(s) in case we need the changes later
-
-            local weekday="$(date +%a)"
-            rm -f "$jsonfile.$weekday"
-            mv "$jsonfile" "$jsonfile.$weekday"
-            cp "$ref" "$jsonfile"
-            return
+            local monthday="$(date +%d)"                                             # get the day number of the month
+            /bin/mv -f "$jsonfile" "$jsonfile.$monthday"                             # save used json files (for a month) in case they contain useful changes
+            /bin/mv -f "$jsonfile".previous "$jsonfile"                              # restore previously saved settings.json
+            return                                                                   # all done here
         fi
     done
-    DIE "‰FUNCNAME: reference file for 'settings.json' not found."
+    DIE "$FUNCNAME: reference file for 'settings.json' not found."
 }
 
 Main() {

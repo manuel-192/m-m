@@ -13,20 +13,27 @@ SupportedOptions() {
     local so=${SOPTS//:/}
     so=$(echo "$so" | sed -E 's|([a-zA-Z])| -\1|g')
     echo "$lo$so"
-    exit 0
+}
+
+Usage() {
+    local opts=$(printf "%s\n" $(SupportedOptions) | sed 's|^|    |')
+    cat <<EOF
+$progname_path implements some of the options of $wget using 'curl'.
+Re-implemented options of $wget:
+$opts
+EOF
 }
 
 Options() {
-    local LOPTS="continue,directory-prefix:,output-document:,passive-ftp,quiet,show-progress,supported-options,timeout:,timestamping,user-agent:"
-    local SOPTS="cP:O:qT:NU:"
+    local LOPTS="continue,directory-prefix:,help,output-document:,passive-ftp,quiet,show-progress,supported-options,timeout:,timestamping,user-agent:"
+    local SOPTS="cP:O:qT:NU:h"
     local opts
     local has_output=no
     local args="[no-wget]"
-    local wget=/usr/bin/wget
 
     [ -x $wget ] && args=("$@")       # save args for the real wget
 
-    opts="$(/usr/bin/getopt -o=$SOPTS --longoptions $LOPTS --name "$progname" -- "$@")" || {
+    opts="$(/usr/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || {
         exit 1 # DIE "option handling failed! Unsupported option?"
     }
 
@@ -43,7 +50,8 @@ Options() {
             --timeout          | -T)   cmd+=(--max-time "$2");   shift                 ;;
             --timestamping     | -N)   cmd+=(--remote-time)                            ;;
             --user-agent       | -U)   cmd+=(--user-agent "$2"); shift                 ;;
-            --supported-options)       SupportedOptions                                ;;
+            --help             | -h)   Usage;                    exit 0                ;;
+            --supported-options)       SupportedOptions;         exit 0                ;;
             --)                        shift; break                                    ;;
             -*)                        if [ "$args" != "[no-wget]" ] ; then
                                            echo2 "==> $wget ${args[*]}"
@@ -62,7 +70,9 @@ Options() {
 }
 
 Main() {
-    local progname="${##*/}"
+    local progname="${0##*/}"
+    local progname_path="$0"
+    local wget=/usr/bin/wget
     local cmd=(/usr/bin/curl --fail --location --progress-bar)
 
     Options "$@"
