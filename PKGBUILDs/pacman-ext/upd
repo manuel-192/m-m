@@ -2,16 +2,24 @@
 
 # System update - run using sudo.
 
+# bright colors
+RED=$'\e[0;91m'
+GREEN=$'\e[0;92m'
+BLUE=$'\e[0;94m'
+MAGENTA=$'\e[0;95m'
+CYAN=$'\e[0;96m'
+RESET=$'\e[0m'       # back to normal
+
 echo2()   { echo "$@" >&2 ; }
 printf2() { printf "$@" >&2 ; }
-DIE()     { printf2 "$progname: error: %s\n\n" "$1" ; Options -h ; exit 1 ; }
+CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$RESET"; }
+DIE()     { CMSG "$RED"  error   "$1";  Options -h ; exit 1 ; }
+WARN()    { CMSG "$BLUE" warning "$1"; }
 
-RED2() {
-    local -r red=$'\e[0;91m'      # bright red color
-    local -r reset=$'\e[0m'
-    echo2 -n "${red}==> "
+EMPHASIZED2() {
+    echo2 -n "${GREEN}==> "
     echo2 -n "$@"
-    echo2 "${reset}"
+    echo2 "${RESET}"
 }
 
 AsPlainUser() {
@@ -23,12 +31,12 @@ AsPlainUser() {
         "") cmd="/bin/runuser -u $PLAIN_USER -- $*" ;;
         *)  cmd="/bin/sudo -u $PLAIN_USER $*" ;;
     esac
-    [ $verbose = yes ] && RED2 "$cmd:"
+    [ $verbose = yes ] && EMPHASIZED2 "$cmd:"
     $cmd
 }
 
 Cmd() {
-    [ $verbose = yes ] && RED2 "$@:"
+    [ $verbose = yes ] && EMPHASIZED2 "$@:"
     "$@"
 }
 
@@ -51,7 +59,7 @@ InUpdates() { echo "$pacman_updates" | grep "^$1$" >/dev/null ; }
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
-    RED2 "Check keyrings."
+    EMPHASIZED2 "Check keyrings."
     local keyr
     for keyr in archlinux-keyring endeavouros-keyring ; do
         InUpdates "$keyr" && Cmd pacman -S --noconfirm "$keyr"
@@ -60,7 +68,7 @@ UpdateKeyrings() {
 
 CheckNvidia() {
     [ "$nvidia" = "yes" ] || return
-    RED2 "Check Nvidia & kernel."
+    EMPHASIZED2 "Check Nvidia & kernel."
     if InUpdates nvidia && ! InUpdates linux  ; then
         DIE "packages 'nvidia' and 'linux' must be updated together"
     fi
@@ -71,7 +79,7 @@ CheckNvidia() {
 
 CheckVirtualbox() {
     [ "$virtualbox" = "yes" ] || return
-    RED2 "Check virtualbox."
+    EMPHASIZED2 "Check virtualbox."
     if Installed virtualbox ; then
         if Installed virtualbox-ext-oracle ; then
             if InUpdates virtualbox || InUpdates virtualbox-ext-oracle ; then
@@ -90,7 +98,7 @@ CheckPrivileges() { [ "$EUID" = "0" ] || DIE "sorry, must run with elevated priv
 
 CheckDbLock() {
     [ "$lock_check" = "yes" ] || return
-    RED2 "Check database lock."
+    EMPHASIZED2 "Check database lock."
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
         if fuser $lck &>/dev/null ; then
@@ -103,8 +111,10 @@ CheckDbLock() {
 CheckAUR() {
     [ "$aur" = "yes" ] || return
     if [ -x /bin/$helper ] ; then
-        RED2 "Check AUR updates (as '$PLAIN_USER')."
+        EMPHASIZED2 "Check AUR updates (as '$PLAIN_USER')."
         AsPlainUser --quiet $helper -Sua
+    else
+        WARN "'$helper' not installed, cannot check AUR updates."
     fi
 }
 
@@ -117,7 +127,7 @@ Extras() {
 CheckConnection() {
     [ "$connection" = "yes" ] || return
     if true ; then
-        RED2 "Check connection (as '$PLAIN_USER')."
+        EMPHASIZED2 "Check connection (as '$PLAIN_USER')."
         AsPlainUser --quiet eos-connection-checker || DIE "no internet connection."
     else
         AsPlainUser eos-connection-checker || DIE "no internet connection."
@@ -235,7 +245,7 @@ Main() {
         "") PLAIN_USER="$LOGNAME" ;;
     esac
 
-    RED2 "COMMAND: $progname $*"
+    EMPHASIZED2 "COMMAND: $progname $*"
 
     Options "$@"
 
