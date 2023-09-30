@@ -121,7 +121,7 @@ CheckAUR() {
 Extras() {
     [ "$extras" = "yes" ] || return
     Cmd pacman -Qm  | sed 's|^| |'
-    Cmd eos-pacdiff |& sed -E 's|^(eos-pacdiff:)| \1|'
+    Cmd eos-pacdiff --indent=' '
 }
 
 CheckConnection() {
