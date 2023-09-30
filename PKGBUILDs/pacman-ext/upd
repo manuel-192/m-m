@@ -13,8 +13,9 @@ RESET=$'\e[0m'       # back to normal
 echo2()   { echo "$@" >&2 ; }
 printf2() { printf "$@" >&2 ; }
 CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$RESET"; }
-DIE()     { CMSG "$RED"  error   "$1";  Options -h ; exit 1 ; }
-WARN()    { CMSG "$BLUE" warning "$1"; }
+DIE()     { CMSG "$RED"     error   "$1";  Options -h ; exit 1 ; }
+WARN()    { CMSG "$BLUE"    warning "$1"; }
+INFO()    { CMSG "$MAGENTA" info    "$1"; }
 RESULT()  { echo2 " $1" ; }
 
 EMPHASIZED2() {
@@ -57,6 +58,7 @@ Xadditions() {
 }
 
 InUpdates() { echo "$pacman_updates" | grep "^$1$" >/dev/null ; }
+Installed() { expac -Q %n $1 >/dev/null ; }
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
@@ -73,33 +75,28 @@ CheckNvidia() {
     if InUpdates nvidia && ! InUpdates linux  ; then
         DIE "packages 'nvidia' and 'linux' must be updated together"
     fi
-    if InUpdates nvidia.lts && ! InUpdates linux-lts  ; then
+    if InUpdates nvidia-lts && ! InUpdates linux-lts  ; then
         DIE "packages 'nvidia-lts' and 'linux-lts' must be updated together"
     fi
 }
 
 CheckVirtualbox() {
+    [ "$aur" = "yes" ] || return
     [ "$virtualbox" = "yes" ] || return
     EMPHASIZED2 "Check virtualbox."
-    if Installed virtualbox ; then
-        if Installed virtualbox-ext-oracle ; then
-            if InUpdates virtualbox || InUpdates virtualbox-ext-oracle ; then
-                local version_vb=$(expac -S %v virtualbox)
-                local version_vbext=$(LANG=C $helper -Si virtualbox-ext-oracle | grep "^Version")
-                version_vbext=${version_vbext##* }
-                [ "${version_vb%-*}" = "${version_vbext%-*}" ] || DIE "versions of virtualbox and virtualbox-ext-oracle do not match"
-            fi
-        else
-            DIE "'virtualbox' is installed but 'virtualbox-ext-oracle' is not"
-        fi
-    fi
+    if InUpdates virtualbox ; then
+        local version_vb=$(expac -S %v virtualbox)
+        local version_vbext=$(LANG=C $helper -Si virtualbox-ext-oracle | grep "^Version")
+        version_vbext=${version_vbext##* }
+        [ "${version_vb%-*}" = "${version_vbext%-*}" ] || WARN "latest versions of virtualbox and virtualbox-ext-oracle do not match"
+    fi        
 }
 
 CheckPrivileges() { [ "$EUID" = "0" ] || DIE "sorry, must run with elevated privileges." ; }
 
 CheckDbLock() {
     [ "$lock_check" = "yes" ] || return
-    EMPHASIZED2 "Check database lock:"
+    EMPHASIZED2 "Check database lock."
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
         if fuser $lck &>/dev/null ; then
@@ -114,12 +111,8 @@ CheckDbLock() {
 CheckAUR() {
     [ "$aur" = "yes" ] || return
     if [ -x /bin/$helper ] ; then
-        if false ; then
-            EMPHASIZED2 "Check AUR updates $as_plain_user."
-            AsPlainUser --quiet $helper -Sua
-        else
-            AsPlainUser $helper -Sua
-        fi
+        EMPHASIZED2 "Check AUR updates (as '$PLAIN_USER')."
+        AsPlainUser --quiet $helper -Sua
     else
         WARN "'$helper' not installed, cannot check AUR updates."
     fi
@@ -133,8 +126,8 @@ Extras() {
 
 CheckConnection() {
     [ "$connection" = "yes" ] || return
-    if false ; then
-        EMPHASIZED2 "Check connection $as_plain_user."
+    if true ; then
+        EMPHASIZED2 "Check connection (as '$PLAIN_USER')."
         AsPlainUser --quiet eos-connection-checker || DIE "no internet connection."
     else
         AsPlainUser eos-connection-checker && RESULT "internet connection OK." || DIE "no internet connection."
@@ -205,7 +198,7 @@ Options:
 |-n, --nvidia|${defaults[nvidia]}|Check validity of nvidia & linux updates.
 |    --no-keyrings|${defaults[keyrings]}|Do not update keyrings before other packages.
 |    --no-lock||Do not check pacman database lock.
-|    --paru||Use 'paru' instead of 'yay'.
+|    --paru||Use 'paru' instead of 'yay'. Implies --aur.
 |-q, --quiet|$quiet|Be more quiet.
 |-r, --repo|$repo|Only update native packages, not foreign (e.g. AUR).
 |-v, --verbose, --loud|${defaults[verbose]}|Show what is being done.
@@ -226,7 +219,7 @@ EOF
             --no-keyrings)           keyrings=no ;;
             --no-lock)               lock_check=no ;;
             -n | --nvidia)           nvidia=yes ;;
-            --paru)                  helper=paru ;;
+            --paru)                  helper=paru; aur=yes ;;
             -q | --quiet)            verbose=no ;;
             -r | --repo)             aur=no ;;
             -v | --verbose | --loud) verbose=yes ;;
@@ -248,7 +241,6 @@ Main() {
     declare -A defaults=()
     local PLAIN_USER="$SUDO_USER"
     [ -z "$SUDO_USER" ] && PLAIN_USER="$LOGNAME"
-    local -r as_plain_user="(as user '$PLAIN_USER')"
 
     EMPHASIZED2 "COMMAND: $progname $*"
 
@@ -259,9 +251,16 @@ Main() {
     CheckDbLock
     Xadditions "$begin"
     Cmd pacman -Sy
-    pacman_updates=$(pacman -Quq)
+    if [ "$aur" = "yes" ] ; then
+        pacman_updates=$($helper -Quq)
+    else
+        pacman_updates=$(pacman -Quq)
+    fi
+
     if [ -n "$pacman_updates" ] ; then
         UpdateKeyrings
+        CheckNvidia
+        CheckVirtualbox
         Xadditions "$middle"
         Cmd pacman -Su
         Xadditions "$end"
