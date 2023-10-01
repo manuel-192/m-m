@@ -120,6 +120,8 @@ Params:
         Check for changes of file assets.conf.
     --pkgdb <db-filename>
         Show the contents of the given package database (*.db.tar.xz).
+    --mirrorlist-arch
+        Show a generated mirrorlist from the Arch web page. Useful for testing only.
 
 Options:
     -b                Directly try to build packages.
@@ -179,6 +181,9 @@ EOF
                 pull-requests
                 WaitToQuit
                 return
+                ;;
+            --mirrorlist-arch)
+                firefox "https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4"
                 ;;
             --check-all)
                 for folder in $supported_folders pull
