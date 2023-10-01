@@ -17,7 +17,7 @@ CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$R
 DIE()     { CMSG "$RED"     error   "$1";  Options -h ; exit 1 ; }
 WARN()    { CMSG "$BLUE"    warning "$1"; }
 INFO()    { CMSG "$MAGENTA" info    "$1"; }
-RESULT()  { echo2 " $1" ; }
+RESULT()  { echo "$1" | sed 's|^| |' >&2 ; }
 
 EMPHASIZED_COLOR() {
     echo2 -n "${GREEN}==> "
@@ -116,12 +116,23 @@ CheckAUR() {
 
 Pacdiff() {
     [ "$pacdiff" = "yes" ] || return
-    Cmd1 eos-pacdiff --indent=' '
+    local out
+    out=$(Cmd1 eos-pacdiff --indent=' ')
+    case $? in
+        1) RESULT "error" ;;
+        2|3) ;;                      # eos-pacdiff writes the msg to stderr
+        *) RESULT "$out" ;;
+    esac
 }
 
 Foreign() {
     [ "$foreign" = "yes" ] || return
-    Cmd pacman -Qm  | sed 's|^| |'
+    local out
+    out=$(Cmd pacman -Qm)
+    case $? in
+        0) RESULT "$out" ;;
+        *) RESULT "no foreign packages" ;;
+    esac
 }
 
 Descriptions() {
