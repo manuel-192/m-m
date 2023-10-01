@@ -227,7 +227,7 @@ EOF
                 ;;
             --repoup | -n | -nn | -nl | --dryrun-local | -nr | --dryrun | --pkgdiff | -ad | --allow-downgrade)
                 op="$1" ;;
-            -b) op="" ;;
+            -b | --build) op="" ;;
             -*) DIE "unsupported option '$1'" ;;
             *)  repodirs+=("$1") ;;
         esac

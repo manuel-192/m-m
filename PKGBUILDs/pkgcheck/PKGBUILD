@@ -6,7 +6,7 @@ pkgname=pkgcheck
 pkgdesc="Package build helper"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23.10
-pkgrel=1.4
+pkgrel=1.5
 
 arch=('any')
 license=('GPL')
@@ -24,7 +24,7 @@ source=(
 sha512sums=('ad83196577af554359e8547e5694de58efd7770de51509e227fef16ec56a3f2bafb148b4ec12453fdbda7c0f0bac57dfa83a5ab5376376c9adea99cb6e97a0d3'
             '2b5cf98911605c09aff6b7dfa3d9cddb5658ef155811634a325bd15787bbb2da5ff4325b3bd3554b6ea0e176f411dfb719d50b7e3e8fba4ee3e9585544b64858'
             '088d71b0b10ca859af78fba163f5d3e5172a6632c678cec3bce72526a4fdcb7372fcb8628360bce70471bb6b58748842fcc353d37cc28021add7b86ad57191a4'
-            '8f91fea2db99d25e15d0dd4bc71aa4fb90bb829819c6301c1f423e5286c551cc71bcf650c5d1deab4c700e0c636b0624eb5f4795e6695988aceb8008ed6cf2bb'
+            'da46d99b28fcaef9864884cb2727e5abd94d68d9d7ff67486571b1561d1b17dc288c1efe3ddc8f784a2b87a0a9ac8b6f913f24f4e1d8afec6a15e79865fc2d81'
             'bed694f6241b9c93479aed4f3a9434e7dece8c695962ffd736f9aa2fc3d67a57a32b26f6263dddb1169c993176138b3b5b829495eb2c5cd597f43e9999ddd77a'
             'e93638c49e68872526838bd1b5cfcce13375e158f24a9f524ada78fa1ea3f25e531f3bf96bffdfe25299265c6ea8b7d2e1a3632acbdba45cdb32dfc9ed07dea6')
 
