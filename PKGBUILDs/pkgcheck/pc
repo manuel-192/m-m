@@ -149,7 +149,7 @@ EOF
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
-                op+=" --check-all --check-assets-conf --pkgdb --changelog --changelog-modified"
+                op+=" --check-all --check-assets-conf --pkgdb --changelog --changelog-modified --mirrorlist-arch"
                 echo $op
                 return
                 ;;
@@ -184,6 +184,7 @@ EOF
                 ;;
             --mirrorlist-arch)
                 firefox "https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4"
+                return
                 ;;
             --check-all)
                 for folder in $supported_folders pull
