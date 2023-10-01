@@ -71,6 +71,7 @@ CheckNvidia() {
     if PkgInUpdates nvidia-lts && ! PkgInUpdates linux-lts  ; then
         DIE "packages 'nvidia-lts' and 'linux-lts' must be updated together"
     fi
+    RESULT "no problems detected"
 }
 
 CheckVirtualbox() {
@@ -278,6 +279,7 @@ Main() {
     fi
 
     if [ -n "$pacman_updates" ] ; then
+        # now we have updates, so run additional stuff
         UpdateKeyrings
         CheckNvidia
         CheckVirtualbox
@@ -285,6 +287,9 @@ Main() {
         Descriptions
         Cmd pacman -Su
         Xadditions "$end"
+    else
+        # simply update to see if local packages are newer...
+        Cmd pacman -Su
     fi
     CheckAUR
     Foreign
