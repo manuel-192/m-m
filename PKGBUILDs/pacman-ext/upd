@@ -24,6 +24,7 @@ EMPHASIZED_COLOR() {
     echo2 -n "$@"
     echo2 "${RESET}"
 }
+EMPHASIZED_COLOR_non-root() { EMPHASIZED_COLOR "$@" "(as non-root user)." ; }
 
 Cmd()  { [ $verbose = yes ] && EMPHASIZED_COLOR "$@:" ;  "$@" ; }
 Cmd1() { [ $verbose = yes ] && EMPHASIZED_COLOR "$1:" ;  "$@" ; }
@@ -107,7 +108,7 @@ CheckDbLock() {
 CheckAUR() {
     [ "$aur" = "yes" ] || return
     if [ -x /bin/$helper ] ; then
-        EMPHASIZED_COLOR "Check AUR updates (as '$PLAIN_USER')."
+        EMPHASIZED_COLOR_non-root "Check AUR updates"
         AsPlainUser --quiet $helper -Sua
     else
         WARN "'$helper' not installed, cannot check AUR updates."
@@ -143,7 +144,7 @@ Descriptions() {
 CheckConnection() {
     [ "$connection" = "yes" ] || return
     if true ; then
-        EMPHASIZED_COLOR "Check connection (as '$PLAIN_USER')."
+        EMPHASIZED_COLOR_non-root "Check connection"
         AsPlainUser --quiet eos-connection-checker && RESULT "internet connection OK" || DIE "no internet connection."
     else
         AsPlainUser eos-connection-checker && RESULT "internet connection OK" || DIE "no internet connection."
