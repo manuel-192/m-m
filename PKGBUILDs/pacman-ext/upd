@@ -26,9 +26,10 @@ EMPHASIZED_COLOR() {
 }
 EMPHASIZED_COLOR_non-root() { EMPHASIZED_COLOR "$@" "(as non-root user)." ; }
 
-Cmd()  { [ $verbose = yes ] && EMPHASIZED_COLOR "$@:" ;  "$@" ; }
-Cmd1() { [ $verbose = yes ] && EMPHASIZED_COLOR "$1:" ;  "$@" ; }
-Cmd2() { [ $verbose = yes ] && EMPHASIZED_COLOR "COMMAND: bash -c '$*'" ; bash -c "$*" ; }
+Cmd()   { [ $verbose = yes ] && EMPHASIZED_COLOR "$@:" ;  "$@" || DIE "'$* failed.'" ; }
+Cmd1()  { [ $verbose = yes ] && EMPHASIZED_COLOR "$1:" ;  "$@" || DIE "'$* failed.'" ; }
+Cmd1a() { [ $verbose = yes ] && EMPHASIZED_COLOR "$1:" ;  "$@" ; }
+Cmd2()  { [ $verbose = yes ] && EMPHASIZED_COLOR "COMMAND: bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
 
 AsPlainUser() {
     case "$1" in
@@ -51,10 +52,11 @@ Xadditions() {
     fi
 }
 
-PkgInUpdates() { echo "$pacman_updates" | grep "^$1$" >/dev/null ; }
+PkgInUpdates() { printf "%s\n" $updates_pacman $updates_aur | grep "^$1$" >/dev/null ; }
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
+    [ "$updates_pacman" ] || return
     EMPHASIZED_COLOR "Check keyrings."
     local keyr updated=()
     for keyr in archlinux-keyring endeavouros-keyring ; do
@@ -65,6 +67,7 @@ UpdateKeyrings() {
 
 CheckNvidia() {
     [ "$nvidia" = "yes" ] || return
+    [ "$updates_pacman" ] || return
     EMPHASIZED_COLOR "Check Nvidia & kernel."
     if PkgInUpdates nvidia && ! PkgInUpdates linux  ; then
         DIE "packages 'nvidia' and 'linux' must be updated together"
@@ -78,6 +81,7 @@ CheckNvidia() {
 CheckVirtualbox() {
     # [ "$aur" = "yes" ] || return            # check virtualbox-ext-oracle even if not updating AUR packages
     [ "$virtualbox" = "yes" ] || return
+    [ "$updates_pacman" ] || return
     EMPHASIZED_COLOR "Check virtualbox."
     if PkgInUpdates virtualbox ; then
         local version_vb=$(expac -S %v virtualbox)
@@ -118,7 +122,7 @@ CheckAUR() {
 Pacdiff() {
     [ "$pacdiff" = "yes" ] || return
     local out
-    out=$(Cmd1 eos-pacdiff --indent=' ')
+    out=$(Cmd1a eos-pacdiff --indent=' ')
     case $? in
         1) RESULT "error" ;;
         2|3) ;;                      # eos-pacdiff writes the msg to stderr
@@ -138,7 +142,12 @@ Foreign() {
 
 Descriptions() {
     [ "$descriptions" = "yes" ] || return
-    Cmd1 hook-update-description $pacman_updates
+    [ "$updates_pacman" ] && Cmd1 hook-update-description $updates_pacman
+}
+
+DescriptionsAUR() {
+    [ "$descriptions" = "yes" ] || return
+    [ "$updates_aur" ] && Cmd1 hook-update-description $updates_aur
 }
 
 CheckConnection() {
@@ -149,6 +158,11 @@ CheckConnection() {
     else
         AsPlainUser eos-connection-checker && RESULT "internet connection OK" || DIE "no internet connection."
     fi
+}
+
+GetAllUpdates() {
+    updates_pacman=$(pacman -Quq)
+    [ "$aur" = "yes" ] && updates_aur=$(AsPlainUser --quiet $helper -Quqa)
 }
 
 AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
@@ -204,7 +218,7 @@ Options() {
     }
     eval set -- "$opts"
 
-    while [ -n "$1" ] ; do
+    while [ "$1" ] ; do
         case "$1" in
             -h | --help)
                 cat <<EOF | Columnizer2
@@ -267,13 +281,14 @@ EOF
 
 Main() {
     local -r progname="${0##*/}"
-    local pacman_updates=""
+    local updates_pacman=""
+    local updates_aur=""
     local aur connection descriptions foreign keyrings nvidia pacdiff quiet verbose virtualbox
     local helper=yay lock_check=yes
     local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
     local PLAIN_USER="$SUDO_USER"
-    [ -z "$SUDO_USER" ] && PLAIN_USER="$LOGNAME"
+    [ "$SUDO_USER" ] || PLAIN_USER="$LOGNAME"
 
     EMPHASIZED_COLOR "COMMAND: $progname $*"
 
@@ -283,27 +298,20 @@ Main() {
     CheckPrivileges
     CheckDbLock
     Xadditions "$begin"
-    Cmd pacman -Sy
-    if [ "$aur" = "yes" ] ; then
-        pacman_updates=$(AsPlainUser --quiet $helper -Quq)
-    else
-        pacman_updates=$(pacman -Quq)
-    fi
+    Cmd pacman -Sy               # update package database
+    GetAllUpdates
 
-    if [ -n "$pacman_updates" ] ; then
-        # now we have updates, so run additional stuff
-        UpdateKeyrings
-        CheckNvidia
-        CheckVirtualbox
-        Xadditions "$middle"
-        Descriptions
-        Cmd pacman -Su
-        Xadditions "$end"
-    else
-        # simply update to see if local packages are newer...
-        Cmd pacman -Su
-    fi
-    CheckAUR
+    UpdateKeyrings
+    CheckNvidia
+    CheckVirtualbox
+    Xadditions "$middle"
+    Descriptions
+
+    Cmd pacman -Su               # updates repo packages
+
+    DescriptionsAUR
+    CheckAUR                     # update AUR packages
+    Xadditions "$end"
     Foreign
     Pacdiff
 }
