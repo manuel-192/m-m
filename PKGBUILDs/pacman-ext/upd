@@ -14,98 +14,114 @@ CYAN=$'\e[0;96m'
 RESET=$'\e[0m'       # back to normal
 
 CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$RESET"; }
-DIE()     { CMSG "$RED"     error   "$1";  Options -h ; exit 1 ; }
+DIE()     { CMSG "$RED"     error   "$1"; exit 1 ; }
 WARN()    { CMSG "$BLUE"    warning "$1"; }
 INFO()    { CMSG "$MAGENTA" info    "$1"; }
 RESULT()  { echo "$1" | sed 's|^| |' >&2 ; }
 
 EMPHASIZED_COLOR() {
+    local lastopt=""
+    case "$1" in
+        --no-newline-at-end) lastopt="-n"; shift ;;
+    esac
     echo2 -n "${GREEN}==> "
     echo2 -n "$@"
-    echo2 "${RESET}"
+    echo2 $lastopt "${RESET}"
 }
-EMPHASIZED_COLOR_non-root() { EMPHASIZED_COLOR "$@" "(as non-root user)." ; }
+EMPHASIZED_COLOR_non-root() { EMPHASIZED_COLOR "$@" "(as non-root user):" ; }
 
-Cmd()   { [ $verbose = yes ] && EMPHASIZED_COLOR "$@:" ;  "$@" || DIE "'$* failed.'" ; }
-Cmd1()  { [ $verbose = yes ] && EMPHASIZED_COLOR "$1:" ;  "$@" || DIE "'$* failed.'" ; }
-Cmd1a() { [ $verbose = yes ] && EMPHASIZED_COLOR "$1:" ;  "$@" ; }
-Cmd2()  { [ $verbose = yes ] && EMPHASIZED_COLOR "COMMAND: bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
+Cmd()   { [ $quiet = no ] && EMPHASIZED_COLOR "$@:" ;  "$@" || DIE "'$* failed.'" ; }
+Cmd1()  { [ $quiet = no ] && EMPHASIZED_COLOR "$1:" ;  "$@" || DIE "'$* failed.'" ; }
+Cmd1a() { [ $quiet = no ] && EMPHASIZED_COLOR "$1:" ;  "$@" ; }
+Cmd2()  { [ $quiet = no ] && EMPHASIZED_COLOR "COMMAND: bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
 
 AsPlainUser() {
     case "$1" in
-        -q | --quiet) local verbose=no; shift ;;
+        -q | --quiet) local quiet=yes; shift ;;
     esac
     local cmd=""
     case "$SUDO_USER" in
         "") cmd="/bin/runuser -u $PLAIN_USER -- $*" ;;
         *)  cmd="/bin/sudo -u $PLAIN_USER $*" ;;
     esac
-    [ $verbose = yes ] && EMPHASIZED_COLOR "$cmd:"
+    [ $quiet = no ] && EMPHASIZED_COLOR "$cmd:"
     $cmd
 }
 
 Xadditions() {
-    local cmd="$1"
-    if [ "$cmd" != ":" ] ; then
-        cmd="${cmd#: && }"
-        Cmd2 "$cmd"
+    local phase="$1"
+    local cmd="$2"
+    if [ "$cmd" = ":" ] ; then
+        # EMPHASIZED_COLOR "User command at $phase: empty"
+        return
     fi
+    EMPHASIZED_COLOR "User command at: $phase"
+    cmd="${cmd#: && }"
+    Cmd2 "$cmd"
 }
 
 PkgInUpdates() { printf "%s\n" $updates_pacman $updates_aur | grep "^$1$" >/dev/null ; }
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
-    [ "$updates_pacman" ] || return
-    EMPHASIZED_COLOR "Check keyrings."
+    EMPHASIZED_COLOR --no-newline-at-end "Check keyrings:"
     local keyr updated=()
     for keyr in archlinux-keyring endeavouros-keyring ; do
         PkgInUpdates "$keyr" && updated+=("$keyr")
     done
-    [ ${#updated[@]} -gt 0 ] && Cmd pacman -S --noconfirm ${updated[*]} || RESULT "no keyring update"
+    if [ ${#updated[@]} -gt 0 ] ; then
+        RESULT "keyring update"
+        Cmd pacman -S --noconfirm ${updated[*]}
+    else
+        RESULT "OK"
+    fi
 }
 
 CheckNvidia() {
     [ "$nvidia" = "yes" ] || return
-    [ "$updates_pacman" ] || return
-    EMPHASIZED_COLOR "Check Nvidia & kernel."
+    EMPHASIZED_COLOR --no-newline-at-end "Check Nvidia & kernel:"
     if PkgInUpdates nvidia && ! PkgInUpdates linux  ; then
         DIE "packages 'nvidia' and 'linux' must be updated together"
     fi
     if PkgInUpdates nvidia-lts && ! PkgInUpdates linux-lts  ; then
         DIE "packages 'nvidia-lts' and 'linux-lts' must be updated together"
     fi
-    RESULT "no problems detected"
+    RESULT "OK"
 }
 
 CheckVirtualbox() {
-    # [ "$aur" = "yes" ] || return            # check virtualbox-ext-oracle even if not updating AUR packages
     [ "$virtualbox" = "yes" ] || return
-    [ "$updates_pacman" ] || return
-    EMPHASIZED_COLOR "Check virtualbox."
+    EMPHASIZED_COLOR --no-newline-at-end "Check virtualbox:"
     if PkgInUpdates virtualbox ; then
+        # check virtualbox-ext-oracle version even if not updating AUR packages
         local version_vb=$(expac -S %v virtualbox)
         local version_vbext=$(LANG=C $helper -Si virtualbox-ext-oracle | grep "^Version")
         version_vbext=${version_vbext##* }
-        [ "${version_vb%-*}" = "${version_vbext%-*}" ] || WARN "latest versions of virtualbox and virtualbox-ext-oracle do not match"
-    else
-        RESULT "no virtualbox update"
+        if [ "${version_vb%-*}" != "${version_vbext%-*}" ] ; then
+            WARN "latest versions of virtualbox and virtualbox-ext-oracle do not match"
+        fi
     fi        
+    RESULT "OK"
 }
 
-CheckPrivileges() { [ "$EUID" = "0" ] || DIE "sorry, must run with elevated privileges." ; }
+CheckPrivileges() {
+    EMPHASIZED_COLOR --no-newline-at-end "Check privileges:"
+    [ "$EUID" = "0" ] || DIE "sorry, must run with elevated privileges."
+    RESULT "OK"
+}
 
 CheckDbLock() {
     [ "$lock_check" = "yes" ] || return
-    EMPHASIZED_COLOR "Check database lock."
+    EMPHASIZED_COLOR --no-newline-at-end "Check database lock:"
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
         if fuser $lck &>/dev/null ; then
-            DIE "sorry, $lck is in use."
+            DIE "sorry, $lck is in use"
         fi
-        Cmd rm -f $lck
+        rm -f $lck
+        RESULT "OK (lock removed)"
     else
-        RESULT "no lock"
+        RESULT "OK"
     fi
 }
 
@@ -153,16 +169,21 @@ DescriptionsAUR() {
 CheckConnection() {
     [ "$connection" = "yes" ] || return
     if true ; then
-        EMPHASIZED_COLOR_non-root "Check connection"
-        AsPlainUser --quiet eos-connection-checker && RESULT "internet connection OK" || DIE "no internet connection."
+        EMPHASIZED_COLOR_non-root --no-newline-at-end "Check internet connection"
+        AsPlainUser --quiet eos-connection-checker && RESULT "OK" || DIE "no connection."
     else
-        AsPlainUser eos-connection-checker && RESULT "internet connection OK" || DIE "no internet connection."
+        AsPlainUser eos-connection-checker && RESULT "OK" || DIE "no connection."
     fi
 }
 
 GetAllUpdates() {
+    EMPHASIZED_COLOR "Listing updates."
     updates_pacman=$(pacman -Quq)
     [ "$aur" = "yes" ] && updates_aur=$(AsPlainUser --quiet $helper -Quqa)
+    local pu=0 au=0
+    [ -n "$updates_pacman" ] && pu=$(printf "%s\n" "$updates_pacman" | wc -l)
+    [ -n "$updates_aur" ]    && au=$(printf "%s\n" "$updates_aur"    | wc -l)
+    RESULT "$pu native updates, $au AUR updates"
 }
 
 AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
@@ -176,7 +197,7 @@ Defaults() {
         keyrings     yes
         nvidia       no
         pacdiff      no
-        verbose      yes
+        quiet        no
         virtualbox   no
     )
     aur="${defaults[aur]}"
@@ -186,7 +207,7 @@ Defaults() {
     keyrings="${defaults[keyrings]}"
     nvidia="${defaults[nvidia]}"
     pacdiff="${defaults[pacdiff]}"
-    verbose="${defaults[verbose]}"
+    quiet="${defaults[quiet]}"
     virtualbox="${defaults[virtualbox]}"
 }
 
@@ -203,14 +224,11 @@ DumpOptions() {
 Columnizer2() { column -t -s'|' -o'  ' >&2 ; }
 
 Options() {
-    local repo quiet
     Defaults
-    [ "$aur"     = "yes" ] && repo=no  || repo=yes
-    [ "$verbose" = "yes" ] && quiet=no || quiet=yes
 
     local lopts="aur,begin:,connection,descriptions,dump-options,end:,foreign,help,loud,middle:,no-keyrings"
-    lopts+=",no-lock,nvidia,pacdiff,paru,quiet,repo,verbose,vb,virtualbox"
-    local sopts="achqrv"
+    lopts+=",no-lock,nvidia,pacdiff,paru,quiet,virtualbox"
+    local sopts="acdfhinqrv"
     local opts
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
         Options -h
@@ -233,18 +251,16 @@ Options:
 |~~~~~~|~~~~~~~|~~~~~~~~~~~
 |-a, --aur|${defaults[aur]}|Updates AUR packages too.
 |-c, --connection|${defaults[connection]}|Checks internet connection first.
-|    --descriptions|${defaults[descriptions]}|Shows descriptions of the packages to update.
-|    --foreign|${defaults[foreign]}|Shows foreign packages in the end.
+|-i, --descriptions|${defaults[descriptions]}|Shows descriptions of the packages to update.
+|-f, --foreign|${defaults[foreign]}|Shows foreign packages in the end.
 |-h, --help||This help.
-|    --nvidia|${defaults[nvidia]}|Checks validity of nvidia & linux updates.
+|-n, --nvidia|${defaults[nvidia]}|Checks validity of nvidia & linux updates.
 |    --no-keyrings|${defaults[keyrings]}|Does not update keyrings before other packages.
 |    --no-lock||Does not check pacman database lock.
-|    --pacdiff|${defaults[pacdiff]}|Runs pacdiff in the end.
+|-d, --pacdiff|${defaults[pacdiff]}|Runs pacdiff in the end.
 |    --paru||Uses 'paru' instead of 'yay'. Implies --aur.
-|-q, --quiet|$quiet|Be more quiet.
-|-r, --repo|$repo|Updates only native packages, not foreign (e.g. AUR).
-|-v, --verbose, --loud|${defaults[verbose]}|Shows what is being done.
-|    --vb, --virtualbox|${defaults[virtualbox]}|Checks validity of virtualbox updates in host.
+|-q, --quiet|${defaults[quiet]}|Be more quiet.
+|-v, --virtualbox|${defaults[virtualbox]}|Checks validity of virtualbox updates in host.
 EOF
                 cat <<EOF | Columnizer2
 Advanced
@@ -260,20 +276,20 @@ EOF
             --dump-options)          DumpOptions ;;
             -a | --aur)              aur=yes ;;
             -c | --connection)       connection=yes ;;
-            --descriptions)          descriptions=yes ;;
-            --foreign)               foreign=yes ;;
+            -i | --descriptions)     descriptions=yes ;;
+            -f | --foreign)          foreign=yes ;;
             --no-keyrings)           keyrings=no ;;
             --no-lock)               lock_check=no ;;
-            --nvidia)                nvidia=yes ;;
-            --pacdiff)               pacdiff=yes ;;
+            -n | --nvidia)           nvidia=yes ;;
+            -d | --pacdiff)          pacdiff=yes ;;
             --paru)                  helper=paru; aur=yes ;;
-            -q | --quiet)            verbose=no ;;
-            -r | --repo)             aur=no ;;
-            -v | --verbose | --loud) verbose=yes ;;
-            --vb | --virtualbox)     virtualbox=yes ;;
+            -q | --quiet)            quiet=yes ;;
+            -v | --virtualbox)       virtualbox=yes ;;
             --begin)                 AppendCmd begin  "$2" ; shift ;;
             --middle)                AppendCmd middle "$2" ; shift ;;
             --end)                   AppendCmd end    "$2" ; shift ;;
+            --) ;;
+            -*) DIE "unsupported option '$1'" ;;
         esac
         shift
     done
@@ -283,7 +299,7 @@ Main() {
     local -r progname="${0##*/}"
     local updates_pacman=""
     local updates_aur=""
-    local aur connection descriptions foreign keyrings nvidia pacdiff quiet verbose virtualbox
+    local aur connection descriptions foreign keyrings nvidia pacdiff quiet virtualbox
     local helper=yay lock_check=yes
     local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
@@ -294,24 +310,24 @@ Main() {
 
     Options "$@"
 
-    CheckConnection
     CheckPrivileges
+    CheckConnection
     CheckDbLock
-    Xadditions "$begin"
+    Xadditions begin "$begin"
     Cmd pacman -Sy               # update package database
     GetAllUpdates
 
     UpdateKeyrings
     CheckNvidia
     CheckVirtualbox
-    Xadditions "$middle"
+    Xadditions middle "$middle"
     Descriptions
 
     Cmd pacman -Su               # updates repo packages
 
     DescriptionsAUR
     CheckAUR                     # update AUR packages
-    Xadditions "$end"
+    Xadditions end "$end"
     Foreign
     Pacdiff
 }
