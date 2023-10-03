@@ -1,31 +1,56 @@
 #!/bin/bash
 
+DIE() {
+    local progname=${0##*/}
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
 BannerLine() {
     local str="$1"
-    local count="$2"
 
     [ -n "$str" ] || return
 
-    printf "%0.s$str" $(seq $count)
+    case "$title" in
+        "") printf "%0.s$str" $(seq $maxlen) ;;
+        *)
+            # ===== title =====
+            # left        right
+            local titlelen=${#title}
+            local leftlen=$(((maxlen - titlelen)/2 + 1))    # == rightlen
+            printf "%0.s$str" $(seq $leftlen)
+            echo -n " $title "
+            printf "%0.s$str" $(seq $leftlen)
+            ;;
+    esac
+
     echo ""
 }
 
 Main()
 {
+    local title=""
+    while [ "$1" ] ; do
+        case "$1" in
+            --title=*) title="${1#*=}" ;;
+            --title)   title="$2" ; shift ;;
+            -*) DIE "unsupported option '$1'" ;;
+            *) break ;;
+        esac
+        shift
+    done
     local pkgnames="$*"                  # as parameters
     if [ -z "$pkgnames" ] ; then
         pkgnames="$(pacman -Quq)"        # assume pacman -Sy executed
         [ -z "$pkgnames" ] && return
     fi
 
-    local out maxlen
+    local out=$(expac -Q '%n|%d' $pkgnames | /bin/column -t -s'|')
+    local maxlen=$(echo "$out" | wc -L)
 
-    out=$(expac -Q '%n|%d' $pkgnames | /bin/column -t -s'|')
-    maxlen=$(echo "$out" | wc -L)
-
-    BannerLine '=' $maxlen
+    BannerLine '='
     echo "$out"
-    BannerLine '=' $maxlen
+    BannerLine '='
 }
 
 Main "$@"
