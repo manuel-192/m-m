@@ -158,12 +158,12 @@ Foreign() {
 
 Descriptions() {
     [ "$descriptions" = "yes" ] || return
-    [ "$updates_pacman" ] && Cmd1 hook-update-description $updates_pacman
+    [ "$updates_pacman" ] && Cmd1 hook-update-description --title="native updates" $updates_pacman
 }
 
 DescriptionsAUR() {
     [ "$descriptions" = "yes" ] || return
-    [ "$updates_aur" ] && Cmd1 hook-update-description $updates_aur
+    [ "$updates_aur" ] && Cmd1 hook-update-description --title="AUR updates" $updates_aur
 }
 
 CheckConnection() {
@@ -316,16 +316,16 @@ Main() {
     Xadditions begin "$begin"
     Cmd pacman -Sy               # update package database
     GetAllUpdates
+    Descriptions
+    DescriptionsAUR
 
     UpdateKeyrings
     CheckNvidia
     CheckVirtualbox
     Xadditions middle "$middle"
-    Descriptions
 
     Cmd pacman -Su               # updates repo packages
 
-    DescriptionsAUR
     CheckAUR                     # update AUR packages
     Xadditions end "$end"
     Foreign
