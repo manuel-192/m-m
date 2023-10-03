@@ -177,13 +177,13 @@ CheckConnection() {
 }
 
 GetAllUpdates() {
-    EMPHASIZED_COLOR "Listing updates."
+    EMPHASIZED_COLOR --no-newline-at-end "Listing updates:"
     updates_pacman=$(pacman -Quq)
     [ "$aur" = "yes" ] && updates_aur=$(AsPlainUser --quiet $helper -Quqa)
     local pu=0 au=0
     [ -n "$updates_pacman" ] && pu=$(printf "%s\n" "$updates_pacman" | wc -l)
     [ -n "$updates_aur" ]    && au=$(printf "%s\n" "$updates_aur"    | wc -l)
-    RESULT "$pu native updates, $au AUR updates"
+    RESULT "$pu native, $au AUR"
 }
 
 AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
@@ -257,7 +257,7 @@ Options:
 |-n, --nvidia|${defaults[nvidia]}|Checks validity of nvidia & linux updates.
 |    --no-keyrings|${defaults[keyrings]}|Does not update keyrings before other packages.
 |    --no-lock||Does not check pacman database lock.
-|-d, --pacdiff|${defaults[pacdiff]}|Runs pacdiff in the end.
+|-d, --pacdiff|${defaults[pacdiff]}|Runs 'pacdiff & meld' in the end.
 |    --paru||Uses 'paru' instead of 'yay'. Implies --aur.
 |-q, --quiet|${defaults[quiet]}|Be more quiet.
 |-v, --virtualbox|${defaults[virtualbox]}|Checks validity of virtualbox updates in host.
@@ -270,6 +270,9 @@ options:
 |--begin|nothing|Adds a user-given command before 'pacman -Sy'.
 |--middle|nothing|Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
 |--end|nothing|Adds a user-given command after 'pacman -Su'.
+
+Example:
+    upd -cadi --end "pwd && echo 'All done.'"
 EOF
                 exit 0
                 ;;
@@ -327,9 +330,9 @@ Main() {
     Cmd pacman -Su               # updates repo packages
 
     CheckAUR                     # update AUR packages
-    Xadditions end "$end"
     Foreign
     Pacdiff
+    Xadditions end "$end"
 }
 
 Main "$@"
