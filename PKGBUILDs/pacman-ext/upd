@@ -272,7 +272,7 @@ options:
 |--end|nothing|Adds a user-given command after 'pacman -Su'.
 
 Example:
-    upd -cadi --end "pwd && echo 'All done.'"
+    sudo upd -cadi --end "pwd && echo 'All done.'"
 EOF
                 exit 0
                 ;;
