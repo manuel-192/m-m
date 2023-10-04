@@ -186,6 +186,12 @@ GetAllUpdates() {
     RESULT "$pu native, $au AUR"
 }
 
+Sync() {
+    [ "$sync" = "yes" ] || return
+    EMPHASIZED_COLOR "Running sync."
+    sync
+}
+
 AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
 
 Defaults() {
@@ -195,9 +201,11 @@ Defaults() {
         descriptions no
         foreign      no
         keyrings     yes
+        lock-check   yes
         nvidia       no
         pacdiff      no
         quiet        no
+        sync         no
         virtualbox   no
     )
     aur="${defaults[aur]}"
@@ -205,9 +213,11 @@ Defaults() {
     descriptions="${defaults[descriptions]}"
     foreign="${defaults[foreign]}"
     keyrings="${defaults[keyrings]}"
+    lock_check="${defaults[lock-check]}"
     nvidia="${defaults[nvidia]}"
     pacdiff="${defaults[pacdiff]}"
     quiet="${defaults[quiet]}"
+    sync="${defaults[sync]}"
     virtualbox="${defaults[virtualbox]}"
 }
 
@@ -223,12 +233,14 @@ DumpOptions() {
 
 Columnizer2() { column -t -s'|' -o'  ' >&2 ; }
 
+Opposite() { [ "$1" = "yes" ] && echo "no" || echo "yes" ; }
+
 Options() {
     Defaults
 
     local lopts="aur,begin:,connection,descriptions,dump-options,end:,foreign,help,loud,middle:,no-keyrings"
-    lopts+=",no-lock,nvidia,pacdiff,paru,quiet,virtualbox"
-    local sopts="acdfhinqrv"
+    lopts+=",no-lock,nvidia,pacdiff,paru,quiet,sync,virtualbox"
+    local sopts="acdfhinqsv"
     local opts
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
         Options -h
@@ -239,87 +251,62 @@ Options() {
     while [ "$1" ] ; do
         case "$1" in
             -h | --help)
-                if true ; then
-                    local tmpdoc=/tmp/upd-doc-tmp.html
-                    cat <<EOF | pandoc -f gfm -o $tmpdoc
+                local tmpdoc=/tmp/upd-doc-tmp.html
+                cat <<EOF | pandoc -f gfm -o $tmpdoc
 # upd
 
-Purpose: Updater using pacman & AUR helper + more<br>
-Usage:   $progname [options] [advanced-options]<br>
-Notes:   sudo/root required
+## Overview
 
-## Options
+Updater using **pacman** and <i>AUR helper</i>, with additional features.<br>
+Note: sudo/root is required unless specified otherwise below.
 
-option|description|default
-:---|:---|:---
--a, --aur|Updates AUR packages too|${defaults[aur]}
--c, --connection|Checks internet connection first|${defaults[connection]}
--i, --descriptions|Shows descriptions of the packages to update|${defaults[descriptions]}
--f, --foreign|Shows foreign packages in the end|${defaults[foreign]}
--h, --help|This help|
--n, --nvidia|Checks validity of nvidia & linux updates|${defaults[nvidia]}
-    --no-keyrings|Does not update keyrings before other packages|${defaults[keyrings]}
-    --no-lock|Does not check pacman database lock|
--d, --pacdiff|Runs 'pacdiff & meld' in the end|${defaults[pacdiff]}
-    --paru|Uses 'paru' instead of 'yay'. Implies --aur|
--q, --quiet|Be more quiet|${defaults[quiet]}
--v, --virtualbox|Checks validity of virtualbox updates in host|${defaults[virtualbox]}
+## Usage
+
+<pre>
+   $progname [options] [advanced-options]
+</pre>
+
+By default, the only additional features over *pacman/AUR helper* are:
+- check pacman database lock and remove it if possible
+- update keyrings before other updates
+
+All options below will change the default behavior.
+
+<pre>
+    Option              Description
+    ~~~~~~              ~~~~~~~~~~~
+    -a, --aur           Updates AUR packages too.
+    -c, --connection    Checks internet connection first.
+    -i, --descriptions  Shows descriptions of the packages to update.
+    -f, --foreign       Shows foreign packages in the end.
+    -h, --help          This help (does not need sudo/root).
+        --no-keyrings   Does not update keyrings before other packages.
+        --no-lock       Does not check pacman database lock.
+    -n, --nvidia        Checks validity of nvidia & linux updates.
+    -d, --pacdiff       Runs 'pacdiff & meld' in the end.
+        --paru          Uses 'paru' instead of 'yay'. Implies --aur.
+    -q, --quiet         Be more quiet.
+    -s, --sync          Run 'sync' as the last command.
+    -v, --virtualbox    Checks validity of virtualbox updates in host.
+</pre>
 
 ## Advanced options
-
-option|description|default
-:---|:---|:---
---begin|Adds a user-given command before 'pacman -Sy'|
---middle|Adds a user-given command between 'pacman -Sy' and 'pacman -Su'|
---end|Adds a user-given command after 'pacman -Su'|
+<pre>
+    Option              Description
+    ~~~~~~              ~~~~~~~~~~~
+    --begin             Adds a user-given command before 'pacman -Sy'.
+    --middle            Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
+    --end               Adds a user-given command after 'pacman -Su'.
+</pre>
 
 ## Example
 
-sudo upd -cadi --end "pwd && echo 'All done' "
+<pre>
+    sudo upd -cadi --end "pwd && echo 'All done' "
+</pre>
 
 EOF
-                    setsid /bin/firefox file://$tmpdoc
-                else
-                cat <<EOF | Columnizer2
-Purpose:|Updater using pacman & AUR helper + more.
-Usage:|$progname [options] [advanced-options]
-Note:|sudo/root required.
-
-Options:
-EOF
-                cat <<EOF | Columnizer2
-|option|default|description
-|~~~~~~|~~~~~~~|~~~~~~~~~~~
-|-a, --aur|${defaults[aur]}|Updates AUR packages too.
-|-c, --connection|${defaults[connection]}|Checks internet connection first.
-|-i, --descriptions|${defaults[descriptions]}|Shows descriptions of the packages to update.
-|-f, --foreign|${defaults[foreign]}|Shows foreign packages in the end.
-|-h, --help||This help.
-|-n, --nvidia|${defaults[nvidia]}|Checks validity of nvidia & linux updates.
-|    --no-keyrings|${defaults[keyrings]}|Does not update keyrings before other packages.
-|    --no-lock||Does not check pacman database lock.
-|-d, --pacdiff|${defaults[pacdiff]}|Runs 'pacdiff & meld' in the end.
-|    --paru||Uses 'paru' instead of 'yay'. Implies --aur.
-|-q, --quiet|${defaults[quiet]}|Be more quiet.
-|-v, --virtualbox|${defaults[virtualbox]}|Checks validity of virtualbox updates in host.
-EOF
-                cat <<EOF | Columnizer2
-
-Advanced options:
-EOF
-                cat <<EOF | Columnizer2
-|option|default|description
-|~~~~~~|~~~~~~~|~~~~~~~~~~~
-|    --begin|""|Adds a user-given command before 'pacman -Sy'.
-|    --middle|""|Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
-|    --end|""|Adds a user-given command after 'pacman -Su'.
-EOF
-                cat <<EOF | Columnizer2
-
-Example:
-    sudo upd -cadi --end "pwd && echo 'All done.'"
-EOF
-                fi
+                /bin/firefox $tmpdoc &
                 exit 0
                 ;;
             --dump-options)          DumpOptions ;;
@@ -333,6 +320,7 @@ EOF
             -d | --pacdiff)          pacdiff=yes ;;
             --paru)                  helper=paru; aur=yes ;;
             -q | --quiet)            quiet=yes ;;
+            -s | --sync)             sync=yes ;;
             -v | --virtualbox)       virtualbox=yes ;;
             --begin)                 AppendCmd begin  "$2" ; shift ;;
             --middle)                AppendCmd middle "$2" ; shift ;;
@@ -348,14 +336,17 @@ Main() {
     local -r progname="${0##*/}"
     local updates_pacman=""
     local updates_aur=""
-    local aur connection descriptions foreign keyrings nvidia pacdiff quiet virtualbox
-    local helper=yay lock_check=yes
+    local aur connection descriptions foreign keyrings lock_check nvidia pacdiff quiet sync virtualbox
+    local helper=yay
     local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
     local PLAIN_USER="$SUDO_USER"
     [ "$SUDO_USER" ] || PLAIN_USER="$LOGNAME"
 
-    EMPHASIZED_COLOR "COMMAND: $progname $*"
+    case "$*" in
+        -h | --help) ;;
+        *) EMPHASIZED_COLOR "COMMAND: $progname $*" ;;
+    esac
 
     Options "$@"
 
@@ -379,6 +370,7 @@ Main() {
     Foreign
     Pacdiff
     Xadditions end "$end"
+    Sync
 }
 
 Main "$@"
