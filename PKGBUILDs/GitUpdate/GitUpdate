@@ -213,7 +213,7 @@ Main()
     local commit_msg_arm=""
     local handle_also_arm=no          # yes or no; will be no later
 
-    [ -f .GitUpdate ] || DIE "no .GitUpdate file in folder $PWD"
+    # [ -f .GitUpdate ] || DIE "no .GitUpdate file in folder $PWD"
     [ -d .git ]       || DIE "no .git folder in $PWD"
     [ -L .git ]       && DIE ".git must not be symlink in $PWD"
 
