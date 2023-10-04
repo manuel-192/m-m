@@ -239,14 +239,55 @@ Options() {
     while [ "$1" ] ; do
         case "$1" in
             -h | --help)
-                cat <<EOF | Columnizer2
-Purpose:|Updater using pacman & AUR helper + more.
+                if true ; then
+                    local tmpdoc=/tmp/upd-doc-tmp.html
+                    cat <<EOF | pandoc -f gfm -o $tmpdoc
+# upd
+
+Purpose: Updater using pacman & AUR helper + more<br>
+Usage:   $progname [options] [advanced-options]<br>
+Notes:   sudo/root required
+
+## Options
+
+option|description|default
+:---|:---|:---
+-a, --aur|Updates AUR packages too|${defaults[aur]}
+-c, --connection|Checks internet connection first|${defaults[connection]}
+-i, --descriptions|Shows descriptions of the packages to update|${defaults[descriptions]}
+-f, --foreign|Shows foreign packages in the end|${defaults[foreign]}
+-h, --help|This help|
+-n, --nvidia|Checks validity of nvidia & linux updates|${defaults[nvidia]}
+    --no-keyrings|Does not update keyrings before other packages|${defaults[keyrings]}
+    --no-lock|Does not check pacman database lock|
+-d, --pacdiff|Runs 'pacdiff & meld' in the end|${defaults[pacdiff]}
+    --paru|Uses 'paru' instead of 'yay'. Implies --aur|
+-q, --quiet|Be more quiet|${defaults[quiet]}
+-v, --virtualbox|Checks validity of virtualbox updates in host|${defaults[virtualbox]}
+
+## Advanced options
+
+option|description|default
+:---|:---|:---
+--begin|Adds a user-given command before 'pacman -Sy'|
+--middle|Adds a user-given command between 'pacman -Sy' and 'pacman -Su'|
+--end|Adds a user-given command after 'pacman -Su'|
+
+## Example
+
+sudo upd -cadi --end "pwd && echo 'All done' "
 
 EOF
+                    setsid /bin/firefox file://$tmpdoc
+                else
                 cat <<EOF | Columnizer2
+Purpose:|Updater using pacman & AUR helper + more.
 Usage:|$progname [options] [advanced-options]
 Note:|sudo/root required.
+
 Options:
+EOF
+                cat <<EOF | Columnizer2
 |option|default|description
 |~~~~~~|~~~~~~~|~~~~~~~~~~~
 |-a, --aur|${defaults[aur]}|Updates AUR packages too.
@@ -263,17 +304,22 @@ Options:
 |-v, --virtualbox|${defaults[virtualbox]}|Checks validity of virtualbox updates in host.
 EOF
                 cat <<EOF | Columnizer2
-Advanced
-options:
+
+Advanced options:
+EOF
+                cat <<EOF | Columnizer2
 |option|default|description
 |~~~~~~|~~~~~~~|~~~~~~~~~~~
-|--begin|nothing|Adds a user-given command before 'pacman -Sy'.
-|--middle|nothing|Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
-|--end|nothing|Adds a user-given command after 'pacman -Su'.
+|    --begin|""|Adds a user-given command before 'pacman -Sy'.
+|    --middle|""|Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
+|    --end|""|Adds a user-given command after 'pacman -Su'.
+EOF
+                cat <<EOF | Columnizer2
 
 Example:
     sudo upd -cadi --end "pwd && echo 'All done.'"
 EOF
+                fi
                 exit 0
                 ;;
             --dump-options)          DumpOptions ;;
