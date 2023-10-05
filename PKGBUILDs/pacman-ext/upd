@@ -64,6 +64,9 @@ PkgInUpdates() { printf "%s\n" $updates_pacman $updates_aur | grep "^$1$" >/dev/
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
+        return
+    fi
     EMPHASIZED_COLOR --no-newline-at-end "Check keyrings:"
     local keyr updated=()
     for keyr in archlinux-keyring endeavouros-keyring ; do
@@ -79,6 +82,9 @@ UpdateKeyrings() {
 
 CheckNvidia() {
     [ "$nvidia" = "yes" ] || return
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
+        return
+    fi
     EMPHASIZED_COLOR --no-newline-at-end "Check Nvidia & kernel:"
     if PkgInUpdates nvidia && ! PkgInUpdates linux  ; then
         DIE "packages 'nvidia' and 'linux' must be updated together"
@@ -91,6 +97,9 @@ CheckNvidia() {
 
 CheckVirtualbox() {
     [ "$virtualbox" = "yes" ] || return
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
+        return
+    fi
     EMPHASIZED_COLOR --no-newline-at-end "Check virtualbox:"
     if PkgInUpdates virtualbox ; then
         # check virtualbox-ext-oracle version even if not updating AUR packages
@@ -127,6 +136,9 @@ CheckDbLock() {
 
 CheckAUR() {
     [ "$aur" = "yes" ] || return
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_aur" ] ; then
+        return
+    fi
     if [ -x /bin/$helper ] ; then
         EMPHASIZED_COLOR_non-root "Check AUR updates"
         AsPlainUser --quiet $helper -Sua
@@ -203,6 +215,7 @@ Defaults() {
         keyrings     yes
         lock-check   yes
         nvidia       no
+        optimize_checks       no
         pacdiff      no
         quiet        no
         sync         no
@@ -215,6 +228,7 @@ Defaults() {
     keyrings="${defaults[keyrings]}"
     lock_check="${defaults[lock-check]}"
     nvidia="${defaults[nvidia]}"
+    optimize_checks="${defaults[optimize_checks]}"
     pacdiff="${defaults[pacdiff]}"
     quiet="${defaults[quiet]}"
     sync="${defaults[sync]}"
@@ -239,8 +253,8 @@ Options() {
     Defaults
 
     local lopts="aur,begin:,connection,descriptions,dump-options,end:,foreign,help,loud,middle:,no-keyrings"
-    lopts+=",no-lock,nvidia,pacdiff,paru,quiet,sync,virtualbox"
-    local sopts="acdfhinqsv"
+    lopts+=",no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
+    local sopts="acdfhinoqsv"
     local opts
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
         Options -h
@@ -273,30 +287,31 @@ By default, the only additional features over *pacman/AUR helper* are:
 All options below will change the default behavior.
 
 <pre>
-    Option              Description
-    ~~~~~~              ~~~~~~~~~~~
-    -a, --aur           Updates AUR packages too.
-    -c, --connection    Checks internet connection first.
-    -i, --descriptions  Shows descriptions of the packages to update.
-    -f, --foreign       Shows foreign packages in the end.
-    -h, --help          This help (does not need sudo/root).
-        --no-keyrings   Does not update keyrings before other packages.
-        --no-lock       Does not check pacman database lock.
-    -n, --nvidia        Checks validity of nvidia & linux updates.
-    -d, --pacdiff       Runs 'pacdiff & meld' in the end.
-        --paru          Uses 'paru' instead of 'yay'. Implies --aur.
-    -q, --quiet         Be more quiet.
-    -s, --sync          Run 'sync' as the last command.
-    -v, --virtualbox    Checks validity of virtualbox updates in host.
+    Option                 Description
+    ~~~~~~                 ~~~~~~~~~~~
+    -a, --aur              Updates AUR packages too.
+    -c, --connection       Checks internet connection first.
+    -i, --descriptions     Shows descriptions of the packages to update.
+    -f, --foreign          Shows foreign packages in the end.
+    -h, --help             This help (does not need sudo/root).
+        --no-keyrings      Does not update keyrings before other packages.
+        --no-lock          Does not check pacman database lock.
+    -n, --nvidia           Checks validity of nvidia & linux updates.
+    -o, --optimize-checks  Reduce redundancy in checks.
+    -d, --pacdiff          Runs 'pacdiff & meld' in the end.
+        --paru             Uses 'paru' instead of 'yay'. Implies --aur.
+    -q, --quiet            Be more quiet.
+    -s, --sync             Run 'sync' as the last command.
+    -v, --virtualbox       Checks validity of virtualbox updates in host.
 </pre>
 
 ## Advanced options
 <pre>
-    Option              Description
-    ~~~~~~              ~~~~~~~~~~~
-    --begin             Adds a user-given command before 'pacman -Sy'.
-    --middle            Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
-    --end               Adds a user-given command after 'pacman -Su'.
+    Option                 Description
+    ~~~~~~                 ~~~~~~~~~~~
+    --begin                Adds a user-given command before 'pacman -Sy'.
+    --middle               Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
+    --end                  Adds a user-given command after 'pacman -Su'.
 </pre>
 
 ## Example
@@ -317,6 +332,7 @@ EOF
             --no-keyrings)           keyrings=no ;;
             --no-lock)               lock_check=no ;;
             -n | --nvidia)           nvidia=yes ;;
+            -o | --optimize-checks)  optimize_checks=yes ;;
             -d | --pacdiff)          pacdiff=yes ;;
             --paru)                  helper=paru; aur=yes ;;
             -q | --quiet)            quiet=yes ;;
@@ -336,7 +352,8 @@ Main() {
     local -r progname="${0##*/}"
     local updates_pacman=""
     local updates_aur=""
-    local aur connection descriptions foreign keyrings lock_check nvidia pacdiff quiet sync virtualbox
+    local aur connection descriptions foreign keyrings lock_check nvidia optimize_checks
+    local pacdiff quiet sync virtualbox
     local helper=yay
     local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
@@ -364,13 +381,20 @@ Main() {
     CheckVirtualbox
     Xadditions middle "$middle"
 
-    Cmd pacman -Su               # updates repo packages
+    Pacman-Su                    # updates repo packages
 
     CheckAUR                     # update AUR packages
     Foreign
     Pacdiff
     Xadditions end "$end"
     Sync
+}
+
+Pacman-Su() {
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
+        return
+    fi
+    Cmd pacman -Su
 }
 
 Main "$@"
