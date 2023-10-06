@@ -398,9 +398,10 @@ Main() {
 
 Pacman-Su() {
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
-        return
+        pacman -Su >/dev/null   # to give potential warnings!
+    else
+        Cmd pacman -Su
     fi
-    Cmd pacman -Su
 }
 
 Main "$@"
