@@ -7,8 +7,9 @@ DIE() {
 }
 
 BannerLine() {
-    local str="$1"
+    local -r str="$1"
 
+    [ "$separator" = "yes" ] || return
     [ -n "$str" ] || return
 
     case "$title" in
@@ -17,7 +18,7 @@ BannerLine() {
             # ===== title =====
             # left        right
             local titlelen=${#title}
-            local leftlen=$(((maxlen - titlelen)/2 + 1))    # == rightlen
+            local leftlen=$(((maxlen - titlelen)/2))    # == rightlen
             printf "%0.s$str" $(seq $leftlen)
             echo -n " $title "
             printf "%0.s$str" $(seq $leftlen)
@@ -27,26 +28,54 @@ BannerLine() {
     echo ""
 }
 
+CheckValueYesNo() {
+    local -r variable="$1"
+    local -r option="$2"
+    case "$variable" in
+        yes | no) ;;
+        *) DIE "option $option has an unsupported value '$variable' (only 'yes' or 'no' supported)" ;;
+    esac
+}
+
 Main()
 {
     local title=""
+    local header=yes
+    local separator=yes
+    local pkgnames=()
+
     while [ "$1" ] ; do
         case "$1" in
-            --title=*) title="${1#*=}" ;;
-            --title)   title="$2" ; shift ;;
-            -*) DIE "unsupported option '$1'" ;;
-            *) break ;;
+            --title=*)     title="${1#*=}" ;;
+            --title)       title="$2" ; shift ;;
+            --header=*)    header="${1#*=}" ;;
+            --header)      header="$2" ; shift ;;
+            --separator=*) separator="${1#*=}" ;;
+            --separator)   separator="$2" ; shift ;;
+            -*)            DIE "unsupported option '$1'" ;;
+            *)             pkgnames+=("$1") ;;                        # packages as parameters
         esac
         shift
     done
-    local pkgnames="$*"                  # as parameters
-    if [ -z "$pkgnames" ] ; then
-        pkgnames="$(pacman -Quq)"        # assume pacman -Sy executed
-        [ -z "$pkgnames" ] && return
+    CheckValueYesNo "$header"    "--header"
+    CheckValueYesNo "$separator" "--separator"
+
+    if [ ${#pkgnames} -eq 0 ] ; then
+        readarray -t pkgnames <<< $(pacman -Quq)                      # assume 'pacman -Sy' was just executed
+        [ ${#pkgnames} -eq 0 ] && return
     fi
 
-    local out=$(expac -Q '%n|%d' $pkgnames | /bin/column -t -s'|')
-    local maxlen=$(echo "$out" | wc -L)
+    local out=""
+    local -r data=$(expac -S '%n|%v|%d' "${pkgnames[@]}")
+
+    if [ "$header" = "yes" ] ; then
+        local -r hd="Name|New version|Description"
+        local -r ul="${hd//[a-zA-Z ]/\~}"            # matching underline
+        out=$(printf '%s\n%s\n%s\n' "$hd" "$ul" "$data" | /bin/column -t -s'|')
+    else
+        out=$(printf "%s\n" "$data" | /bin/column -t -s'|')
+    fi
+    local -r maxlen=$(echo "$out" | wc -L)
 
     BannerLine '='
     echo "$out"
