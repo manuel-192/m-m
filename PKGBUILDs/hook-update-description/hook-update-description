@@ -1,17 +1,14 @@
 #!/bin/bash
 
 DIE() {
-    local progname=${0##*/}
     echo "$progname: error: $1" >&2
     exit 1
 }
 
 BannerLine() {
     local -r str="$1"
-
     [ "$separator" = "yes" ] || return
     [ -n "$str" ] || return
-
     case "$title" in
         "") printf "%0.s$str" $(seq $maxlen) ;;
         *)
@@ -24,7 +21,6 @@ BannerLine() {
             printf "%0.s$str" $(seq $leftlen)
             ;;
     esac
-
     echo ""
 }
 
@@ -37,8 +33,23 @@ CheckValueYesNo() {
     esac
 }
 
-Main()
-{
+Usage() {
+    cat <<EOF
+Usage: $progname [options] [package-names]
+
+Options:
+    -h, --help       This help.
+    --title[=*]      Adds the given title to the banner line surrounding update descriptions.
+    --header[=*]     Specfies if a header is shown for the updates (yes or no).
+    --separator[=*]  Specified if the banner lines will be displayed or not (yes or no).
+
+Package names are optional, and can be used for avoiding to fetch the updates separately.
+
+EOF
+}
+
+Main() {
+    local -r progname=${0##*/}
     local title=""
     local header=yes
     local separator=yes
@@ -46,6 +57,7 @@ Main()
 
     while [ "$1" ] ; do
         case "$1" in
+            -h | --help)   Usage; return 0 ;;
             --title=*)     title="${1#*=}" ;;
             --title)       title="$2" ; shift ;;
             --header=*)    header="${1#*=}" ;;
@@ -61,7 +73,7 @@ Main()
     CheckValueYesNo "$separator" "--separator"
 
     if [ ${#pkgnames} -eq 0 ] ; then
-        readarray -t pkgnames <<< $(pacman -Quq)                      # assume 'pacman -Sy' was just executed
+        readarray -t pkgnames <<< $(yay -Quq)                         # assume 'pacman -Sy' was just executed
         [ ${#pkgnames} -eq 0 ] && return
     fi
 
