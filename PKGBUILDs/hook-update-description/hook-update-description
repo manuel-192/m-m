@@ -69,7 +69,7 @@ Main()
     local -r data=$(expac -S '%n|%v|%d' "${pkgnames[@]}")
 
     if [ "$header" = "yes" ] ; then
-        local -r hd="Name|New version|Description"
+        local -r hd="Name|Latest|Description"
         local -r ul="${hd//[a-zA-Z ]/\~}"            # matching underline
         out=$(printf '%s\n%s\n%s\n' "$hd" "$ul" "$data" | /bin/column -t -s'|')
     else
