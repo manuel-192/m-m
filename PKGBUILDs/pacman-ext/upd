@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# System update - run using sudo.
+# System update with additional features.
 
 echo2()   { echo   "$@" >&2 ; }
 printf2() { printf "$@" >&2 ; }
@@ -219,6 +219,14 @@ Sync() {
     sync
 }
 
+Pacman-Su() {
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
+        pacman -Su >/dev/null   # to give potential warnings!
+    else
+        Cmd pacman -Su
+    fi
+}
+
 AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
 
 Defaults() {
@@ -279,15 +287,41 @@ Options() {
 
     while true ; do
         case "$1" in
-            -h | --help)
-                local tmpdoc=/tmp/upd-doc-tmp.html
-                cat <<EOF | pandoc -f gfm -o $tmpdoc
+            -h | --help)             Usage ;;                            # no sudo needed
+            -a | --aur)              aur=yes ;;
+            --clear-keyrings)        ClearKeyrings ;;
+            -c | --connection)       connection=yes ;;
+            -d | --descriptions)     descriptions=yes ;;
+            --dump-options)          DumpOptions ;;                      # no sudo needed
+            -f | --foreign)          foreign=yes ;;
+            --no-keyrings)           keyrings=no ;;
+            --no-lock)               lock_check=no ;;
+            -n | --nvidia)           nvidia=yes ;;
+            -o | --optimize-checks)  optimize_checks=yes ;;
+            -p | --pacdiff)          pacdiff=yes ;;
+            --paru)                  helper=paru; aur=yes ;;
+            -q | --quiet)            quiet=yes ;;
+            -s | --sync)             sync=yes ;;
+            -v | --virtualbox)       virtualbox=yes ;;
+            --begin)                 AppendCmd begin  "$2" ; shift ;;
+            --middle)                AppendCmd middle "$2" ; shift ;;
+            --end)                   AppendCmd end    "$2" ; shift ;;
+            --)                      shift; break ;;
+            -*)                      DIE "unsupported option '$1'" ;;
+        esac
+        shift
+    done
+}
+
+Usage() {
+    local tmpdoc=/tmp/upd-doc-tmp.html
+    cat <<EOF | pandoc -f gfm -o $tmpdoc
 # upd
 
 ## Overview
 
 Updater using **pacman** and <i>AUR helper</i>, with additional features.<br>
-Note: sudo/root is required unless specified otherwise below.
+Runs sudo when needed.
 
 ## Usage
 
@@ -309,7 +343,7 @@ All options below will change the default behavior.
     -c, --connection       Checks internet connection first.
     -d, --descriptions     Shows descriptions of the packages to update.
     -f, --foreign          Shows foreign packages in the end.
-    -h, --help             This help (does not need sudo/root).
+    -h, --help             This help.
         --no-keyrings      Does not update keyrings before other packages.
         --no-lock          Does not check pacman database lock.
     -n, --nvidia           Checks validity of nvidia & linux updates.
@@ -333,36 +367,12 @@ All options below will change the default behavior.
 ## Example
 
 <pre>
-    sudo upd -cadi --end "pwd && echo 'All done' "
+    upd -acdp --end "pwd && echo 'All done' "
 </pre>
 
 EOF
-                /bin/firefox $tmpdoc &
-                exit 0
-                ;;
-            --dump-options)          DumpOptions ;;
-            -a | --aur)              aur=yes ;;
-            --clear-keyrings)        ClearKeyrings ;;
-            -c | --connection)       connection=yes ;;
-            -i | --descriptions)     descriptions=yes ;;
-            -f | --foreign)          foreign=yes ;;
-            --no-keyrings)           keyrings=no ;;
-            --no-lock)               lock_check=no ;;
-            -n | --nvidia)           nvidia=yes ;;
-            -o | --optimize-checks)  optimize_checks=yes ;;
-            -d | --pacdiff)          pacdiff=yes ;;
-            --paru)                  helper=paru; aur=yes ;;
-            -q | --quiet)            quiet=yes ;;
-            -s | --sync)             sync=yes ;;
-            -v | --virtualbox)       virtualbox=yes ;;
-            --begin)                 AppendCmd begin  "$2" ; shift ;;
-            --middle)                AppendCmd middle "$2" ; shift ;;
-            --end)                   AppendCmd end    "$2" ; shift ;;
-            --) shift; break ;;
-            -*) DIE "unsupported option '$1'" ;;
-        esac
-        shift
-    done
+    /bin/firefox $tmpdoc &
+    exit 0
 }
 
 OptionsBeforeSudo() {                      # if only help asked, then no sudo needed
@@ -383,7 +393,8 @@ Main() {
     local -r progname="${0##*/}"
     OptionsBeforeSudo "$@"
     if [ "$EUID" != "0" ] ; then
-        sudo /bin/$progname "$@"
+        source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1  # get EOS_ROOTER
+        $EOS_ROOTER "/bin/$progname $*"
         return
     fi
     local updates_pacman=""
@@ -421,14 +432,6 @@ Main() {
     Pacdiff
     Xadditions end "$end"
     Sync
-}
-
-Pacman-Su() {
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
-        pacman -Su >/dev/null   # to give potential warnings!
-    else
-        Cmd pacman -Su
-    fi
 }
 
 Main "$@"
