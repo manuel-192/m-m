@@ -33,6 +33,17 @@ CheckValueYesNo() {
     esac
 }
 
+AsPlainUserIfElevated() {
+    local cmd="$*"
+    if [ $(id -u) -eq 0 ] ; then   # is elevated?
+        case "$SUDO_USER" in
+            "") cmd="/bin/runuser -u $LOGNAME -- $*" ;;     # is root
+            *)  cmd="/bin/sudo -u $SUDO_USER $*" ;;         # is sudo
+        esac
+    fi
+    $cmd
+}
+
 Usage() {
     cat <<EOF
 Usage: $progname [options] [package-names]
@@ -73,9 +84,11 @@ Main() {
     CheckValueYesNo "$separator" "--separator"
 
     if [ ${#pkgnames} -eq 0 ] ; then
-        readarray -t pkgnames <<< $(yay -Quq)                         # assume 'pacman -Sy' was just executed
+        readarray -t pkgnames <<< $(AsPlainUserIfElevated yay -Quq)                         # assume 'pacman -Sy' was just executed
         [ ${#pkgnames} -eq 0 ] && return
     fi
+
+    echo "pkgnames = ${pkgnames[@]}" >&2
 
     local out=""
     local -r data=$(expac -S '%n|%v|%d' "${pkgnames[@]}")
