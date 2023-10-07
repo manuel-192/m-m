@@ -88,8 +88,6 @@ Main() {
         [ ${#pkgnames} -eq 0 ] && return
     fi
 
-    echo "pkgnames = ${pkgnames[@]}" >&2
-
     local out=""
     local -r data=$(expac -S '%n|%v|%d' "${pkgnames[@]}")
 
