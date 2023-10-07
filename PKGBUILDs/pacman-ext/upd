@@ -149,6 +149,9 @@ CheckAUR() {
 
 Pacdiff() {
     [ "$pacdiff" = "yes" ] || return
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] && [ -z "$updates_aur" ] ; then
+        return
+    fi
     local out
     out=$(Cmd1a eos-pacdiff --indent=' ')
     case $? in
@@ -200,6 +203,9 @@ GetAllUpdates() {
 
 Sync() {
     [ "$sync" = "yes" ] || return
+    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] && [ -z "$updates_pacman" ] ; then
+        return
+    fi
     EMPHASIZED_COLOR "Running sync."
     sync
 }
@@ -392,9 +398,10 @@ Main() {
 
 Pacman-Su() {
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
-        return
+        pacman -Su >/dev/null   # to give potential warnings!
+    else
+        Cmd pacman -Su
     fi
-    Cmd pacman -Su
 }
 
 Main "$@"
