@@ -80,6 +80,15 @@ UpdateKeyrings() {
     fi
 }
 
+ClearKeyrings() {
+    Cmd mv /etc/pacman.d/gnupg /root/pacman-key.bak
+    Cmd pacman-key --init
+    Cmd pacman-key --populate archlinux endeavouros
+    Cmd pacman -Syy --noconfirm archlinux-keyring endeavouros-keyring
+    Cmd pacman -Su
+    exit 0
+}
+
 CheckNvidia() {
     [ "$nvidia" = "yes" ] || return
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
@@ -258,7 +267,7 @@ Opposite() { [ "$1" = "yes" ] && echo "no" || echo "yes" ; }
 Options() {
     Defaults
 
-    local lopts="aur,begin:,connection,descriptions,dump-options,end:,foreign,help,loud,middle:,no-keyrings"
+    local lopts="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,foreign,help,loud,middle:,no-keyrings"
     lopts+=",no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
     local sopts="acdfhinoqsv"
     local opts
@@ -268,7 +277,7 @@ Options() {
     }
     eval set -- "$opts"
 
-    while [ "$1" ] ; do
+    while true ; do
         case "$1" in
             -h | --help)
                 local tmpdoc=/tmp/upd-doc-tmp.html
@@ -296,6 +305,7 @@ All options below will change the default behavior.
     Option                 Description
     ~~~~~~                 ~~~~~~~~~~~
     -a, --aur              Updates AUR packages too.
+        --clear-keyrings   If update fails with keyring issues, try this option.
     -c, --connection       Checks internet connection first.
     -i, --descriptions     Shows descriptions of the packages to update.
     -f, --foreign          Shows foreign packages in the end.
@@ -332,6 +342,7 @@ EOF
                 ;;
             --dump-options)          DumpOptions ;;
             -a | --aur)              aur=yes ;;
+            --clear-keyrings)        ClearKeyrings ;;
             -c | --connection)       connection=yes ;;
             -i | --descriptions)     descriptions=yes ;;
             -f | --foreign)          foreign=yes ;;
@@ -347,15 +358,34 @@ EOF
             --begin)                 AppendCmd begin  "$2" ; shift ;;
             --middle)                AppendCmd middle "$2" ; shift ;;
             --end)                   AppendCmd end    "$2" ; shift ;;
-            --) ;;
+            --) shift; break ;;
             -*) DIE "unsupported option '$1'" ;;
         esac
         shift
     done
 }
 
+OptionsBeforeSudo() {                      # if only help asked, then no sudo needed
+    local arg
+    local help=no
+    for arg in "$@" ; do
+        case "$arg" in
+            --help) help=yes ;;
+            --dump-options) Options --dump-options ;;
+            --*) ;;
+            -*h*) help=yes ;;
+        esac
+    done
+    [ "$help" = "yes" ] && Options --help
+}
+
 Main() {
     local -r progname="${0##*/}"
+    OptionsBeforeSudo "$@"
+    if [ "$EUID" != "0" ] ; then
+        sudo /bin/$progname "$@"
+        return
+    fi
     local updates_pacman=""
     local updates_aur=""
     local aur connection descriptions foreign keyrings lock_check nvidia optimize_checks
@@ -366,12 +396,9 @@ Main() {
     local PLAIN_USER="$SUDO_USER"
     [ "$SUDO_USER" ] || PLAIN_USER="$LOGNAME"
 
-    case "$*" in
-        -h | --help) ;;
-        *) EMPHASIZED_COLOR "COMMAND: $progname $*" ;;
-    esac
-
     Options "$@"
+
+    EMPHASIZED_COLOR "COMMAND: $progname $*"
 
     CheckPrivileges
     CheckConnection

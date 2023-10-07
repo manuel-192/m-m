@@ -18,7 +18,7 @@ _pe_upd_()
         --begin | --middle | --end) ;;
         *)
             # Handle all top-level parameters.
-            _pe_upd_complete "$(upd --dump-options)" ;;
+            _pe_upd_complete "$(/bin/upd --dump-options)" ;;
     esac
 }
 complete -F _pe_upd_ upd
