@@ -6,7 +6,7 @@ pkgname=pkgcheck
 pkgdesc="Package build helper"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23.10
-pkgrel=1.5
+pkgrel=1.6
 
 arch=('any')
 license=('GPL')
@@ -17,8 +17,8 @@ source=(
     $url/pkgcheck
     $url/pkgcheck.completion
     $url/pkgcheck.conf
-    $url/pc
-    $url/pc.completion
+    $url/pb
+    $url/pb.completion
     $url/pull-requests
 )
 sha512sums=('ad83196577af554359e8547e5694de58efd7770de51509e227fef16ec56a3f2bafb148b4ec12453fdbda7c0f0bac57dfa83a5ab5376376c9adea99cb6e97a0d3'

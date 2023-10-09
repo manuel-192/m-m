@@ -1,4 +1,4 @@
-# bash completion for pc        -*- shell-script -*-
+# bash completion for pb        -*- shell-script -*-
 
 _mylistselector()
 {
@@ -20,15 +20,15 @@ _mylistselector()
     echo "COMPREPLY = ${COMPREPLY[0]}" >> /tmp/foo
 }
 
-_pc_complete() {
+_pb_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     compopt -o nosort
 }
 
-_pc_complete_pkgnames() {
+_pb_complete_pkgnames() {
     if [ -r assets.conf ] ; then
-        local pkgnames="$(_pc_GetPkgnames)"
+        local pkgnames="$(_pb_GetPkgnames)"
         COMPREPLY=( $(compgen -W "${pkgnames}" -- "$cur") )
         compopt -o nosort
         #compopt -o nospace
@@ -36,45 +36,45 @@ _pc_complete_pkgnames() {
     fi
 }
 
-_pc_complete_pkgnames_list() {
+_pb_complete_pkgnames_list() {
     if [ -r assets.conf ] ; then
-        _mylistselector "$cur" "$(_pc_GetPkgnames)"
+        _mylistselector "$cur" "$(_pb_GetPkgnames)"
         COMPREPLY[0]=${COMPREPLY[0]%,}   # remove comma if it is the last char
     fi
 }
 
-_pc_GetPkgnames() {
+_pb_GetPkgnames() {
     if [ -r assets.conf ] ; then
         source assets.conf
         echo "${PKGNAMES[*]}"
     fi
 }
 
-_pc_GetRepo() {
+_pb_GetRepo() {
     if [ -e assets.conf ] ; then
         local repo=(*.db.tar.xz)
         echo "${repo[*]}"
     fi
 }
 
-_pc_() {
+_pb_() {
     local cur prev words cword split
     _init_completion -s || return
 
-    local -r repos=$(pc --reponames)
-    local -r options=$(pc --dump-options)
+    local -r repos=$(pb --reponames)
+    local -r options=$(pb --dump-options)
 
     case "$prev" in
-        -p | --pkgnames)       _pc_complete_pkgnames_list ;;
-        --pkgdb)               _pc_complete "$(_pc_GetRepo)" ;;
-        --changelog)           _pc_complete "$(_pc_GetPkgnames)" ;;
-        #-*)                    _pc_complete "$repos $options" ;;
+        -p | --pkgnames)       _pb_complete_pkgnames_list ;;
+        --pkgdb)               _pb_complete "$(_pb_GetRepo)" ;;
+        --changelog)           _pb_complete "$(_pb_GetPkgnames)" ;;
+        #-*)                    _pb_complete "$repos $options" ;;
         *)
             case "$cur" in
-                -*)            _pc_complete "$options" ;;
-                 *)            _pc_complete "$repos $options" ;;
+                -*)            _pb_complete "$options" ;;
+                 *)            _pb_complete "$repos $options" ;;
             esac
             ;;
     esac
 } &&
-complete -F _pc_ pc
+complete -F _pb_ pb

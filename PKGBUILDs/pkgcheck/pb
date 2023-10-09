@@ -43,13 +43,13 @@ AskFolder() {
     else
         echo2 "Current folder (${PWD/$HOME/\~}) is not supported."
     fi
-    printf2 "Supported folders:\n   $(pc --reponames)\n"
+    printf2 "Supported folders:\n   $(pb --reponames)\n"
     read -p "[ENTER] continue, [Ctrl-C] quit: " >&2
 
-    name=$(printf "%s\n" $(pc --reponames) | fzf)
+    name=$(printf "%s\n" $(pb --reponames) | fzf)
     if [ -n "$name" ] ; then
         sleep 1
-        pc $name
+        pb $name
     fi
     WaitToQuit
     exit
@@ -66,8 +66,8 @@ ChangeLog() {
     fi
 }
 
-_pc() {
-    pc_IsSupportedFolderName() {
+_pb() {
+    pb_IsSupportedFolderName() {
         local sf
         local folder=""
         case "$1" in
@@ -189,8 +189,8 @@ EOF
             --check-all)
                 for folder in $supported_folders pull
                 do
-                    echo2 "==> pc $folder"
-                    pc $folder || DIE "'pc $folder' failed."
+                    echo2 "==> pb $folder"
+                    pb $folder || DIE "'pb $folder' failed."
                 done
                 WaitToQuit
                 return
@@ -237,12 +237,12 @@ EOF
     [ ${#repodirs[@]} -eq 0 ] && repodirs=("$PWD")
 
     for repodir in "${repodirs[@]}" ; do
-        _pc2
+        _pb2
     done
 }
 
-_pc2() {
-    if ! pc_IsSupportedFolderName "$repodir" ; then
+_pb2() {
+    if ! pb_IsSupportedFolderName "$repodir" ; then
         # DIEF "repo/folder '$folder' is not supported." "Supported: $supported_folders"
         AskFolder "$repodir"
     fi
@@ -328,4 +328,4 @@ _pc2() {
     WaitToQuit
 }
 
-_pc "$@"
+_pb "$@"

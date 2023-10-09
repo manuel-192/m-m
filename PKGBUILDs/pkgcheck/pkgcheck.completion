@@ -57,8 +57,8 @@ _pkgcheck_() {
     local cur prev words cword split
     _init_completion -s || return
 
-    local -r repos=$(pc --reponames)
-    local -r options=$(pc --dump-options)
+    local -r repos=$(pb --reponames)
+    local -r options=$(pb --dump-options)
 
     _FoobarDebug "prev = '$prev'"
     _FoobarDebug "cur  = '$cur'"
