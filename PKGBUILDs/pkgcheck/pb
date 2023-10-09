@@ -5,7 +5,7 @@
 
 
 echo2() { echo "$@" >&2 ; }
-Which() { which "$1" &>/dev/null ; }
+RequireApp() { which "$1" &>/dev/null || DIE "this operation needs '$1' installed." ; }
 
 DIE() {
     echo2 "$progname: error: $1"
@@ -34,23 +34,9 @@ tar-name-components() {
 }
 
 AskFolder() {
-    local name
-
-    Which fzf || DIE "this operation needs 'fzf' installed."
-
-    if [ -n "$repodir" ] ; then
-        echo2 "Folder '${repodir/$HOME/\~}' is not supported. "
-    else
-        echo2 "Current folder (${PWD/$HOME/\~}) is not supported."
-    fi
-    printf2 "Supported folders:\n   $(pb --reponames)\n"
-    read -p "[ENTER] continue, [Ctrl-C] quit: " >&2
-
-    name=$(printf "%s\n" $(pb --reponames) | fzf)
-    if [ -n "$name" ] ; then
-        sleep 1
-        pb $name
-    fi
+    RequireApp fzf
+    local -r name=$(printf "%s\n" $(_pb --reponames) | fzf)
+    [ -n "$name" ] && $progname $name
     WaitToQuit
     exit
 }
@@ -189,8 +175,8 @@ EOF
             --check-all)
                 for folder in $supported_folders pull
                 do
-                    echo2 "==> pb $folder"
-                    pb $folder || DIE "'pb $folder' failed."
+                    echo2 "==> $progname $folder"
+                    $progname $folder || DIE "'$progname $folder' failed."
                 done
                 WaitToQuit
                 return
