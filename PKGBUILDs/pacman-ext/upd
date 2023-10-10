@@ -31,6 +31,7 @@ EMPHASIZED_COLOR() {
 EMPHASIZED_COLOR_non-root() { EMPHASIZED_COLOR "$@" "(as non-root user):" ; }
 
 Cmd()   { [ $quiet = no ] && EMPHASIZED_COLOR "$@:" ;  "$@" || DIE "'$* failed.'" ; }
+Cmda()  { [ $quiet = no ] && EMPHASIZED_COLOR "$@:" ;  "$@" ; }
 Cmd1()  { [ $quiet = no ] && EMPHASIZED_COLOR "$1:" ;  "$@" || DIE "'$* failed.'" ; }
 Cmd1a() { [ $quiet = no ] && EMPHASIZED_COLOR "$1:" ;  "$@" ; }
 Cmd2()  { [ $quiet = no ] && EMPHASIZED_COLOR "COMMAND: bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
@@ -174,7 +175,7 @@ Pacdiff() {
 Foreign() {
     [ "$foreign" = "yes" ] || return
     local out
-    out=$(Cmd pacman -Qm)
+    out=$(Cmda pacman -Qm)
     case $? in
         0) RESULT "$out" ;;
         *) RESULT "no foreign packages" ;;
