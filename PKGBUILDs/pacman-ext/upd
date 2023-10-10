@@ -113,7 +113,8 @@ CheckVirtualbox() {
     if PkgInUpdates virtualbox ; then
         # check virtualbox-ext-oracle version even if not updating AUR packages
         local version_vb=$(expac -S %v virtualbox)
-        local version_vbext=$(LANG=C $helper -Si virtualbox-ext-oracle | grep "^Version")
+        # local version_vbext=$(LANG=C $helper -Si virtualbox-ext-oracle | grep "^Version")
+        local version_vbext=$(expac-aur -S %v virtualbox-ext-oracle)
         version_vbext=${version_vbext##* }
         if [ "${version_vb%-*}" != "${version_vbext%-*}" ] ; then
             WARN "latest versions of virtualbox and virtualbox-ext-oracle do not match"

@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Limited expac for AUR.
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+GetField() { echo "$data" | grep "^$1[ ]*:" | sed -E "s|^$1[ ]*: (.*)|\1|" ; }
+
+Convert() {
+    line+=$(GetField "$1")
+    format=${format:2}
+}
+
+handle_formats() {
+    local line=""
+    while [ -n "$format" ] ; do
+        case "$format" in
+            %a*) Convert "Architecture" ;;
+            %B*) Convert "Backup Files" ;;      # ???
+            %b*) Convert "Build Date" ;;
+            %C*) Convert "Conflicts With" ;;   # TODO: no version strings !!
+            %D*) Convert "Depends On" ;;
+            %d*) Convert "Description" ;;
+            %E*) Convert "Depends On" ;;       # TODO: no version strings !!
+            %e*) Convert "Package Base" ;;
+            %f*) Convert "Filename" ;;
+            %F*) Convert "Files" ;;
+            %g*) Convert "PGP Signature" ;;
+            %G*) Convert "Groups" ;;
+            %H*) Convert "Conflicts With" ;;
+            %h*) Convert "Sha256sum" ;;
+            %i*) Convert "Install Script" ;;
+            %L*) Convert "Licenses" ;;
+            %m*) Convert "Installed Size" ;;
+            %M*) Convert "Modified Backup Files" ;;
+            %N*) Convert "Required By" ;;
+            %O*) Convert "Optional Deps" ;;
+            %o*) Convert "Optional Deps" ;;   # no descriptions ???
+            %p*) Convert "Packager" ;;
+            %P*) Convert "Provides" ;;
+            %R*) Convert "Replaces" ;;
+            %r*) Convert "Repository" ;;
+            %s*) Convert "Md5sum" ;;
+            %S*) Convert "Provides" ;;        # no version string ??
+            %T*) Convert "Replaces" ;;
+            %u*) Convert "URL" ;;
+            %v*) Convert "Version" ;;
+            %w*) Convert "Install Reason" ;;
+            "%!"*) Convert "Result Number" ;;
+            %n*) line+="$pkg";          format=${format:2} ;;
+            %%*) line+="%";             format=${format:2} ;;
+            *)   line+="${format%%%*}"; format="%${format#*%}" ;;
+        esac
+    done
+    echo "$line"
+}
+
+Main()
+{
+    # Supports: -S "%n %d %v"
+
+    local progname=${0##*/}
+    local format=""
+    local op="-S"
+    local data=""
+
+    while true ; do
+        case "$1" in
+            -S) op="$1" ;;    # accept only this now
+            "%"*) format="$1" ;;
+            -*) DIE "sorry, option '$1' not supported" ;;
+            *) break ;;
+        esac
+        shift
+    done
+    [ "$1" ] || DIE "no targets"
+    [ "$format" ] || DIE "no format"
+    [ "$op" = "-S" ] || DIE "unsupported option '$op'"
+    
+    for pkg in "$@" ; do
+        data="$(LANG=C yay ${op}i "$pkg")"
+        handle_formats
+    done
+}
+
+Main "$@"
