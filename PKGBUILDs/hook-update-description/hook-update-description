@@ -89,7 +89,7 @@ Main() {
     fi
 
     local out=""
-    local -r data=$(expac -S '%n|%v|%d' "${pkgnames[@]}")
+    local -r data=$(expac-aur -S '%n|%v|%d' "${pkgnames[@]}")
 
     if [ "$header" = "yes" ] ; then
         local -r hd="Name|Latest|Description"
