@@ -21,8 +21,8 @@ DIEF() {
 
 WaitToQuit() {
     if [ "$WaitToQuit" = "yes" ] ; then
-        read -p "Press ENTER to quit: " >&2
-        exit $1
+        read -pr "Press ENTER to quit: " >&2
+        exit "$1"
     fi
 }
 
@@ -35,8 +35,8 @@ tar-name-components() {
 
 AskFolder() {
     RequireApp fzf
-    local -r name=$(printf "%s\n" $(_pb --reponames) | fzf)
-    [ -n "$name" ] && $progname $name
+    local -r name=$(printf "%s\n" "$(_pb --reponames)" | fzf)
+    [ -n "$name" ] && $progname "$name"
     WaitToQuit
     exit
 }
@@ -81,9 +81,11 @@ _pb() {
     local repodirs=()
     local op="-n"
     local dir1 dir2 dirs
-    local supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ') MAN EOS"
+    local supported_folders
     local pkgnames_para=""
     local changelogfor=""
+
+    supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ') MAN EOS"
 
     while [ -n "$1" ] ; do
         case "$1" in
@@ -92,7 +94,7 @@ _pb() {
 
 Build packages if needed.
 
-Usage: $FUNCNAME [options] [params]
+Usage: ${FUNCNAME[0]} [options] [params]
 
 Params:
     repodir
@@ -123,8 +125,8 @@ EOF
                 return
                 ;;
             --editme)
-                for op in kate $EDITOR emacs kate qute xed geany adie mousepad gedit ; do
-                    if type $op &>/dev/null ; then
+                for op in "$EDITOR" ide emacs kate "qtcreator -client" xed geany adie mousepad gedit ; do
+                    if [ -n "$op" ] && type "${op%% *}" &>/dev/null ; then
                         $op "$0"
                         return
                     fi
@@ -136,7 +138,7 @@ EOF
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
                 op+=" --check-all --check-assets-conf --pkgdb --changelog --changelog-modified --mirrorlist-arch"
-                echo $op
+                echo "$op"
                 return
                 ;;
             --changelog | -c)
@@ -176,7 +178,7 @@ EOF
                 for folder in $supported_folders pull
                 do
                     echo2 "==> $progname $folder"
-                    $progname $folder || DIE "'$progname $folder' failed."
+                    $progname "$folder" || DIE "'$progname $folder' failed."
                 done
                 WaitToQuit
                 return
@@ -186,12 +188,12 @@ EOF
                 for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets"
                 do
                     echo "$folder" >&2
-                    pushd $folder >/dev/null || DIE "folder '$folder' does not exist."
+                    pushd "$folder" >/dev/null || DIE "folder '$folder' does not exist."
                     if [ -n "$(git diff)" ] ; then
                         ret=1
                         meld-rcs
                     fi
-                    popd >/dev/null
+                    popd >/dev/null || DIE "popd from '$folder' failed"
                 done
                 case $ret in
                     0) echo2 "No changes in assets.conf(s)." ;;
@@ -236,9 +238,9 @@ _pb2() {
     case "$repodir" in
         MAN | EOS | */MAN | */EOS)
             # special for UpdateSources
-            pushd "$repodir" >/dev/null
+            pushd "$repodir" >/dev/null || DIE "'pushd $repodir' failed"
             UpdateSources
-            popd >/dev/null
+            popd >/dev/null || DIE "popd from '$repodir' failed"
             WaitToQuit
             return
             ;;
@@ -274,10 +276,11 @@ _pb2() {
     done
 
     if [ -n "$changelogfor" ] ; then
-        pushd "$repodir" >/dev/null
-        source assets.conf || DIE "cannot find assets.conf in '$repodir'"
+        pushd "$repodir" >/dev/null || DIE "'pushd $repodir' failed"
+        # shellcheck disable=SC1091
+        source "assets.conf" || DIE "cannot find assets.conf in '$repodir'"
         ChangeLog "$changelogfor"
-        popd >/dev/null
+        popd >/dev/null || DIE "popd from '$repodir' failed"
         exit
     fi
 
@@ -290,20 +293,20 @@ _pb2() {
             return 1
         }
         if [ ! -L .git ] ; then
-            echo2 "$FUNCNAME: '$PWD/.git' does not exist or is not a symlink."
-            cd "$cwd"
+            echo2 "${FUNCNAME[0]}: '$PWD/.git' does not exist or is not a symlink."
+            cd "$cwd" || DIE "'cd $cwd' failed"
             WaitToQuit 1
             return 1
         fi
     fi
 
     if [ -n "$pkgnames_para" ] ; then
-        /bin/assets.make $op --pkgnames="${pkgnames_para//,/ }"
+        /bin/assets.make "$op" --pkgnames="${pkgnames_para//,/ }"
     else
-        /bin/assets.make $op
+        /bin/assets.make "$op"
     fi
     exit_code=$?
-    cd "$cwd"
+    cd "$cwd" || DIE "'cd $cwd' failed"
     case $exit_code in
         100 | 0) ;;
         *)
