@@ -30,22 +30,38 @@ EMPHASIZED_COLOR() {
 }
 EMPHASIZED_COLOR_non-root() { EMPHASIZED_COLOR "$@" "(as non-root user):" ; }
 
-Cmd()   { [ $quiet = no ] && EMPHASIZED_COLOR "$@:" ;  "$@" || DIE "'$* failed.'" ; }
-Cmda()  { [ $quiet = no ] && EMPHASIZED_COLOR "$@:" ;  "$@" ; }
-Cmd1()  { [ $quiet = no ] && EMPHASIZED_COLOR "$1:" ;  "$@" || DIE "'$* failed.'" ; }
-Cmd1a() { [ $quiet = no ] && EMPHASIZED_COLOR "$1:" ;  "$@" ; }
-Cmd2()  { [ $quiet = no ] && EMPHASIZED_COLOR "COMMAND: bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
+Cmd()   { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$@:" ;  "$@" || DIE "'$* failed.'" ; }
+Cmda()  { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$@:" ;  "$@" ; }
+Cmd1()  { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$1:" ;  "$@" || DIE "'$* failed.'" ; }
+Cmd1a() { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$1:" ;  "$@" ; }
+Cmd2()  { [ $quiet = no ] && EMPHASIZED_COLOR "COMMAND: ${RED}bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
 
 AsPlainUser() {
-    case "$1" in
-        -q | --quiet) local quiet=yes; shift ;;
-    esac
+    local prompt=""
+    local passopt=""
+    while true ; do
+        case "$1" in
+            --quiet) local quiet=yes ;;
+            --prompt) prompt="$2" ; shift ;;
+            --prompt=*) prompt="${1#*=}" ;;
+            --no-newline-at-end) passopt+=" $1" ;;
+            -*) DIE "${FUNCNAME[0]}: unsupported option '$1'" ;;
+            *) break ;;
+        esac
+        shift
+    done
     local cmd=""
     case "$SUDO_USER" in
         "") cmd="/bin/runuser -u $PLAIN_USER -- $*" ;;
         *)  cmd="/bin/sudo -u $PLAIN_USER $*" ;;
     esac
-    [ $quiet = no ] && EMPHASIZED_COLOR "$cmd:"
+    if [ "$quiet" = "no" ] ; then
+        if [ -n "$prompt" ] ; then
+            EMPHASIZED_COLOR $passopt "${RED}$prompt ($cmd):"
+        else
+            EMPHASIZED_COLOR $passopt "${RED}$cmd:"
+        fi
+    fi
     $cmd
 }
 
@@ -151,8 +167,7 @@ CheckAUR() {
         return
     fi
     if [ -x /bin/$helper ] ; then
-        EMPHASIZED_COLOR_non-root "Check AUR updates"
-        AsPlainUser --quiet $helper -Sua
+        AsPlainUser --prompt="Check AUR updates" $helper -Sua || RESULT "no updates"
     else
         WARN "'$helper' not installed, cannot check AUR updates."
     fi
@@ -194,12 +209,7 @@ DescriptionsAUR() {
 
 CheckConnection() {
     [ "$connection" = "yes" ] || return
-    if true ; then
-        EMPHASIZED_COLOR_non-root --no-newline-at-end "Check internet connection"
-        AsPlainUser --quiet eos-connection-checker && RESULT "OK" || DIE "no connection."
-    else
-        AsPlainUser eos-connection-checker && RESULT "OK" || DIE "no connection."
-    fi
+    AsPlainUser --prompt="Check internet connection" eos-connection-checker && RESULT "OK" || DIE "no connection."
 }
 
 GetAllUpdates() {
@@ -411,7 +421,7 @@ Main() {
 
     Options "$@"
 
-    EMPHASIZED_COLOR "COMMAND: $progname $*"
+    EMPHASIZED_COLOR "COMMAND: ${RED}$progname $*"
 
     CheckPrivileges
     CheckConnection
