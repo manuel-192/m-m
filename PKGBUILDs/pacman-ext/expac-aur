@@ -83,7 +83,12 @@ Main()
 
     local data_all="$(LANG=C yay ${op}i "$@")"
     for pkg in "$@" ; do
-        data="$(echo "$data_all" | grep -EA2 "^Name[ ]+:[ ]+$pkg$")"
+        data=$(
+            {
+                echo "$data_all" | grep -B1 "^Name[ ]*:[ ]*$pkg$" | head -n1
+                echo "$data_all" | sed  -n "/^Name[ ]*:[ ]*$pkg$/,/^$/p"
+            }
+            )
         handle_formats "$format"
     done
 }
