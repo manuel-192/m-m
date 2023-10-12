@@ -70,19 +70,20 @@ Main()
 
     while true ; do
         case "$1" in
-            -S) op="$1" ;;    # accept only this now
-            "%"*) format="$1" ;;
-            -*) DIE "sorry, option '$1' not supported" ;;
-            *) break ;;
+            -S)     op="$1" ;;    # accept only this now
+            "%"*)   format="$1" ;;
+            -*)     DIE "sorry, option '$1' not supported" ;;
+            *)      break ;;
         esac
         shift
     done
-    [ "$1" ] || DIE "no targets"
-    [ "$format" ] || DIE "no format"
+    [ "$1" ]         || DIE "no targets"
+    [ "$format" ]    || DIE "no format"
     [ "$op" = "-S" ] || DIE "unsupported option '$op'"
-    
+
+    local data_all="$(LANG=C yay ${op}i "$@")"
     for pkg in "$@" ; do
-        data="$(LANG=C yay ${op}i "$pkg")"
+        data="$(echo "$data_all" | grep -EA2 "^Name[ ]+:[ ]+$pkg$")"
         handle_formats "$format"
     done
 }
