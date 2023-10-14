@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Provide a simple 'sudo' for all users.
+
+Main() {
+    local who="" msg=""
+
+    if [ $EUID -eq 0 ] || [ "$(whoami)" = "root" ] ; then
+        msg="running as root"
+        who=root
+    elif [ -n "$(/usr/bin/groups | /usr/bin/grep -w wheel)" ] ; then
+        msg="running as a wheel group member"
+        who=wheel
+    else
+        msg="running as a non-privileged user"
+        who=other
+    fi
+
+    case "$1" in
+        --verbose-sudo)
+            shift
+            echo "==> $msg" >&2
+            ;;
+    esac
+
+    case "$who" in
+        root)
+            "$@"
+            exit $?
+            ;;
+        wheel)
+            /usr/bin/sudo "$@"
+            exit $?
+            ;;
+        other)
+            local app
+            for app in su-c_wrapper pkexec2 pkexec ; do
+	        if [ -x /usr/bin/$app ] ; then
+                    /usr/bin/$app "$@"
+                    exit $?
+	        fi
+            done
+            ;;
+    esac
+
+    exit 1
+}
+
+Main "$@"
