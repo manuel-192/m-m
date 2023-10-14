@@ -5,6 +5,11 @@
 echo2()   { echo   "$@" >&2 ; }
 printf2() { printf "$@" >&2 ; }
 
+Exit()    { Debug; exit "$@"; }
+Debug()   {           # useful for debugging
+    :
+}
+
 # bright colors
 RED=$'\e[0;91m'
 GREEN=$'\e[0;92m'
@@ -14,7 +19,7 @@ CYAN=$'\e[0;96m'
 RESET=$'\e[0m'       # back to normal
 
 CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$RESET"; }
-DIE()     { CMSG "$RED"     error   "$1"; exit 1 ; }
+DIE()     { CMSG "$RED"     error   "$1"; Exit 1 ; }
 WARN()    { CMSG "$BLUE"    warning "$1"; }
 INFO()    { CMSG "$MAGENTA" info    "$1"; }
 RESULT()  { echo "$1" | sed 's|^| |' >&2 ; }
@@ -103,7 +108,6 @@ ClearKeyrings() {
     Cmd pacman-key --populate archlinux endeavouros
     Cmd pacman -Syy --noconfirm archlinux-keyring endeavouros-keyring
     Cmd pacman -Su
-    exit 0
 }
 
 CheckNvidia() {
@@ -182,7 +186,7 @@ Pacdiff() {
     out=$(Cmd1a eos-pacdiff --indent=' ' --quiet)
     case $? in
         1) RESULT "error" ;;
-        2|3) ;;                      # eos-pacdiff writes the msg to stderr
+        2|3) RESULT "nothing to do." ;;
         *) RESULT "$out" ;;
     esac
 }
@@ -277,7 +281,6 @@ DumpOptions() {
     l="${l:1}"
     local s=$(echo "$sopts" | sed -E 's|(.)[:]*| -\1|g')
     echo "$l$s"
-    exit 0
 }
 
 Columnizer2() { column -t -s'|' -o'  ' >&2 ; }
@@ -299,12 +302,12 @@ Options() {
 
     while true ; do
         case "$1" in
-            -h | --help)             Usage ;;                            # no sudo needed
+            -h | --help)             Usage: exit 0 ;;                    # no sudo needed
             -a | --aur)              aur=yes ;;
-            --clear-keyrings)        ClearKeyrings ;;
+            --clear-keyrings)        ClearKeyrings; exit 0 ;;
             -c | --connection)       connection=yes ;;
             -d | --descriptions)     descriptions=yes ;;
-            --dump-options)          DumpOptions ;;                      # no sudo needed
+            --dump-options)          DumpOptions; exit 0 ;;              # no sudo needed
             -f | --foreign)          foreign=yes ;;
             --no-keyrings)           keyrings=no ;;
             --no-lock)               lock_check=no ;;
@@ -384,7 +387,6 @@ All options below will change the default behavior.
 
 EOF
     /bin/firefox $tmpdoc &
-    exit 0
 }
 
 OptionsBeforeSudo() {                      # if only help asked, then no sudo needed
@@ -405,9 +407,9 @@ Main() {
     local -r progname="${0##*/}"
     OptionsBeforeSudo "$@"
     if [ "$EUID" != "0" ] ; then
-        source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1  # get EOS_ROOTER
+        source /usr/share/endeavouros/scripts/eos-script-lib-yad || DIE "install 'eos-bash-shared'"  # gets EOS_ROOTER
         $EOS_ROOTER "/bin/$progname $*"
-        return
+        exit
     fi
     local updates_pacman=""
     local updates_aur=""
