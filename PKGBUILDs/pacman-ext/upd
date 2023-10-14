@@ -179,7 +179,7 @@ Pacdiff() {
         return
     fi
     local out
-    out=$(Cmd1a eos-pacdiff --indent=' ')
+    out=$(Cmd1a eos-pacdiff --indent=' ' --quiet)
     case $? in
         1) RESULT "error" ;;
         2|3) ;;                      # eos-pacdiff writes the msg to stderr
