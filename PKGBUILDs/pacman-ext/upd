@@ -3,7 +3,10 @@
 # System update with additional features.
 
 echo2()   { echo   "$@" >&2 ; }
-printf2() { printf "$@" >&2 ; }
+printf2() {
+    # shellcheck disable=SC2059
+    printf "$@" >&2
+}
 
 Exit()    { Debug; exit "$@"; }
 Debug()   {           # useful for debugging
@@ -15,14 +18,17 @@ RED=$'\e[0;91m'
 GREEN=$'\e[0;92m'
 BLUE=$'\e[0;94m'
 MAGENTA=$'\e[0;95m'
-CYAN=$'\e[0;96m'
+# CYAN=$'\e[0;96m'
 RESET=$'\e[0m'       # back to normal
 
 CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$RESET"; }
 DIE()     { CMSG "$RED"     error   "$1"; Exit 1 ; }
 WARN()    { CMSG "$BLUE"    warning "$1"; }
 INFO()    { CMSG "$MAGENTA" info    "$1"; }
-RESULT()  { echo "$1" | sed 's|^| |' >&2 ; }
+RESULT()  {
+    # shellcheck disable=SC2001
+    echo "$1" | sed 's|^| |' >&2   # bash parameter expansion is inadequate here?
+}
 
 EMPHASIZED_COLOR() {
     local lastopt=""
@@ -33,13 +39,11 @@ EMPHASIZED_COLOR() {
     echo2 -n "$@"
     echo2 $lastopt "${RESET}"
 }
-EMPHASIZED_COLOR_non-root() { EMPHASIZED_COLOR "$@" "(as non-root user):" ; }
 
-Cmd()   { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$@:" ;  "$@" || DIE "'$* failed.'" ; }
-Cmda()  { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$@:" ;  "$@" ; }
-Cmd1()  { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$1:" ;  "$@" || DIE "'$* failed.'" ; }
-Cmd1a() { [ $quiet = no ] && EMPHASIZED_COLOR "${RED}$1:" ;  "$@" ; }
-Cmd2()  { [ $quiet = no ] && EMPHASIZED_COLOR "COMMAND: ${RED}bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
+Cmd()   { [ "$quiet" = no ] && EMPHASIZED_COLOR "$@" ":" ;             "$@" || DIE "'$* failed.'" ; }
+Cmd1()  { [ "$quiet" = no ] && EMPHASIZED_COLOR "$1:" ;                "$@" || DIE "'$* failed.'" ; }
+Cmd2()  { [ "$quiet" = no ] && EMPHASIZED_COLOR "COMMAND: ${RED}bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
+Cmd3()  { [ "$quiet" = no ] && EMPHASIZED_COLOR --no-newline-at-end "$RED" "$@" ":" ;  "$@" ; }
 
 AsPlainUser() {
     local prompt=""
@@ -62,8 +66,10 @@ AsPlainUser() {
     esac
     if [ "$quiet" = "no" ] ; then
         if [ -n "$prompt" ] ; then
-            EMPHASIZED_COLOR $passopt "${RED}$prompt ($cmd):"
+            # shellcheck disable=SC2086
+            EMPHASIZED_COLOR $passopt "$prompt (${RED}$cmd):"
         else
+            # shellcheck disable=SC2086
             EMPHASIZED_COLOR $passopt "${RED}$cmd:"
         fi
     fi
@@ -82,7 +88,9 @@ Xadditions() {
     Cmd2 "$cmd"
 }
 
-PkgInUpdates() { printf "%s\n" $updates_pacman $updates_aur | grep "^$1$" >/dev/null ; }
+PkgInUpdates() {
+    # shellcheck disable=SC2086
+    printf "%s\n" $updates_pacman $updates_aur | grep "^$1$" >/dev/null ; }
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
@@ -96,7 +104,7 @@ UpdateKeyrings() {
     done
     if [ ${#updated[@]} -gt 0 ] ; then
         RESULT "keyring update"
-        Cmd pacman -S --noconfirm ${updated[*]}
+        Cmd pacman -S --noconfirm "${updated[@]}"
     else
         RESULT "OK"
     fi
@@ -133,12 +141,12 @@ CheckVirtualbox() {
     EMPHASIZED_COLOR --no-newline-at-end "Check virtualbox:"
     if PkgInUpdates virtualbox ; then
         # check virtualbox-ext-oracle version even if not updating AUR packages
-        local version_vb=$(expac -S %v virtualbox)
-        # local version_vbext=$(LANG=C $helper -Si virtualbox-ext-oracle | grep "^Version")
-        local version_vbext=$(expac-aur -S %v virtualbox-ext-oracle)
-        version_vbext=${version_vbext##* }
+        local version_vb version_vbext
+        version_vb=$(   expac     -S %v virtualbox)
+        version_vbext=$(expac-aur -S %v virtualbox-ext-oracle)
         if [ "${version_vb%-*}" != "${version_vbext%-*}" ] ; then
-            WARN "latest versions of virtualbox and virtualbox-ext-oracle do not match"
+            WARN "latest versions of virtualbox ($version_vb) and virtualbox-ext-oracle ($version_vbext) do not match"
+            return
         fi
     fi        
     RESULT "OK"
@@ -183,37 +191,43 @@ Pacdiff() {
         return
     fi
     local out
-    out=$(Cmd1a eos-pacdiff --indent=' ' --quiet)
+    out=$(Cmd3 eos-pacdiff --quiet)
     case $? in
         1) RESULT "error" ;;
         2|3) RESULT "nothing to do." ;;
-        *) RESULT "$out" ;;
+        *) echo2 ""; RESULT "$out" ;;
     esac
 }
 
 Foreign() {
     [ "$foreign" = "yes" ] || return
     local out
-    out=$(Cmda pacman -Qm)
+    out=$(Cmd3 pacman -Qm)
     case $? in
-        0) RESULT "$out" ;;
+        0) echo2 ""; RESULT "$out" ;;
         *) RESULT "no foreign packages" ;;
     esac
 }
 
 Descriptions() {
     [ "$descriptions" = "yes" ] || return
+    # shellcheck disable=SC2086
     [ "$updates_pacman" ] && Cmd1 hook-update-description --title="native updates" $updates_pacman
 }
 
 DescriptionsAUR() {
     [ "$descriptions" = "yes" ] || return
+    # shellcheck disable=SC2086
     [ "$updates_aur" ] && Cmd1 hook-update-description --title="AUR updates" $updates_aur
 }
 
 CheckConnection() {
     [ "$connection" = "yes" ] || return
-    AsPlainUser --prompt="Check internet connection" eos-connection-checker && RESULT "OK" || DIE "no connection."
+    if AsPlainUser --no-newline-at-end --prompt="Check internet connection" eos-connection-checker ; then
+        RESULT "OK"
+    else
+        DIE "no connection."
+    fi
 }
 
 GetAllUpdates() {
@@ -231,15 +245,16 @@ Sync() {
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] && [ -z "$updates_pacman" ] ; then
         return
     fi
-    EMPHASIZED_COLOR "Running sync."
-    sync
+    #EMPHASIZED_COLOR "Running sync."
+    Cmd3 sync
+    RESULT "OK"
 }
 
 Pacman-Su() {
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
         pacman -Su >/dev/null   # to give potential warnings!
     else
-        Cmd pacman -Su
+        Cmd3 pacman -Su
     fi
 }
 
@@ -247,18 +262,18 @@ AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
 
 Defaults() {
     defaults=(
-        aur          no
-        connection   no
-        descriptions no
-        foreign      no
-        keyrings     yes
-        lock-check   yes
-        nvidia       no
-        optimize_checks       no
-        pacdiff      no
-        quiet        no
-        sync         no
-        virtualbox   no
+        [aur]=no
+        [connection]=no
+        [descriptions]=no
+        [foreign]=no
+        [keyrings]=yes
+        [lock-check]=yes
+        [nvidia]=no
+        [optimize_checks]=no
+        [pacdiff]=no
+        [quiet]=no
+        [sync]=no
+        [virtualbox]=no
     )
     aur="${defaults[aur]}"
     connection="${defaults[connection]}"
@@ -275,11 +290,12 @@ Defaults() {
 }
 
 DumpOptions() {
-    local l=" ${lopts//,/ }"
+    local l s
+    l=" ${lopts//,/ }"
     l="${l//:/}"
     l="${l// / --}"
     l="${l:1}"
-    local s=$(echo "$sopts" | sed -E 's|(.)[:]*| -\1|g')
+    s=$(echo "$sopts" | sed -E 's|(.)[:]*| -\1|g')
     echo "$l$s"
 }
 
@@ -302,7 +318,7 @@ Options() {
 
     while true ; do
         case "$1" in
-            -h | --help)             Usage: exit 0 ;;                    # no sudo needed
+            -h | --help)             Usage; exit 0 ;;                    # no sudo needed
             -a | --aur)              aur=yes ;;
             --clear-keyrings)        ClearKeyrings; exit 0 ;;
             -c | --connection)       connection=yes ;;
@@ -391,24 +407,21 @@ EOF
 
 OptionsBeforeSudo() {                      # if only help asked, then no sudo needed
     local arg
-    local help=no
     for arg in "$@" ; do
         case "$arg" in
-            --help) help=yes ;;
+            --help)         Options --help ;;
             --dump-options) Options --dump-options ;;
-            --*) ;;
-            -*h*) help=yes ;;
+            --*)            ;;
+            -*h*)           Options --help ;;
         esac
     done
-    [ "$help" = "yes" ] && Options --help
 }
 
 Main() {
     local -r progname="${0##*/}"
     OptionsBeforeSudo "$@"
     if [ "$EUID" != "0" ] ; then
-        source /usr/share/endeavouros/scripts/eos-script-lib-yad || DIE "install 'eos-bash-shared'"  # gets EOS_ROOTER
-        $EOS_ROOTER "/bin/$progname $*"
+        sudo "/bin/$progname" "$@"
         exit
     fi
     local updates_pacman=""
@@ -429,7 +442,7 @@ Main() {
     CheckConnection
     CheckDbLock
     Xadditions begin "$begin"
-    Cmd pacman -Sy               # update package database
+    Cmd3 pacman -Sy               # update package database
     GetAllUpdates
     Descriptions
     DescriptionsAUR
