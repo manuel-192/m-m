@@ -89,15 +89,17 @@ Main() {
     fi
 
     local out=""
-    local -r data=$(expac-aur -S '%n|%v|%d' "${pkgnames[@]}")
+    local SEP=$'\e'
+    local -r data=$(expac-aur -S "%n${SEP}%v${SEP}%d" "${pkgnames[@]}")
 
     if [ "$header" = "yes" ] ; then
-        local -r hd="Name|Latest|Description"
+        local -r hd="Name${SEP}Latest${SEP}Description"
         local -r ul="${hd//[a-zA-Z ]/\~}"            # matching underline
-        out=$(printf '%s\n%s\n%s\n' "$hd" "$ul" "$data" | /bin/column -t -s'|')
+        out=$(printf '%s\n%s\n%s\n' "$hd" "$ul" "$data")
     else
-        out=$(printf "%s\n" "$data" | /bin/column -t -s'|')
+        out=$(printf "%s\n" "$data")
     fi
+    out=$(echo "$out" | /bin/column -t -s"${SEP}")
     local -r maxlen=$(echo "$out" | wc -L)
 
     BannerLine '='
