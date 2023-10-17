@@ -133,6 +133,8 @@ CheckNvidia() {
     RESULT "OK"
 }
 
+IsInstalled() { expac -Q %n "$1" >/dev/null ; }
+
 CheckVirtualbox() {
     [ "$virtualbox" = "yes" ] || return
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
@@ -144,9 +146,13 @@ CheckVirtualbox() {
         local version_vb version_vbext
         version_vb=$(   expac     -S %v virtualbox)
         version_vbext=$(expac-aur -S %v virtualbox-ext-oracle)
-        if [ "${version_vb%-*}" != "${version_vbext%-*}" ] ; then
+        if [ $(vercmp "${version_vb%-*}" "${version_vbext%-*}") -ne 0 ] ; then
             WARN "latest versions of virtualbox ($version_vb) and virtualbox-ext-oracle ($version_vbext) do not match"
             return
+        elif IsInstalled virtualbox-ext-oracle ; then
+            echo2 ""
+            Cmd pacman -R  --noconfirm virtualbox-ext-oracle
+            AUR_install+=(virtualbox-ext-oracle)
         fi
     fi        
     RESULT "OK"
@@ -173,13 +179,20 @@ CheckDbLock() {
     fi
 }
 
+SetHelper() {
+    for helper in "$@" yay paru ; do
+        [ -x /bin/"${helper%% *}" ] && return 0
+    done
+    DIE "AUR helper not found"
+}
+
 CheckAUR() {
     [ "$aur" = "yes" ] || return
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_aur" ] ; then
         return
     fi
     if [ -x /bin/$helper ] ; then
-        AsPlainUser --prompt="Check AUR updates" $helper -Sua || RESULT "no updates"
+        AsPlainUser --prompt="Check AUR updates" $helper -Sua "${AUR_install[@]}" || RESULT "no updates"
     else
         WARN "'$helper' not installed, cannot check AUR updates."
     fi
@@ -330,7 +343,7 @@ Options() {
             -n | --nvidia)           nvidia=yes ;;
             -o | --optimize-checks)  optimize_checks=yes ;;
             -p | --pacdiff)          pacdiff=yes ;;
-            --paru)                  helper=paru; aur=yes ;;
+            --paru)                  SetHelper paru; aur=yes ;;
             -q | --quiet)            quiet=yes ;;
             -s | --sync)             sync=yes ;;
             -v | --virtualbox)       virtualbox=yes ;;
@@ -426,13 +439,16 @@ Main() {
     fi
     local updates_pacman=""
     local updates_aur=""
+    local AUR_install=()
     local aur connection descriptions foreign keyrings lock_check nvidia optimize_checks
     local pacdiff quiet sync virtualbox
-    local helper=yay
+    local helper=""
     local begin=":" end=":" middle=":"   # make there arrays !
     declare -A defaults=()
     local PLAIN_USER="$SUDO_USER"
     [ "$SUDO_USER" ] || PLAIN_USER="$LOGNAME"
+
+    SetHelper yay
 
     Options "$@"
 
