@@ -2,7 +2,7 @@
 
 DIE() {
     echo "$progname: error: $1" >&2
-    exit 1
+    exit 0
 }
 
 BannerLine() {
