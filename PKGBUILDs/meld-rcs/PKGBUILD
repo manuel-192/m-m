@@ -6,7 +6,7 @@ pkgname=meld-rcs
 pkgdesc="Meld with RCS support and small UI changes"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=5
+pkgrel=6
 
 arch=('any')
 license=('GPL')
@@ -15,7 +15,7 @@ source=(
     $url/meld-rcs
     $url/meld-rcs-helper
 )
-sha512sums=('940003682df32bb9226c82b85ec998d78ee5fa6e35fff77a2b8cd35d9735344b9c166a94fbf573d4107f1e3536cbfa71bfa969520d01dfba64eb61ff5dc7225b'
+sha512sums=('a381413835c7e13ec7326fc1166b04fabcfbd789034fd889197a8bdfb982d402ebaab64f4cc885bd5c3d5db6c5eee2fbdd66e4f59c972ed6edc01b726b457763'
             '0784f6c82724cc3cfb73a898f243b95225ea5fd1bae6f8e9dfa0d1177533a6e2eed6a0f61ff30422f146ebeb355ebb472b23ab5ecbc2aa56837c7f4236022a68')
 
 package() {

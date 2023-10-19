@@ -36,7 +36,9 @@ ConcludeVCS() {
         "no no")    prefer=GIT; return ;;  # just comparing local files/folders? GIT is better!
         "yes yes")
             # solve possible conflict between RCS and GIT
-            [ -d RCS ] && { prefer=RCS; return; }    # direct RCS subdir
+            if [ -d RCS ] && [ "$1" ] ; then
+                prefer=RCS; return    # direct RCS subdir
+            fi
             case "$1" in
                 "")
                     prefer=GIT; return               # RCS needs a parameter!
