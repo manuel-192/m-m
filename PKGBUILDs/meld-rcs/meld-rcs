@@ -33,17 +33,17 @@ ConcludeVCS() {
     case "$has_git $has_rcs" in
         "yes no")   prefer=GIT; return ;;  # obvious
         "no yes")   prefer=RCS; return ;;  # obvious
-        "no no")    prefer=GIT; return ;;  # just comparing local files/folders? GIT is better!
+        "no no")    prefer=GIT_guess; return ;;  # just comparing local files/folders? GIT is better!
         "yes yes")
             # solve possible conflict between RCS and GIT
             case "$1" in
                 "")
-                    prefer=GIT; return    # RCS needs a parameter!
+                    prefer=GIT_guess; return               # RCS needs a parameter!
                     ;;
                 *)
                     for arg in "$@" ; do
-                        [ -d "$arg" ]       && { prefer=GIT; return; }    # RCS does not handle folders
-                        [ -r RCS/"$arg",v ] && { prefer=RCS; return; }    # RCS file found
+                        [ -d "$arg" ]       && { prefer=GIT_guess; return; }    # RCS does not handle folders
+                        [ -r RCS/"$arg",v ] && { prefer=RCS_guess; return; }    # RCS file found
                     done
                     # ask user
                     read -p "Both GIT and RCS detected. Prefer RCS (Y/n)? " >&2
@@ -73,13 +73,16 @@ meld() {
     esac
 
     case "$prefer" in
-         RCS)
-             meld-rcs-helper "$@" &
-             return
-             ;;
+        RCS | RCS_guess)
+            [ "$prefer" = "RCS_guess" ] && echo "==> RCS concluded." >&2
+            meld-rcs-helper "$@" &
+            return
+            ;;
     esac
 
     # We will do a GIT comparison.
+
+    [ "$prefer" = "GIT_guess" ] && echo "==> GIT concluded." >&2
 
     case "$1" in
         "")
