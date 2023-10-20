@@ -18,6 +18,9 @@ handle_formats() {
     local format="$1"
     local line=""
     while [ -n "$format" ] ; do
+
+        # Some formats have not been tested and may fail.
+
         case "$format" in
             %a*) Convert "Architecture" ;;
             %B*) Convert "Backup Files" ;;      # ???
@@ -34,6 +37,8 @@ handle_formats() {
             %H*) Convert "Conflicts With" ;;
             %h*) Convert "Sha256sum" ;;
             %i*) Convert "Install Script" ;;
+            %k*) Convert "Download Size" ;;
+            %l*) Convert "Install Date" ;;
             %L*) Convert "Licenses" ;;
             %m*) Convert "Installed Size" ;;
             %M*) Convert "Modified Backup Files" ;;
@@ -48,6 +53,7 @@ handle_formats() {
             %S*) Convert "Provides" ;;        # no version string ??
             %T*) Convert "Replaces" ;;
             %u*) Convert "URL" ;;
+            %V*) Convert "Validation Method" ;;
             %v*) Convert "Version" ;;
             %w*) Convert "Install Reason" ;;
             "%!"*) Convert "Result Number" ;;
@@ -59,38 +65,77 @@ handle_formats() {
     echo "$line"
 }
 
-Main()
-{
-    # Supports: -S "%n %d %v"
-
-    local progname=${0##*/}
-    local format=""
-    local op="-S"
-    local data=""
-
+Options() {
     while true ; do
         case "$1" in
-            -S)     op="$1" ;;    # accept only this now
-            "%"*)   format="$1" ;;
-            -*)     DIE "sorry, option '$1' not supported" ;;
-            *)      break ;;
+            --help|-h)
+                cat <<EOF
+Usage: $progname [options] <format> targets...
+Options:
+   -Q, --query    Search the local database for provided targets. This is the default behavior.
+   -S, --sync     Search the sync databases for provided targets.
+   -v, --verbose  Output more. ‘Package not found' errors will be shown, and empty field values will display as 'None'.
+   -h, --help     Display this help message and quit.
+
+$progname is similar to 'expac' with these exceptions:
+- It additionally supports AUR too.
+- It supports fewer options.
+- Not all planned features are functional just yet.
+EOF
+                exit
+                ;;
+            -Q|--query)              op="-Q" ;;
+            -S|--sync)               op="-S" ;;
+            --verbose|-v)            show_errors=yes ;;
+            "%"*)                    format="$1" ;;
+            -*)                      DIE "sorry, option '$1' not supported" ;;
+            *)                       break ;;
         esac
         shift
     done
     [ "$1" ]         || DIE "no targets"
     [ "$format" ]    || DIE "no format"
-    [ "$op" = "-S" ] || DIE "unsupported option '$op'"
+    targets=("$@")
+}
 
-    local data_all="$(LANG=C yay ${op}i "$@")"
-    for pkg in "$@" ; do
+Main()
+{
+    local progname=${0##*/}
+    local format=""
+    local op="-Q"
+    local data=""
+    local data_all=""
+    local show_errors=no
+    local errlog="/tmp/$progname.errlog"
+    local targets=()
+
+    rm -f "$errlog"
+
+    Options "$@"
+
+    data_all="$(LANG=C yay ${op}i "${targets[@]}" 2>/dev/null)"
+    for pkg in "${targets[@]}" ; do
         data=$(
             {
                 echo "$data_all" | grep -B1 "^Name[ ]*:[ ]*$pkg$" | head -n1
-                echo "$data_all" | sed  -n "/^Name[ ]*:[ ]*$pkg$/,/^$/p"
+                echo "$data_all" | sed  -n "/^Name[ ]*:[ ]*$pkg$/,/^$/{p;/^$/q}"
             }
             )
+        if [ "$show_errors" = "yes" ] && [ -z "$data" ] ; then
+            case "$op" in
+                -Q) echo "error: package '$pkg' is not installed" >> "$errlog" ;;
+                -S) echo "error: package '$pkg' does not exist"   >> "$errlog" ;;
+            esac
+            continue
+        fi
         handle_formats "$format"
     done
+    if [ "$show_errors" = "yes" ] && [ -r "$errlog" ] ; then
+        echo "==> Problems:" >&2
+        cat "$errlog" >&2
+        rm -f "$errlog"
+        echo "" >&2
+    fi
 }
 
 Main "$@"
