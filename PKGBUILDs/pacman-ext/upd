@@ -30,7 +30,6 @@ Main() {
 
     UpdateDatabase
     FindAllUpdates
-    ShowDescriptions
 
     UpdateKeyrings
     CheckNvidia
@@ -38,6 +37,7 @@ Main() {
     Xadditions middle "$middle"
 
     UpdatePackages               # repo and AUR
+    ShowDescriptions
     Foreign
     Pacdiff
     Xadditions end "$end"
