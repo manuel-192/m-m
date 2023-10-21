@@ -349,8 +349,7 @@ Pacdiff() {
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] && [ -z "$updates_aur" ] ; then
         return
     fi
-    local out
-    out=$(Cmd3 eos-pacdiff --quiet)
+    Cmd3 eos-pacdiff --quiet
     case $? in
         1) RESULT "error" ;;
         2|3) RESULT "nothing to do." ;;
