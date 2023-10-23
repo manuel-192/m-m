@@ -15,7 +15,7 @@ lines() {
         case "$1" in
             -h | --help)
                 cat <<EOF
-Usage: $progname [options] file
+Usage: $progname [options] [file]
 Options:
     -b, --begin <nr>    Display first <nr> lines.
     -e, --end   <nr>    Display last <nr> lines.
