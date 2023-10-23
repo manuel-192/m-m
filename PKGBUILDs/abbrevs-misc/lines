@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Combined head and tail implemented using sed.
+
+lines() {
+    local progname="${0##*/}"
+    local last_available=""
+    local first="" last=""
+    local begin="" end=""
+    local pager="" file="" deltmp=()
+    local opts
+    opts="$(/usr/bin/getopt -o="hb:e:f:l:" --longoptions "help,begin:,end:,first:,last:,less,pager:" --name "$progname" -- "$@")" || Exit 1
+    eval set -- "$opts"
+    while true ; do
+        case "$1" in
+            -h | --help)
+                cat <<EOF
+Usage: $progname [options] file
+Options:
+    -b, --begin <nr>    Display first <nr> lines.
+    -e, --end   <nr>    Display last <nr> lines.
+    -f, --first <nr>    Line number of the first line to display. Starts from 1.
+    -l, --last  <nr>    Line number of the last line to display. 1 .. <lines-in-file>.
+    --pager <pager>     Use the given pager to page the output.
+    --less              Use 'less' to page the output.
+    -h, --help          This help.
+
+If the first line number is not given, display starts from the first line.
+If the last line number is not given, display ends to the last line.
+
+Examples:
+    $progname -f10 -l30 file.txt
+    $progname -b20 file.txt
+    cat file.txt | $progname -l100 --pager "less -F"
+EOF
+                Exit 0
+                ;;
+            -b | --begin)   AssignNumber begin "$2"; shift ;;
+            -e | --end)     AssignNumber end   "$2"; shift ;;
+            -f | --first)   AssignNumber first "$2"; shift ;;
+            -l | --last)    AssignNumber last  "$2"; shift ;;
+            --pager)        pager="$2"; shift ;;
+            --less)         pager=less  ;;
+            --)             file="$2";  shift 2; break ;;
+        esac
+        shift
+    done
+    [ "$file" ]     || { file=$(mktemp); deltmp+=("$file"); cat > $file; }
+    [ "$file" ]     || DIE "no file"
+    [ -r "$file" ]  || DIE "file '$file' not readable"
+
+    if [ "$begin" ] && [ "$end" ] ; then
+        DIE "options -b and -e are mutually exclusive."
+    fi
+    [ "$begin" ] && { ShowLines 1 "$begin" "$file"; Exit 0; }
+    last_available=$(wc -l "$file" | awk '{print $1}'; )
+    [ "$end" ]   && { ShowLines "$((last_available - end + 1))" "$last_available" "$file"; Exit 0; }
+
+    LineNrCheck first 1
+    LineNrCheck last  $last_available
+    ShowLines $first $last "$file"
+    Exit 0
+}
+
+AssignNumber() {                                             # assign to variable but exit if value is not non-negative integer
+    local -n __var="$1"
+    [ "$2" ]           || DIE "value for '$1' must not be empty"
+    [ "${2//[0-9]/}" ] && DIE "unsupported value '$2'"
+    __var="$2"
+}
+
+LineNrCheck() {
+    local -n __var="$1"
+    local -r def="$2"
+    [ -z "$__var" ]                && __var=$def
+    [ $__var -lt 1 ]               && __var=1
+    [ $__var -gt $last_available ] && __var=$last_available
+}
+
+HasPager() { expac -Q %n ${pager%% *} >/dev/null ; }
+SetPager() {
+    local pg
+    for pg in less most bat more ; do
+        [ -x /bin/$pg ] && { pager=$pg; return; }
+    done
+    pager=""
+}
+ShowLines() {
+    case "$pager" in
+        "") sed -n "$1,$2"p "$3" ;;
+        *)
+            if HasPager "$pager" ; then
+                sed -n "$1,$2"p "$3" | $pager
+            else
+                local pg="$pager"
+                SetPager
+                echo2 "sorry, pager '$pg' is not available, using '$pager'."
+                ShowLines "$@"
+            fi
+            ;;
+    esac
+}
+echo2() { echo "$@" >&2 ; }
+Exit()  { [ ${#deltmp[@]} -gt 0 ] && rm -f "${deltmp[@]}"; exit $1 ; }
+DIE()   { echo2 "$progname: error: $1"; Exit 1; }
+
+lines "$@"
