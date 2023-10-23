@@ -270,7 +270,10 @@ ExtraChecks() {
         fi
         if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
             echo2 "==> eos-pacdiff"
-            eos-pacdiff --indent="    -> "
+            eos-pacdiff --quiet
+            case $? in
+                2|3) echo "    -> nothing to do." ;;
+            esac
         fi
     fi
 }
