@@ -7,7 +7,7 @@ DIE() {
 }
 
 _meld_do() {
-    setsid /usr/bin/meld "$@" &> /dev/null
+    /usr/bin/meld "$@" &> /dev/null &
 }
 
 ConcludeVCS() {
@@ -21,41 +21,35 @@ ConcludeVCS() {
                 break
             fi
             [ "$parents" = "/" ] && break
-            parents="$(dirname "$parents")"
+            parents="${parents%/*}"
         done
         [ -d RCS ] && has_rcs=yes
     }
     local has_git=no
     local has_rcs=no
     
-    GetAvailableVCS               # values for 'has_{git,rcs}'
+    GetAvailableVCS                # get values for 'has_{git,rcs}'
 
     case "$has_git $has_rcs" in
         "yes no")   prefer=GIT; return ;;  # obvious
         "no yes")   prefer=RCS; return ;;  # obvious
         "no no")    prefer=GIT; return ;;  # just comparing local files/folders? GIT is better!
         "yes yes")
-            # solve possible conflict between RCS and GIT
-            if [ -d RCS ] && [ "$1" ] ; then
-                prefer=RCS; return    # direct RCS subdir
-            fi
-            case "$1" in
-                "")
-                    prefer=GIT; return               # RCS needs a parameter!
-                    ;;
-                *)
-                    for arg in "$@" ; do
-                        [ -d "$arg" ]       && { prefer=GIT; return; }    # RCS does not handle folders
-                        [ -r RCS/"$arg",v ] && { prefer=RCS; return; }    # RCS file found
-                    done
-                    # ask user
-                    read -p "Both GIT and RCS detected. Prefer RCS (Y/n)? " >&2
-                    case "$REPLY" in
-                        [nN]*) prefer=GIT; return ;;
-                        *)     prefer=RCS; return ;;
-                    esac
-                    ;;
-            esac
+            prefer=GIT
+            local rcs_found=no
+            for arg in "$@" ; do
+                case "$arg" in
+                    -*) ;;
+                    *)
+                        [ -d "$arg" ] && return                           # RCS does not handle folders
+                        if [ -f "$arg" ] && [ -f RCS/"$arg",v ] ; then
+                            rcs_found=yes                                 # RCS file found
+                        fi
+                        ;;
+                esac
+            done
+            [ $rcs_found = yes ] && prefer=RCS
+            return
             ;;
     esac
     DIE "cannot conclude the preferred VCS"
@@ -81,34 +75,32 @@ meld() {
             meld-rcs-helper "$@" &
             return
             ;;
-    esac
-
-    # We will do a GIT comparison.
-
-    echo "==> GIT comparison." >&2
-
-    case "$1" in
-        "")
-            _meld_do .        # meld for the current folder in git tree
-            ;;
-        *)
-            if [ -n "$1" ] && [ -n "$2" ] && [ -z "$3" ] && [ -e "$1" ] && [ -e "$2" ] ; then
-                # Two args, files or folders.
-                # If one of them is a folder, meld needs help to use the file in the folder.
-                local f1="$1"
-                local f2="$2"
-                if [ -d "$f1" ] && [ ! -d "$f2" ] ; then
-                    f1="${f1%/}"                             # remove possible trailing slash
-                    f1="$f1/$(basename "$f2")"               # add file name after the folder name
-                elif [ -d "$f2" ] && [ ! -d "$f1" ] ; then
-                    f2="${f2%/}"
-                    f2="$f2/$(basename "$f1")"
-                fi
-                _meld_do "$f1" "$f2"
-            else
-                # Other cases
-                _meld_do "$@"
-            fi
+        GIT)
+            echo "==> GIT comparison." >&2
+            case "$1" in
+                "")
+                    _meld_do .        # meld for the current folder in git tree
+                    ;;
+                *)
+                    if [ -n "$1" ] && [ -n "$2" ] && [ -z "$3" ] && [ -e "$1" ] && [ -e "$2" ] ; then
+                        # Two args, files or folders.
+                        # If one of them is a folder, meld needs help to use the file in the folder.
+                        local f1="$1"
+                        local f2="$2"
+                        if [ -d "$f1" ] && [ ! -d "$f2" ] ; then
+                            f1="${f1%/}"                             # remove possible trailing slash
+                            f1="$f1/$(basename "$f2")"               # add file name after the folder name
+                        elif [ -d "$f2" ] && [ ! -d "$f1" ] ; then
+                            f2="${f2%/}"
+                            f2="$f2/$(basename "$f1")"
+                        fi
+                        _meld_do "$f1" "$f2"
+                    else
+                        # Other cases
+                        _meld_do "$@"
+                    fi
+                    ;;
+            esac
             ;;
     esac
 }
