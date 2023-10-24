@@ -4,7 +4,15 @@
 
 Main() {
     local -r progname="${0##*/}"
+    local carryon=no
+
+    uc-fast -a && { carryon=yes; uc-fast -a --save; }
+    uc-fast -e && { carryon=yes; uc-fast -e --save; }
+    yay -Qua >/dev/null && carryon=yes
+    [ $carryon = no ] && { echo "No updates."; return; }
+
     OptionsBeforeSudo "$@"
+
     if [ "$EUID" != "0" ] ; then
         sudo "/bin/$progname" "$@"
         exit
