@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Arch update check using only lastupdate files.
+# Note that this check can be done only once before real update
+# because the lastupdate file will be saved locally.
+# This assumes the lastupdate file is not abused by making it equal to lastsync.
+# Exit code is similar to 'checkupdates'.
+
+Main()
+{
+    local progname=${0##*/}
+    local os OS
+    local ml
+    local file
+    local verbose=no
+
+    [ "$1" ] || { Usage; exit 1; }
+
+    for arg in "$@" ; do
+        case "$arg" in
+            --verbose) verbose=yes; break ;;
+        esac
+    done
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -a | --arch)
+                os=Arch
+                ml=mirrorlist
+                file=lastupdate
+                Main2 -a
+                ;;
+            -e | --endeavouros)
+                os=EndeavourOS
+                ml=endeavouros-mirrorlist
+                file=state
+                Main2 -e
+                ;;
+            --verbose) ;;             # already handled above
+            *)
+                Usage
+                exit 0
+                ;;
+        esac
+        shift
+    done
+}
+
+Usage() {
+    cat <<EOF
+Usage: $progname [option] {operations}
+Options:
+    --verbose            More verbose output.
+Operations:
+    -a, --arch           Check Arch package updates.
+    -e, --endeavouros    Check EndeavourOS package updates.
+
+EOF
+}
+
+Main2() {   
+    local lastupdate_prev="$HOME/.uc-${os}-$file"
+    local lastupdate="${lastupdate_prev}.new"
+    local url=$(grep "^Server = " /etc/pacman.d/$ml | head -n1)
+
+    url=${url#*= }
+    case "$os" in
+        EndeavourOS) url=${url%\$repo/\$arch}$file ;;
+        Arch)        url=${url%\$repo/os/\$arch}$file ;;
+    esac
+
+    [ $verbose = yes ] && echo "Check using $url:"
+    curl --fail -Lsm 10 -o"$lastupdate" "$url" || return 1
+
+    local ret
+    if [ -f "$lastupdate_prev" ] ; then
+        if diff "$lastupdate" "$lastupdate_prev" >/dev/null ; then
+            [ $verbose = yes ] && echo "No ${os} updates." >&2
+            ret=2
+        else
+            [ $verbose = yes ] && echo "Updates (${os}) are available." >&2
+            ret=0
+        fi
+        rm -f "$lastupdate_prev"
+        mv "$lastupdate" "$lastupdate_prev"
+    else
+        mv "$lastupdate" "$lastupdate_prev"
+        local updates
+        updates=$(checkupdates)
+        ret=$?
+        echo "$updates" | sed "s/ /|/g" | column -t -s'|'
+    fi
+    return $ret
+}
+
+Main "$@"
