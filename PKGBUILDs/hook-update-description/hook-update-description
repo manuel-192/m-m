@@ -49,10 +49,11 @@ Usage() {
 Usage: $progname [options] [package-names]
 
 Options:
-    -h, --help       This help.
-    --title[=*]      Adds the given title to the banner line surrounding update descriptions.
-    --header[=*]     Specfies if a header is shown for the updates (yes or no).
-    --separator[=*]  Specified if the banner lines will be displayed or not (yes or no).
+    -h, --help         This help.
+    --title[=*]        Adds the given title to the banner line surrounding update descriptions.
+    --header[=*]       Specfies if a header is shown for the updates (yes or no).
+    --separator[=*]    Specified if the banner lines will be displayed or not (yes or no).
+    --include-version  Includes the latest package versions.
 
 Package names are optional, and can be used for avoiding to fetch the updates separately.
 
@@ -65,18 +66,20 @@ Main() {
     local header=yes
     local separator=yes
     local pkgnames=()
+    local has_version=no
 
     while [ "$1" ] ; do
         case "$1" in
-            -h | --help)   Usage; return 0 ;;
-            --title=*)     title="${1#*=}" ;;
-            --title)       title="$2" ; shift ;;
-            --header=*)    header="${1#*=}" ;;
-            --header)      header="$2" ; shift ;;
-            --separator=*) separator="${1#*=}" ;;
-            --separator)   separator="$2" ; shift ;;
-            -*)            DIE "unsupported option '$1'" ;;
-            *)             pkgnames+=("$1") ;;                        # packages as parameters
+            -h | --help)       Usage; return 0 ;;
+            --title=*)         title="${1#*=}" ;;
+            --title)           title="$2" ; shift ;;
+            --header=*)        header="${1#*=}" ;;
+            --header)          header="$2" ; shift ;;
+            --separator=*)     separator="${1#*=}" ;;
+            --separator)       separator="$2" ; shift ;;
+            --include-version) has_version=yes ;;
+            -*)                DIE "unsupported option '$1'" ;;
+            *)                 pkgnames+=("$1") ;;                        # packages as parameters
         esac
         shift
     done
@@ -84,17 +87,24 @@ Main() {
     CheckValueYesNo "$separator" "--separator"
 
     if [ ${#pkgnames} -eq 0 ] ; then
-        readarray -t pkgnames <<< $(AsPlainUserIfElevated yay -Quq)                         # assume 'pacman -Sy' was just executed
+        readarray -t pkgnames <<< $(AsPlainUserIfElevated yay -Quq)       # assumes 'pacman -Sy' was just executed
         [ ${#pkgnames} -eq 0 ] && return
     fi
 
     local out=""
     local SEP=$'\e'
-    local -r data=$(expac-aur -S "%n${SEP}%v${SEP}%d" "${pkgnames[@]}")
+
+    case "$has_version" in
+        no)  local -r data=$(expac -Q "%n${SEP}%d" "${pkgnames[@]}") ;;
+        yes) local -r data=$(expac-aur -S "%n${SEP}%v${SEP}%d" "${pkgnames[@]}") ;;
+    esac
 
     if [ "$header" = "yes" ] ; then
-        local -r hd="Name${SEP}Latest${SEP}Description"
-        local -r ul="${hd//[a-zA-Z ]/\~}"            # matching underline
+        case "$has_version" in
+            yes) local -r hd="Name${SEP}Latest${SEP}Description" ;;
+            no)  local -r hd="Name${SEP}Description" ;;
+        esac
+        local -r ul="${hd//[a-zA-Z ]/\~}"            # underline matching the header text
         out=$(printf '%s\n%s\n%s\n' "$hd" "$ul" "$data")
     else
         out=$(printf "%s\n" "$data")
