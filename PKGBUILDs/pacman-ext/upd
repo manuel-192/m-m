@@ -2,26 +2,47 @@
 
 # System update with additional features.
 
-Main() {
-    local -r progname="${0##*/}"
-    local carryon=no
+Breakpoint()   {           # useful for debugging
+    # echo "Breakpoint at line ${BASH_LINENO[0]}" >&2
+    Debug
+}
+Debug() { : ; }
 
-    uc-fast -a && { carryon=yes; uc-fast -a --save; }
-    uc-fast -e && { carryon=yes; uc-fast -e --save; }
-    yay -Qua >/dev/null && carryon=yes
-    [ $carryon = no ] && { echo "No updates."; return; }
+Main() {
+    Breakpoint
+    local -r progname="${0##*/}"
+    local native_arch=no
+    local native_eos=no
+    local foreign=no
+    local instant=no
+    local aur connection descriptions foreign keyrings lock_check nvidia optimize_checks
+    local pacdiff quiet sync virtualbox
+
+    local LOPTS="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,instant,foreign,help,middle:"
+    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
+    local SOPTS="acdfhinopqsv"
+
+    Defaults
 
     OptionsBeforeSudo "$@"
 
+    if [ $instant = yes ] ; then
+        uc-fast -a && { native_arch=yes; uc-fast -a --save; echo2 "==> Arch updates available."; }
+        uc-fast -e && { native_eos=yes; uc-fast -e --save; echo2 "==> EndeavourOS updates available."; }
+        if false && [ $aur = yes ] && yay -Qua >/dev/null ; then
+            foreign=yes
+            echo2 "==> AUR updates available."
+        fi
+        [ "$native_arch$native_eos$foreign" = "nonono" ] && { echo "No updates."; Exit 0; }
+    fi
+
     if [ "$EUID" != "0" ] ; then
         sudo "/bin/$progname" "$@"
-        exit
+        Exit $?
     fi
     local updates_pacman=""
     local updates_aur=""
     local AUR_install=()
-    local aur connection descriptions foreign keyrings lock_check nvidia optimize_checks
-    local pacdiff quiet sync virtualbox
     local helper=""
     local begin=":" end=":" middle=":"   # make there arrays !
 
@@ -75,8 +96,6 @@ By default, the only additional features over *pacman/AUR helper* are:
 All options below will change the default behavior.
 
 <pre>
-    Option                 Description
-    ~~~~~~                 ~~~~~~~~~~~
     -a, --aur              Updates AUR packages too.
         --clear-keyrings   If update fails with keyring issues, try this option.
     -c, --connection       Checks internet connection first.
@@ -85,6 +104,7 @@ All options below will change the default behavior.
     -h, --help             This help.
         --no-keyrings      Does not update keyrings before other packages.
         --no-lock          Does not check pacman database lock.
+    -i, --instant          Fast and simple check for updates.
     -n, --nvidia           Checks validity of nvidia & linux updates.
     -o, --optimize-checks  Reduce redundancy in checks.
     -p, --pacdiff          Runs 'pacdiff & meld' in the end.
@@ -96,44 +116,45 @@ All options below will change the default behavior.
 
 ## Advanced options
 <pre>
-    Option                 Description
-    ~~~~~~                 ~~~~~~~~~~~
     --begin                Adds a user-given command before 'pacman -Sy'.
     --middle               Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
     --end                  Adds a user-given command after 'pacman -Su'.
 </pre>
 
-## Example
+## Examples
 
 <pre>
     upd -acdp --end "pwd && echo 'All done' "
+    upd -docsa -i
 </pre>
 
 EOF
+#                           Note that this may <i>postpone</i> the detection of updates for
+#                           previously downgraded packages.
     /bin/firefox $tmpdoc &
 }
 
-Options() {
-    Defaults
-
-    local lopts="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,foreign,help,middle:,no-keyrings"
-    lopts+=",no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
-    local sopts="acdfhnopqsv"
-    local opts
-    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
-        Options -h
-        return 1
+GetOptions() {
+    opts="$(/usr/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || {
+        Usage
+        Exit 1
     }
+}
+
+Options() {
+    local opts
+    GetOptions "$@"
     eval set -- "$opts"
 
     while true ; do
         case "$1" in
-            -h | --help)             Usage; exit 0 ;;                    # no sudo needed
-            -a | --aur)              Assign aur yes ;;
-            --clear-keyrings)        ClearKeyrings; exit 0 ;;
+            -h | --help)             Usage; Exit 0 ;;                    # no sudo needed
+            -a | --aur)              Assign aur yes ;;                   # see also: OptionsBeforeSudo
+            --clear-keyrings)        ClearKeyrings; Exit 0 ;;
             -c | --connection)       Assign connection yes ;;
             -d | --descriptions)     Assign descriptions yes ;;
-            --dump-options)          DumpOptions; exit 0 ;;              # no sudo needed
+            --dump-options)          DumpOptions; Exit 0 ;;              # no sudo needed
+            -i | --instant)          Assign instant yes ;;               # see also: OptionsBeforeSudo
             -f | --foreign)          Assign foreign yes ;;
             --no-keyrings)           Assign keyrings no ;;
             --no-lock)               Assign lock_check no ;;
@@ -154,15 +175,19 @@ Options() {
     done
 }
 
-OptionsBeforeSudo() {                      # if only help asked, then no sudo needed
-    local arg
-    for arg in "$@" ; do
-        case "$arg" in
-            --help)         Options --help ;;
-            --dump-options) Options --dump-options ;;
-            --*)            ;;
-            -*h*)           Options --help ;;
+OptionsBeforeSudo() {   # handle a subset of options before possible sudo
+    local opts
+    GetOptions "$@"
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --)                                                return ;;      # nothing more to do
+            -a|--aur | --help | --dump-options | -i|--instant) Options $1 ;;  # handle these options here
+            --*)                                               ;;             # these will be handle elsewhere
+            -*h*)                                              Options -h ;;  # handle -h here too
         esac
+        shift
     done
 }
 
@@ -171,11 +196,7 @@ printf2() {
     # shellcheck disable=SC2059
     printf "$@" >&2
 }
-
-Exit()    { Debug; exit "$@"; }
-Debug()   {           # useful for debugging
-    :
-}
+Exit()    { Breakpoint; exit "$@"; }
 
 # bright colors
 RED=$'\e[0;91m'
@@ -451,11 +472,11 @@ AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
 
 DumpOptions() {
     local l s
-    l=" ${lopts//,/ }"
+    l=" ${LOPTS//,/ }"
     l="${l//:/}"
     l="${l// / --}"
     l="${l:1}"
-    s=$(echo "$sopts" | sed -E 's|(.)[:]*| -\1|g')
+    s=$(echo "$SOPTS" | sed -E 's|(.)[:]*| -\1|g')
     echo "$l$s"
 }
 
