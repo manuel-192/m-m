@@ -8,33 +8,73 @@ Breakpoint()   {           # useful for debugging
 }
 Debug() { : ; }
 
+FastUpdateCheck() {
+    if [ $instant = yes ] ; then
+        local native_arch=no
+        local native_eos=no
+        local foreign_aur=no
+
+        uc-fast -a && { native_arch=yes
+                        uc-fast -a --save
+                        echo2 "==> Arch updates available."
+        }
+        uc-fast -e && { native_eos=yes
+                        uc-fast -e --save
+                        echo2 "==> EndeavourOS updates available."
+        }
+        if [ $aur = yes ] && yay -Qua >/dev/null ; then
+            foreign_aur=yes
+            echo2 "==> AUR updates available."
+        fi
+        [ "$native_arch$native_eos$foreign_aur" = "nonono" ] && { echo2 "No updates."; Exit 0; }
+    fi
+}
+FastUpdateSave() {
+    if [ $instant = yes ] ; then
+        AsPlainUser --prompt="Saving Arch update state"        -- uc-fast -a --save
+        AsPlainUser --prompt="Saving EndeavourOS update state" -- uc-fast -e --save
+    fi
+}
+
 Main() {
     Breakpoint
+
+    # Program wide variable definitions.
+
     local -r progname="${0##*/}"
-    local native_arch=no
-    local native_eos=no
-    local foreign=no
-    local instant=no
-    local aur connection descriptions foreign keyrings lock_check nvidia optimize_checks
-    local pacdiff quiet sync virtualbox
 
-    local LOPTS="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,instant,foreign,help,middle:"
-    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
+    local -r RED=$'\e[0;91m'         # starts this foreground text color
+    local -r GREEN=$'\e[0;92m'
+    local -r BLUE=$'\e[0;94m'
+    local -r MAGENTA=$'\e[0;95m'
+    local -r RESET=$'\e[0m'          # back to normal colors
+
+    local -r DEFAULT_aur=no
+    local -r DEFAULT_connection=no
+    local -r DEFAULT_descriptions=no
+    local -r DEFAULT_foreign=no
+    local -r DEFAULT_instant=no
+    local -r DEFAULT_keyrings=yes
+    local -r DEFAULT_lock_check=yes
+    local -r DEFAULT_nvidia=no
+    local -r DEFAULT_optimize_checks=no
+    local -r DEFAULT_pacdiff=no
+    local -r DEFAULT_quiet=no
+    local -r DEFAULT_sync=no
+    local -r DEFAULT_virtualbox=no
+
+    local aur=$DEFAULT_aur connection=$DEFAULT_connection descriptions=$DEFAULT_descriptions foreign=$DEFAULT_foreign
+    local keyrings=$DEFAULT_keyrings lock_check=$DEFAULT_lock_check nvidia=$DEFAULT_nvidia
+    local optimize_checks=$DEFAULT_optimize_checks instant=$DEFAULT_instant
+    local pacdiff=$DEFAULT_pacdiff quiet=$DEFAULT_quiet sync=$DEFAULT_sync virtualbox=$DEFAULT_virtualbox
+
     local SOPTS="acdfhinopqsv"
-
-    Defaults
+    local LOPTS="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
+          LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
 
     OptionsBeforeSudo "$@"
 
-    if [ $instant = yes ] ; then
-        uc-fast -a && { native_arch=yes; uc-fast -a --save; echo2 "==> Arch updates available."; }
-        uc-fast -e && { native_eos=yes; uc-fast -e --save; echo2 "==> EndeavourOS updates available."; }
-        if false && [ $aur = yes ] && yay -Qua >/dev/null ; then
-            foreign=yes
-            echo2 "==> AUR updates available."
-        fi
-        [ "$native_arch$native_eos$foreign" = "nonono" ] && { echo "No updates."; Exit 0; }
-    fi
+    FastUpdateCheck
 
     if [ "$EUID" != "0" ] ; then
         sudo "/bin/$progname" "$@"
@@ -70,6 +110,7 @@ Main() {
     Foreign
     Pacdiff
     Xadditions end "$end"
+    # FastUpdateSave
     Sync
 }
 
@@ -105,6 +146,7 @@ All options below will change the default behavior.
         --no-keyrings      Does not update keyrings before other packages.
         --no-lock          Does not check pacman database lock.
     -i, --instant          Fast and simple check for updates.
+        --instant-no-aur   Same as --instant but AUR will not be checked.
     -n, --nvidia           Checks validity of nvidia & linux updates.
     -o, --optimize-checks  Reduce redundancy in checks.
     -p, --pacdiff          Runs 'pacdiff & meld' in the end.
@@ -134,62 +176,65 @@ EOF
     /bin/firefox $tmpdoc &
 }
 
-GetOptions() {
-    opts="$(/usr/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || {
-        Usage
-        Exit 1
-    }
-}
-
 Options() {
+    GetOptions() {
+        opts="$(/usr/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || {
+            Usage
+            Exit 1
+        }
+    }
     local opts
     GetOptions "$@"
     eval set -- "$opts"
 
-    while true ; do
-        case "$1" in
-            -h | --help)             Usage; Exit 0 ;;                    # no sudo needed
-            -a | --aur)              Assign aur yes ;;                   # see also: OptionsBeforeSudo
-            --clear-keyrings)        ClearKeyrings; Exit 0 ;;
-            -c | --connection)       Assign connection yes ;;
-            -d | --descriptions)     Assign descriptions yes ;;
-            --dump-options)          DumpOptions; Exit 0 ;;              # no sudo needed
-            -i | --instant)          Assign instant yes ;;               # see also: OptionsBeforeSudo
-            -f | --foreign)          Assign foreign yes ;;
-            --no-keyrings)           Assign keyrings no ;;
-            --no-lock)               Assign lock_check no ;;
-            -n | --nvidia)           Assign nvidia yes ;;
-            -o | --optimize-checks)  Assign optimize_checks yes ;;
-            -p | --pacdiff)          Assign pacdiff yes ;;
-            --paru)                  SetHelper paru; Assign aur yes ;;
-            -q | --quiet)            Assign quiet yes ;;
-            -s | --sync)             Assign sync yes ;;
-            -v | --virtualbox)       Assign virtualbox yes ;;
-            --begin)                 AppendCmd begin  "$2" ; shift ;;
-            --middle)                AppendCmd middle "$2" ; shift ;;
-            --end)                   AppendCmd end    "$2" ; shift ;;
-            --)                      shift; break ;;
-            -*)                      DIE "unsupported option '$1'" ;;
-        esac
-        shift
-    done
+    case "${FUNCNAME[1]}" in            # check the caller
+        OptionsBeforeSudo)              # handle a subset of given options before possible sudo
+            while true ; do
+                case "$1" in
+                    --) break ;;
+                    -a|--aur | --help | --dump-options | -i|--instant|--instant-no-aur)
+                        Options $1       # handle these options here
+                        ;;
+                    --*) ;;              # these will be handle elsewhere
+                    -*h*) Options -h ;;  # handle -h here too
+                esac
+                shift
+            done
+            ;;
+        *)
+            while true ; do
+                case "$1" in
+                    -h | --help)             Usage; Exit 0 ;;
+                    -a | --aur)              Assign aur yes ;;
+                    --clear-keyrings)        ClearKeyrings; Exit 0 ;;
+                    -c | --connection)       Assign connection yes ;;
+                    -d | --descriptions)     Assign descriptions yes ;;
+                    --dump-options)          DumpOptions; Exit 0 ;;
+                    -i | --instant)          Assign instant yes ;;
+                    --instant-no-aur)        Assign instant yes; Assign aur no ;;
+                    -f | --foreign)          Assign foreign yes ;;
+                    --no-keyrings)           Assign keyrings no ;;
+                    --no-lock)               Assign lock_check no ;;
+                    -n | --nvidia)           Assign nvidia yes ;;
+                    -o | --optimize-checks)  Assign optimize_checks yes ;;
+                    -p | --pacdiff)          Assign pacdiff yes ;;
+                    --paru)                  SetHelper paru; Assign aur yes ;;
+                    -q | --quiet)            Assign quiet yes ;;
+                    -s | --sync)             Assign sync yes ;;
+                    -v | --virtualbox)       Assign virtualbox yes ;;
+                    --begin)                 AppendCmd begin  "$2" ; shift ;;
+                    --middle)                AppendCmd middle "$2" ; shift ;;
+                    --end)                   AppendCmd end    "$2" ; shift ;;
+                    --)                      shift; break ;;
+                    -*)                      DIE "unsupported option '$1'" ;;
+                esac
+                shift
+            done
+            ;;
+    esac
 }
 
-OptionsBeforeSudo() {   # handle a subset of options before possible sudo
-    local opts
-    GetOptions "$@"
-    eval set -- "$opts"
-
-    while true ; do
-        case "$1" in
-            --)                                                return ;;      # nothing more to do
-            -a|--aur | --help | --dump-options | -i|--instant) Options $1 ;;  # handle these options here
-            --*)                                               ;;             # these will be handle elsewhere
-            -*h*)                                              Options -h ;;  # handle -h here too
-        esac
-        shift
-    done
-}
+OptionsBeforeSudo() { Options "$@" ; }
 
 echo2()   { echo   "$@" >&2 ; }
 printf2() {
@@ -198,21 +243,13 @@ printf2() {
 }
 Exit()    { Breakpoint; exit "$@"; }
 
-# bright colors
-RED=$'\e[0;91m'
-GREEN=$'\e[0;92m'
-BLUE=$'\e[0;94m'
-MAGENTA=$'\e[0;95m'
-# CYAN=$'\e[0;96m'
-RESET=$'\e[0m'       # back to normal
-
 CMSG()    { echo2 -n "$1"; printf2 "$progname: %s: %s\n\n" "$2" "$3" ; echo2 "$RESET"; }
 DIE()     { CMSG "$RED"     error   "$1"; Exit 1 ; }
 WARN()    { CMSG "$BLUE"    warning "$1"; }
 INFO()    { CMSG "$MAGENTA" info    "$1"; }
 RESULT()  {
     # shellcheck disable=SC2001
-    echo "$1" | sed 's|^| |' >&2   # bash parameter expansion is inadequate here?
+    echo "$1" | sed 's|^| |' >&2   # bash parameter expansion is inadequate for multiple lines
 }
 
 EMPHASIZED_COLOR() {
@@ -241,6 +278,7 @@ AsPlainUser() {
             --prompt) prompt="$2" ; shift ;;
             --prompt=*) prompt="${1#*=}" ;;
             --no-newline-at-end) passopt+=" $1" ;;
+            --) shift; break ;;
             -*) DIE "${FUNCNAME[0]}: unsupported option '$1'" ;;
             *) break ;;
         esac
@@ -484,21 +522,6 @@ Assign() {
     local -n _var="$1"
     local val="$2"
     _var="$val"
-}
-
-Defaults() {
-    Assign aur              no
-    Assign connection       no
-    Assign descriptions     no
-    Assign foreign          no
-    Assign keyrings         yes
-    Assign lock_check       yes
-    Assign nvidia           no
-    Assign optimize_checks  no
-    Assign pacdiff          no
-    Assign quiet            no
-    Assign sync             no
-    Assign virtualbox       no
 }
 
 Main "$@"

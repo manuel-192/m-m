@@ -9,7 +9,7 @@
 Main()
 {
     local progname=${0##*/}
-    local os OS
+    local os
     local ml
     local file
     local verbose=no
@@ -44,7 +44,7 @@ Main()
             --verbose) ;;             # already handled above
             *)
                 Usage
-                exit 0
+                exit 1
                 ;;
         esac
         shift
@@ -64,17 +64,28 @@ Operations:
 EOF
 }
 
-Main2() {   
-    local lastupdate_prev="$HOME/.uc-${os}-$file"
+Main2() {
+    declare -A renamedos=(
+        [EndeavourOS]=x
+        [Arch]=y
+    )
+    declare -A renamedfile=(
+        [state]=X
+        [lastupdate]=X
+    )
+    local lastupdate_prev="/tmp/.uc-${renamedos[$os]}-${renamedfile[$file]}"
     local lastupdate="${lastupdate_prev}.new"
 
     if [ $save = yes ] ; then
-        rm -f "$lastupdate_prev"
-        mv "$lastupdate" "$lastupdate_prev"
+        if [ -f "$lastupdate" ]  ; then
+            rm -f "$lastupdate_prev"            || DIE "save: removing old db failed."
+            mv "$lastupdate" "$lastupdate_prev" || DIE "save: saving new db failed."
+        fi
         return 2
     fi
 
-    local url=$(grep "^Server = " /etc/pacman.d/$ml | head -n1)
+    local url
+    url=$(grep "^Server = " /etc/pacman.d/$ml | head -n1)
     url=${url#*= }
     case "$os" in
         EndeavourOS) url=${url%\$repo/\$arch}$file ;;
@@ -82,39 +93,59 @@ Main2() {
     esac
 
     [ $verbose = yes ] && echo "Check using $url:"
-    curl --fail -Lsm 10 -o"$lastupdate" "$url" || return 1
+    curl --fail -Lsm 10 -o- "$url" | head -n1 > "$lastupdate" || return 1
 
-    local ret
+    local updates ret=2
+
     if [ -f "$lastupdate_prev" ] ; then
         if diff "$lastupdate" "$lastupdate_prev" >/dev/null ; then
             [ $verbose = yes ] && echo "No ${os} updates." >&2
-            ret=2
         else
-            [ $verbose = yes ] && echo "Updates (${os}) are available." >&2
-            ret=0
-            if [ $save = yes ] ; then
-                rm -f "$lastupdate_prev"
-                mv "$lastupdate" "$lastupdate_prev"
+            # Make sure we really have native updates!
+            # Note that now we do not separate Arch and EndeavourOS packages...
+            updates=$(checkupdates)
+            ret=$?
+
+            if [ $verbose = yes ] && [ $ret -eq 0 ] ; then
+                echo "Native updates are available." >&2
+            fi
+            if [ $save = yes ] || [ $ret -ne 0 ] ; then
+                rm -f "$lastupdate_prev"            || DIE "removing old db failed."
+                mv "$lastupdate" "$lastupdate_prev" || DIE "saving new db failed."
             fi
         fi
     else
-        mv "$lastupdate" "$lastupdate_prev"
-        local updates ret
-        updates=$(checkupdates | awk '{print $1}')
+        mv "$lastupdate" "$lastupdate_prev" || DIE "saving first new db failed."
+        updates=$(checkupdates)
         ret=$?
-        case "$ret" in
-            0)
-                local eos=$(pacman -Slq endeavouros)
-                eos=$(echo $eos | sed 's/ /$|^/g')
-                eos="^$eos$"
-                case "$os" in
-                    Arch)        [ $verbose = yes ] && echo "$updates" | grep -Pv "$eos" ;;
-                    EndeavourOS) [ $verbose = yes ] && echo "$updates" | grep -P  "$eos" ;;
-                esac
-                ;;
-        esac
+
+        if [ $verbose = yes ] && [ $ret -eq 0 ] ; then
+            echo "Native updates are available." >&2
+        fi
+
+        if false ; then
+            case "$ret" in
+                0)
+                    updates=$(echo "$updates" | awk '{print $1}')
+                    local eos
+                    eos=$(pacman -Slq endeavouros)
+                    eos=$(echo $eos | sed 's/ /$|^/g')
+                    eos="^$eos$"
+                    case "$os" in
+                        Arch)        [ $verbose = yes ] && echo "$updates" | grep -Pv "$eos" ;;
+                        EndeavourOS) [ $verbose = yes ] && echo "$updates" | grep -P  "$eos" ;;
+                    esac
+                    ;;
+            esac
+        fi
     fi
+    rm -f "$lastupdate" || DIE "removing temporary db failed."
     return $ret
+}
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
 }
 
 Main "$@"
