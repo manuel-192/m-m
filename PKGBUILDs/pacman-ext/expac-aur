@@ -7,12 +7,39 @@ DIE() {
     exit 1
 }
 
-GetField() { echo "$data" | grep "^$1[ ]*:" | sed -E "s|^$1[ ]*: (.*)|\1|" ; }
-
-Convert() {
-    line+=$(GetField "$1")
+GetSimpleField() {
+    line+="$(echo "$data" | grep "^$1[ ]*:" | sed -E "s|^$1[ ]*: (.*)|\1|")"
     format=${format:2}
 }
+
+GetListField() {
+    out="$(echo "$data" | sed -n "/$1/,/^[A-Z]/p" | head -n -1 | sed -e "s|^$1[ ]*:||" | sed 's|^[ ]*||')"
+    format=${format:2}
+}
+
+OptionalDeps() {
+    local out=""
+    GetListField "Optional Deps"
+    case "$1" in
+        full) ;;
+        *)    out=$(echo "$out" | sed 's|:[^:]*$||') ;;  # remove descriptions
+    esac
+    line+="$(echo $out)"
+}
+
+SkipVersionStrings() {
+    local out=""
+    GetListField "$2"
+    case "$1" in
+        full) ;;
+        *)    out=$(echo "$out" | sed 's|[>=<][^ ]*||') ;;  # remove version strings
+    esac
+    line+="$(echo $out)"
+}
+
+DependsOn()     { SkipVersionStrings "$1" "Depends On" ; }
+ConflictsWith() { SkipVersionStrings "$1" "Conflicts With" ; }
+Filename()      { line+="${pkg}-$(handle_formats %v-%a)".pkg.tar.zst ; }
 
 handle_formats() {
     local format="$1"
@@ -22,47 +49,47 @@ handle_formats() {
         # Some formats have not been tested and may fail.
 
         case "$format" in
-            %a*) Convert "Architecture" ;;
-            %B*) Convert "Backup Files" ;;      # ???
-            %b*) Convert "Build Date" ;;
-            %C*) Convert "Conflicts With" ;;   # TODO: no version strings !!
-            %D*) Convert "Depends On" ;;
-            %d*) Convert "Description" ;;
-            %E*) Convert "Depends On" ;;       # TODO: no version strings !!
-            %e*) Convert "Package Base" ;;
-            %f*) Convert "Filename" ;;
-            %F*) Convert "Files" ;;
-            %g*) Convert "PGP Signature" ;;
-            %G*) Convert "Groups" ;;
-            %H*) Convert "Conflicts With" ;;
-            %h*) Convert "Sha256sum" ;;
-            %i*) Convert "Install Script" ;;
-            %k*) Convert "Download Size" ;;
-            %l*) Convert "Install Date" ;;
-            %L*) Convert "Licenses" ;;
-            %m*) Convert "Installed Size" ;;
-            %M*) Convert "Modified Backup Files" ;;
-            %N*) Convert "Required By" ;;
-            %O*) Convert "Optional Deps" ;;
-            %o*) Convert "Optional Deps" ;;   # no descriptions ???
-            %p*) Convert "Packager" ;;
-            %P*) Convert "Provides" ;;
-            %R*) Convert "Replaces" ;;
-            %r*) Convert "Repository" ;;
-            %s*) Convert "Md5sum" ;;
-            %S*) Convert "Provides" ;;        # no version string ??
-            %T*) Convert "Replaces" ;;
-            %u*) Convert "URL" ;;
-            %V*) Convert "Validation Method" ;;
-            %v*) Convert "Version" ;;
-            %w*) Convert "Install Reason" ;;
-            "%!"*) Convert "Result Number" ;;
+            %a*) GetSimpleField "Architecture" ;;      # works
+            %B*) GetSimpleField "Backup Files" ;;      # unknown
+            %b*) GetSimpleField "Build Date" ;;        # works
+            %C*) ConflictsWith ;;                      # works
+            %D*) DependsOn full ;;                     # works
+            %d*) GetSimpleField "Description" ;;       # works
+            %E*) DependsOn ;;                          # works
+            %e*) GetSimpleField "Package Base" ;;      # only natives?
+            %f*) Filename ;;                           # 
+            %F*) GetSimpleField "Files" ;;
+            %g*) GetSimpleField "PGP Signature" ;;
+            %G*) GetSimpleField "Groups" ;;
+            %H*) ConflictsWith full ;;                 # works
+            %h*) GetSimpleField "Sha256sum" ;;
+            %i*) GetSimpleField "Install Script" ;;
+            %k*) GetSimpleField "Download Size" ;;
+            %l*) GetSimpleField "Install Date" ;;
+            %L*) GetSimpleField "Licenses" ;;
+            %m*) GetSimpleField "Installed Size" ;;
+            %M*) GetSimpleField "Modified Backup Files" ;;
+            %N*) GetSimpleField "Required By" ;;
+            %O*) OptionalDeps full ;;
+            %o*) OptionalDeps ;;
+            %p*) GetSimpleField "Packager" ;;
+            %P*) GetSimpleField "Provides" ;;
+            %R*) GetSimpleField "Replaces" ;;
+            %r*) GetSimpleField "Repository" ;;
+            %s*) GetSimpleField "Md5sum" ;;
+            %S*) GetSimpleField "Provides" ;;        # no version string ??
+            %T*) GetSimpleField "Replaces" ;;
+            %u*) GetSimpleField "URL" ;;
+            %V*) GetSimpleField "Validation Method" ;;
+            %v*) GetSimpleField "Version" ;;
+            %w*) GetSimpleField "Install Reason" ;;
+            "%!"*) GetSimpleField "Result Number" ;;
             %n*) line+="$pkg";          format=${format:2} ;;
             %%*) line+="%";             format=${format:2} ;;
             *)   line+="${format%%%*}"; format="%${format#*%}" ;;
         esac
     done
-    echo "$line"
+    [ "$line" ] && echo "$line"
 }
 
 Options() {
@@ -95,7 +122,22 @@ EOF
     done
     [ "$1" ]         || DIE "no targets"
     [ "$format" ]    || DIE "no format"
-    targets=("$@")
+
+    local repo
+    for pkg in "$@" ; do
+        repo=$(expac -Q "%r" "$pkg")
+        case "$repo" in
+            "")
+                targets_notinstalled+=("$pkg")
+                ;;
+            local)
+                targets_installed+=("$pkg")
+                info_found=yes
+                repo=$(expac -S "%r" "$pkg")
+                [ -z "$repo" ] && repo=aur
+                ;;
+        esac
+    done
 }
 
 Main()
@@ -106,36 +148,48 @@ Main()
     local data=""
     local data_all=""
     local show_errors=no
-    local errlog="/tmp/$progname.errlog"
-    local targets=()
+    # local errlog="/tmp/$progname.errlog"
+    local errors=()
+    local targets_installed=() targets_notinstalled=()
+    local pkg
+    local info_found=no
 
-    rm -f "$errlog"
+    # rm -f "$errlog"
 
     Options "$@"
 
-    data_all="$(LANG=C yay ${op}i "${targets[@]}" 2>/dev/null)"
-    for pkg in "${targets[@]}" ; do
-        data=$(
-            {
-                echo "$data_all" | grep -B1 "^Name[ ]*:[ ]*$pkg$" | head -n1
-                echo "$data_all" | sed  -n "/^Name[ ]*:[ ]*$pkg$/,/^$/{p;/^$/q}"
-            }
-            )
-        if [ "$show_errors" = "yes" ] && [ -z "$data" ] ; then
-            case "$op" in
-                -Q) echo "error: package '$pkg' is not installed" >> "$errlog" ;;
-                -S) echo "error: package '$pkg' does not exist"   >> "$errlog" ;;
-            esac
-            continue
+    [ ${#targets_installed[@]} -gt 0 ] && expac ${op} "$format" "${targets_installed[@]}"
+
+    if [ ${#targets_notinstalled[@]} -gt 0 ] ; then
+        case "$op" in
+            -Q)
+                [ "$show_errors" = "yes" ] && errors+=("==> using -Q but not installed: ${targets_notinstalled[*]}")
+                ;;
+            -S)
+                data_all="$(LANG=C yay -Si "${targets_notinstalled[@]}" 2>/dev/null)"
+                for pkg in "${targets_notinstalled[@]}" ; do
+                    data=$(
+                        {
+                            echo "$data_all" | grep -B1 "^Name[ ]*:[ ]*$pkg$" | head -n1
+                            echo "$data_all" | sed  -n "/^Name[ ]*:[ ]*$pkg$/,/^$/{p;/^$/q}"
+                        }
+                        )
+                    if [ "$data" ] ; then
+                        info_found=yes
+                        handle_formats "$format"
+                    else
+                        [ "$show_errors" = "yes" ] && errors+=("package '$pkg' does not exist")
+                        continue
+                    fi
+                done
+                ;;
+        esac
+        if [ "$show_errors" = "yes" ] && [ ${#errors[@]} -ne 0 ] ; then
+            echo "==> Problems:" >&2
+            printf "%s\n" "${errors[@]}" >&2
         fi
-        handle_formats "$format"
-    done
-    if [ "$show_errors" = "yes" ] && [ -r "$errlog" ] ; then
-        echo "==> Problems:" >&2
-        cat "$errlog" >&2
-        rm -f "$errlog"
-        echo "" >&2
     fi
+    [ $info_found = yes ] && return 0 || return 1
 }
 
 Main "$@"

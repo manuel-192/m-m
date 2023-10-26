@@ -32,7 +32,6 @@ Main()
                 file=lastupdate
                 Main2 -a
                 ret_arch=$?
-                echo "Arch"
                 ;;
             -e | --endeavouros)
                 os=EndeavourOS
@@ -40,7 +39,6 @@ Main()
                 file=state
                 Main2 -e
                 ret_eos=$?
-                echo "EOS"
                 ;;
             -s | --save) ;;           # already handled above
             --verbose) ;;             # already handled above

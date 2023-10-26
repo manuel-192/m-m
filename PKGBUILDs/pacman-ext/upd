@@ -145,7 +145,7 @@ All options below will change the default behavior.
     -h, --help             This help.
         --no-keyrings      Does not update keyrings before other packages.
         --no-lock          Does not check pacman database lock.
-    -i, --instant          Fast and simple check for updates.
+    -i, --instant          Fast and simple check for updates. Experimental!
         --instant-no-aur   Same as --instant but AUR will not be checked.
     -n, --nvidia           Checks validity of nvidia & linux updates.
     -o, --optimize-checks  Reduce redundancy in checks.
