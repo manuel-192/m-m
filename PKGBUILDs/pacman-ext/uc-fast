@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# Arch update check using only lastupdate files.
-# Note that this check can be done only once before a real update
-# because the lastupdate file will be saved locally.
-# This assumes the lastupdate file is not abused by making it equal to lastsync.
+# Arch and EndeavourOS update checks using only lastupdate and state files.
+# Assumption: the lastupdate file is NOT abused by making it equal to lastsync.
 # Exit code is similar to 'checkupdates'.
 
 Main()
