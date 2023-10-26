@@ -14,6 +14,8 @@ Main()
     local file
     local verbose=no
     local save=no
+    local ret_arch=2
+    local ret_eos=2
 
     [ "$1" ] || { Usage; exit 1; }
 
@@ -31,14 +33,16 @@ Main()
                 ml=mirrorlist
                 file=lastupdate
                 Main2 -a
-                return $?
+                ret_arch=$?
+                echo "Arch"
                 ;;
             -e | --endeavouros)
                 os=EndeavourOS
                 ml=endeavouros-mirrorlist
                 file=state
                 Main2 -e
-                return $?
+                ret_eos=$?
+                echo "EOS"
                 ;;
             -s | --save) ;;           # already handled above
             --verbose) ;;             # already handled above
@@ -49,6 +53,10 @@ Main()
         esac
         shift
     done
+    if [ $ret_arch -eq 0 ] || [ $ret_eos -eq 0 ] ; then
+        return 0
+    fi
+    return 2
 }
 
 Usage() {
