@@ -8,37 +8,8 @@ Breakpoint()   {           # useful for debugging
 }
 Debug() { : ; }
 
-FastUpdateCheck() {
-    if [ $instant = yes ] ; then
-        local native_arch=no
-        local native_eos=no
-        local foreign_aur=no
-
-        uc-fast -a && { native_arch=yes
-                        uc-fast -a --save
-                        echo2 "==> Arch updates available."
-        }
-        uc-fast -e && { native_eos=yes
-                        uc-fast -e --save
-                        echo2 "==> EndeavourOS updates available."
-        }
-        if [ $aur = yes ] && yay -Qua >/dev/null ; then
-            foreign_aur=yes
-            echo2 "==> AUR updates available."
-        fi
-        [ "$native_arch$native_eos$foreign_aur" = "nonono" ] && { echo2 "No updates."; Exit 0; }
-    fi
-}
-FastUpdateSave() {
-    if [ $instant = yes ] ; then
-        AsPlainUser --prompt="Saving Arch update state"        -- uc-fast -a --save
-        AsPlainUser --prompt="Saving EndeavourOS update state" -- uc-fast -e --save
-    fi
-}
-
 Main() {
     Breakpoint
-
     # Program wide variable definitions.
 
     local -r progname="${0##*/}"
@@ -70,14 +41,28 @@ Main() {
 
     local SOPTS="acdfhinopqsv"
     local LOPTS="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
-          LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
+    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
 
-    OptionsBeforeSudo "$@"
+    local args=()
+    local uc_fast_args=()
 
-    FastUpdateCheck
+    UcFastOptions "$@"                  # separate options into args and uc_fast_args
+
+    OptionsBeforeSudo "${args[@]}"
+
+    if [ $instant = yes ] ; then
+        if uc-fast -a -e "${uc_fast_args[@]}" ; then
+            echo "Updates are available."
+            uc-fast -a --save
+            uc-fast -e --save
+        else
+            echo "No updates."
+            return
+        fi
+    fi
 
     if [ "$EUID" != "0" ] ; then
-        sudo "/bin/$progname" "$@"
+        sudo "/bin/$progname" "${args[@]}"
         Exit $?
     fi
     local updates_pacman=""
@@ -88,7 +73,7 @@ Main() {
 
     SetHelper yay
 
-    Options "$@"
+    Options "${args[@]}"
 
     EMPHASIZED_COLOR "COMMAND: ${RED}$progname $*"
 
@@ -110,7 +95,6 @@ Main() {
     Foreign
     Pacdiff
     Xadditions end "$end"
-    # FastUpdateSave
     Sync
 }
 
@@ -176,6 +160,16 @@ EOF
     /bin/firefox $tmpdoc &
 }
 
+UcFastOptions() {
+    local arg
+    for arg in "$@" ; do
+        case "$arg" in
+            -y) uc_fast_args+=("$arg") ;;   # this option is meant for uc-fast only
+            *)          args+=("$arg") ;;
+        esac
+    done
+}
+
 Options() {
     GetOptions() {
         opts="$(/usr/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || {
@@ -187,8 +181,8 @@ Options() {
     GetOptions "$@"
     eval set -- "$opts"
 
-    case "${FUNCNAME[1]}" in            # check the caller
-        OptionsBeforeSudo)              # handle a subset of given options before possible sudo
+    case "${FUNCNAME[1]}" in             # check the caller
+        OptionsBeforeSudo)               # handle a subset of given options before possible sudo
             while true ; do
                 case "$1" in
                     --) break ;;
