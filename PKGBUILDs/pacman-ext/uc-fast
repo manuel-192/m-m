@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Arch and EndeavourOS update checks using only lastupdate and state files.
+# Arch and EndeavourOS update checks using mainly lastupdate and state files.
 # Assumption: the lastupdate file is NOT abused by making it equal to lastsync.
 # Exit code is similar to 'checkupdates'.
+# Note that we may use 'checkupdates' to verify there really are updates, since
+# lastupdate might change without real updates.
 
 Main()
 {
@@ -11,7 +13,6 @@ Main()
     local ml
     local file
     local verbose=no
-    local save=no
     local ret_arch=2
     local ret_eos=2
     local ret_aur=2
@@ -20,7 +21,6 @@ Main()
 
     for arg in "$@" ; do
         case "$arg" in
-            -s | --save) save=yes ;;
             --verbose)   verbose=yes ;;
         esac
     done
@@ -44,7 +44,6 @@ Main()
             -y | --aur)
                 yay -Qua && ret_aur=0
                 ;;
-            -s | --save) ;;           # already handled above
             --verbose) ;;             # already handled above
             *)
                 Usage
@@ -64,7 +63,6 @@ Usage() {
 Usage: $progname [option] {operations}
 Options:
     --verbose            More verbose output.
-    -s, --save           Save lastupdate, do nothing more.
 Operations:
     -a, --arch           Check Arch package updates.
     -e, --endeavouros    Check EndeavourOS package updates.
@@ -84,16 +82,8 @@ Main2() {
     )
     local lastupdate_prev="/tmp/.uc-${renamedos[$os]}-${renamedfile[$file]}"
     local lastupdate="${lastupdate_prev}.new"
-
-    if [ $save = yes ] ; then
-        if [ -f "$lastupdate" ]  ; then
-            rm -f "$lastupdate_prev"            || DIE "save: removing old db failed."
-            mv "$lastupdate" "$lastupdate_prev" || DIE "save: saving new db failed."
-        fi
-        return 2
-    fi
-
     local url
+
     url=$(grep "^Server = " /etc/pacman.d/$ml | head -n1)
     url=${url#*= }
     case "$os" in
@@ -115,12 +105,14 @@ Main2() {
             updates=$(checkupdates)
             ret=$?
 
-            if [ $verbose = yes ] && [ $ret -eq 0 ] ; then
-                echo "Native updates are available." >&2
-            fi
-            if [ $save = yes ] || [ $ret -ne 0 ] ; then
-                rm -f "$lastupdate_prev"            || DIE "removing old db failed."
-                mv "$lastupdate" "$lastupdate_prev" || DIE "saving new db failed."
+            if [ $ret -eq 0 ] ; then
+                [ $verbose = yes ] && echo "Native updates are available." >&2
+            else
+                if [ $ret -ne 0 ] ; then
+                    # no real updates, but still save the $lastupdate file
+                    rm -f "$lastupdate_prev"            || DIE "removing old db failed."
+                    mv "$lastupdate" "$lastupdate_prev" || DIE "saving new db failed."
+                fi
             fi
         fi
     else

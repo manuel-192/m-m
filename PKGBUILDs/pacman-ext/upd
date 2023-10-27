@@ -53,8 +53,6 @@ Main() {
     if [ $instant = yes ] ; then
         if uc-fast -a -e "${uc_fast_args[@]}" ; then
             echo "Updates are available." >&2
-            uc-fast -a --save
-            uc-fast -e --save
         else
             echo "No updates." >&2
             return 2
