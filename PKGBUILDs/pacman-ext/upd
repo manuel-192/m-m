@@ -51,7 +51,7 @@ Main() {
     OptionsBeforeSudo "${args[@]}"
 
     if [ $instant = yes ] ; then
-        if uc-fast -a -e "${uc_fast_args[@]}" ; then
+        if uc-fast -ae "${uc_fast_args[@]}" ; then
             echo "Updates are available." >&2
         else
             echo "No updates." >&2
