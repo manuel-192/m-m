@@ -131,22 +131,6 @@ Main2() {
         if [ $verbose = yes ] && [ $ret -eq 0 ] ; then
             echo "Native updates are available." >&2
         fi
-
-        if false ; then
-            case "$ret" in
-                0)
-                    updates=$(echo "$updates" | awk '{print $1}')
-                    local eos
-                    eos=$(pacman -Slq endeavouros)
-                    eos=$(echo $eos | sed 's/ /$|^/g')
-                    eos="^$eos$"
-                    case "$os" in
-                        Arch)        [ $verbose = yes ] && echo "$updates" | grep -Pv "$eos" ;;
-                        EndeavourOS) [ $verbose = yes ] && echo "$updates" | grep -P  "$eos" ;;
-                    esac
-                    ;;
-            esac
-        fi
     fi
     rm -f "$lastupdate" || DIE "removing temporary db failed."
     return $ret
