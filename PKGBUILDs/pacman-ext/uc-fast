@@ -17,7 +17,7 @@ Main()
     local ret_eos=2
     local ret_aur=2
 
-    [ "$1" ] || { Usage; exit 1; }
+    [ "$1" ] || Usage 1
 
     for arg in "$@" ; do
         case "$arg" in
@@ -25,7 +25,14 @@ Main()
         esac
     done
 
-    while [ "$1" ] ; do
+    local lopts=verbose,arch,endeavouros,aur,help
+    local sopts=aeyh
+    local opts
+
+    opts=$(/bin/getopt -o=$sopts --longoptions=$lopts --name $progname -- "$@") || Usage 1
+    eval set -- "$opts"
+
+    while true ; do
         case "$1" in
             -a | --arch)
                 os=Arch
@@ -45,9 +52,9 @@ Main()
                 yay -Qua && ret_aur=0
                 ;;
             --verbose) ;;             # already handled above
+            --) break ;;
             *)
-                Usage
-                exit 1
+                Usage 1
                 ;;
         esac
         shift
@@ -60,7 +67,7 @@ Main()
 
 Usage() {
     cat <<EOF
-Usage: $progname [option] {operations}
+Usage: $progname [options] {operations}
 Options:
     --verbose            More verbose output.
 Operations:
@@ -69,6 +76,7 @@ Operations:
     -y, --aur            Check AUR package updates.
 
 EOF
+    [ "$1" ] && exit "$1"
 }
 
 Main2() {
