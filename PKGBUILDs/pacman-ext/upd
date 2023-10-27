@@ -365,8 +365,8 @@ CheckVirtualbox() {
     if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
         return
     fi
-    EMPHASIZED_COLOR --no-newline-at-end "Check virtualbox:"
     if PkgInUpdates virtualbox ; then
+        EMPHASIZED_COLOR --no-newline-at-end "Check virtualbox:"
         # check virtualbox-ext-oracle version even if not updating AUR packages
         local version_vb version_vbext
         version_vb=$(   expac     -S %v virtualbox)
@@ -379,8 +379,8 @@ CheckVirtualbox() {
             Cmd pacman -R  --noconfirm virtualbox-ext-oracle
             AUR_install+=(virtualbox-ext-oracle)
         fi
+        RESULT "OK"
     fi        
-    RESULT "OK"
 }
 
 CheckPrivileges() {
