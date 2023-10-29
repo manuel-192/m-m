@@ -49,7 +49,13 @@ Main()
                 ret_eos=$?
                 ;;
             -y | --aur)
-                yay -Qua && ret_aur=0
+                [ $verbose = yes ] && echo "==> yay -Qua:" >&2
+                if yay -Qua >/dev/null ; then
+                    ret_aur=0
+                    echo "AUR updates available." >&2
+                else
+                    echo "No AUR updates." >&2
+                fi
                 ;;
             --verbose) ;;             # already handled above
             --) break ;;
@@ -99,7 +105,7 @@ Main2() {
         Arch)        url=${url%\$repo/os/\$arch}$file ;;
     esac
 
-    [ $verbose = yes ] && echo "Check using $url:"
+    [ $verbose = yes ] && echo "==> Check using $url:"
     curl --fail -Lsm 10 -o- "$url" | head -n1 > "$lastupdate" || return 1
 
     local updates ret=2
