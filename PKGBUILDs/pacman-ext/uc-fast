@@ -52,9 +52,9 @@ Main()
                 [ $verbose = yes ] && echo "==> yay -Qua:" >&2
                 if yay -Qua >/dev/null ; then
                     ret_aur=0
-                    echo "AUR updates available." >&2
+                    [ $verbose = yes ] && echo "AUR updates available." >&2
                 else
-                    echo "No AUR updates." >&2
+                    [ $verbose = yes ] && echo "No AUR updates." >&2
                 fi
                 ;;
             --verbose) ;;             # already handled above

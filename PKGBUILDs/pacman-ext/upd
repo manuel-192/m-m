@@ -8,6 +8,19 @@ Breakpoint()   {           # useful for debugging
 }
 Debug() { : ; }
 
+InstantCheck() {
+    if [ $instant = yes ] ; then
+        local uc_options="-ae"
+        [ $aur = yes ] && uc_options+="y"
+        if uc-fast $uc_options ; then
+            echo "Updates are available." >&2
+        else
+            echo "No updates." >&2
+            exit 2
+        fi
+    fi
+}
+
 Main() {
     Breakpoint
     # Program wide variable definitions.
@@ -43,23 +56,12 @@ Main() {
     local LOPTS="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
     LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
 
-    local args=()
-    local uc_fast_args=()
-
-    UcFastOptions "$@"                  # separate options into args and uc_fast_args
+    local args=("$@")
 
     OptionsBeforeSudo "${args[@]}"
 
-    if [ $instant = yes ] ; then
-        if uc-fast -ae "${uc_fast_args[@]}" ; then
-            echo "Updates are available." >&2
-        else
-            echo "No updates." >&2
-            return 2
-        fi
-    fi
-
     if [ "$EUID" != "0" ] ; then
+        InstantCheck
         sudo "/bin/$progname" "${args[@]}"
         Exit $?
     fi
@@ -156,16 +158,6 @@ EOF
 #                           Note that this may <i>postpone</i> the detection of updates for
 #                           previously downgraded packages.
     /bin/firefox $tmpdoc &
-}
-
-UcFastOptions() {
-    local arg
-    for arg in "$@" ; do
-        case "$arg" in
-            -y) uc_fast_args+=("$arg") ;;   # this option is meant for uc-fast only
-            *)          args+=("$arg") ;;
-        esac
-    done
 }
 
 Options() {
