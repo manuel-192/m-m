@@ -1,0 +1,140 @@
+#!/bin/bash
+
+DIE() {
+    local progname=${0##*/}
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+GetDepsOfAurPkg() {
+    LANG=C yay -Sia "$1" | sed -n "/^Depends On/,/^Optional Deps/p" | grep -v "^Optional Deps" | sed "s|^Depends On[ ]*:[ ]*||"
+}
+
+ShowAndRun() {
+    [ $verbose = yes ] && echo "$@" >&2
+    "$@" || DIE "'$*' failed"
+}
+
+ConvertToPipedList() {
+    local -n _list="$1"
+    _list=$(echo $_list)
+    _list=${_list// /|}
+}
+
+AddToDeps() {
+    local -n _deps="$1"
+    local -n _DEPS="$2"
+    local new
+
+    if [ "$_deps" ] ; then
+        ConvertToPipedList _deps
+        if [ -z "$_DEPS" ] ; then
+            _DEPS="$_deps"
+        else
+            # only add pkgs from _deps that are not in _DEPS
+            new=$(printf "%s\n" ${_deps//|/ } | grep -Pv "$_DEPS")
+            if [ "$new" ] ; then
+                new=$(echo $new)
+                new=${new// /|}
+                _DEPS+="|$new"
+            fi
+        fi
+    fi
+}
+
+NativeDeps() {
+    ndeps="$(expac -S %n $deps)"
+    AddToDeps ndeps NATIVE_DEPS
+}
+AurDeps() {
+    if [ "$ndeps" ] ; then
+        adeps="$(printf "%s\n" $deps | grep -Pv "$ndeps")"
+    else
+        adeps="$deps"
+    fi
+    AddToDeps adeps AUR_DEPS
+
+    for pkg in ${adeps//|/ } ; do
+        SaveDepsOfPkg "$pkg"
+    done
+}
+
+SaveDepsOfPkg() {
+    local pkg="$1"
+    local deps ndeps="" adeps
+    deps=$(ShowAndRun GetDepsOfAurPkg "$pkg") || exit
+    case "$deps" in
+        None | "") ;;
+        *)
+            NativeDeps
+            AurDeps
+            ;;
+    esac
+}
+
+Main() {
+    local -r workdir="/tmp/AUR-installs"
+    local pkg
+    local username=""
+    local NATIVE_DEPS=""     # keep this pkg list like: "aa|bb|cc" and so on...
+    local AUR_DEPS=""        # keep this pkg list like: "aa|bb|cc" and so on...
+    local AUR_pkgs=()
+    local verbose=no
+
+    while true ; do
+        case "$1" in
+            -u=*) username="${1#*=}" ;;
+            -u)   username="$2"; shift ;;
+            --verbose) verbose=yes ;;
+            *)    break ;;
+        esac
+        shift
+    done
+    [ "$username" ] || DIE "no username"
+
+    AUR_pkgs=("$@")
+
+    #echo "Installing AUR packages: $*" >&2
+
+    if [ ! -d "$workdir" ] ; then
+        ShowAndRun mkdir -p "$workdir"
+        ShowAndRun chmod ugo+rwx "$workdir"
+    fi
+    ShowAndRun pushd "$workdir" >/dev/null
+
+    for pkg in "$@" ; do
+        SaveDepsOfPkg "$pkg"
+    done
+
+    [ "$NATIVE_DEPS" ] && InstallNativePackages ${NATIVE_DEPS//|/ }
+    [ "$AUR_DEPS" ]    && InstallAurPkgs        ${AUR_DEPS//|/ }    "${AUR_pkgs[@]}"
+
+    ShowAndRun popd >/dev/null
+}
+
+InstallNativePackages() {
+    echo pacman -S --noconfirm --needed --asdeps "$@"
+
+    if false ; then
+        ShowAndRun pacman -S --noconfirm --needed --asdeps "$@"
+    fi
+}
+
+InstallAurPkgs() {
+    echo yay -S --noconfirm --asdeps "$@"
+
+    if false ; then
+        local aur_pkgs=()
+        ShowAndRun runuser -u "$username" -- yay -Ga "$@"
+        for pkg in "$@" ; do
+            echo "Building AUR package $pkg ..."
+            ShowAndRun pushd "$pkg" >/dev/null
+            ShowAndRun runuser -u "$username" -- makepkg --noconfirm -cf &>/dev/null
+            aur_pkgs+=("$PWD"/"$pkg"-*.pkg.tar.zst)
+            ShowAndRun popd >/dev/null
+        done
+        ShowAndRun pacman -U --noconfirm --asdeps "${aur_pkgs[@]}"     # --asdeps also for the given pkg??
+    fi
+}
+
+Main "$@"
