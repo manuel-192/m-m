@@ -3,8 +3,9 @@
 # Arch and EndeavourOS update checks using mainly lastupdate and state files.
 # Assumption: the lastupdate file is NOT abused by making it equal to lastsync.
 # Exit code is similar to 'checkupdates'.
-# Note that we may use 'checkupdates' to verify there really are updates, since
-# lastupdate might change without real updates.
+#
+# Note that if --doublecheck is given, we will use 'checkupdates' to verify
+# there really are updates, since lastupdate might have changed without having real updates.
 
 Main()
 {
@@ -13,15 +14,20 @@ Main()
     local ml
     local file
     local verbose=no
-    local ret_arch=2
-    local ret_eos=2
-    local ret_aur=2
+    local doublecheck=no
+    local -r EXIT_UPDATES_YES=0
+    local -r EXIT_ERROR=1
+    local -r EXIT_UPDATES_NO=2
+    local ret_arch=$EXIT_UPDATES_NO
+    local ret_eos=$EXIT_UPDATES_NO
+    local ret_aur=$EXIT_UPDATES_NO
 
-    [ "$1" ] || Usage 1
+    [ "$1" ] || Usage $EXIT_ERROR
 
     for arg in "$@" ; do
         case "$arg" in
-            --verbose)   verbose=yes ;;
+            --verbose)     verbose=yes ;;
+            --doublecheck) doublecheck=yes ;;
         esac
     done
 
@@ -29,7 +35,7 @@ Main()
     local sopts=aeyh
     local opts
 
-    opts=$(/bin/getopt -o=$sopts --longoptions=$lopts --name $progname -- "$@") || Usage 1
+    opts=$(/bin/getopt -o=$sopts --longoptions=$lopts --name $progname -- "$@") || Usage $EXIT_ERROR
     eval set -- "$opts"
 
     while true ; do
@@ -49,26 +55,27 @@ Main()
                 ret_eos=$?
                 ;;
             -y | --aur)
-                [ $verbose = yes ] && echo "==> yay -Qua:" >&2
+                Verbose2 "==> yay -Qua:"
                 if yay -Qua >/dev/null ; then
-                    ret_aur=0
-                    [ $verbose = yes ] && echo "AUR updates available." >&2
+                    ret_aur=$EXIT_UPDATES_YES
+                    Verbose2 " -> AUR updates available."
                 else
-                    [ $verbose = yes ] && echo "No AUR updates." >&2
+                    Verbose2 " -> No AUR updates."
                 fi
                 ;;
-            --verbose) ;;             # already handled above
+            --verbose) ;;                       # already handled above
+            --doublecheck) ;;                   # already handled above
             --) break ;;
             *)
-                Usage 1
+                Usage $EXIT_ERROR
                 ;;
         esac
         shift
     done
-    if [ $ret_arch -eq 0 ] || [ $ret_eos -eq 0 ] || [ $ret_aur -eq 0 ] ; then
-        return 0
+    if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
+        return $EXIT_UPDATES_YES
     fi
-    return 2
+    return $EXIT_UPDATES_NO
 }
 
 Usage() {
@@ -76,6 +83,8 @@ Usage() {
 Usage: $progname [options] {operations}
 Options:
     --verbose            More verbose output.
+    --doublecheck        Use checkupdates ot make sure there really are updates.
+                         Note: this is prone to errors, and not typically needed.
 Operations:
     -a, --arch           Check Arch package updates.
     -e, --endeavouros    Check EndeavourOS package updates.
@@ -94,57 +103,47 @@ Main2() {
         [state]=X
         [lastupdate]=X
     )
-    local lastupdate_prev="/tmp/.uc-${renamedos[$os]}-${renamedfile[$file]}"
-    local lastupdate="${lastupdate_prev}.new"
-    local url
+    local lastupdate_saved="/tmp/.uc-${renamedos[$os]}-${renamedfile[$file]}"
+    local lastupdate="${lastupdate_saved}.new"
+    local url data
 
     url=$(grep "^Server = " /etc/pacman.d/$ml | head -n1)
+    [ "$url" ] || DIE "/etc/pacman.d/$ml has no mirrors configured!"
     url=${url#*= }
     case "$os" in
         EndeavourOS) url=${url%\$repo/\$arch}$file ;;
         Arch)        url=${url%\$repo/os/\$arch}$file ;;
     esac
 
-    [ $verbose = yes ] && echo "==> Check using $url:"
-    curl --fail -Lsm 10 -o- "$url" | head -n1 > "$lastupdate" || return 1
+    Verbose2 "==> Check using $url:"
 
-    local updates ret=2
+    data=$(curl --fail -Lsm 10 -o- "$url")
+    [ "$data" ] || DIE "fetching data from '$url' failed"
+    echo "$data" | head -n1 > "$lastupdate"
 
-    if [ -f "$lastupdate_prev" ] ; then
-        if diff "$lastupdate" "$lastupdate_prev" >/dev/null ; then
-            [ $verbose = yes ] && echo "No ${os} updates." >&2
+    local ret=$EXIT_UPDATES_NO     # by default, don't expect updates
+
+    if [ -f "$lastupdate_saved" ] ; then
+        if diff "$lastupdate" "$lastupdate_saved" >/dev/null ; then
+            Verbose2 " -> No ${os} updates."
         else
-            # Make sure we really have native updates!
-            # Note that now we do not separate Arch and EndeavourOS packages...
-            updates=$(checkupdates)
-            ret=$?
-
-            if [ $ret -eq 0 ] ; then
-                [ $verbose = yes ] && echo "Native updates are available." >&2
-            else
-                if [ $ret -ne 0 ] ; then
-                    # no real updates, but still save the $lastupdate file
-                    rm -f "$lastupdate_prev"            || DIE "removing old db failed."
-                    mv "$lastupdate" "$lastupdate_prev" || DIE "saving new db failed."
-                fi
-            fi
+            Verbose2 " -> ${os} updates are available."
+            ret=$EXIT_UPDATES_YES
         fi
+        rm -f "$lastupdate_saved"
     else
-        mv "$lastupdate" "$lastupdate_prev" || DIE "saving first new db failed."
-        updates=$(checkupdates)
-        ret=$?
-
-        if [ $verbose = yes ] && [ $ret -eq 0 ] ; then
-            echo "Native updates are available." >&2
-        fi
+        ret=$EXIT_UPDATES_YES       # First time here? Then guess there are updates.
+        Verbose2 " -> ${os} updates may be available."
     fi
-    rm -f "$lastupdate" || DIE "removing temporary db failed."
+    mv "$lastupdate" "$lastupdate_saved" || DIE "saving new update indicator failed."
     return $ret
 }
 
+Verbose2() { [ $verbose = yes ] && echo "$@" >&2; }
+
 DIE() {
     echo "$progname: error: $1" >&2
-    exit 1
+    exit $EXIT_ERROR
 }
 
 Main "$@"
