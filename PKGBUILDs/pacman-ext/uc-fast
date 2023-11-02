@@ -11,6 +11,7 @@ Main()
     local ml
     local file
     local verbose=no
+    local op=""
     local -r EXIT_UPDATES_YES=0
     local -r EXIT_ERROR=1
     local -r EXIT_UPDATES_NO=2
@@ -36,20 +37,23 @@ Main()
     while true ; do
         case "$1" in
             -a | --arch)
+                op="-a"
                 os=Arch
                 ml=mirrorlist
                 file=lastupdate
-                Main2 -a
+                Main2 $op
                 ret_arch=$?
                 ;;
             -e | --endeavouros)
+                op="-e"
                 os=EndeavourOS
                 ml=endeavouros-mirrorlist
                 file=state
-                Main2 -e
+                Main2 $op
                 ret_eos=$?
                 ;;
             -y | --aur)
+                op="-y"
                 Verbose2 "==> yay -Qua:"
                 if yay -Qua >/dev/null ; then
                     ret_aur=$EXIT_UPDATES_YES
@@ -65,6 +69,7 @@ Main()
         esac
         shift
     done
+    [ "$op" ] || DIE "operation(s) missing"
     if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
         return $EXIT_UPDATES_YES
     fi
@@ -134,8 +139,8 @@ Main2() {
 Verbose2() { [ $verbose = yes ] && echo "$@" >&2; }
 
 DIE() {
-    echo "$progname: error: $1" >&2
-    exit $EXIT_ERROR
+    printf "%s: error: %s\n\n" "$progname" "$1" >&2
+    Usage $EXIT_ERROR
 }
 
 Main "$@"
