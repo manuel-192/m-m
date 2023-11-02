@@ -3,9 +3,6 @@
 # Arch and EndeavourOS update checks using mainly lastupdate and state files.
 # Assumption: the lastupdate file is NOT abused by making it equal to lastsync.
 # Exit code is similar to 'checkupdates'.
-#
-# Note that if --doublecheck is given, we will use 'checkupdates' to verify
-# there really are updates, since lastupdate might have changed without having real updates.
 
 Main()
 {
@@ -14,7 +11,6 @@ Main()
     local ml
     local file
     local verbose=no
-    local doublecheck=no
     local -r EXIT_UPDATES_YES=0
     local -r EXIT_ERROR=1
     local -r EXIT_UPDATES_NO=2
@@ -26,8 +22,7 @@ Main()
 
     for arg in "$@" ; do
         case "$arg" in
-            --verbose)     verbose=yes ;;
-            --doublecheck) doublecheck=yes ;;
+            --verbose) verbose=yes ;;      # better handle this option before others
         esac
     done
 
@@ -63,12 +58,10 @@ Main()
                     Verbose2 " -> No AUR updates."
                 fi
                 ;;
-            --verbose) ;;                       # already handled above
-            --doublecheck) ;;                   # already handled above
+            -h | --help) Usage $EXIT_UPDATES_NO ;;
+            --verbose) ;;                             # already handled above
             --) break ;;
-            *)
-                Usage $EXIT_ERROR
-                ;;
+            *) Usage $EXIT_ERROR ;;
         esac
         shift
     done
@@ -82,9 +75,8 @@ Usage() {
     cat <<EOF
 Usage: $progname [options] {operations}
 Options:
+    -h, --help           This help.
     --verbose            More verbose output.
-    --doublecheck        Use checkupdates ot make sure there really are updates.
-                         Note: this is prone to errors, and not typically needed.
 Operations:
     -a, --arch           Check Arch package updates.
     -e, --endeavouros    Check EndeavourOS package updates.
