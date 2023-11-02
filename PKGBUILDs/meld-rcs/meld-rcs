@@ -71,12 +71,12 @@ meld() {
 
     case "$prefer" in
         RCS)
-            echo "==> RCS comparison." >&2
+            printf "==> RCS comparison.\n\n" >&2
             meld-rcs-helper "$@" &
             return
             ;;
         GIT)
-            echo "==> GIT comparison." >&2
+            printf "==> GIT comparison.\n\n" >&2
             case "$1" in
                 "")
                     _meld_do .        # meld for the current folder in git tree
