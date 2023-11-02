@@ -12,12 +12,12 @@ InstantCheck() {
     if [ $instant = yes ] ; then
         local uc_options="-ae"
         [ $aur = yes ] && uc_options+="y"
-        if uc-fast $uc_options ; then
-            echo "Updates are available." >&2
-        else
-            echo "No updates." >&2
-            exit 2
-        fi
+        uc-fast $uc_options
+        case $? in
+            0) ;;            # echo "Updates are available." >&2
+            2) exit 2 ;;     # echo "No updates." >&2
+            *) exit 1 ;;     # echo Error >&2
+        esac
     fi
 }
 
