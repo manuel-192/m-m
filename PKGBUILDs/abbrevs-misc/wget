@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Implement (a limited subset of) wget with curl.
+# Note: this is still in experimental state, since no thorough testing has been done.
 
 echo2()    { echo "$@" >&2 ; }
 ERROR()    { echo2 "$progname: error: $1" ; }
@@ -41,6 +42,7 @@ Options() {
 
     while true ; do
         case "$1" in
+            # wget                           # curl
             --continue         | -c)   cmd+=(--continue-at -)                          ;;
             --directory-prefix | -P)   cmd+=(--output-dir "$2"); shift; has_output=yes ;;   # ??
             --output-document  | -O)   cmd+=(--output "$2");     shift; has_output=yes ;;
