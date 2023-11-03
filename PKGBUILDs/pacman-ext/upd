@@ -12,6 +12,7 @@ InstantCheck() {
     if [ $instant = yes ] ; then
         local uc_options="-ae"
         [ $aur = yes ] && uc_options+="y"
+        [ $verbose = yes ] && uc_options+=" --verbose"
         uc-fast $uc_options
         case $? in
             0) ;;            # echo "Updates are available." >&2
@@ -52,9 +53,11 @@ Main() {
     local optimize_checks=$DEFAULT_optimize_checks instant=$DEFAULT_instant
     local pacdiff=$DEFAULT_pacdiff quiet=$DEFAULT_quiet sync=$DEFAULT_sync virtualbox=$DEFAULT_virtualbox
 
+    local verbose=no   # for uc-fast only !?
+
     local SOPTS="acdfhinopqsv"
     local LOPTS="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
-    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,virtualbox"
+    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,verbose,virtualbox"
 
     local args=("$@")
 
@@ -176,7 +179,7 @@ Options() {
             while true ; do
                 case "$1" in
                     --) break ;;
-                    -a|--aur | --help | --dump-options | -i|--instant|--instant-no-aur)
+                    -a|--aur | --help | --dump-options | -i|--instant|--instant-no-aur | --verbose)
                         Options $1       # handle these options here
                         ;;
                     --*) ;;              # these will be handle elsewhere
@@ -205,6 +208,7 @@ Options() {
                     --paru)                  SetHelper paru; Assign aur yes ;;
                     -q | --quiet)            Assign quiet yes ;;
                     -s | --sync)             Assign sync yes ;;
+                    --verbose)               Assign verbose yes ;;
                     -v | --virtualbox)       Assign virtualbox yes ;;
                     --begin)                 AppendCmd begin  "$2" ; shift ;;
                     --middle)                AppendCmd middle "$2" ; shift ;;
