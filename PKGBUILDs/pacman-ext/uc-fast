@@ -105,7 +105,7 @@ Main2() {
     local -r lastupdate="${lastupdate_saved}_new"
     local url
 
-    url=$(grep "^Server = " /etc/pacman.d/$ml | head -n1)
+    url=$(grep -m1 "^Server = " /etc/pacman.d/$ml)
     [ "$url" ] || DIE "/etc/pacman.d/$ml has no mirrors configured!"
     url=${url#*= }
     case "$os" in
