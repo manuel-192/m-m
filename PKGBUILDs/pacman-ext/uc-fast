@@ -102,7 +102,7 @@ Main2() {
     )
     local -r savedir="$HOME/.cache"
     local -r lastupdate_saved="$savedir/uc-${renamedos[$os]}-${renamedfile[$file]}"
-    local -r lastupdate="${lastupdate_saved}.new"
+    local -r lastupdate="${lastupdate_saved}_new"
     local url
 
     url=$(grep "^Server = " /etc/pacman.d/$ml | head -n1)
@@ -124,16 +124,19 @@ Main2() {
     if [ -f "$lastupdate_saved" ] ; then
         if diff "$lastupdate" "$lastupdate_saved" >/dev/null ; then
             Verbose2 " -> No ${os} updates."
+            rm -f "$lastupdate"
         else
             Verbose2 " -> ${os} updates are available."
             ret=$EXIT_UPDATES_YES
+            rm -f "$lastupdate_saved".*                                         # delete old update indicators
+            mv "$lastupdate_saved" "$lastupdate_saved".$(date +%j.%H.%M.%S)  || DIE "saving old update indicator failed."
+            mv "$lastupdate"       "$lastupdate_saved"                       || DIE "saving new update indicator failed."
         fi
-        rm -f "$lastupdate_saved"
     else
         ret=$EXIT_UPDATES_YES       # First time here? Then guess there are updates.
+        mv "$lastupdate" "$lastupdate_saved" || DIE "saving first update indicator failed."
         Verbose2 " -> ${os} updates may be available."
     fi
-    mv "$lastupdate" "$lastupdate_saved" || DIE "saving new update indicator failed."
     return $ret
 }
 
