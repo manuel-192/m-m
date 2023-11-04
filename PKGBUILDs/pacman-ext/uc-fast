@@ -91,6 +91,34 @@ EOF
     [ "$1" ] && exit "$1"
 }
 
+GetUrlFromMirrorsFile() {
+    url=$(grep -m1 "^Server = " /etc/pacman.d/$ml)
+    [ "$url" ] || DIE "/etc/pacman.d/$ml has no mirrors configured!"
+    url=${url#*= }
+}
+
+DiscoverUrl() {
+    source /etc/$progname.conf &>/dev/null
+    case "$os" in
+        EndeavourOS)
+            if [ "$EOS_MIRROR" ] ; then
+                url="$EOS_MIRROR"
+            else
+                GetUrlFromMirrorsFile
+                url=${url%\$repo/\$arch}$file
+            fi
+            ;;
+        Arch)
+            if [ "$ARCH_MIRROR" ] ; then
+                url="$ARCH_MIRROR"
+            else
+                GetUrlFromMirrorsFile
+                url=${url%\$repo/os/\$arch}$file
+            fi
+            ;;
+    esac
+}
+
 Main2() {
     declare -A renamedos=(
         [EndeavourOS]=x
@@ -105,13 +133,7 @@ Main2() {
     local -r lastupdate="${lastupdate_saved}_new"
     local url
 
-    url=$(grep -m1 "^Server = " /etc/pacman.d/$ml)
-    [ "$url" ] || DIE "/etc/pacman.d/$ml has no mirrors configured!"
-    url=${url#*= }
-    case "$os" in
-        EndeavourOS) url=${url%\$repo/\$arch}$file ;;
-        Arch)        url=${url%\$repo/os/\$arch}$file ;;
-    esac
+    DiscoverUrl
 
     Verbose2 "==> Check using $url:"
 
