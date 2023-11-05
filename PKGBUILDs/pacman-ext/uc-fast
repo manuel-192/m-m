@@ -4,12 +4,7 @@
 # Assumption: the lastupdate file is NOT abused by making it equal to lastsync.
 # Exit code is similar to 'checkupdates'.
 
-Main()
-{
-    Main1 "$@" |& column -t -s'|'
-}
-
-Main1() {
+Main() {
     local progname=${0##*/}
     local os
     local ml
@@ -58,12 +53,12 @@ Main1() {
                 ;;
             -y | --aur)
                 op="-y"
-                Verbose2 -n "yay -Qua:|"
+                Verbose2 "%-70s: " "yay -Qua"
                 if yay -Qua >/dev/null ; then
                     ret_aur=$EXIT_UPDATES_YES
-                    Verbose2 "AUR updates available."
+                    Verbose2 "AUR updates available.\n"
                 else
-                    Verbose2 "No AUR updates."
+                    Verbose2 "No AUR updates.\n"
                 fi
                 ;;
             -h | --help) Usage $EXIT_UPDATES_NO ;;
@@ -75,9 +70,9 @@ Main1() {
     done
     [ "$op" ] || DIE "operation(s) missing"
     if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
-        return $EXIT_UPDATES_YES
+        exit $EXIT_UPDATES_YES
     fi
-    return $EXIT_UPDATES_NO
+    exit $EXIT_UPDATES_NO
 }
 
 Usage() {
@@ -139,7 +134,7 @@ Main2() {
 
     DiscoverUrl
 
-    Verbose2 -n "Check using $url:|"
+    Verbose2 "%-70s: " "$url"
 
     local -r data=$(curl --fail -Lsm 10 -o- "$url")
     [ "$data" ] || DIE "fetching data from '$url' failed"
@@ -149,11 +144,11 @@ Main2() {
 
     if [ -f "$lastupdate_saved" ] ; then
         if diff "$lastupdate" "$lastupdate_saved" >/dev/null ; then
-            Verbose2 "No ${os} updates."
+            Verbose2 "No ${os} updates.\n"
             rm -f "$lastupdate"
         else
             # Note that the updated packages may *not* be installed here!
-            Verbose2 "${os} updates *may* be available."
+            Verbose2 "${os} updates *may* be available.\n"
 
             ret=$EXIT_UPDATES_YES
             rm -f "$lastupdate_saved".*                              # delete old update indicators
@@ -163,12 +158,12 @@ Main2() {
     else
         ret=$EXIT_UPDATES_YES       # First time here? Then guess there are updates.
         mv "$lastupdate" "$lastupdate_saved" || DIE "saving first update indicator failed."
-        Verbose2 "${os} updates may be available."
+        Verbose2 "${os} updates may be available.\n"
     fi
     return $ret
 }
 
-Verbose2() { [ $verbose = yes ] && echo "$@" >&2; }
+Verbose2() { [ $verbose = yes ] && printf "$@" >&2; }
 
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
