@@ -150,9 +150,9 @@ Main2() {
         else
             Verbose2 " -> ${os} updates are available."
             ret=$EXIT_UPDATES_YES
-            rm -f "$lastupdate_saved".*                                         # delete old update indicators
-            mv "$lastupdate_saved" "$lastupdate_saved".$(date +%j.%H.%M.%S)  || DIE "saving old update indicator failed."
-            mv "$lastupdate"       "$lastupdate_saved"                       || DIE "saving new update indicator failed."
+            rm -f "$lastupdate_saved".*                              # delete old update indicators
+            mv "$lastupdate_saved" "$lastupdate_saved".old        || DIE "saving old update indicator failed."
+            mv "$lastupdate"       "$lastupdate_saved"            || DIE "saving new update indicator failed."
         fi
     else
         ret=$EXIT_UPDATES_YES       # First time here? Then guess there are updates.
