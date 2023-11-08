@@ -152,7 +152,7 @@ Main2() {
 
             ret=$EXIT_UPDATES_YES
             rm -f "$lastupdate_saved".*                              # delete old update indicators
-            mv "$lastupdate_saved" "$lastupdate_saved".old        || DIE "saving old update indicator failed."
+            # mv "$lastupdate_saved" "$lastupdate_saved".old        || DIE "saving old update indicator failed."
             mv "$lastupdate"       "$lastupdate_saved"            || DIE "saving new update indicator failed."
         fi
     else
