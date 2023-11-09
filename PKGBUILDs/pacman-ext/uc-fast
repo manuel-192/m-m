@@ -9,7 +9,7 @@ Main() {
     local os
     local ml
     local file
-    local verbose=no
+    local verbose=""
     local op=""
     local -r EXIT_UPDATES_YES=0
     local -r EXIT_ERROR=1
@@ -20,9 +20,11 @@ Main() {
 
     [ "$1" ] || Usage $EXIT_ERROR
 
+    # Better handle option --verbose before other options.
+    # Option --verbose can be given max 2 times, second time gives even more info.
     for arg in "$@" ; do
         case "$arg" in
-            --verbose) verbose=yes ;;      # better handle this option before others
+            --verbose) [ "$verbose" != "yesyes" ] && verbose+="yes" ;;
         esac
     done
 
@@ -131,6 +133,7 @@ Main2() {
     local -r lastupdate_saved="$savedir/uc-${renamedos[$os]}-${renamedfile[$file]}"
     local -r lastupdate="${lastupdate_saved}_new"
     local url
+    local diff=""
 
     DiscoverUrl
 
@@ -143,12 +146,19 @@ Main2() {
     local ret=$EXIT_UPDATES_NO     # by default, don't expect updates
 
     if [ -f "$lastupdate_saved" ] ; then
-        if diff "$lastupdate" "$lastupdate_saved" >/dev/null ; then
+        diff=$(diff "$lastupdate" "$lastupdate_saved")
+        if [ $? -eq 0 ] ; then
             Verbose2 "No ${os} updates.\n"
             rm -f "$lastupdate"
         else
             # Note that the updated packages may *not* be installed here!
             Verbose2 "${os} updates *may* be available.\n"
+            case "$os" in
+                Arch)
+                    Verbose2x "Diff of '$lastupdate' and '$lastupdate_saved':\n"
+                    Verbose2x "%s\n" "$diff"
+                    ;;
+            esac
 
             ret=$EXIT_UPDATES_YES
             rm -f "$lastupdate_saved".*                              # delete old update indicators
@@ -163,7 +173,8 @@ Main2() {
     return $ret
 }
 
-Verbose2() { [ $verbose = yes ] && printf "$@" >&2; }
+Verbose2()  { [ $verbose = yes ] && printf "$@" >&2; }
+Verbose2x() { [ $verbose = yesyes ] && printf "$@" >&2; }
 
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
