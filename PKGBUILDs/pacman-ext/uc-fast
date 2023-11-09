@@ -9,7 +9,7 @@ Main() {
     local os
     local ml
     local file
-    local verbose=""
+    local verbose=0
     local op=""
     local -r EXIT_UPDATES_YES=0
     local -r EXIT_ERROR=1
@@ -24,7 +24,7 @@ Main() {
     # Option --verbose can be given max 2 times, second time gives even more info.
     for arg in "$@" ; do
         case "$arg" in
-            --verbose) [ "$verbose" != "yesyes" ] && verbose+="yes" ;;
+            --verbose) [ $verbose -lt 2 ] && ((verbose++)) ;;
         esac
     done
 
@@ -133,7 +133,6 @@ Main2() {
     local -r lastupdate_saved="$savedir/uc-${renamedos[$os]}-${renamedfile[$file]}"
     local -r lastupdate="${lastupdate_saved}_new"
     local url
-    local diff=""
 
     DiscoverUrl
 
@@ -146,7 +145,7 @@ Main2() {
     local ret=$EXIT_UPDATES_NO     # by default, don't expect updates
 
     if [ -f "$lastupdate_saved" ] ; then
-        diff=$(diff "$lastupdate" "$lastupdate_saved")
+        diff "$lastupdate" "$lastupdate_saved" >/dev/null
         if [ $? -eq 0 ] ; then
             Verbose2 "No ${os} updates.\n"
             rm -f "$lastupdate"
@@ -155,8 +154,8 @@ Main2() {
             Verbose2 "${os} updates *may* be available.\n"
             case "$os" in
                 Arch)
-                    Verbose2x "Diff of '$lastupdate' and '$lastupdate_saved':\n"
-                    Verbose2x "%s\n" "$diff"
+                    Verbose2x "    %-30s: %s\n" "$lastupdate"       "$(date --date="@$(head -n1 "$lastupdate")")"
+                    Verbose2x "    %-30s: %s\n" "$lastupdate_saved" "$(date --date="@$(head -n1 "$lastupdate_saved")")"
                     ;;
             esac
 
@@ -173,8 +172,8 @@ Main2() {
     return $ret
 }
 
-Verbose2()  { [ "$verbose" = yes ] && printf "$@" >&2; }
-Verbose2x() { [ "$verbose" = yesyes ] && printf "$@" >&2; }
+Verbose2()  { [ $verbose -ge 1 ] && printf "$@" >&2; }
+Verbose2x() { [ $verbose -ge 2 ] && printf "$@" >&2; }
 
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
