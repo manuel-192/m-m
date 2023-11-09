@@ -173,8 +173,8 @@ Main2() {
     return $ret
 }
 
-Verbose2()  { [ $verbose = yes ] && printf "$@" >&2; }
-Verbose2x() { [ $verbose = yesyes ] && printf "$@" >&2; }
+Verbose2()  { [ "$verbose" = yes ] && printf "$@" >&2; }
+Verbose2x() { [ "$verbose" = yesyes ] && printf "$@" >&2; }
 
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
