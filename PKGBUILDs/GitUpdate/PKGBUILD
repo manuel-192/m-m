@@ -5,7 +5,7 @@ pkgname=GitUpdate
 pkgdesc="Update special repo"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=11.1
+pkgrel=11.2
 arch=('any')
 license=('custom')
 depends=(bash git)
@@ -21,7 +21,7 @@ sha512sums=('221a6ce692a013a557b55fa511cac299ff7a8e9ff22303a4a84d2d1d936d28296ef
             'a4d7415f7e042c1a52a3352a99caaaf3a11f417fd479761e8c2de40d0d5e9145d097c47321c95fb8f306f9779c8750bd38e5f78cee6d97b3065f34a10f949182'
             'a29ea8698d86356b9ab8d30de933ce927090d94f6c4d720656e2c2d6a4c014611c1c141afb07c0ba63c8ec4db9d3f2b0d28cdf6e13ca8116f9c9400958f25aa4'
             '7966cca41e4c848df2bbca4130d56f9dd4a12aef3e97ee581e24f157aa1dc44d908b1c6a722f667169bf8a15e5fbd1f1ba3164a8ed81d73f0766f3a46f817e4d'
-            '4bfeda185e282a1797db0fe2479c06d446d73ad5d0a8a49cbce55f792b1b608eef4f6cf971c3406f6356ca5b3b01bde8e97009b91de9686ef76ba735fd6baf4d')
+            '77aedfdf544770a66a2450f2e8b0d67faa2af8c829e95c0f488fce6dede481acdac1eeb984bfb8dd2ba981c5394ce625aea98c94924633b4f271899aa3c75c9a')
 
 package() {
     install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
