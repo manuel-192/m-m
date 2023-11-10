@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=17.1
+pkgrel=17.2
 
 arch=('any')
 license=('GPL')
@@ -35,7 +35,6 @@ source=(
     $url/printf2
     $url/rate-mirrors-arch
     $url/sudo-for-all
-    $url/terminal-at-start
     $url/wget
 #    $url/update-grub
 )
@@ -54,7 +53,6 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
             '4aad92018267a1db65b80d3c81571e2a1b615f64700179428d19a9f18e78b8e9f02fd68f9eb36811fc3981de87f73ba432cf36134e4e434fa345fd2a5f9bc560'
             'de18fcad926b3771698917d678392bd77d0739da2a7d04d20b3a22a90c33e9f8725e282746caa3b296fb4f19a1c716090746584bf38e7cbbc3c7b15c782fb44e'
-            '1cac8c1fa27bf05c8bb7503a9a1523c6d7c65d351753951fc1942d229c9ec209337218e5dbbeac0e9c6ee635a5160beb6d8ce59ac20290786e6ee59c8af83d07'
             '38feef5680859586448ff22307609f4d0e5cc5b3d54bffd1434e20ba9574b1ce1bafa402b78b539597f3d6acff9393ae9b434181e0a6ab37bd37e4ec8e06fc58')
 
 package() {
