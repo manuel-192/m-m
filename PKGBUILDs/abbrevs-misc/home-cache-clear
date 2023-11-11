@@ -1,0 +1,8 @@
+#!/bin/bash
+
+Main()
+{
+    rm -rf $HOME/.cache/{thumbnails,mozilla/firefox,aurutils,kdevduchain,efreet,nim,kgamerenderer-*,plasmashell,thunderbird,bookmarksrunner,gnome-builder,gdb,yad,paru}/*
+}
+
+Main "$@"
