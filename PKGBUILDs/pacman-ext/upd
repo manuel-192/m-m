@@ -447,12 +447,19 @@ CheckConnection() {
 
 FindAllUpdates() {
     EMPHASIZED_COLOR --no-newline-at-end "Listing updates:"
-    updates_pacman=$(pacman -Quq)
-    [ "$aur" = "yes" ] && updates_aur=$(AsPlainUser --quiet $helper -Quqa)
     local pu=0 au=0
+    updates_pacman=$(pacman -Quq)
     [ -n "$updates_pacman" ] && pu=$(printf "%s\n" "$updates_pacman" | wc -l)
-    [ -n "$updates_aur" ]    && au=$(printf "%s\n" "$updates_aur"    | wc -l)
-    RESULT "$pu native, $au AUR"
+    case "$aur" in
+        yes)
+            updates_aur=$(AsPlainUser --quiet $helper -Quqa)
+            [ -n "$updates_aur" ] && au=$(printf "%s\n" "$updates_aur" | wc -l)
+            RESULT "$pu native, $au AUR"
+            ;;
+        *)
+            RESULT "$pu native"
+            ;;
+    esac
 }
 
 Sync() {
