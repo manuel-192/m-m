@@ -244,6 +244,13 @@ _pb2() {
             WaitToQuit
             return
             ;;
+        local-repo)
+            #pushd "$repodir" >/dev/null || DIE "'pushd $repodir' failed"
+            local-repo-manager
+            #popd >/dev/null || DIE "popd from '$repodir' failed"
+            #WaitToQuit
+            return
+            ;;
     esac
 
     for dir1 in "${CDPATH_ARR[@]}" ; do
