@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=17.5
+pkgrel=17.6
 
 arch=('any')
 license=('GPL')
@@ -65,7 +65,7 @@ package() {
                 install -Dm644 $item      $pkgdir/etc/skel/$item ;;
             *.completion)
                 install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.completion} ;;
-            ide | paccache-maintainer)
+            bide | paccache-maintainer)
                 install -Dm755 $item      $pkgdir/usr/bin/$item ;;
             sudo-for-all)
                 install -Dm755 $item      $pkgdir/usr/local/bin/sudo ;;
