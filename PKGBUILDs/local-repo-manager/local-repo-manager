@@ -503,6 +503,7 @@ Main() {
 
     local helper_Sia="yay -Sia"   # because yay does this faster than paru
     local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
+    [ -x /bin/paru ] || helper_Ga="yay -Ga"
 
     [ -n "$REPONAME" ]        || DIELINE "REPONAME in the config file is empty or not set"
     [ -n "$WORKDIR" ]         || DIELINE "WORKDIR is missing, cannot build packages"
