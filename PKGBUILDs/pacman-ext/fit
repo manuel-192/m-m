@@ -1,18 +1,25 @@
 #!/bin/bash
-
+#
 # Fast Inaccurate Test (of package updates).
+#
+# Makes a very fast (but inaccurate) check for potentially available package updates.
+# Inaccuracy means there *are' updates in Arch/EndeavourOS, but potentially not for
+# *this* system.
+#
+# This app suits best for a scheduled systemd service that makes the update checks
+# e.g. every 4 hours.
+# Note that this app has options for managing the service too.
+#
 
-Main()
-{
+Check() {
     if /bin/uc-fast -ae ; then
         source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
         AssignIconVariables_in_eos_bash_shared
 
-        local -r $progname=${##*/0}
+        local -r progname=${0##*/}
         local -r txt="Updates *may* be available"
-        local -r showtime=10000
         local -r icon=$ICO_UPDATE
-        local commons=("$icon" "normal" "$showtime" "$progname" "Updates" "$txt")
+        local commons=("$icon" "normal" "$showtime" "$progname" "Update notifier" "$txt")
         local cmd=()
 
         case "$EUID" in
@@ -25,13 +32,119 @@ Main()
                 local action=$("${cmd[@]}")
                 case "$action" in
                     update) RunInTerminal eos-update --yay ;;
+                    "") ;; # if Update is not clicked
+                    *) echo "unknown action '$action'" ;;
                 esac
                 ;;
         esac
-        
     else
         : # echo "No updates."
     fi
+}
+
+Init() {
+    cat <<EOF > $HOME/.config/systemd/user/fit.service
+[Unit]
+Description=Fast, inaccurate test (for package updates)
+
+[Service]
+Type=oneshot
+Environment=DISPLAY=:0
+ExecStart=/bin/fit
+
+[Install]
+WantedBy=fit.timer
+EOF
+
+    cat <<EOF > $HOME/.config/systemd/user/fit.timer
+[Unit]
+Description=Fast, inaccurate test (for package updates)
+
+[Timer]
+# Run every 4 hours:
+OnCalendar=00/4:00:00
+ 
+[Install]
+WantedBy=timers.target
+EOF
+}
+NewSchedule() { sed -i $HOME/.config/systemd/user/fit.timer -e "s|^OnCalendar=.*|OnCalendar=$1|" ; }
+Reload()      { systemctl --user daemon-reload ; }
+Status()      { systemctl --user status  fit.timer ; }
+Start()       { systemctl --user start  fit.timer ; }
+Enable()      { systemctl --user enable  fit.timer ; }
+Disable()     { systemctl --user disable fit.timer ; }
+Edit()        { $(FirstApp emacs codium) $HOME/.config/systemd/user/fit.timer ; }
+
+FirstApp() {   # find the first found executable of the given apps
+    local app
+    for app in "$@" kde-open xdg-open exo-open $EDITOR
+    do
+        which $app &>/dev/null && { echo "$app"; return 0; }
+    done
+    return 1
+}
+
+Help() {
+    local progname=${0##*/}
+    cat <<EOF
+Purpose: Run or manage the '$progname' service.
+         The '$progname' service notifies about possible package updates
+         and offers to do the actual update.
+Usage:   $progname [options]
+Options:
+    -h, --help      This help.
+    -i, --init      Initialize/reset the '$progname' service.
+    -e, --edit      Edit the timer specification file of the '$progname' service.
+    -r, --reload    Reload user services (after changing 'progname').
+    -s, --status    Show the status of the '$progname' service.
+    --schedule=*    Set the given schedule definition for the timer of the '$progname' service.
+                    See also: 'man systemd.time'
+    --showtime=*    Set the time (in ms) the notification will be shown. Default: 10000.
+
+Without parameters, or with option --showtime, the availability of package updates
+will be checked.
+Unsupported options will be ignored and updates will not be checked
+EOF
+}
+
+Options() {
+    local will_exit=no
+    local -r lopts="help,init,edit,reload,status,schedule:,showtime:"
+    local opts
+    opts=$(getopt -o="hiers" --longoptions "$lopts" --name "$progname" -- "$@") || { Help; exit 1; }
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --)                 shift; break ;;
+            --help   | -h)      Help; exit 0 ;;
+            --edit   | -e)      Edit; exit 0 ;;
+            --init   | -i)      Init;   will_exit=yes ;;
+            --reload | -r)      Reload; will_exit=yes ;;
+            --status | -s)      Status; will_exit=yes ;;
+            --schedule)         NewSchedule "${2}"; Reload; exit 0 ;;
+            --showtime)         showtime="${2}"; shift ;;
+            *)                  exit 1 ;;                    # unsupported parameters
+        esac
+        shift
+    done
+    [ "$will_exit" = "yes" ] && exit 0
+}
+
+Main()
+{
+    local showtime=10000
+    # make sure the service is initialized
+    [ -e $HOME/.config/systemd/user/fit.timer ] || {
+        Init
+        Enable
+        Start
+    }
+
+    Options "$@"
+
+    Check
 }
 
 Main "$@"
