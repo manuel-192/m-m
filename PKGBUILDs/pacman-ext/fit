@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Fast Update Notifier.
+# Fast Inaccurate Test (of package updates).
 
 Main()
 {
