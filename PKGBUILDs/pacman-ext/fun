@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Fast Update Notifier.
+
+Main()
+{
+    if /bin/uc-fast -ae ; then
+        source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
+        AssignIconVariables_in_eos_bash_shared
+
+        local -r $progname=${##*/0}
+        local -r txt="Updates *may* be available"
+        local -r showtime=10000
+        local -r icon=$ICO_UPDATE
+        local commons=("$icon" "normal" "$showtime" "$progname" "Updates" "$txt")
+        local cmd=()
+
+        case "$EUID" in
+            0)
+                cmd=(eos_notification_all "${commons[@]}")
+                "${cmd[@]}"
+                ;;
+            *)
+                cmd=(eos_notification "${commons[@]}" "update=Update")
+                local action=$("${cmd[@]}")
+                case "$action" in
+                    update) RunInTerminal eos-update --yay ;;
+                esac
+                ;;
+        esac
+        
+    else
+        : # echo "No updates."
+    fi
+}
+
+Main "$@"
