@@ -43,7 +43,7 @@ Check() {
 }
 
 Init() {
-    cat <<EOF > $HOME/.config/systemd/user/fit.service
+    cat <<EOF > "$HOME/.config/systemd/user/fit.service"
 [Unit]
 Description=Fast, inaccurate test (for package updates)
 
@@ -56,25 +56,26 @@ ExecStart=/bin/fit
 WantedBy=fit.timer
 EOF
 
-    cat <<EOF > $HOME/.config/systemd/user/fit.timer
+    cat <<EOF > "$HOME/.config/systemd/user/fit.timer"
 [Unit]
 Description=Fast, inaccurate test (for package updates)
 
 [Timer]
-# Run every 4 hours:
-OnCalendar=00/4:00:00
+# Run every 2 hours:
+OnCalendar=00/2:00:00
  
 [Install]
 WantedBy=timers.target
 EOF
 }
-NewSchedule() { sed -i $HOME/.config/systemd/user/fit.timer -e "s|^OnCalendar=.*|OnCalendar=$1|" ; }
+NewSchedule() { sed -i "$HOME/.config/systemd/user/fit.timer" -e "s|^OnCalendar=.*|OnCalendar=$1|" ; }
 Reload()      { systemctl --user daemon-reload ; }
 Status()      { systemctl --user status  fit.timer ; }
-Start()       { systemctl --user start  fit.timer ; }
+Start()       { systemctl --user start   fit.timer ; }
+Stop()        { systemctl --user stop    fit.timer ; }
 Enable()      { systemctl --user enable  fit.timer ; }
 Disable()     { systemctl --user disable fit.timer ; }
-Edit()        { $(FirstApp emacs codium) $HOME/.config/systemd/user/fit.timer ; }
+Edit()        { $(FirstApp emacs codium) "$HOME/.config/systemd/user/fit.timer" ; }
 
 FirstApp() {   # find the first found executable of the given apps
     local app
@@ -94,7 +95,7 @@ Purpose: Run or manage the '$progname' service.
 Usage:   $progname [options]
 Options:
     -h, --help      This help.
-    -i, --init      Initialize/reset the '$progname' service.
+    -i, --init      (Re-)create the '$progname' service to from scratch.
     -e, --edit      Edit the timer specification file of the '$progname' service.
     -r, --reload    Reload user services (after changing 'progname').
     -s, --status    Show the status of the '$progname' service.
@@ -117,12 +118,12 @@ Options() {
 
     while true ; do
         case "$1" in
-            --)                 shift; break ;;
-            --help   | -h)      Help; exit 0 ;;
-            --edit   | -e)      Edit; exit 0 ;;
-            --init   | -i)      Init;   will_exit=yes ;;
-            --reload | -r)      Reload; will_exit=yes ;;
-            --status | -s)      Status; will_exit=yes ;;
+            --)                 shift;         break ;;
+            --help   | -h)      Help;          exit 0 ;;
+            --edit   | -e)      Edit;          exit 0 ;;
+            --init   | -i)      FirstTimeInit; will_exit=yes ;;
+            --reload | -r)      Reload;        will_exit=yes ;;
+            --status | -s)      Status;        will_exit=yes ;;
             --schedule)         NewSchedule "${2}"; Reload; exit 0 ;;
             --showtime)         showtime="${2}"; shift ;;
             *)                  exit 1 ;;                    # unsupported parameters
@@ -132,15 +133,22 @@ Options() {
     [ "$will_exit" = "yes" ] && exit 0
 }
 
+FirstTimeInit() {
+    # recreate the service from scratch
+    if [ -e "$HOME/.config/systemd/user/fit.timer" ] ; then
+        Stop
+        Disable
+        rm -f "$HOME"/.config/systemd/user/fit.{timer,service}
+    fi
+    Init
+    Enable
+    Start
+    Status
+}
+
 Main()
 {
     local showtime=10000
-    # make sure the service is initialized
-    [ -e $HOME/.config/systemd/user/fit.timer ] || {
-        Init
-        Enable
-        Start
-    }
 
     Options "$@"
 
