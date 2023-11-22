@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=17.8
+pkgrel=17.9
 
 arch=('any')
 license=('GPL')
@@ -56,7 +56,7 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '4aad92018267a1db65b80d3c81571e2a1b615f64700179428d19a9f18e78b8e9f02fd68f9eb36811fc3981de87f73ba432cf36134e4e434fa345fd2a5f9bc560'
             'de18fcad926b3771698917d678392bd77d0739da2a7d04d20b3a22a90c33e9f8725e282746caa3b296fb4f19a1c716090746584bf38e7cbbc3c7b15c782fb44e'
             'd4f9533bd2d4bf5ff1209610ce3457a1015d1674e1e7ba7951901a2d9a49a4cc41e8a7b97c112cfb3786cbcc7df0346a26898a17d9d3c23c461201a16415a770'
-            '4caaece70ac63468fe2387733146c2e021699ee907dd8911754bac1bd52e66c2dcad4b51ec10cd8cb0a88fb40fb33391d90f7698aace267a1aac038a085a7a61')
+            '19aa66c5bba9cb1ebfba7f35842dc16ae6961ffaa2cd2d17b48f6ee0c00d3623de8c01d7adb57f2c2924d87bf1e49f6ec97c6ecace1a1e878b858909421bd015')
 
 package() {
     local item

@@ -12,10 +12,12 @@ Main()
     [ "$file" ] || DIE "no file parameter"
     [ -e "$file" ] || DIE "file '$file' not found"
 
-    local var=$(grep -P "[^#]* local -n |[^#]* declare -n " "$file" | awk '{print $NF}' | cut -d'=' -f1)
-    if [ "$var" = "-f1)" ] ; then
-        return   # don't check THIS file!
+    if [ "${file##*/}" = "$progname" ] ; then
+        echo "$progname: please don't check THIS file! ;)"
+        return
     fi
+
+    local var=$(grep -P "[^#]* local -n |[^#]* declare -n " "$file" | awk '{print $NF}' | cut -d'=' -f1)
 
     if [ "$var" ] ; then
         local vars=()
@@ -35,6 +37,8 @@ EOF
                 fi
             done
         done
+    else
+        echo "$progname: no problems found."
     fi
 }
 
