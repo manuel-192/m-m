@@ -1,0 +1,41 @@
+#!/bin/bash
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main()
+{
+    local progname=${0##*/}
+    local file="$1"
+    [ "$file" ] || DIE "no file parameter"
+    [ -e "$file" ] || DIE "file '$file' not found"
+
+    local var=$(grep -P "[^#]* local -n |[^#]* declare -n " "$file" | awk '{print $NF}' | cut -d'=' -f1)
+    if [ "$var" = "-f1)" ] ; then
+        return   # don't check THIS file!
+    fi
+
+    if [ "$var" ] ; then
+        local vars=()
+        local line="" lines=() nr
+        readarray -t vars <<< $(echo "$var")
+        for var in "${vars[@]}" ; do
+            readarray -t lines <<< $(grep -nw "$var" "$file" | grep -w for | grep '"')
+            for line in "${lines[@]}" ; do
+                if [ "$line" ] ; then
+                    nr=$(echo "$line" | awk '{print $1}')
+                    line=${line#* }
+                    cat <<EOF
+==> Line $nr $line
+ -> Problem: potential usage of nameref '$var' in a for loop with items including spaces.
+ -> Suggestion: use a non-nameref variable in the for loop instead.
+EOF
+                fi
+            done
+        done
+    fi
+}
+
+Main "$@"

@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=17.7
+pkgrel=17.8
 
 arch=('any')
 license=('GPL')
@@ -37,6 +37,7 @@ source=(
     $url/rate-mirrors-arch
     $url/sudo-for-all
     $url/home-cache-clear
+    $url/shellcheck-nameref
 #    $url/update-grub
 )
 sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc2905cbde967fd2e0a6be430a5ad98270a396b05937b3f5343f6639370d85f790'
@@ -54,7 +55,8 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
             '4aad92018267a1db65b80d3c81571e2a1b615f64700179428d19a9f18e78b8e9f02fd68f9eb36811fc3981de87f73ba432cf36134e4e434fa345fd2a5f9bc560'
             'de18fcad926b3771698917d678392bd77d0739da2a7d04d20b3a22a90c33e9f8725e282746caa3b296fb4f19a1c716090746584bf38e7cbbc3c7b15c782fb44e'
-            'd4f9533bd2d4bf5ff1209610ce3457a1015d1674e1e7ba7951901a2d9a49a4cc41e8a7b97c112cfb3786cbcc7df0346a26898a17d9d3c23c461201a16415a770')
+            'd4f9533bd2d4bf5ff1209610ce3457a1015d1674e1e7ba7951901a2d9a49a4cc41e8a7b97c112cfb3786cbcc7df0346a26898a17d9d3c23c461201a16415a770'
+            '4caaece70ac63468fe2387733146c2e021699ee907dd8911754bac1bd52e66c2dcad4b51ec10cd8cb0a88fb40fb33391d90f7698aace267a1aac038a085a7a61')
 
 package() {
     local item
@@ -65,7 +67,7 @@ package() {
                 install -Dm644 $item      $pkgdir/etc/skel/$item ;;
             *.completion)
                 install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.completion} ;;
-            bide | paccache-maintainer)
+            bide | paccache-maintainer | shellcheck-nameref)
                 install -Dm755 $item      $pkgdir/usr/bin/$item ;;
             sudo-for-all)
                 install -Dm755 $item      $pkgdir/usr/local/bin/sudo ;;
