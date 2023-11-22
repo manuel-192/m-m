@@ -1,93 +1,28 @@
 #!/bin/bash
 #
-# Fast Inaccurate Test (of package updates).
+# Fast Inaccurate Test (FIT) of package updates.
 #
-# Makes a very fast (but inaccurate) check for potentially available package updates.
-# Inaccuracy means there *are' updates in Arch/EndeavourOS, but potentially not for
-# *this* system.
+# Makes a very fast but inaccurate check for the availability of package updates.
+# Here inaccuracy means even if there *are* updates in Arch/EndeavourOS,
+# none of the updates might not affect *this* system.
 #
 # This app suits best for a scheduled systemd service that makes the update checks
-# e.g. every 4 hours.
+# e.g. every 4 hours. Then you'll be notified about *real* updates, but don't waste
+# the internet resources too much (each check downloads only two tiny files).
+#
 # Note that this app has options for managing the service too.
 #
 
-Check() {
-    if /bin/uc-fast -ae ; then
-        source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
-        AssignIconVariables_in_eos_bash_shared
+Main()
+{
+    local progname=${0##*/}
+    local showtime=10000
 
-        local -r progname=${0##*/}
-        local -r txt="Updates *may* be available"
-        local -r icon=$ICO_UPDATE
-        local commons=("$icon" "normal" "$showtime" "$progname" "Update notifier" "$txt")
-        local cmd=()
-
-        case "$EUID" in
-            0)
-                cmd=(eos_notification_all "${commons[@]}")
-                "${cmd[@]}"
-                ;;
-            *)
-                cmd=(eos_notification "${commons[@]}" "update=Update")
-                local action=$("${cmd[@]}")
-                case "$action" in
-                    update) RunInTerminal eos-update --yay ;;
-                    "") ;; # if Update is not clicked
-                    *) echo "unknown action '$action'" ;;
-                esac
-                ;;
-        esac
-    else
-        : # echo "No updates."
-    fi
-}
-
-Init() {
-    cat <<EOF > "$HOME/.config/systemd/user/fit.service"
-[Unit]
-Description=Fast, inaccurate test (for package updates)
-
-[Service]
-Type=oneshot
-Environment=DISPLAY=:0
-ExecStart=/bin/fit
-
-[Install]
-WantedBy=fit.timer
-EOF
-
-    cat <<EOF > "$HOME/.config/systemd/user/fit.timer"
-[Unit]
-Description=Fast, inaccurate test (for package updates)
-
-[Timer]
-# Run every 2 hours:
-OnCalendar=00/2:00:00
- 
-[Install]
-WantedBy=timers.target
-EOF
-}
-NewSchedule() { sed -i "$HOME/.config/systemd/user/fit.timer" -e "s|^OnCalendar=.*|OnCalendar=$1|" ; }
-Reload()      { systemctl --user daemon-reload ; }
-Status()      { systemctl --user status  fit.timer ; }
-Start()       { systemctl --user start   fit.timer ; }
-Stop()        { systemctl --user stop    fit.timer ; }
-Enable()      { systemctl --user enable  fit.timer ; }
-Disable()     { systemctl --user disable fit.timer ; }
-Edit()        { $(FirstApp emacs codium) "$HOME/.config/systemd/user/fit.timer" ; }
-
-FirstApp() {   # find the first found executable of the given apps
-    local app
-    for app in "$@" kde-open xdg-open exo-open $EDITOR
-    do
-        which $app &>/dev/null && { echo "$app"; return 0; }
-    done
-    return 1
+    Options "$@"
+    Check
 }
 
 Help() {
-    local progname=${0##*/}
     cat <<EOF
 Purpose: Run or manage the '$progname' service.
          The '$progname' service notifies about possible package updates
@@ -118,19 +53,80 @@ Options() {
 
     while true ; do
         case "$1" in
-            --)                 shift;         break ;;
-            --help   | -h)      Help;          exit 0 ;;
-            --edit   | -e)      Edit;          exit 0 ;;
-            --init   | -i)      FirstTimeInit; will_exit=yes ;;
-            --reload | -r)      Reload;        will_exit=yes ;;
-            --status | -s)      Status;        will_exit=yes ;;
-            --schedule)         NewSchedule "${2}"; Reload; exit 0 ;;
-            --showtime)         showtime="${2}"; shift ;;
+            --)                 shift;            break ;;
+            --help   | -h)      Help;             exit 0 ;;
+            --edit   | -e)      Edit;             exit 0 ;;
+            --init   | -i)      FirstTimeInit;    will_exit=yes ;;
+            --reload | -r)      Reload;           will_exit=yes ;;
+            --status | -s)      Status;           will_exit=yes ;;
+            --schedule)         NewSchedule "$2"; Reload; exit 0 ;;
+            --showtime)         showtime="$2";    shift ;;
             *)                  exit 1 ;;                    # unsupported parameters
         esac
         shift
     done
     [ "$will_exit" = "yes" ] && exit 0
+}
+
+Check() {
+    local ret=0
+    /bin/uc-fast -ae || ret=$?
+    case $ret in
+        0)  source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
+            AssignIconVariables_in_eos_bash_shared  # gets the icon we use
+
+            local -r progname=${0##*/}
+            local -r txt="Updates *may* be available"
+            local -r icon=$ICO_UPDATE    # system-software-update
+            local commons=("$icon" "normal" "$showtime" "$progname" "Update notifier" "$txt")
+            local cmd=()
+
+            case "$EUID" in
+                0)
+                    cmd=(eos_notification_all "${commons[@]}")
+                    "${cmd[@]}"
+                    ;;
+                *)
+                    cmd=(eos_notification "${commons[@]}" "update=Update")
+                    local action=$("${cmd[@]}")
+                    case "$action" in
+                        update) RunInTerminal eos-update --yay ;;
+                        "") ;; # if Update is not clicked
+                        *) echo "unknown action '$action'" ;;
+                    esac
+                    ;;
+            esac
+            ;;
+        *)  echo "No native updates." ;;
+    esac
+    return $ret    # $ret is from uc-fast
+}
+
+Init() {
+    cat <<EOF > "$HOME/.config/systemd/user/fit.service"
+[Unit]
+Description=Fast, inaccurate test (for package updates)
+
+[Service]
+Type=oneshot
+Environment=DISPLAY=:0
+ExecStart=/bin/fit
+
+[Install]
+WantedBy=fit.timer
+EOF
+
+    cat <<EOF > "$HOME/.config/systemd/user/fit.timer"
+[Unit]
+Description=Fast, inaccurate test (for package updates)
+
+[Timer]
+# Run every 2 hours:
+OnCalendar=00/2:00:00
+ 
+[Install]
+WantedBy=timers.target
+EOF
 }
 
 FirstTimeInit() {
@@ -146,13 +142,33 @@ FirstTimeInit() {
     Status
 }
 
-Main()
-{
-    local showtime=10000
+NewSchedule() { sed -i "$HOME/.config/systemd/user/fit.timer" -e "s|^OnCalendar=.*|OnCalendar=$1|" ; }
+Reload()      { systemctl --user daemon-reload ; }
+Status()      { systemctl --user status  fit.timer ; }
+Start()       { systemctl --user start   fit.timer ; }
+Stop()        { systemctl --user stop    fit.timer ; }
+Enable()      { systemctl --user enable  fit.timer ; }
+Disable()     { systemctl --user disable fit.timer ; }
+Edit() {
+    local app=""
+    FirstApp app emacs codium
+    $app "$HOME/.config/systemd/user/fit.timer"
+}
 
-    Options "$@"
+FirstApp() {   # "return" the first existing executable of the given apps
+    local -n _APP=$1
+    local prog         # use 'prog' because '_APP' cannot be used as for loop parameter?
+    shift
+    for prog in "$@" kde-open xdg-open exo-open "$EDITOR" ; do
+        _APP="$prog"
+        which ${_APP%% *} &>/dev/null && return 0
+    done
+    DIE "no app found for editing files!"
+}
 
-    Check
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
 }
 
 Main "$@"
