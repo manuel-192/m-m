@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = minizip-ng
+
+[Action]
+Description = Adjust lib for compatibility
+When = PostTransaction
+Exec = /bin/bash -c "rm -f /usr/lib/libminizip.so; /bin/ln -s /usr/lib/libminizip-ng.so /usr/lib/libminizip.so"

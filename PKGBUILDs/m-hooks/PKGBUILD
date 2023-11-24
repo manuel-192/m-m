@@ -1,0 +1,22 @@
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=m-hooks
+pkgver=1
+pkgrel=1
+pkgdesc='pacman hooks'
+arch=('any')
+license=('GPL3')
+url=https://github.com/endeavouros-team/PKGBUILDS/tree/master/$pkgname
+_url=https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/$pkgname
+
+source=(
+  $_url/$pkgname.hook
+)
+
+sha512sums=('3304fe27899f563b71fc5af022c86d69d392303e3f9af0cbed80ce9e07cfeec5f61de3c46d464e617de5d2d5aac9bb12956f426f988baa080bcbc1f1a196a5b9')
+
+package() {
+  local hooks=$pkgdir/usr/share/libalpm/hooks
+
+  install -Dm644 ${pkgname}.hook           $hooks/${pkgname}.hook
+}
