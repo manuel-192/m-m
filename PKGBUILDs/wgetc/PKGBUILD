@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=wgetc
+pkgdesc="(Experimental!) Provides a limited wget app via curl; see 'wget --help'"
+pkgver=23
+pkgrel=1
+arch=(any)
+license=(GPL2)
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+depends=(curl)
+optdepends=(
+    "eos-bash-shared: for 'curl-exit-code-to-string'"
+)
+provides=(wget)
+conflicts=(wget)
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('bc844f2a5d985db4cf383cfed8aaed07ba45b0864027ebb79825b60113eec66195d6b1901c2040612412faa7d57860259cd1f33a67e73ddead6a19d3d16b6cc8')
+
+package() {
+    install -Dm755 wgetc   "$pkgdir/usr/local/bin/wget"
+}
