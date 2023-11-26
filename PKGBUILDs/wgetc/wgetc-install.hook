@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = wgetc
+
+[Action]
+Description = Fetch wget man page
+When = PostTransaction
+Exec = /usr/local/bin/wget --man-page-wget

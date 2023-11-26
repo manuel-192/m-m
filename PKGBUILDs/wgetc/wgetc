@@ -32,13 +32,16 @@ $progname is a limited 'wget'.
 $progname supports only the following options of 'wget':
 $opts
 See also: man wget
+Note: in case of reinstalling 'wget', you must manually delete
+      file /usr/share/man/man1/wget.1.gz first.
+
 EOF
     [ "$1" ] && exit $1
 }
 
 Options() {
     # The only options supported here:
-    local LOPTS="continue,directory-prefix:,help,output-document:,passive-ftp,quiet,show-command"
+    local LOPTS="continue,directory-prefix:,help,man-page-del,man-page-wget,output-document:,passive-ftp,quiet,show-command"
           LOPTS+=",show-progress,supported-options,timeout:,timestamping,user-agent:"
     local SOPTS="cP:O:qT:NU:h"
     local opts
@@ -68,6 +71,8 @@ Options() {
             # extra options (not in wget)
             --show-command)      hide_command=no ;;
             --supported-options) SupportedOptions; exit 0 ;;
+            --man-page-wget)     WgetManPage; exit 0 ;;
+            --man-page-del)      WgetManPageDel; exit 0 ;;
 
             # exit condition
             --) shift; break ;;
@@ -82,12 +87,51 @@ Options() {
     fi
 }
 
+WgetManPageDel() {
+    sudo rm $manpage
+}
+
+WgetManPage() {
+    echo "Fetching the 'wget' man page..." >&2
+    case "$SUDO_USER" in
+        "") prefix="/bin/runuser -u $LOGNAME --" ;;
+        *)  prefix="/bin/sudo    -u $SUDO_USER" ;;
+    esac
+
+    local tmpdir=$($prefix mktemp -d)
+    pushd $tmpdir >/dev/null || return $?
+
+    $prefix yay -G wget >/dev/null || return $?
+
+    local pkgname pkgver pkgrel  pkgdesc url arch license depends checkdepends optdepends
+    local source backup sha256sums b2sums validpgpkeys
+
+    source wget/PKGBUILD
+
+    local url=https://mirror.f4st.host/archlinux/extra/os/x86_64/wget-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst
+    local manfile pkgfile=${url##*/}
+
+    $prefix curl --fail -Lsm 10 -o$pkgfile $url || return $?
+
+    unset -f prepare build check package
+
+    tar xvf $pkgfile >/dev/null
+
+    [ -e ${manpage:1} ] || return 1
+    sudo cp ${manpage:1} ${manpage%/*}/
+
+    popd >/dev/null
+    rm -rf $tmpdir
+    echo "done." >&2
+}
+
 Main() {
     local progname="${0##*/}"
     local wget=/bin/wget
     local cmd=(/usr/bin/curl --fail --location   # --progress-bar
               )
     local hide_command=yes
+    local -r manpage=/usr/share/man/man1/wget.1.gz
 
     Options "$@"
 
