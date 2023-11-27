@@ -74,7 +74,7 @@ Main() {
     local helper=""
     local begin=":" end=":" middle=":"   # make there arrays !
 
-    SetHelper yay
+    SetHelper
 
     Options "${args[@]}"
 
@@ -393,7 +393,10 @@ CheckDbLock() {
 }
 
 SetHelper() {
-    for helper in "$@" yay paru ; do
+    if [ -z "$1" ] ; then
+        source /etc/eos-script-lib-yad.conf
+    fi
+    for helper in "$@" $EOS_AUR_HELPER $EOS_AUR_HELPER_OTHER yay paru ; do
         [ -x /bin/"${helper%% *}" ] && return 0
     done
     DIE "AUR helper not found"
