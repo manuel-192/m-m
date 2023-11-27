@@ -27,11 +27,15 @@ SupportedOptions() {
 
 Usage() {
     local opts=$(printf "%s\n" $(SupportedOptions) | sed 's|^|    |')
+    local pname=wget-tiny
     cat <<EOF
-$progname is a limited 'wget'.
-$progname supports only the following options of 'wget':
+
+EXPERIMENTAL! Not yet well tested.
+
+$pname is a limited 'wget'. It is implemented on top of 'curl'.
+$pname supports only the following options of 'wget':
 $opts
-See also: man wget
+See also all 'wget' options: man wget
 Note: in case of reinstalling 'wget', you must manually delete
       file /usr/share/man/man1/wget.1.gz first.
 
