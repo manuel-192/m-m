@@ -2,7 +2,7 @@
 Operation = Install
 Operation = Upgrade
 Type = Package
-Target = wgetc
+Target = wget-tiny
 
 [Action]
 Description = Fetch wget man page

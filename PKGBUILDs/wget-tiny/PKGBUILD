@@ -2,10 +2,10 @@
 
 # Maintainer: EndeavourOS-Team <info@endeavouros.com>
 
-pkgname=wgetc
+pkgname=wget-tiny
 pkgdesc="(Experimental) A limited relplacement for wget, implemented using curl; see 'wget --help'"
 pkgver=23
-pkgrel=1.1
+pkgrel=1
 arch=(any)
 license=(GPL2)
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
@@ -21,11 +21,11 @@ source=(
     $url/${pkgname}-install.hook
 )
 sha512sums=('3412f01b13a996e50dd142f336f3906d31b5316bb12e3070a1ea1001b487b48d5cb5921c342880c12d22048877debac5a1695d97c6a31c8ffad58415312a7caa'
-            '1b16188df3f986f81c38e68249e356f554dc5f66877494da24ade3828beda55ced921f291b646cabe1a36e658838e6a53e437cd3ac835ebc277368be2eb91da3')
+            'f3fa850412d76ca7be3473ad152a4f2f87d6668ebad080e76f52a10aebab858f49d566a75ec31d3ab789f989e25f33cc3bfbcf6ea682b3ac10921aa89c3807fd')
 
 package() {
     local hooks=$pkgdir/usr/share/libalpm/hooks
 
-    install -Dm755 wgetc                       "$pkgdir/usr/local/bin/wget"
-    install -Dm644 ${pkgname}-install.hook     $hooks/${pkgname}-install.hook
+    install -Dm755 $pkgname                    "$pkgdir/usr/local/bin/wget"
+    install -Dm644 ${pkgname}-install.hook     "$hooks/${pkgname}-install.hook"
 }
