@@ -225,6 +225,7 @@ EOF
     [ ${#repodirs[@]} -eq 0 ] && repodirs=("$PWD")
 
     for repodir in "${repodirs[@]}" ; do
+        printf "\n============================ %s ============================\n" "$repodir"
         _pb2
     done
 }
