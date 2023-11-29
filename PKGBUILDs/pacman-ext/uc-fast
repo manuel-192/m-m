@@ -99,7 +99,7 @@ GetUrlFromMirrorsFile() {
 }
 
 DiscoverUrl() {
-    source /etc/$progname.conf &>/dev/null
+    [ -r /etc/$progname.conf ] && source /etc/$progname.conf &>/dev/null
     case "$os" in
         EndeavourOS)
             if [ "$EOS_MIRROR" ] ; then
