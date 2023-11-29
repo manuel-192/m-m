@@ -17,7 +17,6 @@ glimpse-testing-updates() {
     local repo
     local repos=$(pacconf --repo-list)
 
-    rm -f "$testconf"
     cp /etc/pacman.conf "$testconf"
     chmod go-rwx "$testconf"
 
