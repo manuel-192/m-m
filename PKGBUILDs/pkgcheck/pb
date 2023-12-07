@@ -186,7 +186,7 @@ EOF
                 do
                     printf2 "\n${GREEN}==> %s %s${RESET}\n" "$progname" "$folder"
                     # echo2 "==> $progname $folder"
-                    $progname "$folder" || DIE "'$progname $folder' failed."
+                    $progname -nn "$folder" || DIE "'$progname $folder' failed."
                 done
                 WaitToQuit
                 return
