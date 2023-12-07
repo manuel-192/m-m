@@ -85,7 +85,7 @@ _pb() {
     local pkgnames_para=""
     local changelogfor=""
 
-    supported_folders="$(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ') MAN EOS"
+    supported_folders="MAN EOS $(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ')"
 
     while [ -n "$1" ] ; do
         case "$1" in
@@ -175,7 +175,8 @@ EOF
                 return
                 ;;
             --check-all)
-                for folder in $supported_folders pull
+                for folder in $supported_folders \
+                              --check-assets-conf pull     # NOTE: additional commands!
                 do
                     echo2 "==> $progname $folder"
                     $progname "$folder" || DIE "'$progname $folder' failed."
