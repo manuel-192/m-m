@@ -363,7 +363,8 @@ Options:
           -f, --build-force         Re-build all packages.
           -c, --add-cache           Add built packages to system's package cache.
           -n, --dryrun              Show what would be done, but change nothing. Implies --verbose.
-          -v, --verbose             More verbose output.
+          -q, --quiet               Less verbose output.
+          -v, --verbose             More verbose output. Default.
           -c, --changelog-included  Show changelogs of changed packages.
           --changelog-all           Show changelogs of all supported packages.
           --rmdeps                  Remove dependencies installed during build.
@@ -380,6 +381,7 @@ EOF
                     --changelog-included
                     --dryrun
                     --help
+                    --quiet
                     --rm-pkg
                     --rmdeps
                     --verbose
@@ -404,6 +406,9 @@ EOF
                 ;;
             -v | --verbose)
                 verbose=yes
+                ;;
+            -q | --quiet)
+                verbose=no
                 ;;
             -c | --add-cache)
                 add_cache=yes
@@ -470,7 +475,7 @@ Main() {
     local show_changelog=no
     local show_changelog_all=no
     local force_rebuild=no
-    local verbose=no
+    local verbose=yes
     local add_cache=no
     local dryrun=no
     local remove_deps=no
