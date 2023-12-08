@@ -24,14 +24,14 @@ _xbacklight_()
                     # EI TOIMI !!!
                     _xbacklight_complete "$(echo {1..100} | sed -E 's|([0-9]+)|-\1|g')"
                     ;;
-                a* | s*)
-                    _xbacklight_complete "auto service"
+                a* | s* | e*)
+                    _xbacklight_complete "auto enable-auto service"
                     ;;
                 [0-9]*)
                     _xbacklight_complete "$(echo {1..100})"
                     ;;
                 "")
-                    _xbacklight_complete "auto - + = $(echo {1..100})"
+                    _xbacklight_complete "auto enable-auto service - + = 1..100"
                     ;;
             esac
             ;;

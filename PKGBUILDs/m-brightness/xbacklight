@@ -11,9 +11,14 @@ DIE() {
 xbacklight() {
     local progname="${0##*/}"
     local error="$progname: error in values of variable AUTO_BRIGHTNESS_TIMED_VALUES"
+    local stay_file=/tmp/${progname}-stay.tmp
 
     case "$1" in
+        enable-auto)
+            rm -f $stay_file
+            ;;
         auto)
+            [ -e $stay_file ] && return
             local curr=$(brightness-intel)
             local hour=$(/usr/bin/date +%H)
             local new=""
@@ -72,6 +77,7 @@ xbacklight() {
             ;;
         *)
             brightness-intel "$@"
+            touch $stay_file
             ;;
     esac
 }
