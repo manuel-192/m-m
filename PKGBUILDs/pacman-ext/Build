@@ -1,27 +1,55 @@
 #!/bin/bash
 
-DIE() {
-    local progname="$(basename "$0")"
-    echo "$progname: error:" "$@" >&2
-    exit 1
-}
+DIE()         { echo2 "$progname: error:" "$@"; exit 1; }
+echo2()       { echo "$@" >&2; }
+verbose2cmd() { [ $show_commands = yes ] && echo2 "${YELLOW}""===> ""$@""${RESET}"; }
+Cmd()         { verbose2cmd "$*" ; "$@" ; }
 
 _Build_pkgname-pkgver-pkgrel() {
     source PKGBUILD
     echo "$pkgname"-"$pkgver"-"$pkgrel"
 }
 
+Help() {
+    cat <<EOF >&2
+Usage: $progname [makepkg-options | pacman-options | other-options]
+       $progname direct-makepkg-options
+
+Makepkg-options:
+       --makepkg=*, -m=*   Give additional options to makepkg.
+
+Pacman-options:
+       --pacman=*,  -p=*   Give additional options to pacman.
+
+Other-options:
+       --help,      -h     This help.
+
+Direct-makepkg-options: options (directly) for makepkg (backwards compatibility).
+EOF
+    [ "$1" ] && exit "$1"
+}
+
 Build() {
+    local progname="${0##*/}"
     [ -r PKGBUILD ] || DIE "PKGBUILD not found."
+
+    local -r RED=$'\e[0;91m'         # starts this foreground text color
+    local -r GREEN=$'\e[0;92m'
+    local -r YELLOW=$'\e[0;93m'
+    local -r BLUE=$'\e[0;94m'
+    local -r MAGENTA=$'\e[0;95m'
+    local -r RESET=$'\e[0m'          # back to normal colors
 
     local makepkg_opts=""
     local pacman_opts=""                               # "--asdeps"  # ???
     local pkgname="$(_Build_pkgname-pkgver-pkgrel)"
     local old_pkgs=(${pkgname}-*.pkg.tar.zst)
+    local show_commands=yes
 
     # manage options for makepkg and pacman
     while true ; do
         case "$1" in
+            --help      | -h)   Help 0 ;;
             --makepkg=* | -m=*) makepkg_opts="${1#*=}"   ;;
             --pacman=*  | -p=*) pacman_opts="${1#*=}"    ;;
             *)                  makepkg_opts="$*"; break ;;   # backwards compatibility!
@@ -44,23 +72,23 @@ Build() {
         esac
     fi
     if [ "$updatesums" = "yes" ] ; then
-        updpkgsums || DIE "updpkgsums failed."
+        Cmd updpkgsums || DIE "updpkgsums failed."
     fi
-    makepkg -cf $makepkg_opts || DIE "makepkg failed."
+    Cmd makepkg -cf $makepkg_opts || DIE "makepkg failed."
 
     local files=(${pkgname}-*.pkg.tar.zst)
 
     [ "${files[*]}" = "${pkgname}-*.pkg.tar.zst" ] && DIE "nothing was built for '$pkgname'"
 
-    echo "Install ${file[*]}:"
-    sudo pacman $pacman_opts -U "${files[@]}"
-    read -p "Delete ${files[*]} (Y/n)? "
+    echo "Install ${files[*]}:"
+    Cmd sudo pacman $pacman_opts -U "${files[@]}" || DIE "pacman -U failed"
+    read -p "  ${YELLOW}-> Delete ${files[*]} (Y/n)? ${RESET}"
     case "$REPLY" in
         "" | [yY]*) rm -f "${files[@]}" ;;
     esac
 
     # user file './.destructor' can do post-build stuff, e.g. cleanup
-    [ -x ./.destructor ] && ./.destructor
+    [ -x ./.destructor ] && Cmd ./.destructor
 }
 
 Build "$@"
