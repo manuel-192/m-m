@@ -14,9 +14,22 @@ _Build_pkgname-pkgver-pkgrel() {
 Build() {
     [ -r PKGBUILD ] || DIE "PKGBUILD not found."
 
-    local makepkgopt="$*"
+    local makepkg_opts=""
+    local pacman_opts=""                               # "--asdeps"  # ???
     local pkgname="$(_Build_pkgname-pkgver-pkgrel)"
-    ls ${pkgname}-*.pkg.tar.zst >& /dev/null && rm -i ${pkgname}-*.pkg.tar.zst
+    local old_pkgs=(${pkgname}-*.pkg.tar.zst)
+
+    # manage options for makepkg and pacman
+    while true ; do
+        case "$1" in
+            --makepkg=* | -m=*) makepkg_opts="${1#*=}"   ;;
+            --pacman=*  | -p=*) pacman_opts="${1#*=}"    ;;
+            *)                  makepkg_opts="$*"; break ;;   # backwards compatibility!
+        esac
+        shift
+    done
+
+    [ "${old_pkgs[*]}" != "${pkgname}-*.pkg.tar.zst" ] && rm -i "${old_pkgs[@]}"
 
     case "$pkgname" in
         eos-apps-info-*) ./eos-apps-info-collect ;;  # update actual html pages before build
@@ -33,18 +46,21 @@ Build() {
     if [ "$updatesums" = "yes" ] ; then
         updpkgsums || DIE "updpkgsums failed."
     fi
-    makepkg -cf $makepkgopt || DIE "makepkg failed."
+    makepkg -cf $makepkg_opts || DIE "makepkg failed."
 
-    local file=$(ls ${pkgname}-*.pkg.tar.zst)
-    if [ -r "$file" ] ; then
-        echo "Install $file:"
-        sudo pacman -U "$file"
-        read -p "Delete $file (Y/n)? "
-        case "$REPLY" in
-            "" | [yY]*) rm -f $file ;;
-        esac
-    fi
-    [ -x ./.destructor ] && ./.destructor   # user file .destructor can do post-build stuff, e.g. cleanup
+    local files=(${pkgname}-*.pkg.tar.zst)
+
+    [ "${files[*]}" = "${pkgname}-*.pkg.tar.zst" ] && DIE "nothing was built for '$pkgname'"
+
+    echo "Install ${file[*]}:"
+    sudo pacman $pacman_opts -U "${files[@]}"
+    read -p "Delete ${files[*]} (Y/n)? "
+    case "$REPLY" in
+        "" | [yY]*) rm -f "${files[@]}" ;;
+    esac
+
+    # user file './.destructor' can do post-build stuff, e.g. cleanup
+    [ -x ./.destructor ] && ./.destructor
 }
 
 Build "$@"
