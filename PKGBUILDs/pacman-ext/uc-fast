@@ -27,7 +27,7 @@ Operate() {
                 ;;
             -y | --aur)
                 op="-y"
-                ShowResult "yay -Qua"
+                ShowResult "yay -Qua" "-"
                 if yay -Qua >/dev/null ; then
                     ret_aur=$EXIT_UPDATES_YES
                     Verbose2 "AUR updates available.\n"
@@ -136,15 +136,17 @@ Main2() {
     local -r savedir="$HOME/.cache"
     local -r lastupdate_saved="$savedir/uc-${renamedos[$os]}-${renamedfile[$file]}"
     local -r lastupdate="${lastupdate_saved}_new"
+    local lastupdate_val=""
     local url
 
     DiscoverUrl
 
-    ShowResult "$url"
-
     local -r data=$(curl --fail -Lsm 10 -o- "$url")
     [ "$data" ] || DIE "fetching data from '$url' failed"
     echo "$data" | head -n1 > "$lastupdate"
+    lastupdate_val=$(head -n1 $lastupdate)
+
+    ShowResult "$url" "$file=$lastupdate_val"
 
     local ret=$EXIT_UPDATES_NO     # by default, don't expect updates
 
@@ -178,7 +180,7 @@ Main2() {
 
 Verbose2()  { [ $verbose -ge 1 ] && printf "$@" >&2; }
 Verbose2x() { [ $verbose -ge 2 ] && printf "$@" >&2; }
-ShowResult() { Verbose2 "%-s|:|" "$1" ; }
+ShowResult() { Verbose2 "%-s|($2)|:|" "$1" ; }
 
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
