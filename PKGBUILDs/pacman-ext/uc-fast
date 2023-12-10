@@ -4,6 +4,47 @@
 # Assumption: the lastupdate file is NOT abused by making it equal to lastsync.
 # Exit code is similar to 'checkupdates'.
 
+Operate() {
+    opts=$(/bin/getopt -o=$sopts --longoptions=$lopts --name $progname -- "$@") || Usage $EXIT_ERROR
+    eval set -- "$opts"
+    while true ; do
+        case "$1" in
+            -a | --arch)
+                op="-a"
+                os=Arch
+                ml=mirrorlist
+                file=lastupdate
+                Main2 $op
+                ret_arch=$?
+                ;;
+            -e | --endeavouros)
+                op="-e"
+                os=EndeavourOS
+                ml=endeavouros-mirrorlist
+                file=state
+                Main2 $op
+                ret_eos=$?
+                ;;
+            -y | --aur)
+                op="-y"
+                ShowResult "yay -Qua"
+                if yay -Qua >/dev/null ; then
+                    ret_aur=$EXIT_UPDATES_YES
+                    Verbose2 "AUR updates available.\n"
+                else
+                    Verbose2 "No AUR updates.\n"
+                fi
+                ;;
+            -h | --help) Usage $EXIT_UPDATES_NO ;;
+            --verbose) ;;                             # already handled above
+            --) break ;;
+            *) Usage $EXIT_ERROR ;;
+        esac
+        shift
+    done
+    [ "$op" ] || DIE "operation(s) missing"
+}
+
 Main() {
     local progname=${0##*/}
     local os
@@ -32,52 +73,12 @@ Main() {
     local sopts=aeyh
     local opts
 
-    opts=$(/bin/getopt -o=$sopts --longoptions=$lopts --name $progname -- "$@") || Usage $EXIT_ERROR
-    eval set -- "$opts"
+    Operate "$@" |& column -t -s'|'
 
-    {
-        while true ; do
-            case "$1" in
-                -a | --arch)
-                    op="-a"
-                    os=Arch
-                    ml=mirrorlist
-                    file=lastupdate
-                    Main2 $op
-                    ret_arch=$?
-                    ;;
-                -e | --endeavouros)
-                    op="-e"
-                    os=EndeavourOS
-                    ml=endeavouros-mirrorlist
-                    file=state
-                    Main2 $op
-                    ret_eos=$?
-                    ;;
-                -y | --aur)
-                    op="-y"
-                    ShowResult "yay -Qua"
-                    if yay -Qua >/dev/null ; then
-                        ret_aur=$EXIT_UPDATES_YES
-                        Verbose2 "AUR updates available.\n"
-                    else
-                        Verbose2 "No AUR updates.\n"
-                    fi
-                    ;;
-                -h | --help) Usage $EXIT_UPDATES_NO ;;
-                --verbose) ;;                             # already handled above
-                --) break ;;
-                *) Usage $EXIT_ERROR ;;
-            esac
-            shift
-        done
-        [ "$op" ] || DIE "operation(s) missing"
-
-        if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
-            exit $EXIT_UPDATES_YES
-        fi
-        exit $EXIT_UPDATES_NO
-    } |& column -t -s'|'
+    if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
+        exit $EXIT_UPDATES_YES
+    fi
+    exit $EXIT_UPDATES_NO
 }
 
 Usage() {
