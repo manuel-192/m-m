@@ -35,46 +35,49 @@ Main() {
     opts=$(/bin/getopt -o=$sopts --longoptions=$lopts --name $progname -- "$@") || Usage $EXIT_ERROR
     eval set -- "$opts"
 
-    while true ; do
-        case "$1" in
-            -a | --arch)
-                op="-a"
-                os=Arch
-                ml=mirrorlist
-                file=lastupdate
-                Main2 $op
-                ret_arch=$?
-                ;;
-            -e | --endeavouros)
-                op="-e"
-                os=EndeavourOS
-                ml=endeavouros-mirrorlist
-                file=state
-                Main2 $op
-                ret_eos=$?
-                ;;
-            -y | --aur)
-                op="-y"
-                Verbose2 "%-70s: " "yay -Qua"
-                if yay -Qua >/dev/null ; then
-                    ret_aur=$EXIT_UPDATES_YES
-                    Verbose2 "AUR updates available.\n"
-                else
-                    Verbose2 "No AUR updates.\n"
-                fi
-                ;;
-            -h | --help) Usage $EXIT_UPDATES_NO ;;
-            --verbose) ;;                             # already handled above
-            --) break ;;
-            *) Usage $EXIT_ERROR ;;
-        esac
-        shift
-    done
-    [ "$op" ] || DIE "operation(s) missing"
-    if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
-        exit $EXIT_UPDATES_YES
-    fi
-    exit $EXIT_UPDATES_NO
+    {
+        while true ; do
+            case "$1" in
+                -a | --arch)
+                    op="-a"
+                    os=Arch
+                    ml=mirrorlist
+                    file=lastupdate
+                    Main2 $op
+                    ret_arch=$?
+                    ;;
+                -e | --endeavouros)
+                    op="-e"
+                    os=EndeavourOS
+                    ml=endeavouros-mirrorlist
+                    file=state
+                    Main2 $op
+                    ret_eos=$?
+                    ;;
+                -y | --aur)
+                    op="-y"
+                    ShowResult "yay -Qua"
+                    if yay -Qua >/dev/null ; then
+                        ret_aur=$EXIT_UPDATES_YES
+                        Verbose2 "AUR updates available.\n"
+                    else
+                        Verbose2 "No AUR updates.\n"
+                    fi
+                    ;;
+                -h | --help) Usage $EXIT_UPDATES_NO ;;
+                --verbose) ;;                             # already handled above
+                --) break ;;
+                *) Usage $EXIT_ERROR ;;
+            esac
+            shift
+        done
+        [ "$op" ] || DIE "operation(s) missing"
+
+        if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
+            exit $EXIT_UPDATES_YES
+        fi
+        exit $EXIT_UPDATES_NO
+    } |& column -t -s'|'
 }
 
 Usage() {
@@ -136,7 +139,7 @@ Main2() {
 
     DiscoverUrl
 
-    Verbose2 "%-70s: " "$url"
+    ShowResult "$url"
 
     local -r data=$(curl --fail -Lsm 10 -o- "$url")
     [ "$data" ] || DIE "fetching data from '$url' failed"
@@ -174,6 +177,7 @@ Main2() {
 
 Verbose2()  { [ $verbose -ge 1 ] && printf "$@" >&2; }
 Verbose2x() { [ $verbose -ge 2 ] && printf "$@" >&2; }
+ShowResult() { Verbose2 "%-s|:|" "$1" ; }
 
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
