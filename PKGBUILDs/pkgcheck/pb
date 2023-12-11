@@ -181,13 +181,15 @@ EOF
                 firefox "https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4"
                 return
                 ;;
-            --check-all)
+            --check-all*)
+                local tinyopt="-n"
+                [ "${1/=/}" != "$1" ] && tinyopt="-${1#*=-}"
                 for folder in $supported_folders \
                               --assets.conf-check --pull     # NOTE: additional commands!
                 do
                     printf2 "\n${GREEN}==> %s %s${RESET}\n" "$progname" "$folder"
                     # echo2 "==> $progname $folder"
-                    $progname -n "$folder" || DIE "'$progname $folder' failed."
+                    $progname $tinyopt "$folder" || DIE "'$progname $tinyopt $folder' failed."
                     sleep 1
                 done
                 WaitToQuit
