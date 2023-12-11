@@ -4,7 +4,8 @@
 # - help update sources
 
 
-echo2() { echo "$@" >&2 ; }
+echo2()   { echo "$@" >&2 ; }
+printf2() { printf "$@" >&2 ; }
 RequireApp() { which "$1" &>/dev/null || DIE "this operation needs '$1' installed." ; }
 
 DIE() {
@@ -110,7 +111,7 @@ Params:
         Show potential pull requests and issues. Options ignored.
     --check-all
         Check all supported folders.
-    --check-assets-conf
+    --assets.conf-check
         Check for changes of file assets.conf.
     --pkgdb <db-filename>
         Show the contents of the given package database (*.db.tar.xz).
@@ -143,7 +144,7 @@ EOF
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
-                op+=" --check-all --check-assets-conf --pkgdb --changelog --changelog-modified --mirrorlist-arch"
+                op+=" --check-all --assets.conf-check --pkgdb --changelog --changelog-modified --mirrorlist-arch"
                 echo "$op"
                 return
                 ;;
@@ -171,7 +172,7 @@ EOF
                 echo "$supported_folders"
                 return
                 ;;
-            --pull | pull)
+            --pull)   # | pull)
                 pull-requests
                 WaitToQuit
                 return
@@ -182,7 +183,7 @@ EOF
                 ;;
             --check-all)
                 for folder in $supported_folders \
-                              --check-assets-conf pull     # NOTE: additional commands!
+                              --assets.conf-check --pull     # NOTE: additional commands!
                 do
                     printf2 "\n${GREEN}==> %s %s${RESET}\n" "$progname" "$folder"
                     # echo2 "==> $progname $folder"
@@ -191,22 +192,25 @@ EOF
                 WaitToQuit
                 return
                 ;;
-            --check-assets-conf)
+            --assets.conf-check)
                 local ret=0
-                for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets"
-                do
-                    echo "$folder" >&2
+                local len=0
+                
+                for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets" ; do
+                    [ ${#folder} -gt $len ] && len=${#folder}
+                done
+                for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets" ; do
+                    printf2 "%-*s : " "$len" "$folder"
                     pushd "$folder" >/dev/null || DIE "folder '$folder' does not exist."
                     if [ -n "$(git diff)" ] ; then
+                        echo2 "Diffs detected"
                         ret=1
                         meld-rcs
+                    else
+                        echo2 "OK"
                     fi
                     popd >/dev/null || DIE "popd from '$folder' failed"
                 done
-                case $ret in
-                    0) echo2 "No changes in assets.conf(s)." ;;
-                    1) echo2 "Changes detected in assets.conf(s)." ;;
-                esac
                 WaitToQuit $ret
                 return $ret
                 ;;
