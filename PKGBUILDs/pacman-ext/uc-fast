@@ -14,7 +14,7 @@ Operate() {
                 os=Arch
                 ml=mirrorlist
                 file=lastupdate
-                Main2 $op
+                MainNext $op
                 ret_arch=$?
                 ;;
             -e | --endeavouros)
@@ -22,7 +22,7 @@ Operate() {
                 os=EndeavourOS
                 ml=endeavouros-mirrorlist
                 file=state
-                Main2 $op
+                MainNext $op
                 ret_eos=$?
                 ;;
             -y | --aur)
@@ -30,13 +30,14 @@ Operate() {
                 ShowResult "yay -Qua" "-"
                 if yay -Qua >/dev/null ; then
                     ret_aur=$EXIT_UPDATES_YES
-                    Verbose2 "AUR updates available.\n"
+                    Verbose "AUR updates available.\n"
                 else
-                    Verbose2 "No AUR updates.\n"
+                    Verbose "No AUR updates.\n"
                 fi
                 ;;
             -h | --help) Usage $EXIT_UPDATES_NO ;;
-            --verbose) ;;                             # already handled above
+            --verbose) ;;                             # already handled
+            --reset-history | -r) ;;                  # already handled
             --) break ;;
             *) Usage $EXIT_ERROR ;;
         esac
@@ -51,6 +52,7 @@ Main() {
     local ml
     local file
     local verbose=0
+    local reset_history=no
     local op=""
     local -r EXIT_UPDATES_YES=0
     local -r EXIT_ERROR=1
@@ -62,27 +64,32 @@ Main() {
     [ "$1" ] || Usage $EXIT_ERROR
 
     # Better handle option --verbose before other options.
-    # Option --verbose can be given max 2 times, second time gives even more info.
+    # Option --verbose can be given more than once to give more info (but max 2 times for any effect).
     for arg in "$@" ; do
         case "$arg" in
-            --verbose) [ $verbose -lt 2 ] && ((verbose++)) ;;
+            --verbose) ((verbose++)) ;;
+            --reset-history | -r) reset_history=yes ;;
         esac
     done
 
-    local lopts=verbose,arch,endeavouros,aur,help
-    local sopts=aeyh
+    local lopts=verbose,arch,endeavouros,aur,help,reset-history
+    local sopts=aeyhr
     local opts
+    local out=""
 
-    Operate "$@" |& column -t -s'|'
+    Operate "$@"
+    echo "$out" | column -t -s'|'
 
-    if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ] ; then
-        exit $EXIT_UPDATES_YES
+    if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ]
+    then
+        return $EXIT_UPDATES_YES
+    else
+        return $EXIT_UPDATES_NO
     fi
-    exit $EXIT_UPDATES_NO
 }
 
 Usage() {
-    cat <<EOF
+    cat <<EOF >&2
 Usage: $progname [options] {operations}
 Options:
     -h, --help           This help.
@@ -124,7 +131,7 @@ DiscoverUrl() {
     esac
 }
 
-Main2() {
+MainNext() {
     declare -A renamedos=(
         [EndeavourOS]=x
         [Arch]=y
@@ -150,18 +157,20 @@ Main2() {
 
     local ret=$EXIT_UPDATES_NO     # by default, don't expect updates
 
+    [ $reset_history = yes ] && rm -f "$lastupdate_saved"
+
     if [ -f "$lastupdate_saved" ] ; then
         diff "$lastupdate" "$lastupdate_saved" >/dev/null
         if [ $? -eq 0 ] ; then
-            Verbose2 "No ${os} updates.\n"
+            Verbose "No ${os} updates.\n"
             rm -f "$lastupdate"
         else
             # Note that the updated packages may *not* be installed here!
-            Verbose2 "${os} updates *may* be available.\n"
+            Verbose "${os} updates *may* be available.\n"
             case "$os" in
                 Arch)
-                    Verbose2x "    %-30s: %s\n" "$lastupdate"       "$(date --date="@$(head -n1 "$lastupdate")")"
-                    Verbose2x "    %-30s: %s\n" "$lastupdate_saved" "$(date --date="@$(head -n1 "$lastupdate_saved")")"
+                    Verbosex "    %-30s: %s\n" "$lastupdate"       "$(date --date="@$(head -n1 "$lastupdate")")"
+                    Verbosex "    %-30s: %s\n" "$lastupdate_saved" "$(date --date="@$(head -n1 "$lastupdate_saved")")"
                     ;;
             esac
 
@@ -173,14 +182,27 @@ Main2() {
     else
         ret=$EXIT_UPDATES_YES       # First time here? Then guess there are updates.
         mv "$lastupdate" "$lastupdate_saved" || DIE "saving first update indicator failed."
-        Verbose2 "${os} updates may be available.\n"
+        Verbose "${os} updates may be available.\n"
     fi
     return $ret
 }
 
-Verbose2()  { [ $verbose -ge 1 ] && printf "$@" >&2; }
-Verbose2x() { [ $verbose -ge 2 ] && printf "$@" >&2; }
-ShowResult() { Verbose2 "%-s|($2)|:|" "$1" ; }
+Verbose()  {
+    if [ $verbose -ge 1 ] ; then
+        local v
+        printf -v v "$@"
+        out+="$v"
+    fi
+}
+Verbosex() {
+    if [ $verbose -ge 2 ] ; then
+        local v
+        printf -v v "$@"
+        out+="$v"
+    fi
+}
+
+ShowResult() { Verbose "%-s|($2)|:|" "$1" ; }
 
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
