@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=bide
+pkgdesc="Bash language IDE"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(
+    bashdb
+    vscodium   # (or an alternative)
+)
+optdepends=(
+    'bash-language-server: required by the "bash-ide" extension'
+    'shellcheck: for linting'
+)
+source=(
+    $url/$pkgname
+)
+sha512sums=('a6ac869b44a20f0cfc0f904e0ba4e8755648c9da7c1c714143a2503d3d824d49d04cbc2a81c278f51f4c4b1c8487e5434d8142ca6fb2e7fb2d89516af5f1f3ff')
+
+package() {
+    local item
+    for item in "${source[@]}" ; do
+        item=${item##*/}
+        case "$item" in
+            *.bash-completion) install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.completion} ;;
+            *)                 install -Dm755 $item      $pkgdir/usr/bin/$item ;;
+        esac
+    done
+}

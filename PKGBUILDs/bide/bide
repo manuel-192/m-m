@@ -1,0 +1,136 @@
+#!/bin/bash
+
+# Enables bash debugging for vscodium (using bashdb).
+# The parameters for the debuggee will be delivered via 'args' of the launch configuration in settings.json.
+
+GetParams() {
+    # convert parameters suitable for 'args'
+    local arg
+    for arg in "$@" ; do
+        params+=",\"$arg\""
+    done
+    params=${params#,}
+}
+
+AddOwnSettings() {
+    if [ -e "$own_settings_file" ] ; then
+        cat "$own_settings_file" >> "$settings_file"
+    fi
+}
+
+CreateSettingsJson() {
+    [ -e "$settings_file" ] && return   # don't overwrite existing settings.json
+
+    cat <<EOF > "$settings_file"
+{
+    "launch": {
+        "configurations": [
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "Bash-Debug a script",
+            "cwd": "\${env:PWD}",
+            "program": "\${file}",
+            "args": [$params]            $special_string
+        }
+        ]
+    },
+    "bashIde.explainshellEndpoint":      "http://localhost:5000"
+EOF
+    AddOwnSettings                   # Add your own settings from own-settings.json
+    echo "}" >> "$settings_file"     # Finalize the settings.json file.
+}
+
+AddNewParameters() {
+    GetParams "$@"
+
+    # File settings.json exists, so check 'bide' compatibility first.
+    grep "$special_string" "$settings_file" >/dev/null || DIE "sorry, '$settings_file' does not contain the special bashdb launch configuration"
+
+    # Add parameters via the 'args' field in settings.json.
+    sed -i "$settings_file" -E -e "s|^([ ]+\"args\":[ ]+)\[[^]]*\]|\1[$params]|"
+
+    # Run vscodium.
+    $app --wait "$bash_file_to_debug"
+    return $?
+}
+
+IdeDebugBash() {
+    CreateSettingsJson
+    AddNewParameters "$@"
+}
+
+InstanceCheck() { ps -C $app >/dev/null && DIE "'$progname' supports only one instance of '$app'." ; }
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    Usage 1
+}
+
+Usage() {
+    cat <<EOF >&2
+$progname - bash IDE integrating:
+    - vscodium
+    - bashdb
+    - bash-ide extension
+    - shellcheck
+Dependencies:
+    - bash-language-server
+    - vscodium (or an alternative)
+    - bash-ide extension
+    - shellcheck
+Usage: $progname [$progname-options] script-file [script-parameters]
+where
+  ${progname}-options:
+    -c, --config        Create a new settings.json file (after backing up the existing file).
+    -h, --help          This help.
+  script-file:          The bash script to be debugged.
+  script-parameters:    Parameters for the debugged script.
+EOF
+    [ "$1" ] && exit "$1"
+}
+
+Main() {
+    # Vscodium that supports bash debugging.
+    # Delivers app parameters by changing 'args' in settings.json.
+
+    local -r progname=${0##*/}
+    local -r app=codium
+    local -r appconfdir=VSCodium
+    local -r settings_file="$HOME/.config/$appconfdir/User/settings.json"
+    local -r own_settings_file="$HOME/.config/$appconfdir/User/own-settings.json"
+    local -r special_string="# 'bide' will overwrite only the parameter list on this line"
+    local bash_file_to_debug=""
+    local dom=""
+    local params=""
+
+    while true ; do
+        case "$1" in
+            -c | --config)
+                dom=$(date +%d)
+                if [ -e "$settings_file" ] ; then
+                    rm -f "$settings_file".$dom.bak
+                    mv "$settings_file" "$settings_file".$dom.bak
+                fi
+                CreateSettingsJson
+                ;;
+            -h | --help)
+                Usage 0
+                ;;
+            -*)
+                DIE "unsupported option '$1'"
+                ;;
+            *)
+                bash_file_to_debug="$1"
+                shift
+                break
+                ;;
+        esac
+        shift
+    done
+
+    InstanceCheck
+    IdeDebugBash "$@"
+}
+
+Main "$@"
