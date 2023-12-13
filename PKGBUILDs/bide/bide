@@ -70,22 +70,17 @@ DIE() {
 Usage() {
     cat <<EOF >&2
 $progname - bash IDE integrating:
-    - vscodium
-    - bashdb
-    - bash-ide extension
-    - shellcheck
-Dependencies:
-    - bash-language-server
-    - vscodium (or an alternative)
-    - bash-ide extension
-    - shellcheck
+    * vscodium
+    * bashdb
+    * bash-ide extension
+    * shellcheck
 Usage: $progname [$progname-options] script-file [script-parameters]
 where
   ${progname}-options:
     -c, --config        Create a new settings.json file (after backing up the existing file).
     -h, --help          This help.
   script-file:          The bash script to be debugged.
-  script-parameters:    Parameters for the debugged script.
+  script-parameters:    Parameters for the script-file.
 EOF
     [ "$1" ] && exit "$1"
 }
