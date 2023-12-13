@@ -35,7 +35,8 @@ CreateSettingsJson() {
             "args": [$params]            $special_string
         }
         ]
-    }
+    },
+    "bashIde.explainshellEndpoint":      "http://localhost:5000"
 EOF
     AddOwnSettings                   # Add your own settings from own-settings.json
     echo "}" >> "$settings_file"     # Finalize the settings.json file.
