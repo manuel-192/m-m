@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=17.11
+pkgrel=17.12
 
 arch=('any')
 license=('GPL')
@@ -25,8 +25,6 @@ source=(
     $url/curl
     $url/echo2
     $url/eos-open
-#    $url/ide
-    $url/bide
     $url/kde-open
     $url/lines
     $url/ncdu
@@ -45,7 +43,6 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             'c808bbb3ae9bd5a9419545cbdf8f96856ee9862d7e7248fc0b6c6ed351b107c2719f237de04e7a1d780970d55e678371be57b298a925cd459dbb73e406f5183c'
             '9efae914b6a100cf41f30a554ff83592e0805e040f8167d3cc8bf3d049a247bd2166013f8a3a52d9fdde070bd485ba8bccf2fcbcc76ffdfeaf2a1d405ee64e05'
             '9b7d04b1a571cca1a460505019128824832adfbb7228b7b26da5c64d9a89f554321aa06a8c9d5b6e73f52cc9fd911d7cc8f9b1b51959a33c115bbdada23d2804'
-            '7970875ba96c7a75e0378e5a88533fd9389f13610904fc54396c6beb7081af96a7362d96b89c4cce50bde50394e85cc5a895d664fc142c519aa19fde0641b9ac'
             '684c0e594c8638f29727e7c92fd4d60027fca678868ee608da5c19d262fc30ba3575d46db8da606269310a9d58d50bcfea7ed53650eb33c959f2df5fdaeed2cc'
             'a11555f730b27ed040102ef2408e64ae5212f479f58c89ea54f91b6bd14b9cce9d56541904022d6dd3613334808f0bd1de87fb54edb402446a65e2e8078e1b20'
             'be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
@@ -67,7 +64,7 @@ package() {
                 install -Dm644 $item      $pkgdir/etc/skel/$item ;;
             *.completion)
                 install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.completion} ;;
-            bide | paccache-maintainer | shellcheck-nameref)
+            paccache-maintainer | shellcheck-nameref)
                 install -Dm755 $item      $pkgdir/usr/bin/$item ;;
             sudo-for-all)
                 install -Dm755 $item      $pkgdir/usr/local/bin/sudo ;;
