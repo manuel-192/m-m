@@ -50,7 +50,7 @@ Main2()
         comments=0
 
         if true ; then
-            echo2 "$main_count"
+            [ "$main_count" -gt 0 ] && echo2 "$main_count" || echo2 "NONE"
         else
             # not working...
             case "$main_count" in
