@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Enables bash debugging for vscodium (using bashdb).
+# Enables bash debugging for Visual Studio Code (vscodium or code).
+# The debugger is bashdb.
 # The parameters for the debuggee will be delivered via 'args' of the launch configuration in settings.json.
 
 GetParams() {
@@ -60,28 +61,30 @@ IdeDebugBash() {
     AddNewParameters "$@"
 }
 
-InstanceCheck() { ps -C $app >/dev/null && DIE "'$progname' supports only one instance of '$app'." ; }
+InstanceCheck() { ps -C $app >/dev/null && DIE "sorry, '$progname' supports only one instance of '$app'." ; }
 
-DIE() {
-    echo "$progname: error: $1" >&2
-    Usage 1
-}
+echo2()  { echo -e "$@" >&2 ; }
+Color2() { local color="$1"; shift; echo2 "${!color}""$@""${RESET}"; }
+DIE()    { Color2 RED "==> $progname: error: $1\n"; Usage 1; }
 
 Usage() {
+    echo2 -n "$GREEN"
     cat <<EOF >&2
 $progname - bash IDE integrating:
-    * vscodium
+    * vscodium or code
     * bashdb
     * bash-ide extension
     * shellcheck
 Usage: $progname [$progname-options] script-file [script-parameters]
 where
   ${progname}-options:
-    -c, --config        Create a new settings.json file (after backing up the existing file).
+    -c, --config        Create a new settings.json file.
+                        Note: the existing settings.json is automatically backed up.
     -h, --help          This help.
   script-file:          The bash script to be debugged.
   script-parameters:    Parameters for the script-file.
 EOF
+    echo2 -n "$RESET"
     [ "$1" ] && exit "$1"
 }
 
@@ -89,9 +92,30 @@ Main() {
     # Vscodium that supports bash debugging.
     # Delivers app parameters by changing 'args' in settings.json.
 
+    local -r RED=$'\e[0;91m'         # starts this foreground text color
+    local -r GREEN=$'\e[0;92m'
+    local -r RESET=$'\e[0m'          # back to normal colors
+
+    local app=""
+    local appconfdir=""
+
+    # Currently only these apps are supported:
+    local APPS_SUPPORTED=(codium code)
+    declare -A APP_CONFIGDIRS=(
+        [codium]="VSCodium"
+        [code]="Code - OSS"
+    )
+    [ -e "/etc/$progname.conf" ] && source "/etc/$progname.conf"
+
+    for app in "${APPS_SUPPORTED[@]}" ; do
+        if [ -x "/bin/$app" ] ; then
+            appconfdir="${APP_CONFIGDIRS[$app]}"
+            break
+        fi
+    done
+    [ "$appconfdir" ] || DIE "none of '${APPS_SUPPORTED[*]}' is installed?"
+
     local -r progname=${0##*/}
-    local -r app=codium
-    local -r appconfdir=VSCodium
     local -r settings_file="$HOME/.config/$appconfdir/User/settings.json"
     local -r own_settings_file="$HOME/.config/$appconfdir/User/own-settings.json"
     local -r special_string="# 'bide' will overwrite only the parameter list on this line"
@@ -104,6 +128,7 @@ Main() {
             -c | --config)
                 dom=$(date +%d)
                 if [ -e "$settings_file" ] ; then
+                    echo2 "==> Backup: $settings_file  ->  $settings_file.$dom.bak"
                     rm -f "$settings_file".$dom.bak
                     mv "$settings_file" "$settings_file".$dom.bak
                 fi
