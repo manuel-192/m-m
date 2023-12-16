@@ -182,7 +182,7 @@ EOF
                 return
                 ;;
             --check-all*)
-                local tinyopt="-n"
+                local tinyopt="-nn"
                 [ "${1/=/}" != "$1" ] && tinyopt="-${1#*=-}"
                 for folder in $supported_folders \
                               --assets.conf-check --pull     # NOTE: additional commands!
