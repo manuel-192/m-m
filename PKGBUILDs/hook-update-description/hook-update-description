@@ -67,6 +67,11 @@ Main() {
     local separator=yes
     local pkgnames=()
     local has_version=no
+    local helper=yay                # helper = one of: yay, paru, pacman
+
+    [ "$helper" ] || helper=paru
+    [ "$helper" ] || helper=pacman
+    [ "$helper" ] || DIE "none of the required package managers installed!"
 
     while [ "$1" ] ; do
         case "$1" in
@@ -87,7 +92,7 @@ Main() {
     CheckValueYesNo "$separator" "--separator"
 
     if [ ${#pkgnames} -eq 0 ] ; then
-        readarray -t pkgnames <<< $(AsPlainUserIfElevated yay -Quq)       # assumes 'pacman -Sy' was just executed
+        readarray -t pkgnames <<< $(AsPlainUserIfElevated $helper -Quq)       # assumes 'pacman -Sy' was just executed
         [ ${#pkgnames} -eq 0 ] && return
     fi
 

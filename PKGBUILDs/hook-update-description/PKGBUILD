@@ -6,7 +6,7 @@ pkgname=hook-update-description
 pkgdesc="Show updates with their descriptions."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=8.7
+pkgrel=9
 
 arch=('any')
 license=('GPL')
@@ -16,7 +16,7 @@ source=(
     $url/$pkgname
  )
 sha512sums=('f25f4f9a66fb01706d7fb46d9078f3ead06886c6a062701e411ad9f2d0adf5bda7302d9eba10c23ae5362cac9c4b9b7be379e7bad654369208e73ef1f65d6213'
-            'c1ac1be6fa35b1e916280ffa9dfdf1332b25a45ecf1f0b33d9588782427efe1f57742c4ba5f244028e74aa351fd50d42fa493b6eb0439163f8b51f81d25fb379')
+            'e6060993b75732de96d3bce95703e987fdf06ca6f9d9974e631ed0dfd022dd077ac6d9c5a2e7a442a7384ff70166f11da54b6cee0f6c33338a7127d7d227d232')
 
 package() {
     local hookdir1=$pkgdir/usr/share/libalpm/hooks
