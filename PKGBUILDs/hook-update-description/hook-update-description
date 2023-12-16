@@ -34,12 +34,17 @@ CheckValueYesNo() {
 }
 
 AsPlainUserIfElevated() {
-    local cmd="$*"
-    if [ $(id -u) -eq 0 ] ; then   # is elevated?
+    local cmd=""
+
+    if [ $(id -u) -eq 0 ] ; then
+        # is elevated user
         case "$SUDO_USER" in
             "") cmd="/bin/runuser -u $LOGNAME -- $*" ;;     # is root
             *)  cmd="/bin/sudo -u $SUDO_USER $*" ;;         # is sudo
         esac
+    else
+        # is non-elevated user
+        cmd="$*"
     fi
     $cmd
 }
