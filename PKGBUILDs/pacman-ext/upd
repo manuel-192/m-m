@@ -103,7 +103,7 @@ Main() {
 
 Usage() {
     local tmpdoc=/tmp/upd-doc-tmp.html
-    cat <<EOF | pandoc -f gfm -o $tmpdoc
+    cat <<EOF | pandoc -f gfm -o $tmpdoc 2>/dev/null
 # upd
 
 ## Overview
