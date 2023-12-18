@@ -46,7 +46,7 @@ EOF
 
 Options() {
     local will_exit=no
-    local -r lopts="help,init,edit,reload,status,schedule:,showtime:"
+    local -r lopts="help,init,edit,reload,status,schedule:,showtime:,show-period"
     local opts
     opts=$(getopt -o="hiers" --longoptions "$lopts" --name "$progname" -- "$@") || { Help; exit 1; }
     eval set -- "$opts"
@@ -61,11 +61,20 @@ Options() {
             --status | -s)      Status;           will_exit=yes ;;
             --schedule)         NewSchedule "$2"; Reload; exit 0 ;;
             --showtime)         showtime="$2";    shift ;;
-            *)                  exit 1 ;;                    # unsupported parameters
+            --show-period)      ShowPeriod; exit 0 ;;                # "hidden" option
+            *)                  exit 1 ;;                            # unsupported parameters
         esac
         shift
     done
     [ "$will_exit" = "yes" ] && exit 0
+}
+
+ShowPeriod() {
+    local timer="$HOME/.config/systemd/user/fit.timer"
+    if [ -e "$timer" ] ; then
+        local hours=$(grep "^OnCalendar=" "$timer" | sed -E 's|.*/([0-9]+):.*|\1|')
+        echo "==> 'fit' will run every $hours hours"
+    fi
 }
 
 Check() {
