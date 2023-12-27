@@ -6,7 +6,7 @@ pkgname=safe
 pkgdesc="Simple encrypt and decrypt of files using gpg"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -14,7 +14,7 @@ depends=(gnupg)
 source=(
     $url/$pkgname
 )
-sha512sums=('6cd23c39890b4825a1d2c296a29f94814fb95badd9e35cf0d42d9c42de96b49b5d2742263f9fb7dd677fed5d87152aa9fc899ebc8309cfdf1916e47bbbc8496b')
+sha512sums=('bcc09c248067d3ba41d7be32add54853b0fdbcca664c316c4a32fcf35cdfaf5ec91d32efb4ac12165c3ec72ae452334455a8dc19d3d91f0e94ec74ea6757a448')
 
 package() {
     local item

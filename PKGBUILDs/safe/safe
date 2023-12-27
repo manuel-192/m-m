@@ -1,43 +1,76 @@
 #!/bin/bash
 
-DIE()    { echo "$progname: error: $1" >&2; exit 1; }
+DIE()    { echo "$progname: error: $1" >&2; Usage 1; }
 CMD()    { "$@" || DIE "'$*' failed"; }
 ASSERT() { local msg="$1"; shift; [ "$@" ] || DIE "$msg"; }
 
+Usage() {
+    cat <<EOF
+
+Symmetric encryption of files with gpg.
+
+Usage:    $progname [options] file(s)
+Options:
+    -h, --help      This help.
+    -l, --lock      Encrypt given file(s).
+    -u, --unlock    Decrypt given file(s).
+
+Encrypted file names end with .$end.
+Without option (-l, -u) the operation is determined by the file name.
+
+Examples:
+    $progname myfile            # encrypts file 'myfile' into 'myfile.$end'
+    $progname myfile.$end       # decrypts file 'myfile.$end' into 'myfile'
+    $progname -u myfile.$end    # decrypts file 'myfile.$end' into 'myfile'
+EOF
+    [ "$1" ] && exit "$1"
+}
+
 Main() {
     local -r progname=${0##*/}
-    local -r end="locked"
-    local op=lock
+    local -r end="safe"
+    local op=""
     local files=()
     local file
 
     while true ; do
         case "$1" in
+            -h | --help) Usage 0 ;;
             -l | --lock)   op=lock ;;
             -u | --unlock) op=unlock ;;
             *) files=("$@"); break ;;
         esac
         shift
     done
-    ASSERT "no file to $op"    ${#files[@]} -gt 0 
+    ASSERT "no file given"    ${#files[@]} -gt 0 
 
     for file in "${files[@]}" ; do
-        ASSERT "file '$file' does not exist"   -r "$file"
+        ASSERT "file '$file' is not readable"   -r "$file"
         case "$op" in
-            lock)
-                ASSERT "file '$file' is already locked"            "${file: -${#end}}" != "$end"
-                ASSERT "locked file '$file.$end' already exists"   ! -e "$file.$end"
-                CMD gpg --symmetric --no-symkey-cache --cipher-algo AES256 --s2k-digest-algo SHA512 --output "$file"."$end" "$file"
-                CMD rm -f "$file"
-                ;;
-            unlock)
-                ASSERT "filename ending must be '.$end'"       "${file: -${#end}}" = "$end"
-                ASSERT "file '${file%.$end}' already exists"   ! -e "${file%.$end}"
-                CMD gpg --decrypt "$file" > "${file%.$end}"
+            lock)   Encrypt ;;
+            unlock) Decrypt ;;
+            "")
+                case "$file" in            # guess the operation from the file name
+                    *."$end") Decrypt ;;
+                    *)        Encrypt ;;
+                esac
                 ;;
         esac
     done
     echo "All successfully done." >&2
+}
+
+Encrypt() {
+    ASSERT "file '$file' is already locked"            "${file: -${#end}}" != "$end"
+    ASSERT "locked file '$file.$end' already exists"   ! -e "$file.$end"
+    CMD gpg --symmetric --no-symkey-cache --cipher-algo AES256 --s2k-digest-algo SHA512 --output "$file"."$end" "$file"
+    CMD rm -f "$file"
+}
+Decrypt() {
+    ASSERT "filename ending must be '.$end'"       "${file: -${#end}}" = "$end"
+    ASSERT "file '${file%.$end}' already exists"   ! -e "${file%.$end}"
+    CMD gpg --decrypt "$file" > "${file%.$end}"
+    CMD rm -f "$file"
 }
 
 Main "$@"
