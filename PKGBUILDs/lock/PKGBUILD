@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=lock
+pkgdesc="Simple encrypt and decrypt of files using gpg"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=23
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(gnupg)
+source=(
+    $url/$pkgname
+)
+sha512sums=('6cd23c39890b4825a1d2c296a29f94814fb95badd9e35cf0d42d9c42de96b49b5d2742263f9fb7dd677fed5d87152aa9fc899ebc8309cfdf1916e47bbbc8496b')
+
+package() {
+    local item
+    for item in "${source[@]}" ; do
+        item=${item##*/}
+        case "$item" in
+            *)                 install -Dm755 $item      $pkgdir/usr/bin/$item ;;
+        esac
+    done
+}

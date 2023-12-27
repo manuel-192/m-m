@@ -1,0 +1,43 @@
+#!/bin/bash
+
+DIE()    { echo "$progname: error: $1" >&2; exit 1; }
+CMD()    { "$@" || DIE "'$*' failed"; }
+ASSERT() { local msg="$1"; shift; [ "$@" ] || DIE "$msg"; }
+
+Main() {
+    local -r progname=${0##*/}
+    local -r end="locked"
+    local op=lock
+    local files=()
+    local file
+
+    while true ; do
+        case "$1" in
+            -l | --lock)   op=lock ;;
+            -u | --unlock) op=unlock ;;
+            *) files=("$@"); break ;;
+        esac
+        shift
+    done
+    ASSERT "no file to $op"    ${#files[@]} -gt 0 
+
+    for file in "${files[@]}" ; do
+        ASSERT "file '$file' does not exist"   -r "$file"
+        case "$op" in
+            lock)
+                ASSERT "file '$file' is already locked"            "${file: -${#end}}" != "$end"
+                ASSERT "locked file '$file.$end' already exists"   ! -e "$file.$end"
+                CMD gpg --symmetric --no-symkey-cache --cipher-algo AES256 --s2k-digest-algo SHA512 --output "$file"."$end" "$file"
+                CMD rm -f "$file"
+                ;;
+            unlock)
+                ASSERT "filename ending must be '.$end'"       "${file: -${#end}}" = "$end"
+                ASSERT "file '${file%.$end}' already exists"   ! -e "${file%.$end}"
+                CMD gpg --decrypt "$file" > "${file%.$end}"
+                ;;
+        esac
+    done
+    echo "All successfully done." >&2
+}
+
+Main "$@"
