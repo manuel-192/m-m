@@ -2,7 +2,7 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=lock
+pkgname=safe
 pkgdesc="Simple encrypt and decrypt of files using gpg"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=23
