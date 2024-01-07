@@ -42,8 +42,8 @@ Build() {
 
     local makepkg_opts=""
     local pacman_opts=""                               # "--asdeps"  # ???
-    local pkgname="$(_Build_pkgname-pkgver-pkgrel)"
-    local old_pkgs=(${pkgname}-*.pkg.tar.zst)
+    local Pkgname="$(_Build_pkgname-pkgver-pkgrel)"
+    local old_pkgs=(${Pkgname}-*.pkg.tar.zst)
     local show_commands=yes
 
     # manage options for makepkg and pacman
@@ -57,9 +57,9 @@ Build() {
         shift
     done
 
-    [ "${old_pkgs[*]}" != "${pkgname}-*.pkg.tar.zst" ] && rm -i "${old_pkgs[@]}"
+    [ "${old_pkgs[*]}" != "${Pkgname}-*.pkg.tar.zst" ] && rm -i "${old_pkgs[@]}"
 
-    case "$pkgname" in
+    case "$Pkgname" in
         eos-apps-info-*) ./eos-apps-info-collect ;;  # update actual html pages before build
     esac
 
@@ -76,9 +76,9 @@ Build() {
     fi
     Cmd makepkg -cf $makepkg_opts || DIE "makepkg failed."
 
-    local files=(${pkgname}-*.pkg.tar.zst)
+    local files=(${Pkgname}-*.pkg.tar.zst)
 
-    [ "${files[*]}" = "${pkgname}-*.pkg.tar.zst" ] && DIE "nothing was built for '$pkgname'"
+    [ "${files[*]}" = "${Pkgname}-*.pkg.tar.zst" ] && DIE "nothing was built for '$Pkgname'"
 
     echo "Install ${files[*]}:"
     Cmd sudo pacman $pacman_opts -U "${files[@]}" || DIE "pacman -U failed"

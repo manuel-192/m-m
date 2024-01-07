@@ -85,15 +85,15 @@ Main() {
     CheckDbLock
     Xadditions begin "$begin"
 
-    UpdateDatabase
+    UpdateDatabase               # pacman -Sy
     FindAllUpdates
 
-    UpdateKeyrings
+    UpdateKeyrings               # install keyring packages if needed
     CheckNvidia
     CheckVirtualbox
     Xadditions middle "$middle"
 
-    UpdatePackages               # repo and AUR
+    UpdatePackages               # pacman -Su and yay (repo and AUR)
     ShowDescriptions
     Foreign
     Pacdiff
