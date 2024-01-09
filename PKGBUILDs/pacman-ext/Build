@@ -29,6 +29,9 @@ EOF
     [ "$1" ] && exit "$1"
 }
 
+HasSourceDef() { grep -P '^source=|^source_[a-z0-9_]*=' "$1" >/dev/null ; }
+HasSumDef()    { grep -P '^[a-z0-9]*sums=|^[a-z0-9]*sums_[a-z0-9_]*=' "$1" >/dev/null ; }
+
 Build() {
     local progname="${0##*/}"
     [ -r PKGBUILD ] || DIE "PKGBUILD not found."
@@ -45,6 +48,7 @@ Build() {
     local Pkgname="$(_Build_pkgname-pkgver-pkgrel)"
     local old_pkgs=(${Pkgname}-*.pkg.tar.zst)
     local show_commands=yes
+    local updatesums=yes
 
     # manage options for makepkg and pacman
     while true ; do
@@ -63,14 +67,17 @@ Build() {
         eos-apps-info-*) ./eos-apps-info-collect ;;  # update actual html pages before build
     esac
 
-    local updatesums=yes
-
-    if [ -z "$(grep "[ ]*sha[0-9]*sums" PKGBUILD)" ] ; then
-        read -p "No checksums in PKGBUILD. Run 'updpkgsums' anyway (y/N)? "
-        case "$REPLY" in
-            "" | [nN]*) updatesums=no ;;
-        esac
+    if HasSourceDef PKGBUILD ; then
+        if ! HasSumDef PKGBUILD ; then
+            read -p "PKGBUILD has source but no checksum. Run 'updpkgsums' anyway (y/N)? "
+            case "$REPLY" in
+                "" | [nN]*) updatesums=no ;;
+            esac
+        fi
+    else
+        HasSumDef PKGBUILD || updatesums=no    # no source nor checksum
     fi
+
     if [ "$updatesums" = "yes" ] ; then
         Cmd updpkgsums || DIE "updpkgsums failed."
     fi
