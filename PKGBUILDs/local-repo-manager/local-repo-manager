@@ -6,6 +6,7 @@ Pushd()  { pushd "$@" &>/dev/null || DIE "'$FUNCNAME $*' failed" "${BASH_LINENO[
 Popd()   { popd  "$@" >/dev/null ; }
 echo2()  { echo "$@" >&2 ; }
 printf2()  { printf "$@" >&2 ; }
+DEBUG() { [ "$debugging" = "yes" ] && echo2 "==> debug:" "$@" ; }
 
 echo2v()   { [ $verbose = yes ] && echo2   "$@" ; }
 printf2v() { [ $verbose = yes ] && printf2 "$@" ; }
@@ -82,7 +83,10 @@ BuildPackages() {
         InstallMissingDeps $pkgname $depsfile
 
         printf2 "==> %-40s: Building..." "$pkgname"
-        ASSERT makepkg -cf ${MAKEPKG_EXTRA_OPTS[$pkgname]} &> "$buildlog"
+        if ! makepkg -cf ${MAKEPKG_EXTRA_OPTS[$pkgname]} &> "$buildlog" ; then
+            RunInTerminal cat "$buildlog"
+            DIE "$pkgname: makepkg failed."
+        fi
         echo2 "done."
 
         if [ $remove_deps = yes ] ; then
@@ -367,6 +371,7 @@ Options:
           -v, --verbose             More verbose output. Default.
           -c, --changelog-included  Show changelogs of changed packages.
           --changelog-all           Show changelogs of all supported packages.
+          --debug                   Show debugging output.
           --rmdeps                  Remove dependencies installed during build.
           --rm-pkg                  Remove a package from the repo database.
 EOF
@@ -379,6 +384,7 @@ EOF
                     --build-force
                     --changelog-all
                     --changelog-included
+                    --debug
                     --dryrun
                     --help
                     --quiet
@@ -421,6 +427,9 @@ EOF
                 [ $dryrun = yes ] && INFO "you had option --dryrun, setting it to 'no'."
                 dryrun=no
                 ;;
+            --debug)
+                debugging=yes
+                ;;
             --rmdeps)
                 remove_deps=yes
                 ;;
@@ -462,6 +471,7 @@ Main() {
     declare -A PKG_BEFORE_AFTER   # package specific functions before and after 'makepkg' (like constructor and destructor in C++)
     declare -A MAKEPKG_EXTRA_OPTS
     declare -A PKG_CHANGELOG
+    local debugging=no
 
     source "$conf" || return 1    # $conf file must fill the required variables above
 
