@@ -1,0 +1,12 @@
+#!/bin/bash
+
+_arch-audit() { 
+    local header="PACKAGE NAME|SEVERITY|TYPE";
+    local underline="${header//[^|]/\~}";
+    { 
+        printf "%s\n%s\n" "$header" "$underline";
+        /bin/arch-audit -f '%n|%s|%t' "$@"
+    } | column -t -s'|'
+}
+
+_arch-audit "$@"
