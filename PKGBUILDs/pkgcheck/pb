@@ -111,6 +111,8 @@ Params:
         Show potential pull requests and issues. Options ignored.
     --check-all
         Check all supported folders.
+    --quick-check
+        Check just EOS and endeavouros.
     --assets.conf-check
         Check for changes of file assets.conf.
     --pkgdb <db-filename>
@@ -144,7 +146,7 @@ EOF
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
-                op+=" --check-all --assets.conf-check --pkgdb --changelog --changelog-modified --mirrorlist-arch"
+                op+=" --check-all --quick-check --assets.conf-check --pkgdb --changelog --changelog-modified --mirrorlist-arch"
                 echo "$op"
                 return
                 ;;
@@ -195,6 +197,12 @@ EOF
                 WaitToQuit
                 return
                 ;;
+            --quick-check)
+                printf2 "\nPKGBUILDS: "
+                RunInDir EOS/PKGBUILDS git pull
+                pb -n endeavouros
+                return
+                ;;
             --assets.conf-check)
                 local ret=0
                 local len=0
@@ -243,6 +251,16 @@ EOF
         printf "\n============================ %s ============================\n" "$repodir"
         _pb2
     done
+}
+
+RunInDir() {
+    local dir="$1"
+    local curdir="$PWD"
+    local log="/tmp/$progname.tmp"
+    shift
+    cd "$dir" > "$log" || { cat "$log"; return 1; }
+    "$@"
+    cd "$curdir"
 }
 
 _pb2() {
