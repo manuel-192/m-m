@@ -30,6 +30,7 @@ Main() {
 
     local -r RED=$'\e[0;91m'         # starts this foreground text color
     local -r GREEN=$'\e[0;92m'
+    local -r YELLOW=$'\e[0;93m'
     local -r BLUE=$'\e[0;94m'
     local -r MAGENTA=$'\e[0;95m'
     local -r RESET=$'\e[0m'          # back to normal colors
@@ -54,12 +55,15 @@ Main() {
     local pacdiff=$DEFAULT_pacdiff quiet=$DEFAULT_quiet sync=$DEFAULT_sync virtualbox=$DEFAULT_virtualbox
 
     local verbose=no   # for uc-fast only !?
+    local debug=no
 
     local SOPTS="acdfhinopqsv"
-    local LOPTS="aur,begin:,clear-keyrings,connection,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
+    local LOPTS="aur,begin:,clear-keyrings,connection,debug,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
     LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,verbose,virtualbox"
 
     local args=("$@")
+
+    source /etc/eos-script-lib-yad.conf
 
     OptionsBeforeSudo "${args[@]}"
 
@@ -74,9 +78,9 @@ Main() {
     local helper=""
     local begin=":" end=":" middle=":"   # make there arrays !
 
-    SetHelper
-
     Options "${args[@]}"
+
+    SetHelper
 
     EMPHASIZED_COLOR "COMMAND: ${RED}$progname $*"
 
@@ -127,6 +131,7 @@ All options below will change the default behavior.
     -a, --aur              Updates AUR packages too.
         --clear-keyrings   If update fails with keyring issues, try this option.
     -c, --connection       Checks internet connection first.
+        --debug            Show debugging output.
     -d, --descriptions     Shows descriptions of the packages to update.
     -f, --foreign          Shows foreign packages in the end.
     -h, --help             This help.
@@ -179,7 +184,7 @@ Options() {
             while true ; do
                 case "$1" in
                     --) break ;;
-                    -a|--aur | --help | --dump-options | -i|--instant|--instant-no-aur | --verbose)
+                    -a|--aur | --help | --dump-options | -i|--instant|--instant-no-aur | --verbose | --debug)
                         Options $1       # handle these options here
                         ;;
                     --*) ;;              # these will be handle elsewhere
@@ -195,6 +200,7 @@ Options() {
                     -a | --aur)              Assign aur yes ;;
                     --clear-keyrings)        ClearKeyrings; Exit 0 ;;
                     -c | --connection)       Assign connection yes ;;
+                    --debug)                 Assign debug yes ;;
                     -d | --descriptions)     Assign descriptions yes ;;
                     --dump-options)          DumpOptions; Exit 0 ;;
                     -i | --instant)          Assign instant yes ;;
@@ -239,6 +245,7 @@ RESULT()  {
     # shellcheck disable=SC2001
     echo "$1" | sed 's|^| |' >&2   # bash parameter expansion is inadequate for multiple lines
 }
+DebugShow() { [ "$debug" = "yes" ] && echo2 -e "${YELLOW}==> DEBUG:" "$@" "$RESET" ; }
 
 EMPHASIZED_COLOR() {
     local lastopt=""
@@ -305,13 +312,13 @@ Xadditions() {
 
 PkgInUpdates() {
     # shellcheck disable=SC2086
-    printf "%s\n" $updates_pacman $updates_aur | grep "^$1$" >/dev/null ; }
+    printf "%s\n" $updates_pacman $updates_aur | grep "^$1$" >/dev/null
+}
 
 UpdateKeyrings() {
     [ "$keyrings" = "yes" ] || return
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
-        return
-    fi
+    [ "$optimize_checks$updates_pacman" = "yes" ] && return
+
     EMPHASIZED_COLOR --no-newline-at-end "Check keyrings:"
     local keyr updated=()
     for keyr in archlinux-keyring endeavouros-keyring ; do
@@ -335,9 +342,8 @@ ClearKeyrings() {
 
 CheckNvidia() {
     [ "$nvidia" = "yes" ] || return
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
-        return
-    fi
+    [ "$optimize_checks$updates_pacman" = "yes" ] && return
+
     EMPHASIZED_COLOR --no-newline-at-end "Check Nvidia & kernel:"
     if PkgInUpdates nvidia && ! PkgInUpdates linux  ; then
         DIE "packages 'nvidia' and 'linux' must be updated together"
@@ -350,24 +356,22 @@ CheckNvidia() {
 
 CheckVirtualbox() {
     [ "$virtualbox" = "yes" ] || return
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
-        return
-    fi
-    if PkgInUpdates virtualbox ; then
+    [ "$optimize_checks$updates_pacman" = "yes" ] && return
+
+    # when 'virtualbox' updates, temporarily uninstall 'virtualbox-ext-oracle'
+    if PkgInUpdates virtualbox && IsInstalled virtualbox-ext-oracle ; then
         EMPHASIZED_COLOR --no-newline-at-end "Check virtualbox:"
-        # check virtualbox-ext-oracle version even if not updating AUR packages
         local version_vb version_vbext
         version_vb=$(   expac     -S %v virtualbox)
         version_vbext=$(expac-aur -S %v virtualbox-ext-oracle)
-        if [ $(vercmp "${version_vb%-*}" "${version_vbext%-*}") -ne 0 ] ; then
-            WARN "latest versions of virtualbox ($version_vb) and virtualbox-ext-oracle ($version_vbext) do not match"
-            return
-        elif IsInstalled virtualbox-ext-oracle ; then
+        if [ "${version_vb%-*}" != "${version_vbext%-*}" ] ; then
             echo2 ""
             Cmd pacman -R  --noconfirm virtualbox-ext-oracle
             AUR_install+=(virtualbox-ext-oracle)
+            RESULT "OK (uninstalled virtualbox-ext-oracle temporarily)"
+        else
+            RESULT "OK"
         fi
-        RESULT "OK"
     fi        
 }
 
@@ -393,20 +397,19 @@ CheckDbLock() {
 }
 
 SetHelper() {
-    if [ -z "$1" ] ; then
-        source /etc/eos-script-lib-yad.conf
-    fi
     for helper in "$@" $EOS_AUR_HELPER $EOS_AUR_HELPER_OTHER yay paru ; do
-        [ -x /bin/"${helper%% *}" ] && return 0
+        if [ -x /bin/"${helper%% *}" ] ; then
+            DebugShow "helper = $helper"
+            return 0
+        fi
     done
     DIE "AUR helper not found"
 }
 
 Pacdiff() {
     [ "$pacdiff" = "yes" ] || return
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] && [ -z "$updates_aur" ] ; then
-        return
-    fi
+    [ "$optimize_checks$updates_pacman$updates_aur" = "yes" ] && return   # test AUR too?
+
     Cmd3 eos-pacdiff --quiet
     case $? in
         1) RESULT "error" ;;
@@ -467,16 +470,15 @@ FindAllUpdates() {
 
 Sync() {
     [ "$sync" = "yes" ] || return
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] && [ -z "$updates_pacman" ] ; then
-        return
-    fi
+    [ "$optimize_checks$updates_pacman$updates_aur" = "yes" ] && return
+
     #EMPHASIZED_COLOR "Running sync."
     Cmd3 sync
     RESULT "OK"
 }
 
 Pacman-Su() {
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_pacman" ] ; then
+    if [ "$optimize_checks$updates_pacman" = "yes" ] ; then
         pacman -Su >/dev/null   # to give potential warnings!
     else
         Cmd3 pacman -Su
@@ -485,9 +487,8 @@ Pacman-Su() {
 
 CheckAUR() {
     [ "$aur" = "yes" ] || return
-    if [ "$optimize_checks" = "yes" ] && [ -z "$updates_aur" ] ; then
-        return
-    fi
+    [ "$optimize_checks$updates_aur" = "yes" ] && return
+
     if [ -x /bin/$helper ] ; then
         AsPlainUser --prompt="Check AUR updates" $helper -Sua "${AUR_install[@]}" || RESULT "no updates"
     else
