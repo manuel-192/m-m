@@ -32,7 +32,7 @@ Options:
     -h, --help      This help.
     -i, --init      (Re-)create the '$progname' service to from scratch.
     -e, --edit      Edit the timer specification file of the '$progname' service.
-    -r, --reload    Reload user services (after changing 'progname').
+    -r, --reload    Reload user services (after changing '$progname' service files).
     -s, --status    Show the status of the '$progname' service.
     --schedule=*    Set the given schedule definition for the timer of the '$progname' service.
                     See also: 'man systemd.time'
