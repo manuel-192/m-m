@@ -1,0 +1,35 @@
+# bash completion for pkgapps        -*- shell-script -*-
+
+_pkgapps_complete_simple() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+_pkgapps_complete_open() {
+    COMPREPLY=($(compgen "$@"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+_pkgapps_() {
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -*)
+                    # Any option.
+                    ;;
+                *)
+                    # Non-option parameters.
+                    _pkgapps_complete_simple "$(echo $(expac %n))"
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _pkgapps_ pkgapps

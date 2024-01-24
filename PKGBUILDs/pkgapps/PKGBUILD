@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=pkgapps
+pkgdesc="List apps in a package"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=24
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=(expac)
+
+source=(
+    $url/pkgapps
+    $url/pkgapps.completion
+)
+sha512sums=('9243a4c52680ae9f88e6ca8a38e916cf3a678c2b3a211f892cc684f826c1fa24dc9b0c7323f04229f8ba6537695cb06e7f9d9d29ea215c546df7164377db62bb'
+            '9637c8f53de2111453430b5d9cc3b985a63d5da10328fd03caa53d1e310dde9196bded09535517734b8221c2c38dd13a9064bb2ee12e9481d4aae71c686ac9d9')
+
+package() {
+    local xx name
+    for xx in "${source[@]}" ; do
+        name="${xx##*/}"
+        case "$name" in
+            *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
+            *.conf)       install -Dm644 $name   $pkgdir/etc/$name ;;
+            *)            install -Dm755 $name   $pkgdir/usr/bin/$name ;;
+        esac
+    done
+}

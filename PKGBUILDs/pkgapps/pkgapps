@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# List available apps (in /usr/bin) of given packages.
+
+Pkgapps() {
+    local pkg
+    for pkg in "$@" ; do
+        if expac -Q %n $pkg >/dev/null ; then
+            echo -e "\n==> $pkg:"
+            ls -l $(pacman -Qlq "$pkg" | grep /usr/bin/.)
+        else
+            echo -e "\n==> package '$pkg' is not installed." >&2
+        fi
+    done
+}
+
+Pkgapps "$@"
