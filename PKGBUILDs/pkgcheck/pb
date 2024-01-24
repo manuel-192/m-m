@@ -36,8 +36,10 @@ tar-name-components() {
 
 AskFolder() {
     RequireApp fzf
-    local -r name=$(printf "%s\n" "$(_pb --reponames)" | fzf)
-    [ -n "$name" ] && $progname "$name"
+#    local -r name=$(printf "%s\n" $(_pb --reponames) | fzf)
+    repodir=$(printf "%s\n" $(_pb --reponames) | fzf)
+#    [ -n "$name" ] && $progname "$name"
+    [ "$repodir" ] && _pb3
     WaitToQuit
     exit
 }
@@ -151,6 +153,8 @@ EOF
                 return
                 ;;
             --changelog | -c)
+                # example: pb -c rate-mirrors endeavouros
+                # Note: 'endeavouros' can be skipped if: 1) $PWD == */endeavouros 2) pb will ask the repodir
                 changelogfor="$2"
                 shift
                 ;;
@@ -248,7 +252,6 @@ EOF
     [ ${#repodirs[@]} -eq 0 ] && repodirs=("$PWD")
 
     for repodir in "${repodirs[@]}" ; do
-        printf "\n============================ %s ============================\n" "$repodir"
         _pb2
     done
 }
@@ -263,15 +266,22 @@ RunInDir() {
     cd "$curdir"
 }
 
+_banner() { printf "\n============================ %s ============================\n" "$repodir"; }
+
 _pb2() {
     if ! pb_IsSupportedFolderName "$repodir" ; then
         # DIEF "repo/folder '$folder' is not supported." "Supported: $supported_folders"
-        AskFolder "$repodir"
+        AskFolder # "$repodir"
+    else
+        _pb3
     fi
+}
 
+_pb3() {
     case "$repodir" in
         MAN | EOS | */MAN | */EOS)
             # special for UpdateSources
+            _banner
             pushd "$repodir" >/dev/null || DIE "'pushd $repodir' failed"
             UpdateSources
             popd >/dev/null || DIE "popd from '$repodir' failed"
@@ -279,6 +289,7 @@ _pb2() {
             return
             ;;
         local-repo)
+            _banner
             #pushd "$repodir" >/dev/null || DIE "'pushd $repodir' failed"
             local-repo-manager
             #popd >/dev/null || DIE "popd from '$repodir' failed"
@@ -324,6 +335,8 @@ _pb2() {
         popd >/dev/null || DIE "popd from '$repodir' failed"
         exit
     fi
+
+    _banner
 
     local cwd="$PWD"
     local exit_code=0
