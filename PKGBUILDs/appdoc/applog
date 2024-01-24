@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Show the changelog info on a given app.
+
+DIE() {
+    local linenr="$1"
+    local msg="$2"
+    echo "$progname (line $linenr): error: $msg" >&2
+    exit 1
+}
+
+Usage() {
+    cat <<EOF
+Usage: $progname [options] appname
+EOF
+}
+
+Options() {
+    local arg
+    local app=""
+    for arg in "$@" ; do
+        case "$arg" in
+            -*) ;;
+            *) app="$arg" ;;
+        esac
+    done
+    for arg in "${APPS[@]}" ; do
+        if [ "$arg" = "$app" ] ; then
+            xdg-open "${CHANGELOG[$app]}"
+            exit 0
+        fi
+    done
+    DIE $LINENO "sorry, '$app' not supported."
+}
+
+Main()
+{
+    local progname=${0##*/}
+    source /etc/$progname.conf || exit 1
+
+    Options "$@"
+}
+
+Main "$@"
