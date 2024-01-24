@@ -6,12 +6,15 @@ DIE() {
     local linenr="$1"
     local msg="$2"
     echo "$progname (line $linenr): error: $msg" >&2
+    Usage
     exit 1
 }
 
 Usage() {
     cat <<EOF
 Usage: $progname [options] appname
+Options:
+    --dump-apps    Show the supported app names.
 EOF
 }
 
@@ -20,6 +23,14 @@ Options() {
     local app=""
     for arg in "$@" ; do
         case "$arg" in
+            --dump-apps)
+                echo "${APPS[@]}"
+                exit 0
+                ;;
+            -h | --help)
+                Usage
+                exit 0
+                ;;
             -*) ;;
             *) app="$arg" ;;
         esac
@@ -37,6 +48,7 @@ Main()
 {
     local progname=${0##*/}
     source /etc/$progname.conf || exit 1
+    [ -e /etc/${progname}-local.conf ] && source /etc/${progname}-local.conf
 
     Options "$@"
 }
