@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Show the changelog info on a given app.
+# Show the changelog info on a given app or package.
 
 DIE() {
     local linenr="$1"
@@ -23,8 +23,8 @@ Options() {
     local app=""
     for arg in "$@" ; do
         case "$arg" in
-            --dump-apps)
-                echo "${APPS[@]}"
+            $DUMP_APPS)
+                echo "${apps[@]}"
                 exit 0
                 ;;
             -h | --help)
@@ -35,20 +35,40 @@ Options() {
             *) app="$arg" ;;
         esac
     done
-    for arg in "${APPS[@]}" ; do
+
+    local ix=0
+    for arg in "${apps[@]}" ; do
         if [ "$arg" = "$app" ] ; then
-            xdg-open "${CHANGELOG[$app]}"
+            xdg-open "${changelog[$ix]}"
             exit 0
         fi
+        ((ix++))
     done
-    DIE $LINENO "sorry, '$app' not supported."
+    DIE $LINENO "sorry, '$app' not supported. Use option $DUMP_APPS to see supported apps."
+}
+
+GetAppsAndUrls() {
+    local ix name count=${#CHANGELOG[@]}
+
+    for ((ix=0; ix < count;)) ; do
+        apps+=("${CHANGELOG[$ix]}")
+        ((ix++))
+        changelog+=("${CHANGELOG[$ix]}")
+        ((ix++))
+    done
 }
 
 Main()
 {
+    local -r DUMP_APPS="--dump-apps"
     local progname=${0##*/}
+    local apps=()
+    local changelog=()
+    local CHANGELOG=()   # from config file
+
     source /etc/$progname.conf || exit 1
     [ -e /etc/${progname}-local.conf ] && source /etc/${progname}-local.conf
+    GetAppsAndUrls
 
     Options "$@"
 }

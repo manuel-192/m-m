@@ -5,7 +5,7 @@ pkgname=appdoc
 pkgdesc="Show app documentation from the internet or a local file, based on a local database."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=1.1
+pkgrel=1.2
 
 arch=('any')
 license=('GPL')
@@ -26,8 +26,8 @@ sha512sums=('ded6fe7a0bbda18365328604b8c977729fb54d2ca4584ff5daf8733342eb9f2c2aa
             '2c07faf4f0cd8d708d2be6ab931e14e771ae903b71f72af55ce60fa23e041a555ed676defa025cd04ab72f335953d7d525ddd5e4bed1854fdb9dda2dbd91d824'
             '367552ff251914c7849ee8a9708d3480e9a7527e39b1cd2a80a81b35c86deef1cdb2abca81fcf256f968cce054049da2c2e98d440bc6bd159d730646d509c5d3'
             '66b7358aaeb0333df3822de5b24102dad5fd92e46fe72d5950a5ca4268e4abb0890c2a94c97add93ec798cc3c6cfe98e93b925ff07a52bc8e9a1bf587fd9b8a8'
-            '1b7a53478a5b21c995b8b52642783fbdfede73c772bdb8493bc28dd6154dbc7e6fb81913f456896203c1219f49b43d08acf2f6fc09773a5612d8d480fd11bb6a'
-            '91ae35ef4044d353ff69108fb66fe651c069cf1cfc468d50f398eda8d3855701ab1d1e87b5a573da69bdbaff3d74d01e0b933e3e1acd40053d140ac061583a8a')
+            'ed585c1acae9ca14031ba2dc3812ced0e7e5999c26368fafc71a0df3a452b4432b702b73cac0475e012c2b99c0592d266917a8f008357dadbcde93ee2c0be250'
+            'caa5d7a571cb6092fd9aa26f5980213cb43ada920a12cc6119482885c0018e80cf95ef5d4ac20357b1fe159c34faacc24740eaa69dc73bcc6519c877790decf5')
 
 package() {
   install -Dm755 $pkgname             $pkgdir/usr/bin/$pkgname
