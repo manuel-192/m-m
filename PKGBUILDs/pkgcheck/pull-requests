@@ -26,8 +26,8 @@ Main3()
         issue_text=$(echo "$pagedata" | sed -n "/^<div id=\"issue_$nr\"/,/^<\/div>$/p")
         comments="$(echo "$issue_text" | grep -E 'Link--muted.*"[0-9]+ comment' | sed -E 's|.*aria-label="([0-9]+).*|\1|')"
         case "$comments" in
-            "") Result "$last #$nr: no comments yet" ;;
-            *)  Result "$last #$nr: $comments comments" ;;
+            "") Result "#$nr: no comments yet" ;;
+            *)  Result "#$nr: $comments comments" ;;
         esac
     done
 }
