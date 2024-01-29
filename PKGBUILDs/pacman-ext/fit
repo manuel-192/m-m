@@ -100,8 +100,8 @@ Check() {
                     local action=$("${cmd[@]}")
                     case "$action" in
                         update) RunInTerminal eos-update --yay ;;
-                        "") ;; # if Update is not clicked
-                        *) echo "unknown action '$action'" ;;
+                        "") echo "potential updates discarded" ;; # if Update is not clicked
+                        *)  echo "unknown action '$action'" ;;
                     esac
                     ;;
             esac
