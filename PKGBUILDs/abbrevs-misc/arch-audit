@@ -1,12 +1,30 @@
 #!/bin/bash
 
+TextInColor() {
+    local -r text="$1"
+    local -r color="$2"
+    sed -E "s|($text)|$color\1$RESET|"
+}
+
 _arch-audit() { 
-    local header="PACKAGE NAME|SEVERITY|TYPE";
-    local underline="${header//[^|]/\~}";
-    { 
-        printf "%s\n%s\n" "$header" "$underline";
-        /bin/arch-audit -f '%n|%s|%t' "$@"
-    } | column -t -s'|'
+    local -r out=$(/bin/arch-audit -f '%n|%s|%t' "$@")
+
+    if [ "$out" ] ; then
+        local -r RED=$'\e[1;31m'
+        local -r WHITE_BOLD=$'\e[1;37m'
+        local -r YELLOW=$'\e[0;93m'
+        local -r BLUE=$'\e[0;94m'
+        local -r RESET=$'\e[0m'
+        local -r header="PACKAGE NAME|SEVERITY|TYPE"
+        local -r underline="${header//[^|]/\~}"
+
+        {
+            printf "%s\n%s\n" "$header" "$underline" | TextInColor SEVERITY $WHITE_BOLD
+            echo "$out" | TextInColor "High risk" $RED | TextInColor "Medium risk" $YELLOW | TextInColor "Low risk" $BLUE
+        } | column -t -s'|'
+    else
+        echo "Nothing found."
+    fi
 }
 
 _arch-audit "$@"
