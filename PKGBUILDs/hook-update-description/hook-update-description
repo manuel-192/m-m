@@ -58,6 +58,7 @@ Options:
     --title[=*]        Adds the given title to the banner line surrounding update descriptions.
     --header[=*]       Specfies if a header is shown for the updates (yes or no).
     --separator[=*]    Specified if the banner lines will be displayed or not (yes or no).
+    --include-repo     Includes the repo of the package.
     --include-version  Includes the latest package versions.
 
 Package names are optional, and can be used for avoiding to fetch the updates separately.
@@ -71,6 +72,9 @@ Main() {
     local header=yes
     local separator=yes
     local pkgnames=()
+    local repo=""
+    local source=""
+    local has_repo=no
     local has_version=no
     local helper=yay                # helper = one of: yay, paru, pacman
 
@@ -87,6 +91,7 @@ Main() {
             --header)          header="$2" ; shift ;;
             --separator=*)     separator="${1#*=}" ;;
             --separator)       separator="$2" ; shift ;;
+            --include-repo)    has_repo=yes ;;
             --include-version) has_version=yes ;;
             -*)                DIE "unsupported option '$1'" ;;
             *)                 pkgnames+=("$1") ;;                        # packages as parameters
@@ -104,9 +109,14 @@ Main() {
     local out=""
     local SEP=$'\e'
 
+    case "$has_repo" in
+        no)  repo=""; source="-Q" ;;
+        yes) repo="%r/"; source="-S" ;;
+    esac
+
     case "$has_version" in
-        no)  local -r data=$(expac -Q "%n${SEP}%d" "${pkgnames[@]}") ;;
-        yes) local -r data=$(expac-aur -S "%n${SEP}%v${SEP}%d" "${pkgnames[@]}") ;;
+        no)  local -r data=$(expac $source "$repo%n${SEP}%d" "${pkgnames[@]}") ;;
+        yes) local -r data=$(expac-aur -S "$repo%n${SEP}%v${SEP}%d" "${pkgnames[@]}") ;;
     esac
 
     if [ "$header" = "yes" ] ; then
