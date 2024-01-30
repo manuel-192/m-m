@@ -431,7 +431,7 @@ Foreign() {
 ShowDescriptions() {
     [ "$descriptions" = "yes" ] || return
     # shellcheck disable=SC2086
-    [ "$updates_pacman" ] && Cmd1 hook-update-description --title="native updates" $updates_pacman
+    [ "$updates_pacman" ] && Cmd1 hook-update-description --include-repo --title="native updates" $updates_pacman
 
     ShowDescriptionsAUR
 }
@@ -439,7 +439,7 @@ ShowDescriptions() {
 ShowDescriptionsAUR() {
     [ "$descriptions" = "yes" ] || return
     # shellcheck disable=SC2086
-    [ "$updates_aur" ] && Cmd1 hook-update-description --title="AUR updates" $updates_aur
+    [ "$updates_aur" ] && Cmd1 hook-update-description --include-repo --title="AUR updates" $updates_aur
 }
 
 CheckConnection() {
