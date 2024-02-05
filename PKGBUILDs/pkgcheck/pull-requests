@@ -1,14 +1,19 @@
 #!/bin/bash
 
-Result() { echo -e "$1" ; }
+Result() {
+    local first="$1"
+    case "$first" in
+        yes) printf "%s\n" "$2" ;;
+        no)  printf "%${space}s+ %s\n" "" "$2" ;;
+    esac
+}
 
 Main3()
 {
     local url="$1"
     local pagedata retval
     local item=$(echo "$url" | sed 's|https://github\.com/||')
-
-    printf "%-45s: " "$item"
+    local -r space="-45"
 
     pagedata=$(curl --fail -Lsm 10 -o- "$url")
     retval=$?
@@ -17,18 +22,23 @@ Main3()
     local issue_text
     local nr
 
+    printf "%${space}s: " "$item"
+
     if [ -z "$issue_numbers" ] ; then
-        Result "-"
+        Result yes "-"
         return
     fi
+
+    local first=yes
 
     for nr in $issue_numbers ; do
         issue_text=$(echo "$pagedata" | sed -n "/^<div id=\"issue_$nr\"/,/^<\/div>$/p")
         comments="$(echo "$issue_text" | grep -E 'Link--muted.*"[0-9]+ comment' | sed -E 's|.*aria-label="([0-9]+).*|\1|')"
         case "$comments" in
-            "") Result "#$nr: no comments yet" ;;
-            *)  Result "#$nr: $comments comments" ;;
+            "") Result $first "#$nr: no comments yet" ;;
+            *)  Result $first "#$nr: $comments comments" ;;
         esac
+        first=no
     done
 }
 
