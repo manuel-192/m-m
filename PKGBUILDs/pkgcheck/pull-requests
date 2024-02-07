@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DIE() { echo "$progname: error: $1" >&2; exit 1; }
+
 Result() {
     local first="$1"
     case "$first" in
@@ -17,7 +19,7 @@ Main3()
 
     pagedata=$(curl --fail -Lsm 10 -o- "$url")
     retval=$?
-    [ $retval -ne 0 ] && DIE "curl '$url' failed"
+    [ $retval -ne 0 ] && DIE "curl '$url' failed with code $retval"
     local issue_numbers=$(echo "$pagedata" | grep -E '^<div id="issue_[0-9]+' | sed -E 's|^<div id="issue_([0-9]+)".*|\1|')
     local issue_text
     local nr
@@ -52,6 +54,7 @@ Main2() {
 }
 
 Main() {
+    local progname=${0##*/}
     local urls=(
         https://github.com/endeavouros-team/PKGBUILDS
         https://github.com/endeavouros-team/eos-bash-shared
