@@ -29,16 +29,25 @@ Differ() {
 
 Date() { date +%Y%m%d-%H%M ; }
 
-MERGE() {
-    local pacfile="$1"
-    local file="$2"
-
-    Elevated $DIFFER "$pacfile" "$file"
+RemoveIdentical() {
+    local -r pacfile="$1"
+    local -r file="$2"
 
     if diff "$pacfile" "$file" >/dev/null ; then
         Elevated rm -f "$pacfile"
-        Msg "$pacfile removed"     # identical files
+        Msg "$pacfile was identical, removed"     # identical files
+        return 0
+    else
+        return 1
     fi
+}
+
+MERGE() {
+    local -r pacfile="$1"
+    local -r file="$2"
+
+    Elevated $DIFFER "$pacfile" "$file"
+    RemoveIdentical  "$pacfile" "$file"
 }
 REMOVE()    { [ -e "$1" ] || return; Elevated rm -f "$1" ; Msg "$1 removed" ; }
 OVERWRITE() { [ -e "$1" ] || return; Elevated mv "$1" "$2" ; Msg "$2 overwritten by $1" ; }
@@ -52,35 +61,46 @@ esac
 
 Msg() { echo -e "==> $1" >&2 ; }
 
-export -f MERGE Elevated Msg
+export -f MERGE Elevated Msg RemoveIdentical
 export -f echo2 DIE2 Usage
 
 OperationSelector() {
-
     case "$(id)" in
         *"(wheel)"*) /bin/sudo -v ;;         # NOP to get 'sudo' "initialized" while still in terminal (?)
     esac
 
+    RemoveIdentical "$pacfile" "$file" && return 0
+
+    local b_view="View/Diff/Merge"
+    local b_remove="Remove"
+    local b_overwrite="Overwrite"
+    local b_skip="Skip"
+
     local text=""
-    text+="File: $pacfile\n\n"
-    text+="After viewing, an identical file is automatically removed.\n"
-    text+="Use option --save to backup $pacfile.\n"
+    text+="Merging or ignoring changes.\n\n"
+    text+="<b>$b_view</b> helps with merging useful changes from file\n <tt>   $pacfile</tt>\n into file\n <tt>   $file</tt>\n\n"
+    text+="<b>$b_skip</b> $pacfile if you are unsure what to do.\n\n"
+    text+="<b>$b_remove</b> simply removes $pacfile.\n\n"
+    text+="<b>$b_overwrite</b> overwrites $file with $pacfile.\nUse it with great care!\n\n"
+    text+="Tips:\n"
+    text+="  - Use command line option <tt>--save</tt> to backup the existing $file.\n"
+    text+="  - If the files are identical, $pacfile will automatically be removed.\n"
 
     local -r EXCLAMATION='&#33;'
 
     local cmd=(
         eos_yad --form --title="$progname" --text="$text"
-        --use-interp
-        --button="View/Diff/Merge!!Helps merging individual changes from $pacfile":"MERGE '$pacfile' '$file'"
-        --button="Remove!!Removes $pacfile":1
-        --button="Overwrite!!Be cautious$EXCLAMATION Will overwrite $file":3
-        --button="Skip!!Skip the file and stop":5
+        --use-interp --buttons-layout=center
+        --button="$b_view!!Helps merging individual changes from $pacfile":"MERGE '$pacfile' '$file'"
+        --button="$b_skip!!Ignore $pacfile this time":1
+        --button="$b_remove!!Removes $pacfile":3
+        --button="$b_overwrite!!Be cautious$EXCLAMATION Will overwrite $file":5
     )
     "${cmd[@]}"
     case $? in
-        1) REMOVE "$pacfile" ;;
-        3) OVERWRITE "$pacfile" "$file" ;;
-        5) SKIP "$pacfile" ;;
+        1) SKIP "$pacfile" ;;
+        3) REMOVE "$pacfile" ;;
+        5) OVERWRITE "$pacfile" "$file" ;;
     esac
 }
 
