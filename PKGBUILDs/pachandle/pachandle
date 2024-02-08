@@ -1,0 +1,162 @@
+#!/bin/bash
+
+echo2() { echo -e "$@" >&2 ; }
+DIE2()  { echo2 "==> $PROGNAME: error: $1\n"; Usage; exit 1; }
+Usage() {
+    cat <<EOF
+Usage: $progname [options] filename(s)
+
+Options:
+    -h, --help         This help.
+    -s | --save        Backup all managed files.
+Parameters:
+    filename(s)        File name(s) with one of the suffixes .pacnew, .pacsave, .pacorig.
+
+EOF
+}
+
+Differ() {
+    local tmp
+
+    for tmp in "${EOS_WELCOME_PACDIFFERS[@]}" ; do
+        if type "$tmp" &> /dev/null ; then
+            echo "$tmp"
+            return 0
+        fi
+    done
+    DIE2 "differ not found."
+}
+
+Date() { date +%Y%m%d-%H%M ; }
+
+MERGE() {
+    local pacfile="$1"
+    local file="$2"
+
+    Elevated $DIFFER "$pacfile" "$file"
+
+    if diff "$pacfile" "$file" >/dev/null ; then
+        Elevated rm -f "$pacfile"
+        Msg "$pacfile removed"     # identical files
+    fi
+}
+REMOVE()    { [ -e "$1" ] || return; Elevated rm -f "$1" ; Msg "$1 removed" ; }
+OVERWRITE() { [ -e "$1" ] || return; Elevated mv "$1" "$2" ; Msg "$2 overwritten by $1" ; }
+SKIP()      { [ -e "$1" ] || return; Msg "$1 skipped" ; }
+
+case "$(id)" in
+    *"(wheel)"*) Elevated() { /bin/sudo bash -c "$*" ; } ;;
+    *"(root)"*)  Elevated() { bash -c "$*" ; } ;;
+    *)           Elevated() { su-c_wrapper bash -c "$*" ; } ;;
+esac
+
+Msg() { echo -e "==> $1" >&2 ; }
+
+export -f MERGE Elevated Msg
+export -f echo2 DIE2 Usage
+
+OperationSelector() {
+
+    case "$(id)" in
+        *"(wheel)"*) /bin/sudo -v ;;         # NOP to get 'sudo' "initialized" while still in terminal (?)
+    esac
+
+    local text=""
+    text+="File: $pacfile\n\n"
+    text+="After viewing, an identical file is automatically removed.\n"
+    text+="Use option --save to backup $pacfile.\n"
+
+    local -r EXCLAMATION='&#33;'
+
+    local cmd=(
+        eos_yad --form --title="$progname" --text="$text"
+        --use-interp
+        --button="View/Diff/Merge!!Helps merging individual changes from $pacfile":"MERGE '$pacfile' '$file'"
+        --button="Remove!!Removes $pacfile":1
+        --button="Overwrite!!Be cautious$EXCLAMATION Will overwrite $file":3
+        --button="Skip!!Skip the file and stop":5
+    )
+    "${cmd[@]}"
+    case $? in
+        1) REMOVE "$pacfile" ;;
+        3) OVERWRITE "$pacfile" "$file" ;;
+        5) SKIP "$pacfile" ;;
+    esac
+}
+
+Save() {
+    local -r file="$1"
+    local -r bak="$file.bak.$(Date)"
+    Elevated cp -a "$file" "$bak"
+    Msg "$bak saved"
+}
+
+RefuseCriticalFiles() {
+    if [ $save = no ] && [ "$xx" ] ; then
+        # Don't continue with system critical files.
+        local first=${xx%.*}
+        local second=${xx##*.}
+        case "$(realpath "$first")" in
+            /etc/passwd | /etc/group | /etc/shadow)                      # system critical files
+                case "$second" in
+                    pacnew | pacsave | pacorig)
+                        DIE2 "sorry, $xx is an essential system file, refusing to continue without option --save."
+                        ;;
+                esac
+                ;;
+        esac
+    fi
+}
+
+Pachandle() {
+    local progname=${0##*/}
+    export PROGNAME="$progname"
+    local save=no
+    local pacfile=""                # pacfile == file.pac{new,save,orig}
+    local file=""
+    local xx
+    local sourced=no
+
+    # handle options and missing parameters
+    while : ; do
+          case "$1" in
+              -h | --help)      Usage; exit 0 ;;
+              -s | --save)      save=yes; shift ;;
+              "")               DIE2 "no file" ;;
+              *) break ;;
+          esac
+    done
+
+    # handle files
+    for xx in "$@" ; do
+        case "$xx" in
+            -*) DIE2 "options must be given before file names." ;;
+            *)  RefuseCriticalFiles ;;
+        esac
+    done
+
+    for pacfile in "$@" ; do
+        file="${pacfile%.pac*}"     # file without suffix
+
+        case "$pacfile" in
+            *.pacnew | *.pacsave | *.pacorig)
+                [ -e "$pacfile" ] || DIE2 "$pacfile not found."
+                [ -e "$file" ]    || DIE2 "$file not found."
+
+                [ "$save" = yes ] && Save "$file"
+
+                if [ $sourced = no ] ; then
+                    source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1
+                    export DIFFER="$(Differ)"
+                    sourced=yes
+                fi
+
+                OperationSelector
+                ;;
+            "") DIE2 "please give a file name, e.g. '/etc/locale.gen.pacnew'." ;;
+            *)  DIE2 "the file name must contain suffix [.pacnew|.pacsave|.pacorig], e.g. '/etc/locale.gen.pacnew'." ;;
+        esac
+    done
+}
+
+Pachandle "$@"
