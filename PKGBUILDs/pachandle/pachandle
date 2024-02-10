@@ -4,13 +4,14 @@ echo2() { echo -e "$@" >&2 ; }
 DIE2()  { echo2 "==> $PROGNAME: error: $1\n"; Usage; exit 1; }
 Usage() {
     cat <<EOF
-Usage: $progname [options] filename(s)
+Usage: $progname [options] [filename(s)]
 
 Options:
     -h, --help         This help.
     -s | --save        Backup all managed files.
 Parameters:
     filename(s)        File name(s) with one of the suffixes .pacnew, .pacsave, .pacorig.
+                       Without file names /etc/*.pac{new,orig,save} will be looked for.
 
 EOF
 }
@@ -184,6 +185,9 @@ Pachandle() {
                 ;;
           esac
     done
+    if [ -z "$1" ] ; then
+        files=($(/bin/ls /etc/*.pac{new,save,orig} 2>/dev/null)) || echo2 "==> no /etc/*.pac{new,orig,save} files."
+    fi
 
     for pacfile in "${files[@]}" ; do
         file="${pacfile%.pac*}"     # file without suffix
