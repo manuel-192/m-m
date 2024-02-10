@@ -71,7 +71,7 @@ OperationSelector() {
 
     RemoveIdentical "$pacfile" "$file" && return 0
 
-    local -r b_merge="View/Diff/Merge"
+    local -r b_merge="Merge manually"
     local -r b_remove="Remove"
     local -r b_overwrite="Overwrite"
     local -r b_skip="Skip"
@@ -85,9 +85,9 @@ OperationSelector() {
 
     local text=""
     text+="<b>Merging or ignoring changes.</b>\n\n"
-    text+="<b>$b_merge</b> helps with merging useful changes from file\n <tt>    $pacfile</tt>\n<tt>  </tt>into file\n <tt>    $file</tt>\n"
-    text+="<b>$b_skip</b> $pacfile if you are unsure what to do. Handle it later.\n"
-    text+="<b>$b_remove</b> simply removes $pacfile.\n"
+    text+="<b>$b_merge</b> with <i>meld</i> helps including useful changes from file\n <tt>    $pacfile</tt>\n<tt>  </tt>into file\n <tt>    $file</tt>\n"
+    text+="<b>$b_skip</b> $pacfile if you are unsure what to do. Handle it later if needed.\n"
+    text+="<b>$b_remove</b> simply deletes file $pacfile.\n"
     text+="<b>$b_overwrite</b> overwrites $file with $pacfile. Use it with great care!\n"
     text+="<b>$b_quit</b> will quit this program immediately.\n"
     text+="\nTips:\n"
@@ -99,8 +99,8 @@ OperationSelector() {
     local cmd=(
         eos_yad --form --title="$progname" --text="$text"
         --use-interp --buttons-layout=center
-        --button="$b_merge!!Helps merging individual changes from $pacfile":$e_merge
-        --button="$b_skip!!Ignore $pacfile for now":$e_skip
+        --button="$b_merge!!Helps merging individual changes with <b>meld</b> from $pacfile":$e_merge
+        --button="$b_skip!!Ignores $pacfile for now":$e_skip
         --button="$b_remove!!Removes $pacfile":$e_remove
         --button="$b_overwrite!!Be cautious$EXCLAMATION Will overwrite $file":$e_overwrite
         --button="$b_quit!!Quit this program now":$e_quit
