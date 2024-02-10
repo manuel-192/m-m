@@ -6,7 +6,7 @@ pkgname=pachandle
 pkgdesc="Helps merging files like .pacnew, .pacsave, and .pacorig"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=1.2
+pkgrel=1.3
 
 arch=('any')
 license=('GPL')
@@ -16,7 +16,7 @@ source=(
     $url/$pkgname
     $url/$pkgname.completion
 )
-sha512sums=('12c45f52e64693d10d3d498940ad0b599f5d45ec8866c3fef5fdfa7de390bb4beb537a1178e569890cf7a7ef12a215f9ebac8b4f6614ff09f1294ebebdc68340'
+sha512sums=('4586442659ace60f2ed6aa683e8dbbbef32bc24ed34a0f3202831e77cb2e6b6d7fa017c2444438ef35230692aa34764b90649e4431d66210ac47da6e76e434b1'
             'fde97e6095683f7787e74535f6a7ebb2811ec83a9bb25a4b2b971c43e1cb25f2433ff71e68faaa4e0453c53dcdb74f67811aa12fa2a301107376dda64701d321')
 
 package() {
