@@ -8,7 +8,7 @@ Usage: $progname [options] [filename(s)]
 
 Options:
     -h, --help         This help.
-    -s | --save        Backup all managed files.
+    -s | --save        Backup the old file before the operation.
 Parameters:
     filename(s)        File name(s) with one of the suffixes .pacnew, .pacsave, .pacorig.
                        Without file names /etc/*.pac{new,orig,save} will be looked for.
