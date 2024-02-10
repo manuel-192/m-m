@@ -54,9 +54,9 @@ OVERWRITE() { [ -e "$1" ] || return; Elevated mv "$1" "$2" ; Msg "$2 overwritten
 SKIP()      { [ -e "$1" ] || return; Msg "$1 skipped" ; }
 
 case "$(id)" in
-    *"(wheel)"*) Elevated() { /bin/sudo bash -c "$*" ; } ;;
-    *"(root)"*)  Elevated() { bash -c "$*" ; } ;;
-    *)           Elevated() { su-c_wrapper bash -c "$*" ; } ;;
+    *"(wheel)"*) Elevated() { /bin/sudo bash -c "$*"    || echo quit_now ; } ;;
+    *"(root)"*)  Elevated() { bash -c "$*"              || echo quit_now ; } ;;
+    *)           Elevated() { su-c_wrapper bash -c "$*" || echo quit_now ; } ;;
 esac
 
 Msg() { echo -e "==> $1" >&2 ; }
@@ -66,7 +66,7 @@ export -f echo2 DIE2 Usage
 
 OperationSelector() {
     case "$(id)" in
-        *"(wheel)"*) /bin/sudo -v ;;         # NOP to get 'sudo' "initialized" while still in terminal (?)
+        *"(wheel)"*) /bin/sudo -v || DIE2 "program quits." ;;         # NOP to get 'sudo' "initialized" while still in terminal (?)
     esac
 
     RemoveIdentical "$pacfile" "$file" && return 0
@@ -105,8 +105,13 @@ OperationSelector() {
         --button="$b_overwrite!!Be cautious$EXCLAMATION Will overwrite $file":$e_overwrite
         --button="$b_quit!!Quit this program now":$e_quit
     )
-    "${cmd[@]}"
-    case $? in
+    local msg retval=0
+    msg=$("${cmd[@]}")
+    retval=$?
+    case "$msg" in
+        quit_now) exit $retval ;;
+    esac
+    case $retval in
         $e_merge)     MERGE     "$pacfile" "$file" ;;
         $e_skip)      SKIP      "$pacfile" ;;
         $e_remove)    REMOVE    "$pacfile" ;;
@@ -118,11 +123,18 @@ OperationSelector() {
 Save() {
     local -r file="$1"
     local -r bak="$file.bak.$(Date)"
-    Elevated cp -a "$file" "$bak"
+    local retval=0
+    local msg=$(Elevated cp -a "$file" "$bak")
+    retval=$?
+    case "$msg" in
+        quit_now) exit $retval ;;
+    esac
+    
     Msg "$bak saved"
 }
 
 RefuseCriticalFiles() {
+    local xx="$1"
     if [ $save = no ] && [ "$xx" ] ; then
         # Don't continue with system critical files.
         local first=${xx%.*}
@@ -139,6 +151,10 @@ RefuseCriticalFiles() {
     fi
 }
 
+RefuseOptionsHere() {
+    [ ${1::1} = "-" ] && DIE2 "'$1': options must be given before any file name."
+}
+
 Pachandle() {
     local progname=${0##*/}
     export PROGNAME="$progname"
@@ -147,26 +163,29 @@ Pachandle() {
     local file=""
     local xx
     local sourced=no
+    local files=()
+    local refuseOptions=no
 
-    # handle options and missing parameters
-    while : ; do
-          case "$1" in
-              -h | --help)      Usage; exit 0 ;;
-              -s | --save)      save=yes; shift ;;
-              "")               DIE2 "no file" ;;
-              *) break ;;
+    while [ "$1" ] ; do
+        case "$1" in
+            -*)
+                [ $refuseOptions = yes ] && RefuseOptionsHere "$1"
+                case "$1" in
+                    -h | --help)      Usage; exit 0 ;;
+                    -s | --save)      save=yes; shift ;;
+                    -*)               DIE2 "option $1 is not supported" ;;
+                esac
+                ;;
+            *)
+                RefuseCriticalFiles "$1"
+                refuseOptions=yes
+                files+=("$1")
+                shift
+                ;;
           esac
     done
 
-    # handle files
-    for xx in "$@" ; do
-        case "$xx" in
-            -*) DIE2 "options must be given before file names." ;;
-            *)  RefuseCriticalFiles ;;
-        esac
-    done
-
-    for pacfile in "$@" ; do
+    for pacfile in "${files[@]}" ; do
         file="${pacfile%.pac*}"     # file without suffix
 
         case "$pacfile" in
