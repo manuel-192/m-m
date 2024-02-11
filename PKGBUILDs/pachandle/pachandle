@@ -67,7 +67,7 @@ export -f echo2 DIE2 Usage
 
 Operate() {
     local cmd=(
-        eos_yad --form --title="$progname" --text="$text"
+        eos_yad --form --title="$progname $pacfile" --text="$text"
         --use-interp --buttons-layout=center
         --button="$b_merge!!Helps merging individual changes with <b>meld</b> from $pacfile":$e_merge
         --button="$b_skip!!Ignores $pacfile for now":$e_skip
