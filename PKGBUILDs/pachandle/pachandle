@@ -65,6 +65,32 @@ Msg() { echo -e "==> $1" >&2 ; }
 export -f MERGE Elevated Msg RemoveIdentical
 export -f echo2 DIE2 Usage
 
+Operate() {
+    local cmd=(
+        eos_yad --form --title="$progname" --text="$text"
+        --use-interp --buttons-layout=center
+        --button="$b_merge!!Helps merging individual changes with <b>meld</b> from $pacfile":$e_merge
+        --button="$b_skip!!Ignores $pacfile for now":$e_skip
+        --button="$b_remove!!Removes $pacfile":$e_remove
+        --button="$b_overwrite!!Be cautious$EXCLAMATION Will overwrite $file":$e_overwrite
+        --button="$b_quit!!Quit this program now":$e_quit
+    )
+    local msg retval=0
+    msg=$("${cmd[@]}")
+    retval=$?
+    case "$msg" in
+        quit_now) exit $retval ;;
+    esac
+    case $retval in
+        $e_merge)     MERGE     "$pacfile" "$file" || Operate ;;  # Why Operate again: MERGE may not remove the pacfile,
+                                                                  # so give a change to e.g. skip it.
+        $e_skip)      SKIP      "$pacfile" ;;
+        $e_remove)    REMOVE    "$pacfile" ;;
+        $e_overwrite) OVERWRITE "$pacfile" "$file" ;;
+        $e_quit)      exit 0 ;;
+    esac
+}
+
 OperationSelector() {
     case "$(id)" in
         *"(wheel)"*) /bin/sudo -v || DIE2 "program quits." ;;         # NOP to get 'sudo' "initialized" while still in terminal (?)
@@ -97,28 +123,7 @@ OperationSelector() {
 
     local -r EXCLAMATION='&#33;'
 
-    local cmd=(
-        eos_yad --form --title="$progname" --text="$text"
-        --use-interp --buttons-layout=center
-        --button="$b_merge!!Helps merging individual changes with <b>meld</b> from $pacfile":$e_merge
-        --button="$b_skip!!Ignores $pacfile for now":$e_skip
-        --button="$b_remove!!Removes $pacfile":$e_remove
-        --button="$b_overwrite!!Be cautious$EXCLAMATION Will overwrite $file":$e_overwrite
-        --button="$b_quit!!Quit this program now":$e_quit
-    )
-    local msg retval=0
-    msg=$("${cmd[@]}")
-    retval=$?
-    case "$msg" in
-        quit_now) exit $retval ;;
-    esac
-    case $retval in
-        $e_merge)     MERGE     "$pacfile" "$file" ;;
-        $e_skip)      SKIP      "$pacfile" ;;
-        $e_remove)    REMOVE    "$pacfile" ;;
-        $e_overwrite) OVERWRITE "$pacfile" "$file" ;;
-        $e_quit)      exit 0 ;;
-    esac
+    Operate
 }
 
 Save() {
