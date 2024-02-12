@@ -192,7 +192,7 @@ Pachandle() {
     done
     if [ -z "$1" ] ; then
         files=($(/bin/ls /etc/*.pac{new,save,orig} 2>/dev/null))
-        [ ${#files[@]} -eq 0 ] && echo2 "==> no /etc/*.pac{new,orig,save} files."
+        [ ${#files[@]} -eq 0 ] && echo2 "==> /etc/*.pac{new,orig,save}: not found."
     fi
 
     for pacfile in "${files[@]}" ; do
