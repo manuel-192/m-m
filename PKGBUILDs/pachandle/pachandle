@@ -9,6 +9,7 @@ Usage: $progname [options] [filename(s)]
 Options:
     -h, --help         This help.
     -s | --save        Backup the old file before the operation.
+    --search-details   Show details about searched files.
 Parameters:
     filename(s)        File name(s) with one of the suffixes .pacnew, .pacsave, .pacorig.
                        Without file names /etc/*.pac{new,orig,save} will be looked for.
@@ -53,6 +54,7 @@ MERGE() {
 REMOVE()    { [ -e "$1" ] || return; Elevated rm -f "$1" ; Msg "$1 removed" ; }
 OVERWRITE() { [ -e "$1" ] || return; Elevated mv "$1" "$2" ; Msg "$2 overwritten by $1" ; }
 SKIP()      { [ -e "$1" ] || return; Msg "$1 skipped" ; }
+LIST()      { RunInTerminal "echo '$pacfiles'"; return 1; }
 
 case "$(id)" in
     *"(wheel)"*) Elevated() { /bin/sudo bash -c "$*"    || echo quit_now ; } ;;
@@ -62,16 +64,17 @@ esac
 
 Msg() { echo -e "==> $1" >&2 ; }
 
-export -f MERGE Elevated Msg RemoveIdentical
-export -f echo2 DIE2 Usage
+# export -f MERGE Elevated Msg RemoveIdentical
+# export -f echo2 DIE2 Usage
 
 Operate() {
     local cmd=(
         eos_yad --form --title="$progname $pacfile" --text="$text"
         --use-interp --buttons-layout=center
-        --button="$b_merge!!Helps merging individual changes with <b>meld</b> from $pacfile":$e_merge
-        --button="$b_skip!!Ignores $pacfile for now":$e_skip
-        --button="$b_remove!!Removes $pacfile":$e_remove
+        --button="$b_list!!List all detected pacfiles":$e_list
+        --button="$b_merge!!Help merging individual changes with <b>meld</b> from $pacfile":$e_merge
+        --button="$b_skip!!Ignore $pacfile for now":$e_skip
+        --button="$b_remove!!Remove $pacfile":$e_remove
         --button="$b_overwrite!!Be cautious$EXCLAMATION Will overwrite $file":$e_overwrite
         --button="$b_quit!!Quit this program now":$e_quit
     )
@@ -84,6 +87,7 @@ Operate() {
     case $retval in
         $e_merge)     MERGE     "$pacfile" "$file" || Operate ;;  # Why Operate again: MERGE may not remove the pacfile,
                                                                   # so give a change to e.g. skip it.
+        $e_list)      LIST || Operate ;;
         $e_skip)      SKIP      "$pacfile" ;;
         $e_remove)    REMOVE    "$pacfile" ;;
         $e_overwrite) OVERWRITE "$pacfile" "$file" ;;
@@ -98,12 +102,14 @@ OperationSelector() {
 
     RemoveIdentical "$pacfile" "$file" && return 0
 
+    local -r b_list="List"
     local -r b_merge="Merge manually"
     local -r b_remove="Remove"
     local -r b_overwrite="Overwrite"
     local -r b_skip="Skip"
     local -r b_quit="Quit"
 
+    local -r e_list=11
     local -r e_merge=1
     local -r e_remove=3
     local -r e_overwrite=5
@@ -112,11 +118,16 @@ OperationSelector() {
 
     local text=""
     text+="<b>Merging or ignoring changes.</b>\n\n"
+
+    if false ; then
+    text+="<b>$b_list</b> pacfiles that were detected on the system.\n"
     text+="<b>$b_merge</b> with <i>meld</i> helps including useful changes from file\n <tt>    $pacfile</tt>\n<tt>  </tt>into file\n <tt>    $file</tt>\n"
     text+="<b>$b_skip</b> $pacfile if you are unsure what to do. Handle it later if needed.\n"
     text+="<b>$b_remove</b> simply deletes file $pacfile.\n"
     text+="<b>$b_overwrite</b> overwrites $file with $pacfile. Use it with great care!\n"
     text+="<b>$b_quit</b> will quit this program immediately.\n"
+    fi
+
     text+="\nTips:\n"
     text+="  - Use command line option <tt>--save</tt> to backup the existing $file.\n"
     text+="  - If the files are identical, $pacfile will automatically be removed.\n"
@@ -161,15 +172,39 @@ RefuseOptionsHere() {
     [ ${1::1} = "-" ] && DIE2 "'$1': options must be given before any file name."
 }
 
+FindPacFiles() {
+    local search_details="$1"
+    local suffix
+    local tmp
+
+    for suffix in pacnew pacorig pacsave ; do
+        tmp="$(find /etc -name \*.$suffix 2>/dev/null)"                                                            # files with suffixes
+        if [ "$tmp" ] ; then
+            case "$search_details" in
+                no)  tmp="$(/bin/ls -1 $(echo "$tmp" | sed "s|\.$suffix$||") 2>/dev/null | sed "s|$|.$suffix|")"   # files without suffixes
+                     ;;
+                yes) echo2 "\n==> .$suffix files found:"
+                     echo "$tmp\n" | sed 's|^|    |' >&2
+                     tmp="$(/bin/ls -1 $(echo "$tmp" | sed "s|\.$suffix$||")             | sed "s|$|.$suffix|")"   # files without suffixes; non-existing to stderr
+                     ;;
+            esac
+            if [ "$tmp" ] ; then
+                echo "$tmp"
+            fi
+        fi
+    done
+}
+
 Pachandle() {
     local progname=${0##*/}
     export PROGNAME="$progname"
     local save=no
+    local search_details=no
     local pacfile=""                # pacfile == file.pac{new,save,orig}
     local file=""
     local xx
     local sourced=no
-    local files=()
+    local pacfiles=()
     local refuseOptions=no
 
     while [ "$1" ] ; do
@@ -177,25 +212,32 @@ Pachandle() {
             -*)
                 [ $refuseOptions = yes ] && RefuseOptionsHere "$1"
                 case "$1" in
+                    --dump-options)   echo "-h -s --help --save --search-details"; exit 0 ;;  # for bash completion
                     -h | --help)      Usage; exit 0 ;;
                     -s | --save)      save=yes; shift ;;
+                    --search-details) search_details=yes; shift ;;
                     -*)               DIE2 "option $1 is not supported" ;;
                 esac
                 ;;
             *)
                 RefuseCriticalFiles "$1"
                 refuseOptions=yes
-                files+=("$1")
+                pacfiles+=("$1")
                 shift
                 ;;
           esac
     done
-    if [ -z "$1" ] ; then
-        files=($(/bin/ls /etc/*.pac{new,save,orig} 2>/dev/null))
-        [ ${#files[@]} -eq 0 ] && echo2 "==> /etc/*.pac{new,orig,save}: not found."
+    if [ ${#pacfiles[@]} -eq 0 ] ; then
+        pacfiles="$(FindPacFiles $search_details)"
+        if [ -z "$pacfiles" ] ; then
+            [ "$search_details" = yes ] && echo2 ""
+            echo2 "==> *.pacnew, *.pacorig, *.pacsave: not found under /etc"
+            return 1
+        fi
+        readarray -t pacfiles <<< $(echo "$pacfiles")
     fi
 
-    for pacfile in "${files[@]}" ; do
+    for pacfile in "${pacfiles[@]}" ; do
         file="${pacfile%.pac*}"     # file without suffix
 
         case "$pacfile" in

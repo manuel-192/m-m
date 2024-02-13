@@ -15,10 +15,7 @@ _pachandle_() {
     _init_completion -s || return
 
     local -r opts=(
-        --help
-        --save
-        -h
-        -s
+        $(pachandle --dump-options)
     )
     local pacfiles=$(/bin/ls /etc/*.pac{new,save,orig} 2>/dev/null)
 
