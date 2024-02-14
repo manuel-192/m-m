@@ -3,9 +3,9 @@
 # Maintainer: EndeavourOS-Team <info@endeavouros.com>
 
 pkgname=wget-tiny
-pkgdesc="(Experimental) A limited relplacement for wget, implemented using curl; see 'wget --help'"
+pkgdesc="(Experimental) A limited replacement for wget, implemented using curl; see 'wget --help'"
 pkgver=23
-pkgrel=1.1
+pkgrel=1.2
 arch=(any)
 license=(GPL2)
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
