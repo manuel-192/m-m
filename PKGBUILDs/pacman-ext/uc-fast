@@ -152,6 +152,10 @@ MainNext() {
     [ "$data" ] || DIE "fetching data from '$url' failed"
     echo "$data" | head -n1 > "$lastupdate"
     lastupdate_val=$(head -n1 $lastupdate)
+    case "$os" in
+        Arch)        lastupdate_val=$(date --date @$lastupdate_val +%Y%m%d-%H%M.%S) ;;
+        EndeavourOS) ;;
+    esac
 
     ShowResult "$url" "$file=$lastupdate_val"
 
