@@ -46,7 +46,9 @@ _pb_complete_pkgnames_list() {
 _pb_GetPkgnames() {
     if [ -r assets.conf ] ; then
         source assets.conf
-        echo "${PKGNAMES[*]}"
+        echo "${PKGNAMES[*]//\/aur/}"
+    else
+        echo -n " [sorry, ./assets.conf needed!] " >&2
     fi
 }
 
@@ -67,7 +69,7 @@ _pb_() {
     case "$prev" in
         -p | --pkgnames)       _pb_complete_pkgnames_list ;;
         --pkgdb)               _pb_complete "$(_pb_GetRepo)" ;;
-        --changelog)           _pb_complete "$(_pb_GetPkgnames)" ;;
+        -c | --changelog)      _pb_complete "$(_pb_GetPkgnames)" ;;
         #-*)                    _pb_complete "$repos $options" ;;
         *)
             case "$cur" in
