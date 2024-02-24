@@ -101,7 +101,7 @@ Main()
     fi
 
     echo2 "Finding USB drives, please wait..."
-    readarray -t usb_sticks_info <<< $(find-usb-sticks)
+    readarray -t usb_sticks_info <<< $(find-usb-sticks --separator " ")
 
     for xx in "${usb_sticks_info[@]}" ; do
         test -n "$xx" || continue
