@@ -38,7 +38,7 @@ GetDf() {
 
 GetUsbDrives() {
     if [ -z "$usb_drives" ] ; then
-        usb_drives="$(/usr/bin/find-usb-sticks)"
+        usb_drives="$(/usr/bin/find-usb-sticks --separator " ")"
     fi
 }
 

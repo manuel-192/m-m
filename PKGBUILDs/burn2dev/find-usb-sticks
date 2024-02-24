@@ -22,13 +22,15 @@ USB_all_infos()
             options=4
             ;;
     esac
+    [ "$info" ] || return 1
 
     case "$options" in
-        "1")   echo "${info[@]}" | awk '{printf "%-10s\n", $1}';;
-        "2")   echo "${info[@]}" | awk '{printf "%-10s %7s\n", $1, $2}';;
-        "3")   echo "${info[@]}" | awk '{printf "%-10s %7s %s\n", $1, $2, $3}';;
-        "4"|*) echo "${info[@]}" | awk '{printf "%-10s %7s %s %s\n", $1, $2, $3, $4}';;
+        "1")   echo "$info" | awk '{printf "%-10s\n", $1}';;
+        "2")   echo "$info" | awk '{printf "%-10s %7s\n", $1, $2}';;
+        "3")   echo "$info" | awk '{printf "%-10s %7s %s\n", $1, $2, $3}';;
+        "4"|*) echo "$info" | awk '{printf "%-10s %7s %s %s\n", $1, $2, $3, $4}';;
     esac
+    return 0
 }
 
 USB_info()
@@ -52,19 +54,58 @@ USB_generation()
 
 Main()
 {
-    local path vendor model usbgen
-    local size
+    local -r progname="${0##*/}"
+    local -r usb_infos="$(USB_all_infos PATH)"
+    local path vendor model usbgen size type hotplug
+    local sep="|"
 
-    for path in $(USB_all_infos PATH)
-    do
-        vendor=$( USB_info "$path" VENDOR)
-        model=$(  USB_info "$path" MODEL)
-        size=$(  USB_info "$path" SIZE)
-
-        usbgen=$( USB_generation "$vendor")
-
-        echo "$path: usb-$usbgen $vendor $model $size"
+    while [ "$1" ] ; do
+        case "$1" in
+            --separator)   sep="$2"; shift ;;
+            --separator=*) sep="${1#*=}" ;;
+            -h | --help)   Usage; return 0 ;;
+            *) DIE "unsupported parameter '$1'" ;;
+        esac
+        shift
     done
+
+    if [ "$usb_infos" ] ; then
+        for path in $usb_infos
+        do
+            size=$(   USB_info "$path" SIZE)
+            vendor=$( USB_info "$path" VENDOR)
+            model=$(  USB_info "$path" MODEL)
+            type=$(   USB_info "$path" TYPE)
+            hotplug=$(USB_info "$path" HOTPLUG)
+            case "$hotplug" in
+                1) hotplug="" ;;                  # hotplug="${sep}hotplug" ;;
+                *) hotplug="${sep}non-hotplug?" ;;
+            esac
+
+            usbgen=$( USB_generation "$vendor")
+
+            echo "$path${sep}usb-$usbgen${sep}$vendor${sep}$model${sep}$size${sep}$type$hotplug"
+        done
+        return 0
+    else
+        echo "Looks like no USB drive attached." >&2
+        return 1
+    fi
+}
+
+Usage() {
+    cat <<EOF
+Usage: $progname [options]
+Options:
+    -h, --help        This help.
+    --separator X     Use X as a separator inside the displayed strings.
+EOF
+}
+
+DIE() {
+    echo "$progname: error: $1"
+    Usage
+    exit 1
 }
 
 Main "$@"

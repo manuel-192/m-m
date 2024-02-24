@@ -60,7 +60,7 @@ FindUnmountedUsbDevices() {
     local sticksinfo
     local stick dev devs=""
 
-    readarray -t sticksinfo <<<  $(find-usb-sticks)
+    readarray -t sticksinfo <<<  $(find-usb-sticks --separator " " )
 
     for stick in "${sticksinfo[@]}" ; do
         dev="$(echo "$stick" | awk '{print $1}' | sed 's|:$||')"
