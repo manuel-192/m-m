@@ -2,11 +2,11 @@
 
 echo2() { echo "$@" >&2 ; }
 debug() { test "$DEBUG" = "yes" && echo2 "Debug: " "$@" ; }
-m_yad() { yad --window-icon=drive-removable-media-usb --image=media-flash "$@" ; }
+m_yad() { eos_yad --window-icon=$usb_icon --image=$usb_icon "$@" ; }
 
 DIE() {
     echo2 "$progname error: $1"
-    m_yad --form --text="Error: $1" --title="$progname error" \
+    m_yad --form --text="Error: $1" --title="$progname" \
           --button=yad-quit --width=400 --window-icon=dialog-error
     exit 1
 }
@@ -71,9 +71,13 @@ EOF
 
 Main()
 {
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
+    AssignIconVariables_in_eos_bash_shared
+
     local progname=stickburn
     local is_foreground=no
     local iso_file=""
+    local -r usb_icon=drive-removable-media-usb
 
     HandleParams "$@"
 
@@ -102,6 +106,8 @@ Main()
 
     echo2 "Finding USB drives, please wait..."
     readarray -t usb_sticks_info <<< $(find-usb-sticks --separator " ")
+
+    [ "${usb_sticks_info[*]}" ] || DIE "no target USB drive available."
 
     for xx in "${usb_sticks_info[@]}" ; do
         test -n "$xx" || continue
@@ -188,17 +194,17 @@ Main()
         "No USB drives" | "No umounted USB drives")
             ;;
         *)
-            cmd+=(--button="Start burning now!usb-creator!Burns the selected ISO file to the selected USB drive":0)
+            cmd+=(--button="Start burning now!$usb_icon!Burns the selected ISO file to the selected USB drive":0)
 
-            txt="\n<b>Make absolutely sure you select the right USB drive!</b>\n"
-            txt+="<i>There's no turning back after you start burning!</i>\n\n"
+            txt="\n<b>Make absolutely sure you select the right USB drive.</b>\n"
+            txt+="<i>There's no turning back after you start burning.</i>\n\n"
             txt+="Burning takes a few minutes.\n"
             txt+="When burning has finished, a notification window will appear."
             cmd+=(--field="$txt":LBL "")
             ;;
     esac
  
-    result="$("${cmd[@]}")"
+    result="$("${cmd[@]}" 2>/dev/null)"
 
     debug "result = '$result'"
 
