@@ -70,6 +70,7 @@ _pb_() {
         -p | --pkgnames)       _pb_complete_pkgnames_list ;;
         --pkgdb)               _pb_complete "$(_pb_GetRepo)" ;;
         -c | --changelog)      _pb_complete "$(_pb_GetPkgnames)" ;;
+        -T | --fetch-timeout)  _pb_complete "{1..99}" ;;
         #-*)                    _pb_complete "$repos $options" ;;
         *)
             case "$cur" in
