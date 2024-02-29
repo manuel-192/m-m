@@ -38,7 +38,10 @@ Main3()
         comments="$(echo "$issue_text" | grep -E 'Link--muted.*"[0-9]+ comment' | sed -E 's|.*aria-label="([0-9]+).*|\1|')"
         case "$comments" in
             "") Result $first "#$nr: no comments yet" ;;
-            *)  Result $first "#$nr: $comments comments" ;;
+            *)
+                Result $first "#$nr: $comments comments"
+                interesting_urls+=("$url/$nr")
+                ;;
         esac
         first=no
     done
@@ -72,10 +75,34 @@ Main() {
         https://github.com/manuel-192/m-aur2
         https://github.com/manuel-192/m-more2
     )
+    local interesting_urls=()
+    local show_interesting_urls=no
     local url
+    local br
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -s | --show) show_interesting_urls=yes ;;
+        esac
+        shift
+    done
+
     for url in "${urls[@]}" "$@" ; do
         Main2 "$url"
     done
+
+    if [ $show_interesting_urls = yes ] && [ ${#interesting_urls[@]} -gt 0 ] ; then
+        # About browser fallbacks:
+        # - kde-open will open only the first url
+        # - xdg-open fails with 2 or more urls
+        for br in firefox-developer-edition firefox exo-open kde-open xdg-open
+        do
+            if [ -x /bin/$br ] ; then
+                $br "${interesting_urls[@]}"
+                break
+            fi
+        done
+    fi
 }
 
 Main "$@"
