@@ -76,13 +76,23 @@ Main() {
         https://github.com/manuel-192/m-more2
     )
     local interesting_urls=()
-    local show_interesting_urls=no
+    local show_interesting_urls=yes
     local url
     local br
 
     while [ "$1" ] ; do
         case "$1" in
+            -h | --help)
+                cat <<EOF
+Usage: $progname [options]
+Options:
+    -h, --help      This help.
+    -s, --show      Show interesting URLs. Default.
+    --no-show       Don't show interesting URLs.
+EOF
+                ;;
             -s | --show) show_interesting_urls=yes ;;
+            --no-show) show_interesting_urls=no ;;
         esac
         shift
     done
