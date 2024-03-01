@@ -234,10 +234,12 @@ Main()
     if [ $diff_x86_64 -ne 0 ] ; then
         echo2 "==> x86_64 diffs:"
         cat $file_x86_64_diff >&2
+        rm -f $file_x86_64_diff
     fi
     if [ $diff_arm -ne 0 ] ; then
         echo2 "==> ARM diffs:"
         cat $file_arm_diff >&2
+        rm -f $file_arm_diff
     fi
 
     if [ $diff_x86_64 -ne 0 ] || [ $diff_arm -ne 0 ] ; then
