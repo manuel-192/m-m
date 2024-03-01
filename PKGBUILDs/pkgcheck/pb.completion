@@ -26,6 +26,12 @@ _pb_complete() {
     compopt -o nosort
 }
 
+_pb_complete_nr() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    compopt -o nospace
+    compopt -o nosort
+}
+
 _pb_complete_pkgnames() {
     if [ -r assets.conf ] ; then
         local pkgnames="$(_pb_GetPkgnames)"
@@ -70,10 +76,12 @@ _pb_() {
         -p | --pkgnames)       _pb_complete_pkgnames_list ;;
         --pkgdb)               _pb_complete "$(_pb_GetRepo)" ;;
         -c | --changelog)      _pb_complete "$(_pb_GetPkgnames)" ;;
-        -T | --fetch-timeout)  _pb_complete "{1..99}" ;;
-        #-*)                    _pb_complete "$repos $options" ;;
+        -T)                    _pb_complete_nr "{1..99}" ;;
+        --fetch-timeout)       _pb_complete "{1..99}" ;;
+        -*)                    _pb_complete "$options" ;;
         *)
             case "$cur" in
+                -T?*)          _pb_complete_nr "{1..99}" ;;
                 -*)            _pb_complete "$options" ;;
                  *)            _pb_complete "$repos $options" ;;
             esac

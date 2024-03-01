@@ -151,6 +151,7 @@ EOF
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
                 op+=" --check-all --quick-check --assets.conf-check --pkgdb --changelog --changelog-modified --mirrorlist-arch"
+                op+=" -T --fetch-timeout"
                 echo "$op"
                 return
                 ;;
