@@ -109,6 +109,7 @@ GetChangedFiles() {
     if [ ${#commit_files[@]} -ne 0 ] ; then
         echo -e "\n==> Check version info in the editor:\n" >&2
         Editor PKGBUILD
+        echo "==> updating pkgsums"
         updpkgsums 2>/dev/null || DIE "updpkgsums failed"               # this may be needed!
         commit_files=($(/bin/git diff | /bin/grep "^+++ b/" | sed 's|^+++ b/.*/||'))
     fi
