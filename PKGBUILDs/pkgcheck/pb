@@ -9,7 +9,7 @@ printf2() { printf "$@" >&2 ; }
 RequireApp() { which "$1" &>/dev/null || DIE "this operation needs '$1' installed." ; }
 
 DIE() {
-    echo2 "$progname: error: $1"
+    echo2 "$progname: error (line ${BASH_LINENO[0]}): $1"
     WaitToQuit 1
     exit 1
 }
@@ -55,6 +55,84 @@ ChangeLog() {
     fi
 }
 
+AskCommitPush() {
+    # assume cd "$repodir"
+    local msg=""
+    local commit_files=()
+    local ret=0
+
+    GetChangedFiles
+
+    if [ ${#commit_files[@]} -eq 0 ] ; then
+        echo "==> No files to commit under $PWD!" >&2
+        return 1
+    fi
+    echo -e "\n==> Files to commit: ${commit_files[*]}\n" >&2
+
+    read -p "Commit message: " msg
+
+    [ "$msg" ] || msg="Changed files: ${commit_files[*]}"
+
+    CmdTest git add "${commit_files[@]}" || return $?
+    CmdTest git commit -m "$msg"         || return $?
+    CmdTest git push                     || return $?
+    return 0
+}
+
+CmdTest() {
+    local code=0
+    "$@" || code=$?
+    if [ $code -ne 0 ] ; then
+        echo "==> ERROR (code $code, line ${BASH_LINENO[0]}): $@" >&2
+        return $code
+    fi
+}
+
+Editor() {
+    local file="$1"
+    local editor
+    for editor in emacs codium exo-open ; do
+        if which "$editor" >/dev/null ; then
+            $editor "$file"
+            return
+        fi
+    done
+    DIE "no editor found!"
+}
+
+GetChangedFiles() {
+    [ -r PKGBUILD ] || echo -n " [sorry, ./PKGBUILD needed!] " >&2
+
+    CheckHardLink
+
+    commit_files=($(/bin/git diff | /bin/grep "^+++ b/" | sed 's|^+++ b/.*/||'))
+    if [ ${#commit_files[@]} -ne 0 ] ; then
+        echo -e "\n==> Check version info in the editor:\n" >&2
+        Editor PKGBUILD
+        updpkgsums 2>/dev/null || DIE "updpkgsums failed"               # this may be needed!
+        commit_files=($(/bin/git diff | /bin/grep "^+++ b/" | sed 's|^+++ b/.*/||'))
+    fi
+}
+
+CheckHardLink() {
+    # Some PKGBUILD files need to be hardlinks for easier handling.
+
+    local path="$(realpath .)"
+
+    case "$path" in
+        */eos-pkgbuild-setup | */eos-bash-shared | */welcome)
+            case "$path" in
+                */PKGBUILDS/eos-pkgbuild-setup | */PKGBUILDS/eos-bash-shared | */PKGBUILDS/welcome) ;;
+                *)
+                    # Check hard link count of PKGBUILD
+                    local linkcount=$(/bin/ls -l PKGBUILD | /bin/awk '{print $2}')
+                    [ "$linkcount" = "1" ] && DIE "file $PWD/PKGBUILD is not a hardlink!"
+                    ;;
+            esac
+            ;;
+    esac
+}
+
 _pb() {
     local -r RED=$'\e[0;91m'
     local -r GREEN=$'\e[0;92m'
@@ -94,6 +172,7 @@ _pb() {
     local pkgnames_para=""
     local changelogfor=""
     local cmd_options=""
+    local commit=no
 
     supported_folders="MAN EOS $(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ')"
 
@@ -110,7 +189,7 @@ Params:
     repodir
         - "": uses current folder
         - One of: $supported_folders
-    --pull
+    --pulls
         Show potential pull requests and issues. Options ignored.
     --check-all
         Check all supported folders.
@@ -133,9 +212,14 @@ Options:
     --reponames              Show names of supported repos and folders.
     -c, --changelog          Show the changelog of a package, if available.
     -T, --fetch-timeout "X"  X is a timeout (in seconds) for starting to fetch packages.
+    -C, --commit             Does: git {add,commit,push} to github. Asks possible comment for 'commit', otherwise defaults.
+                             Note: make sure PKGBUILD is a hardlink if needed!
 EOF
                 WaitToQuit
                 return
+                ;;
+            -C | --commit)
+                commit=yes
                 ;;
             --editme)
                 for op in "$EDITOR" ide emacs kate "qtcreator -client" xed geany adie mousepad gedit ; do
@@ -149,7 +233,7 @@ EOF
             --dump-options)
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
-                op+=" --dump-options --dump-options-single --editme --help -h --reponames --pull"
+                op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls"
                 op+=" --check-all --quick-check --assets.conf-check --pkgdb --changelog --changelog-modified --mirrorlist-arch"
                 op+=" -T --fetch-timeout"
                 echo "$op"
@@ -191,7 +275,7 @@ EOF
                 echo "$supported_folders"
                 return
                 ;;
-            --pull)   # | pull)
+            --pulls)   # | pull)
                 pull-requests
                 WaitToQuit
                 return
@@ -204,7 +288,7 @@ EOF
                 local tinyopt="-nn"
                 [ "${1/=/}" != "$1" ] && tinyopt="-${1#*=-}"
                 for folder in $supported_folders \
-                              --assets.conf-check --pull     # NOTE: additional commands!
+                              --assets.conf-check --pulls    # NOTE: additional commands!
                 do
                     printf2 "\n${GREEN}==> %s %s${RESET}\n" "$progname" "$folder"
                     # echo2 "==> $progname $folder"
@@ -282,7 +366,7 @@ RunInDir() {
 _banner() { printf "\n============================ %s ============================\n" "$repodir"; }
 
 _pb2() {
-    if ! pb_IsSupportedFolderName "$repodir" ; then
+    if ! pb_IsSupportedFolderName "$repodir" && [ $commit = no ] ; then
         # DIEF "repo/folder '$folder' is not supported." "Supported: $supported_folders"
         AskFolder # "$repodir"
     else
@@ -359,12 +443,17 @@ _pb3() {
             WaitToQuit
             return 1
         }
-        if [ ! -L .git ] ; then
+        if [ ! -L .git ] && [ $commit = no ] ; then
             echo2 "${FUNCNAME[0]}: '$PWD/.git' does not exist or is not a symlink."
             cd "$cwd" || DIE "'cd $cwd' failed"
             WaitToQuit 1
             return 1
         fi
+    fi
+
+    if [ $commit = yes ] ; then
+        AskCommitPush
+        exit
     fi
 
     if [ -n "$pkgnames_para" ] ; then
