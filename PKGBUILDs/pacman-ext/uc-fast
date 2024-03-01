@@ -60,6 +60,7 @@ Main() {
     local ret_arch=$EXIT_UPDATES_NO
     local ret_eos=$EXIT_UPDATES_NO
     local ret_aur=$EXIT_UPDATES_NO
+    local -r right_after_boot_file=/tmp/$progname.tmp
 
     [ "$1" ] || Usage $EXIT_ERROR
 
@@ -165,12 +166,13 @@ MainNext() {
 
     if [ -f "$lastupdate_saved" ] ; then
         diff "$lastupdate" "$lastupdate_saved" >/dev/null
-        if [ $? -eq 0 ] ; then
+        if [ $? -eq 0 ] && [ -e $right_after_boot_file ] ; then
             Verbose "No ${os} updates.\n"
             rm -f "$lastupdate"
         else
-            # Note that the updated packages may *not* be installed here!
-            Verbose "${os} updates *may* be available.\n"
+            touch $right_after_boot_file
+
+            Verbose "${os} updates *may* be available.\n"  # ... but the updated packages might *not* be installed!
             case "$os" in
                 Arch)
                     Verbosex "    %-30s: %s\n" "$lastupdate"       "$(date --date="@$(head -n1 "$lastupdate")")"
