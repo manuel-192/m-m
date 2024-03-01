@@ -1,5 +1,6 @@
 # bash completion for pb        -*- shell-script -*-
 
+
 _mylistselector()
 {
     local cur="$1"
