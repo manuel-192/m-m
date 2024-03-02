@@ -6,7 +6,7 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=6.2
+pkgrel=6.3
 arch=(any)
 license=(GPL)
 depends=(bash expac hook-update-description)
@@ -44,6 +44,7 @@ source=(
     $url/update-system
     $url/expac-aur
     $url/fit
+    $url/local-update-checker   # don't installed
 )
 sha512sums=('8b189ba810ff8fcd01ad6ff20b4984449319c7211906a5044309ca4976576d839955fd5386f92bf73002004c2c46a9677fade7fc9ca2c21c366858ace487e63b'
             'a200a89211ec4d883b53ceecf852568b4f8f1a01c7d2a3dae4be48588b23e088ed37d9f2965a585f10fdf1efcc6af2e2fca078b1a82a92ded0c464237a2b8f81'
@@ -63,7 +64,8 @@ sha512sums=('8b189ba810ff8fcd01ad6ff20b4984449319c7211906a5044309ca4976576d83995
             '2910e388755e63bed6935b5fb13e6b272c5f8316bd5fc2c85aebb1f95064f06096861c4167fbcf14b8da43cba19268c9918b90056f36600eb5d403d0b27cc72e'
             'd2cf54eb5cc28792119dec4feac125e1e0130130c3f7709e00e99bbefbc04585b1ae3b4a025952b2a8b7489e3aff74d4534e1951540a736fa8b0206d7d349172'
             'd4ea3c9581af6d4dc03e846071875baf78d8cbe6718eb3cf2958e0730d6dcf12e7a27fd4389ffb006274fbb32b62746f48ae1c4ae4ceed0658cab6d0f16e93c5'
-            '97d53b212a7aa3835d09ccfe6d943c0634ee781c0e913095351d1027751afc17a85822d5a6d927d6f3422617b927e60ca8214944df7d4bae2a136cd75ac67d3c')
+            '97d53b212a7aa3835d09ccfe6d943c0634ee781c0e913095351d1027751afc17a85822d5a6d927d6f3422617b927e60ca8214944df7d4bae2a136cd75ac67d3c'
+            '091bb7afc755e65592131a15c1447e76b69b804d95e8ca5d8897c314ba47c2b7ecf84107c06640eae155d4a41105c2a292c35a5933c33af7f5967c72a2ef4dc9')
 
 package() {
     local item src
@@ -72,11 +74,17 @@ package() {
         item="${src##*/}"
         case "$item" in
             *.completion)
-                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
+                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)"
+                ;;
             *.conf)
-                install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
+                install -Dm644 "$item"   "$pkgdir/etc/$item"
+                ;;
+            local-update-checker)
+                # don't install
+                ;;
             *)
-                install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
+                install -Dm755 "$item"   "$pkgdir/usr/bin/$item"
+                ;;
         esac
     done
 

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# Use expac to check for package updates.
+# Note: this does *not* do 'pacman -Sy' which is required for a *real* update check.
+
+echo2() { echo "$@" >&2 ; }
+
+Main2()
+{
+    local installed=/tmp/installed.tmp
+    local available=/tmp/available.tmp
+    local uptodate=/tmp/uptodate.tmp
+
+    # Find all available repo packages.
+    expac -S "%n %v" | sort > $available
+
+    # Find pkgs installed.
+    # (Remove local pkgs, e.g. 'fetch-iso').
+    expac -Q "%n %v" | sort | grep -Pv "^fetch-iso " > $installed
+
+    # $uptodate = installed pkgs that are up to date
+    grep -f $installed -x $available > $uptodate
+
+    # diffs = all pkgs that have updates
+    diffs=$(diff $uptodate $installed | grep "^> " | sed 's|^> ||' | awk '{print $1}')  # small cleanup too
+
+    # final cleanup
+    rm -f $available $installed $uptodate
+
+    # show the result
+    if [ "$diffs" ] ; then
+        echo2 "updates available for:"
+        echo "$diffs" | sed 's|^|    |'
+        return 0
+    else
+        echo2 "no updates"
+        return 2
+    fi
+}
+
+Main() {
+    local progname="${0##*/}"
+    case "$1" in
+        -h | --help)
+            echo2 "Usage: $progname [options]"
+            echo2 "Options:"
+            echo2 "    -h, --help         This help."
+            echo2 "    -y, --refresh      Sync the package database like 'pacman -Sy' does, then check for updates."
+            echo2 "    -u, --sysupgrade   Update all packages like 'pacman -Syu' does."
+            echo2 "Without options only check if updates are available, using the local database."
+            exit 0
+            ;;
+        -y | --refresh)
+            sudo pacman -Sy
+            shift
+            ;;
+        -u | --sysupgrade)
+            sudo pacman -Syu
+            exit
+            ;;
+    esac
+    Main2 "$@"
+}
+
+Main "$@"
