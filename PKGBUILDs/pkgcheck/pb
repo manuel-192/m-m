@@ -73,27 +73,39 @@ AskCommitPush() {
 
     [ "$msg" ] || msg="Changed files: ${commit_files[*]}"
 
-    CmdTest git add "${commit_files[@]}" || return $?
-    CmdTest git commit -m "$msg"         || return $?
-    CmdTest git push                     || return $?
+    CmdTest git add "${commit_files[@]}"
+    CmdTest git commit -m "$msg"
+    CmdTest git push
     return 0
 }
 
 CmdTest() {
     local code=0
-    "$@" || code=$?
-    if [ $code -ne 0 ] ; then
-        echo "==> ERROR (code $code, line ${BASH_LINENO[0]}): $@" >&2
-        return $code
-    fi
+
+    case "$1" in
+        --show-cmd) shift; echo2 "$@" ;;
+        -*) DIE "$FUNCNAME: option '$1' not supported" ;;
+    esac
+
+    "$@" || {
+        code=$?
+        DIE "'$*' failed, code $code, line ${BASH_LINENO[0]})"
+    }
 }
 
-Editor() {
+Edit() {
     local file="$1"
-    local editor
+    local editor show
+
+    case "$1" in
+        --show-cmd) show="CmdTest --show-cmd"; file="$2" ;;
+        -*) DIE "$FUNCNAME: option '$1' not supported" ;;
+        *) show="" ;;
+    esac
+
     for editor in "/bin/emacs --reverse-video" codium exo-open ; do
         if which "${editor%% *}" >/dev/null ; then
-            $editor "$file"
+            $show $editor "$file"
             return
         fi
     done
@@ -108,7 +120,7 @@ GetChangedFiles() {
     commit_files=($(/bin/git diff | /bin/grep "^+++ b/" | sed 's|^+++ b/.*/||'))
     if [ ${#commit_files[@]} -ne 0 ] ; then
         echo -e "\n==> Check version info in the editor:\n" >&2
-        Editor PKGBUILD
+        Edit --show-cmd PKGBUILD
         echo "==> updating pkgsums"
         updpkgsums 2>/dev/null || DIE "updpkgsums failed"               # this may be needed!
         commit_files=($(/bin/git diff | /bin/grep "^+++ b/" | sed 's|^+++ b/.*/||'))
@@ -201,7 +213,7 @@ Params:
     --pkgdb <db-filename>
         Show the contents of the given package database (*.db.tar.xz).
     --mirrorlist-arch
-        Show a generated mirrorlist from the Arch web page. Useful for testing only.
+        Download a generated mirrorlist from the Arch web page. Useful for testing only.
 
 Options:
     -b                       Directly try to build packages.
@@ -223,13 +235,8 @@ EOF
                 commit=yes
                 ;;
             --editme)
-                for op in "$EDITOR" ide emacs kate "qtcreator -client" xed geany adie mousepad gedit ; do
-                    if [ -n "$op" ] && type "${op%% *}" &>/dev/null ; then
-                        $op "$0"
-                        return
-                    fi
-                done
-                DIE "option '$1': no editor found."
+                Edit --show-cmd "$0"
+                return
                 ;;
             --dump-options)
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
@@ -282,10 +289,13 @@ EOF
                 return
                 ;;
             --mirrorlist-arch)
-                firefox "https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4"
+                # firefox "https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4"
+                CmdTest --show-cmd curl -Lsm 10 -o/tmp/mirrorlist2 \
+                        "https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4"
+                grep -v "//mirror1\.sl-chat\.ru/" /tmp/mirrorlist2 > /tmp/mirrorlist
                 return
                 ;;
-            --check-all*)
+            --check-all*)                  # supports also: --check-all="-n"
                 local tinyopt="-nn"
                 [ "${1/=/}" != "$1" ] && tinyopt="-${1#*=-}"
                 for folder in $supported_folders \
@@ -341,7 +351,7 @@ EOF
             --repoup | -n | -nn | -nl | --dryrun-local | -nr | --dryrun | --pkgdiff | -ad | --allow-downgrade)
                 op="$1" ;;
             -b | --build) op="" ;;
-            -*) DIE "unsupported option '$1'" ;;
+            -*) DIE "option '$1' not supported" ;;
             *)  repodirs+=("$1") ;;
         esac
         shift
