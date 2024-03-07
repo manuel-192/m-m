@@ -73,7 +73,11 @@ Main() {
             shift
         done
     else
-        local selected=$(ShowFiles | fzf --exact +i --tac)
+        local fzf=(
+            fzf --exact +i --tac
+            --header="Navigation: Up, Down, PgUp, PgDn; ENTER=accept, ESC=quit"
+        )
+        local selected=$(ShowFiles | "${fzf[@]}" )
         if [ "$selected" ] ; then
             while true ; do
                 read -p "Download $selected now (Y/n)? "
