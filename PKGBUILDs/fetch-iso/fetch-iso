@@ -41,7 +41,8 @@ Options:
     -h, --help           This help.
     -r, --refresh        Refresh the info about available downloads.
 
-Tip: use bash completion (by pressing the TAB key on the command line) to get the file to download.
+Tip1: Without parameters a selection of downloadable files is presented.
+Tip2: Use bash completion (by pressing the TAB key on the command line) to get the file to download.
 
 EOF
 }
