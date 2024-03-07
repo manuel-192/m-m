@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=fetch-iso
+pkgdesc="Fetch ISO"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=24
+pkgrel=1.3
+
+arch=('any')
+license=('GPL')
+depends=(fzf)
+backup=(etc/$pkgname.conf)
+
+source=(
+    $url/$pkgname
+    $url/$pkgname.completion
+)
+sha512sums=('3ab9dc3e04826c7433ac491deb259e20a5f30d39f3af3e6b17a4bc4316fa27f387f632017dc52721b2c77dbf6bd4affdbb881fa7ac1ba62ef1e90fd7be6380b3'
+            'bbe87775fd414169f9138fd876126b0ac440769ee33544d6148a6bbdd520a37a41b2896eecce2cf607c13a53ac197deda0f65da1e2195da2f6f6b4f45d4d1f16')
+
+package() {
+    local xx name
+    for xx in "${source[@]}" ; do
+        name=$(basename "$xx")
+        case "$name" in
+            *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
+            *.conf)       install -Dm644 $name   $pkgdir/etc/$name ;;
+            *)            install -Dm755 $name   $pkgdir/usr/bin/$name ;;
+        esac
+    done
+}

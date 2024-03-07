@@ -1,0 +1,89 @@
+#!/bin/bash
+
+echo2() { echo "$@" >&2 ; }
+DIE() {
+    echo2 "$progname: error: $1"
+    [ "$2" ] && exit "$2" || exit 1
+}
+
+GetInfoPage() {
+    # Make sure the download data is stored in a local file.
+    if [ ! -e $datafile ] ; then
+        curl --fail -Lsm 30 -o$datafile -u "$HELLO" $URLBASE || DIE "failed fetching the info page '$URLBASE'."
+    fi
+}
+
+RefreshInfo() {
+    rm -f $datafile
+    echo2 "==> Info about available downloads refreshed."
+}
+
+ShowFiles() {
+    # Show downloadable files from the stored local file.
+    GetInfoPage
+    grep "\-iso\.tar\.gz" $datafile | sed -E 's|.*">(.*-iso\.tar\.gz)<.*|\1|'
+}
+
+FetchIsoFile() {
+    # Fetch the given ISO file.
+    echo2 "==> Downloading..."
+    local file="$1"
+    curl --fail --remote-name-all -u "$HELLO" "$URLBASE/$file" || exitcode=$?
+    [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
+}
+
+Usage() {
+    cat <<EOF
+
+Usage: $progname [options] [filename]
+
+Options:
+    -h, --help           This help.
+    -r, --refresh        Refresh the info about available downloads.
+
+Tip: use bash completion (by pressing the TAB key on the command line) to get the file to download.
+
+EOF
+}
+
+Main() {
+    local -r progname=${0##*/}
+    local -r config="$HOME/.config/$progname.conf"
+    local URLBASE=""
+    local HELLO=""
+    local exitcode=0
+    local file
+    local datafile=/tmp/$progname.tmp   # remove this if new files should be available
+
+    source "$config" || DIE "file $config has a problem"
+    [ "$URLBASE" ]   || DIE "URLBASE has no value in $config"
+    [ "$HELLO" ]     || DIE "HELLO has no value in $config"
+
+    if [ "$1" ] ; then
+        while [ "$1" ] ; do
+            case "$1" in
+                -r | --refresh)   RefreshInfo ;;
+                --fetch-data)     GetInfoPage ;;
+                --show-files)     ShowFiles ;;
+                --dump-options)   echo "--help --refresh" ;;
+                -h | --help | "") Usage; exit 0 ;;
+                -*)               DIE "option '$1' not supported." ;;
+                *)                FetchIsoFile "$1" ;;
+            esac
+            shift
+        done
+    else
+        local selected=$(ShowFiles | fzf --exact +i --tac)
+        if [ "$selected" ] ; then
+            while true ; do
+                read -p "Download $selected now (Y/n)? "
+                case "$REPLY" in
+                    [Nn]*) return ;;
+                    "" | [Yy]*) FetchIsoFile $selected ; return ;;
+                esac
+            done
+        fi
+    fi
+}
+
+Main "$@"
