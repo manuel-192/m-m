@@ -56,10 +56,11 @@ Main() {
 
     local verbose=no   # for uc-fast only !?
     local debug=no
+    local pagerlines=20
 
-    local SOPTS="acdfhinopqsv"
+    local SOPTS="acdfhil:nopqsv"
     local LOPTS="aur,begin:,clear-keyrings,connection,debug,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
-    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,paru,quiet,sync,verbose,virtualbox"
+    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,pager-lines:,paru,quiet,sync,verbose,virtualbox"
 
     local args=("$@")
 
@@ -91,6 +92,7 @@ Main() {
 
     UpdateDatabase               # pacman -Sy
     FindAllUpdates
+    ShowDescriptions
 
     UpdateKeyrings               # install keyring packages if needed
     CheckNvidia
@@ -98,7 +100,6 @@ Main() {
     Xadditions middle "$middle"
 
     UpdatePackages               # pacman -Su and yay (repo and AUR)
-    ShowDescriptions
     Foreign
     Pacdiff
     Xadditions end "$end"
@@ -139,6 +140,7 @@ All options below will change the default behavior.
         --no-lock          Does not check pacman database lock.
     -i, --instant          Fast and simple check for updates. Experimental!
         --instant-no-aur   Same as --instant but AUR will not be checked.
+    -l, --pager-lines      Number of pager lines for the descriptions (see option --descriptions).
     -n, --nvidia           Checks validity of nvidia & linux updates.
     -o, --optimize-checks  Reduce redundancy in checks.
     -p, --pacdiff          Runs 'pacdiff & meld' in the end.
@@ -205,6 +207,7 @@ Options() {
                     --dump-options)          DumpOptions; Exit 0 ;;
                     -i | --instant)          Assign instant yes ;;
                     --instant-no-aur)        Assign instant yes; Assign aur no ;;
+                    -l | --pager-lines)      Assign pagerlines "$2"; shift ;;
                     -f | --foreign)          Assign foreign yes ;;
                     --no-keyrings)           Assign keyrings no ;;
                     --no-lock)               Assign lock_check no ;;
@@ -428,19 +431,28 @@ Foreign() {
     esac
 }
 
+PagerOut() {
+    local updates="$1"
+    local title="$2"
+    local out="$(Cmd1 hook-update-description --include-repo --title="$title" $updates)"
+
+    if [ "$(echo "$updates" | wc -l)" -gt $pagerlines ] ; then
+        echo "$out" | less
+    else
+        echo "$out"
+    fi
+}
+
 ShowDescriptions() {
     [ "$descriptions" = "yes" ] || return
-    # shellcheck disable=SC2086
-    [ "$updates_pacman" ] && Cmd1 hook-update-description --include-repo --title="native updates" $updates_pacman
 
-    ShowDescriptionsAUR
+    # shellcheck disable=SC2086
+    [ "$updates_pacman" ] && PagerOut "$updates_pacman" "native updates"
+
+    # shellcheck disable=SC2086
+    [ "$updates_aur" ]    && PagerOut "$updates_aur"    "AUR updates"
 }
 
-ShowDescriptionsAUR() {
-    [ "$descriptions" = "yes" ] || return
-    # shellcheck disable=SC2086
-    [ "$updates_aur" ] && Cmd1 hook-update-description --include-repo --title="AUR updates" $updates_aur
-}
 
 CheckConnection() {
     [ "$connection" = "yes" ] || return

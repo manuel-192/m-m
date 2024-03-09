@@ -6,10 +6,11 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=6.3
+pkgrel=6.4
 arch=(any)
 license=(GPL)
-depends=(bash expac hook-update-description)
+depends=(bash expac
+        )
 optdepends=(
     'eos-bash-shared: nvidia vs. kernel update check'
     'eos-update-notifier: for using checkupdatesext (one of the update checkers)'
@@ -22,6 +23,7 @@ optdepends=(
     'polkit: alternative privileges manager for pm-gui'
     'pandoc: for upd help'
 )
+conflicts=(hook-update-description)
 backup=(etc/pacman-ext.conf etc/uc-fast.conf)
 
 source=(
@@ -44,6 +46,7 @@ source=(
     $url/update-system
     $url/expac-aur
     $url/fit
+    $url/hook-update-description
     $url/local-update-checker   # don't installed
 )
 sha512sums=('8b189ba810ff8fcd01ad6ff20b4984449319c7211906a5044309ca4976576d839955fd5386f92bf73002004c2c46a9677fade7fc9ca2c21c366858ace487e63b'
@@ -60,11 +63,12 @@ sha512sums=('8b189ba810ff8fcd01ad6ff20b4984449319c7211906a5044309ca4976576d83995
             'e2eadb74583bf4c4a541dfc8abd22a03555a0d2bd234ddef18c11648f2ccf6d92dcb72fa164ee00e2f9785b5d9a4633be601b2803daf4e274c3c5395ad0639cb'
             '710d4d19c97ce9af5b267d8e5e709edf79e8df9057388d95de1d5a92eaa24114a4dcff61a7a027b98bdabfd9b339c10f7d11682d7cbc6887a0011e17114df651'
             '2957e3a005155c92e152e227b060fe07beff61eae9b1b77fe9a8fd8207554128663cb0bbd1edba193d0e4d240e8f63f81045c1bc8e0ad283d2ab9824b448add6'
-            '90683ecfcb4a683d7067cb6f6f3c6624b70c406ac049774dcce4da395c550d280cc4dc67ad2c4873f161717966ee2bce261adc63273a47a8e11c3b1c5413ca4e'
+            'e42bea543d3d338daf52ff121d3c06d4f0398ba83d954951bc3187e91d95a6f935894c79dfd7c66e69c200da1cf29d732d4aa58ba6790e6e574b60dfad30a38d'
             '2910e388755e63bed6935b5fb13e6b272c5f8316bd5fc2c85aebb1f95064f06096861c4167fbcf14b8da43cba19268c9918b90056f36600eb5d403d0b27cc72e'
             'd2cf54eb5cc28792119dec4feac125e1e0130130c3f7709e00e99bbefbc04585b1ae3b4a025952b2a8b7489e3aff74d4534e1951540a736fa8b0206d7d349172'
             'd4ea3c9581af6d4dc03e846071875baf78d8cbe6718eb3cf2958e0730d6dcf12e7a27fd4389ffb006274fbb32b62746f48ae1c4ae4ceed0658cab6d0f16e93c5'
             '97d53b212a7aa3835d09ccfe6d943c0634ee781c0e913095351d1027751afc17a85822d5a6d927d6f3422617b927e60ca8214944df7d4bae2a136cd75ac67d3c'
+            '94530b4fad24ed4bc414d79faf5fdf1631e241b23e2327fe5901ea2c0bf8e2aebb2bc55810897d89245a883772e206852214f5e9262f03d7b24a7774aa71dfc2'
             '091bb7afc755e65592131a15c1447e76b69b804d95e8ca5d8897c314ba47c2b7ecf84107c06640eae155d4a41105c2a292c35a5933c33af7f5967c72a2ef4dc9')
 
 package() {
