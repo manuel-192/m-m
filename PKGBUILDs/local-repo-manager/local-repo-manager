@@ -526,12 +526,16 @@ Main() {
 
     [ -n "$PACKAGED_BY" ]     && export PACKAGER="$PACKAGED_BY"
 
+    mkdir -p "$pkgbuilddir" || DIELINE "cannot create temporary build folder '$pkgbuilddir'."
+
     FetchPkgbuilds
     echo2v ""
 
     ShowChangelogs
 
     BuildPackages
+
+    rm -rf "$pkgbuilddir" || DIELINE "cannot remove temporary build folder '$pkgbuilddir'."
 }
 
 Main "$@"
