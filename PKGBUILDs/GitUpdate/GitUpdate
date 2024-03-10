@@ -74,10 +74,9 @@ CheckDiff() {
             DIE "cannot determine reponame!"
             ;;
         endeavouros)
-            has_statefile=yes
             statefile="$PWD/state"
-            test -r "$statefile" || DIE "file '$statefile' is missing!"
-            #srcdir="$PWD/../_BUILD_/mirrors.mirror1"
+            test -r "$statefile" && has_statefile=yes || DIE "file '$statefile' is missing!"
+
             srcdir="$ASSETSDIR"
             dstdir="$PWD/$reponame/x86_64"
             git_adds="$reponame state"
@@ -89,9 +88,17 @@ CheckDiff() {
             git_adds="$(basename "$dstdir")"
             ;;
         *)
+            if true ; then
+                statefile="$PWD/state"
+                test -r "$statefile" && has_statefile=yes || DIE "file '$statefile' is missing!"
+            fi
             srcdir="$ASSETSDIR"
             dstdir="$PWD/repo"
-            git_adds="$(basename "$dstdir")"
+            if [ $has_statefile = yes ] ; then
+                git_adds="$(basename "$dstdir") state"
+            else
+                git_adds="$(basename "$dstdir")"
+            fi
             ;;
     esac
 
@@ -283,9 +290,11 @@ Main()
 
         cd "$gitdir"
         RunOnlyIfAllowed "git pull"
-        case "$reponame" in
-            endeavouros) [ $diff_x86_64 -ne 0 ] && MirrorStateUpdate ;;
-        esac
+
+        if [ $has_statefile = yes ] && [ $diff_x86_64 -ne 0 ] ; then
+            MirrorStateUpdate
+        fi
+
         ReplaceAssets
         GitUpdate "$commit_msg"
     else
