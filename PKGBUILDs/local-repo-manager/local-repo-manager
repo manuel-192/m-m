@@ -60,12 +60,6 @@ AddPackagesToRepo() {
     echo2 "==> done."
 }
 
-GetPkgbuildPkgname() {
-    local PKGBUILD="$1"
-    source "$PKGBUILD"
-    echo "${pkgname}-${pkgver}-${pkgrel}-${arch[0]}.pkg.tar.zst"
-}
-
 BuildPackages() {
     local files file pkgs=() onepkgs=()
     local built=no
@@ -144,10 +138,10 @@ BuildNeeded() {
 
     case "$pkgname1" in
         */local)
-            new_version=$(GetPkgVersion "$localroot/$pkgname/PKGBUILD")
+            GetPkgbuildValue "$localroot/$pkgname/PKGBUILD" "pkgver-pkgrel" new_version
             [ -n "$new_version" ] || DIELINE "cannot find the latest available version of package '$pkgname1'"
             ;;
-        *)
+        */aur | *)
             new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
             [ -n "$new_version" ] || DIELINE "'$helper_Sia' cannot find the latest available version of package '$pkgname1'"
             ;;
@@ -168,18 +162,6 @@ BuildNeeded() {
     esac
 }
 
-GetPkgVersion() {
-    local PKGBUILD="$1"
-    source "$PKGBUILD"
-    echo "$pkgver"-"$pkgrel"   # assume pkgver() does not exist !!!
-}
-RealName() {
-    case "$1" in
-        */local) echo "${1%/local}" ;;
-        *)       echo "$1" ;;
-    esac
-}
-
 FetchPkgbuilds() {
     FetchAurPackage() {
         printf2v "...fetching"
@@ -194,7 +176,19 @@ FetchPkgbuilds() {
     Pushd "$pkgbuilddir"
 
     for pkgname1 in "${PKGNAMES[@]}" ; do
-        pkgname=$(RealName $pkgname1)
+        # skip potential suffix in $pkgname1 to get the actual pkgname
+        case "$pkgname1" in
+            */local)
+                pkgname="${pkgname1%/local}"      # pkg source in this system only
+                ;;
+            */aur)
+                pkgname="${pkgname1%/aur}"        # pkg source in the AUR
+                ;;
+            *)
+                pkgname="$pkgname1"               # pkg source in the AUR
+                pkgname1+="/aur"
+                ;;
+        esac
         printf2v "==> %-40s: " "$pkgname1"
         case "$pkgname1" in
             */local) [ -r "$localroot/$pkgname/PKGBUILD" ] || DIELINE "no PKGBUILD for $pkgname1" ;;
@@ -219,7 +213,7 @@ FetchPkgbuilds() {
                     cp -a "$localroot/$pkgname" ./
                     echo2v ""
                     ;;
-                *) FetchAurPackage "$pkgname" >/dev/null ;;
+                */aur | *) FetchAurPackage "$pkgname" >/dev/null ;;
             esac
             constructor="${PKG_BEFORE_AFTER[$pkgname]}"
             if [ -n "$constructor" ] ; then
@@ -258,19 +252,27 @@ Add_BeforeAfter_func() {
     true  # do not fail sourceing the config file
 }
 
-GetPkgbuildValue() {
-    local -r varname="$1"
-    local -n retvar="$2"
+PkgverFuncFail() { declare -F pkgver >/dev/null && DIE "$PKGBUILD: sorry, pkgver() not yet supported!" ; }
 
-    source PKGBUILD || return 1
+GetPkgbuildValue() {
+    local PKGBUILD="$1"
+    local -r varname="$2"
+    local -n _retvar="$3"
+    local ret=0
+
+    unset -f pkgver
+    source "$PKGBUILD" || return 1
+
     case "$varname" in
-        depends)     retvar=("${depends[@]}") ;;
-        makedepends) retvar=("${makedepends[@]}") ;;
-        pkgrel)      retval="$pkgrel" ;;
-        pkgver)      retval="$pkgver" ;;
-        epoch)       retval="$eopch" ;;
-        *) return 1 ;;
+        depends)         _retvar=("${depends[@]}") ;;
+        makedepends)     _retvar=("${makedepends[@]}") ;;
+        pkgrel)          _retvar="$pkgrel" ;;
+        pkgver)          PkgverFuncFail; _retvar="$pkgver" ;;
+        epoch)           _retvar="$epoch" ;;
+        pkgver-pkgrel)   PkgverFuncFail; _retvar="${pkgver}-${pkgrel}" ;;
+        *)               DIELINE "$FUNCNAME: finding $varname from $PKGBUILD not supported" ;;
     esac
+    unset -f pkgver
 }
 PutPkgbuildValue() {
     local -r varname="$1"
@@ -284,7 +286,7 @@ MissingDeps() {
     local DEPS=()
     local pkgs=()
 
-    GetPkgbuildValue $varname DEPS || return 1
+    GetPkgbuildValue PKGBUILD $varname DEPS || return 1
 
     for pkg in "${DEPS[@]}" ; do
         case "$pkg" in
@@ -460,6 +462,8 @@ EOF
 Main() {
     local progname="local-repo-manager"
     local conf="/etc/$progname.conf"
+
+    unset -f pkgver
 
     # to be filled by the config file
     local REPONAME=""             # the reponame for /etc/pacman.conf
