@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=theme-kde-eos
+pkgdesc="Forked KDE theme (from Breeze) for EOS"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=24
+pkgrel=1
+
+arch=(any)
+license=(GPL)
+depends=()
+backup=()
+
+source=(
+    $url/Background.qml
+    $url/KeyboardButton.qml
+    $url/Login.qml
+    $url/Main.qml
+    $url/SessionButton.qml
+    $url/default-logo.svg
+    $url/face.icon
+    $url/metadata.desktop
+    $url/theme.conf
+    $url/theme.conf.user
+)
+sha512sums=('ca96b68c991491f0614a1ead0b85b58c5895ca8f97909b8f1071a9244df4527feb6cc9ab7f294d1a71c972cc53a6e42c4c2aa9a075df84af787b4e4dfe665487'
+            '21cc4929e6f39bc16b2e9dea39ade14f9a542599507108e82d68c0e555c6379d3535988090fcd14167954a08d27b3b19eb2bb17268290fb34e5f664e4a6a3ba1'
+            '82ad1176ef3b31d2f685ff6dfcc4c98dd177f20956464865bc9c4589c0a2f6aca52fc29ced0d91b0b3911c801e5b26c786b09d8d6c005aa08f95492fcb1fbe90'
+            '025aa84ea45d37fb8f852db837f60f4d82508d280e960e9f7ae223611f90cb35f7ef9e8a20e1bca1485a600ac1ca07b8141774db81f74712f96acb3e4d8b4034'
+            'd5c5f46c65c0baf71b917d12ff0b65f650ff623ddd5474b6ce35e5e433dc9a8a94afdcc9ef1ede7839f8d271206bd391e6e3dec209d3194532c0937a0c926839'
+            'a98e02c415c91a1e5255849a719f8b0c3f9938e12503afe10dcafab401587a88c5d2af6323b6b49cc791fe9ef5b886a642fe25eb17c8282e796f96f97436b9d2'
+            '48d68817a18d525cd8ce82c87a65d2dc28ef48d751f7eea3f25987b1443cc9f60108af8f26c05ba4556eee8cf84821678dc3dfaa2dfa05350a8496c40eb1799d'
+            'c9d9d75b3ddd2e7adeed676a39fde33915d70e0c4a57669d92e0c16b82cae04bd54b02a7b9e302816a15c27e30586e2e22c556123ed34df660a871fb96d8ad47'
+            '7b5d40b66a2e5f8fca06b432bfdca06de18e3de0603e8d23673da528021ff2cc5b5c82befd678c59fd7c57ba059492e7b949c471db569d7c4064189c724560e5'
+            'd2cef3f9e6d49b87cb17ee9b0c7b520be4cda00826d843f1427e3d98b4d5744a01ae01ef4f232c7ec1c93ea58805e136c5fc9641807df8066d29ce9555f0f113')
+
+package() {
+    local folder=usr/share/sddm/themes/EOS
+    local item src
+
+    for src in "${source[@]}" ; do
+        item="${src##*/}"
+        case "$item" in
+            face.icon) install -Dm644 "$item"    "$pkgdir/$folder/faces/.$item" ;;
+            *)         install -Dm644 "$item"    "$pkgdir/$folder/$item" ;;
+        esac
+    done
+
+    ln -s /usr/share/endeavouros/backgrounds/endeavouros-wallpaper.png "$pkgdir/$folder/endeavouros-wallpaper.png"
+}

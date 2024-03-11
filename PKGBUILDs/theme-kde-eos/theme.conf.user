@@ -1,0 +1,4 @@
+[General]
+# background=5120x2880.png
+background=/usr/share/endeavouros/backgrounds/endeavouros-wallpaper.png
+type=image
