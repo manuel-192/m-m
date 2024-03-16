@@ -434,13 +434,8 @@ Foreign() {
 PagerOut() {
     local updates="$1"
     local title="$2"
-    local out="$(Cmd1 hook-update-description --include-repo --title="$title" $updates)"
 
-    if [ "$(echo "$updates" | wc -l)" -gt $pagerlines ] ; then
-        echo "$out" | less
-    else
-        echo "$out"
-    fi
+    Cmd1 hook-update-description --include-repo --title="$title" $updates | less -F
 }
 
 ShowDescriptions() {
