@@ -19,7 +19,7 @@ depends=(
     gufw
     hub
     jq
-    kaffeine
+    # kaffeine
     libreoffice-fresh
     #linux linux-headers linux-lts linux-lts-headers
     meld
