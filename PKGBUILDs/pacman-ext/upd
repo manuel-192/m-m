@@ -59,8 +59,8 @@ Main() {
     local pagerlines=20
 
     local SOPTS="acdfhil:nopqsv"
-    local LOPTS="aur,begin:,clear-keyrings,connection,debug,descriptions,dump-options,end:,instant,instant-no-aur,foreign,help,middle:"
-    LOPTS+=",no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,pager-lines:,paru,quiet,sync,verbose,virtualbox"
+    local LOPTS="aur,begin:,clear-databases,clear-keyrings,connection,debug,descriptions,dump-options,end:,instant,instant-no-aur"
+    LOPTS+=",foreign,help,middle:,no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,pager-lines:,paru,quiet,sync,verbose,virtualbox"
 
     local args=("$@")
 
@@ -131,6 +131,7 @@ All options below will change the default behavior.
 <pre>
     -a, --aur              Updates AUR packages too.
         --clear-keyrings   If update fails with keyring issues, try this option.
+        --clear-databases  If update fails with e.g. database signature issues, try this option.
     -c, --connection       Checks internet connection first.
         --debug            Show debugging output.
     -d, --descriptions     Shows descriptions of the packages to update.
@@ -201,6 +202,7 @@ Options() {
                     -h | --help)             Usage; Exit 0 ;;
                     -a | --aur)              Assign aur yes ;;
                     --clear-keyrings)        ClearKeyrings; Exit 0 ;;
+                    --clear-databases)       ClearDatabases; Exit 0 ;;
                     -c | --connection)       Assign connection yes ;;
                     --debug)                 Assign debug yes ;;
                     -d | --descriptions)     Assign descriptions yes ;;
@@ -341,6 +343,10 @@ ClearKeyrings() {
     Cmd pacman-key --populate archlinux endeavouros
     Cmd pacman -Syy --noconfirm archlinux-keyring endeavouros-keyring
     Cmd pacman -Su
+}
+
+ClearDatabases() {
+    Cmd rm /var/lib/pacman/sync/*
 }
 
 CheckNvidia() {
