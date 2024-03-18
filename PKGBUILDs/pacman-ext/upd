@@ -108,27 +108,56 @@ Main() {
 
 Usage() {
     local tmpdoc=/tmp/upd-doc-tmp.html
-    cat <<EOF | pandoc -f gfm -o $tmpdoc 2>/dev/null
-# upd
+    if true && [ -x /bin/pandoc ] ; then
+        local -r has_pandoc=yes
+    else
+        local -r has_pandoc=no
+    fi
 
-## Overview
+    if [ $has_pandoc = yes ] ; then
+        local -r h1="# "
+        local -r h2="## "
+        local -r i1="<i>"
+        local -r i2="</i>"
+        local -r b1="**"
+        local -r b2="**"
+        local -r pre1="<pre>"
+        local -r pre2="</pre>"
+        local -r br="<br>"
+        local -r cmd="pandoc -f gfm -o $tmpdoc"
+    else
+        local -r h1=""
+        local -r h2=""
+        local -r i1=""
+        local -r i2=""
+        local -r b1=""
+        local -r b2=""
+        local -r pre1=""
+        local -r pre2=""
+        local -r br=""
+        local -r cmd="cat -"
+    fi
+    cat <<EOF | $cmd 2>/dev/null
+${h1}upd
 
-Updater using **pacman** and <i>AUR helper</i>, with additional features.<br>
+${h2}Overview
+
+Updater using ${b1}pacman${b2} and ${i1}AUR helper${i2}, with additional features.$br
 Runs sudo when needed.
 
-## Usage
+${h2}Usage
 
-<pre>
+$pre1
    $progname [options] [advanced-options]
-</pre>
+$pre2
 
-By default, the only additional features over *pacman/AUR helper* are:
+By default, the only additional features over ${i1}pacman/AUR helper${i2} are:
 - check pacman database lock and remove it if possible
 - update keyrings before other updates
 
 All options below will change the default behavior.
 
-<pre>
+$pre1
     -a, --aur              Updates AUR packages too.
         --clear-keyrings   If update fails with keyring issues, try this option.
         --clear-databases  If update fails with e.g. database signature issues, try this option.
@@ -149,26 +178,26 @@ All options below will change the default behavior.
     -q, --quiet            Be more quiet.
     -s, --sync             Run 'sync' as the last command.
     -v, --virtualbox       Checks validity of virtualbox updates in host.
-</pre>
+$pre2
 
-## Advanced options
-<pre>
+${h2}Advanced options
+$pre1
     --begin                Adds a user-given command before 'pacman -Sy'.
     --middle               Adds a user-given command between 'pacman -Sy' and 'pacman -Su'.
     --end                  Adds a user-given command after 'pacman -Su'.
-</pre>
+$pre2
 
-## Examples
+${h2}Examples
 
-<pre>
+$pre1
     upd -acdp --end "pwd && echo 'All done' "
     upd -docsa -i
-</pre>
+$pre2
 
 EOF
 #                           Note that this may <i>postpone</i> the detection of updates for
 #                           previously downgraded packages.
-    /bin/firefox $tmpdoc &
+    [ $has_pandoc = yes ] && /bin/firefox $tmpdoc &
 }
 
 Options() {
