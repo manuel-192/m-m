@@ -1,0 +1,53 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=meta-install
+pkgdesc="Meta packages to install.."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=24
+pkgrel=1
+arch=(any)
+license=(GPL)
+depends=(
+    # upstream
+    meld
+    ncdu
+    rcs
+    simple-scan
+
+    # hub
+    # jq
+
+    # m-m
+    abbrevs-ls
+    abbrevs-misc
+    cd-extended
+    emacs-tweaks
+    hlp
+    meld-rcs
+    pacman-ext
+    pkgcheck
+)
+optdepends=(
+    "android-tools: Tools for managing Android devices"
+    "avidemux-qt: Video editor"
+    "clamav: Virus scanner"
+    "bide: great IDE"
+    "evolution: E-mail client"
+    "kaffeine: great TV watching"
+    "mpv: good video player"
+    "thunderbird: Email client"
+    "solaar: Logitech USB device (mouse,keyboard) manager"
+    "udiskie: nice removable disk mounter"
+)
+
+package() {
+    local xx
+    echo "Making sure the following packages are installed:"
+    for xx in "${depends[@]}" ; do
+        echo "    $xx"
+    done
+    echo Done.
+}
+
+
