@@ -550,13 +550,17 @@ UpdateDatabase() {
 AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
 
 DumpOptions() {
-    local l s
-    l=" ${LOPTS//,/ }"
-    l="${l//:/}"
-    l="${l// / --}"
-    l="${l:1}"
-    s=$(echo "$SOPTS" | sed -E 's|(.)[:]*| -\1|g')
-    echo "$l$s"
+    ## - $LOPTS may *not* be empty
+    ## - $SOPTS handling requires 'shopt -s patsub_replacement'
+
+    local cmd
+    cmd="$(shopt -p patsub_replacement)" && cmd="" || shopt -s patsub_replacement
+
+    local sopts="${SOPTS//:/}"
+    local lopts="${LOPTS//:/}"
+    echo "${sopts//?/-& }--${lopts//,/ --}"
+
+    $cmd
 }
 
 Assign() {
