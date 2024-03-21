@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Install with yay, check for not recommended pkgs.
+
+Main() {
+    # used by many functions
+    local PROGNAME=${0##*/}
+    local WARNINGS=0
+    local PKGS=()
+    local INSTALL_OPTION="--needed -S"  # default flags, may be changed by -u and -r
+
+    # used by this function
+    local pkgmanager=paru
+
+    [ -x /bin/$pkgmanager ] || pkgmanager=yay
+    [ -x /bin/$pkgmanager ] || {
+        pkgmanager=pacman     # cannot handle AUR packages
+        Warn "'paru' or 'yay' not installed, falling back to 'pacman'"
+    }
+
+    Parameters "$@"
+
+    NotRecommended
+
+    if [ $WARNINGS -gt 0 ] ; then
+        read -p "==> Install anyway (y/N)? " >&2
+        case "$REPLY" in
+            [Yy]*) ;;
+            *) exit 1 ;;
+        esac
+    fi
+    local cmd="$pkgmanager $INSTALL_OPTION ${PKGS[*]}"
+    echo "==> $cmd" >&2
+    $cmd
+}
+
+Parameters() {
+    local update=no
+    local lopts="dump-options,help,reinstall"  # ,update"
+    local sopts="hr"                           # u"
+    local opts
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$PROGNAME" -- "$@")" || {
+        $OptFunc -h
+        return 1
+    }
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            # -u | --update)    INSTALL_OPTION+=" -yu" ; update=yes ;;
+            -r | --reinstall) INSTALL_OPTION="${INSTALL_OPTION//--needed/}";;
+
+            -h | --help)
+                cat <<EOF >&2
+Usage: $PROGNAME [options] package-name(s)
+Options:
+  -r, --reinstall    Install even if already installed.
+  -h, --help         This help.
+EOF
+                exit 0
+                ;;
+            --dump-options)
+                local ret_cmd="$(shopt -p patsub_replacement)"
+                [ "$ret_cmd" != "shopt -s patsub_replacement" ] && shopt -s patsub_replacement || ret_cmd=""
+
+                local sopts2="${sopts//:/}"
+                local lopts2="${lopts//:/}"
+                echo "${sopts2//?/-& }--${lopts2//,/ --}"
+
+                $ret_cmd
+
+                ## - $lopts may *not* be empty
+                ## - $sopts handling requires 'patsub_replacement' enabled by 'shopt'
+                ;;
+            
+            --) shift ; break ;;
+        esac
+        shift
+    done
+    if [ -z "$1" ] && [ $update = no ] ; then
+        Info "nothing to install." 1
+    fi
+    PKGS=("$@")
+}
+
+NotRecommended() {
+    local not_recommended=(
+        $(paru -Ss pamac | grep -v "    " | sed -E 's|aur/([^ ]+) .*|\1|')
+        grub-customizer
+    )
+    local pkg
+    for pkg in "${PKGS[@]}" ; do
+        if printf "%s\n" "${not_recommended[@]}" | grep "^$pkg$" >/dev/null ; then
+            PkgWarn "$pkg"
+            ((WARNINGS++))
+        fi
+    done
+}
+
+Info()    { echo "==> $PROGNAME: info: $1" >&2 ;     [ "$2" ] && exit $2 ; }
+Warn()    { echo "==> $PROGNAME: warning:  $1" >&2 ; [ "$2" ] && exit $2 ; }
+PkgWarn() { Warn "not recommended to install '$1'" ; [ "$2" ] && exit $2 ; }
+
+Main "$@"

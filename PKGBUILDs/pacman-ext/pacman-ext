@@ -387,7 +387,7 @@ EOF
 }
 
 Main() {
-    local -r progname="$(basename "$0")"   # $progname used by various functions here
+    local -r progname="${0##*/}"   # $progname used by various functions here
 
     # "basic" fetures
     local   EXTRAS_PW_WHEN_NEEDED=yes          # yes=ask password only when needed, no=user handles privileges
