@@ -269,8 +269,8 @@ ExtraChecks() {
             pacman -Qm |& Indent 1
         fi
         if [ "$EXTRAS_PACDIFF" = "yes" ] ; then
-            echo2 "==> eos-pacdiff"
-            eos-pacdiff --quiet
+            echo2 "==> $pacdiffer"
+            $pacdiffer --quiet
             case $? in
                 2|3) echo "    -> nothing to do." ;;
             esac
@@ -364,7 +364,7 @@ Usage:       $progname
              --no-banner              Do not show the intial banner that tells about $progname.
              --show-cmd               Shows the actual commands to be executed.
              --build                  Builds and installs a package using a local PKGBUILD (advanced).
-             --extras                 Still extra checks like 'pacman -Qm' and 'eos-pacdiff'.
+             --extras                 Still extra checks like 'pacman -Qm' and '$pacdiffer'.
              --mirror-swap-eos        (Advanced) Swap the order of given two mirrors in /etc/pacman.d/endeavouros-mirrorlist.
              -j, --just-checkupdates  Only check whether updates are available.
              --checkupdates           Use 'checkupdates' for checking updates from the repos.
@@ -407,6 +407,7 @@ Main() {
     local VERBOSE=no
     local BANNER_INITIAL=yes
     local AUR_HELPER=/usr/bin/yay
+    local pacdiffer=eos-pacmerge
 
     source /etc/$progname.conf || WARN "/etc/$progname.conf not found, using defaults"
 

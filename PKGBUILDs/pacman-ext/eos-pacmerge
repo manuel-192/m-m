@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# Somewhat similar to eos-pacdiff.
+
+Main() {
+    local progname="${0##*/}"
+    local create_backup=yes                                 # Do we create backups of originals or not? For safety reasons, default is yes.
+    local quiet=no                                          # Do we show *all* messages? No by default (show errors always).
+
+    while [ "$1" ] ; do                                     # Handle possible options.
+        case "$1" in
+            -h | --help) Usage 0 ;;
+            -n | --nobak) create_backup=no ;;
+            -q | --quiet) quiet=yes ;;                      # Hide messages except errors.
+            -*) DIE "option '$1' not supported" ;;
+        esac
+        shift
+    done
+
+    local commands=""                                       # commands will be collected to this variable
+    local pacdiff_files="$(/bin/pacdiff --output)"          # find .pac* files
+    
+    if [ "$pacdiff_files" ] ; then
+        commands+="$(Backup)"                               # backup most changed files for accident safety
+        commands+="; DIFFPROG=/bin/meld /bin/pacdiff"       # actual pacdiffer
+        commands="${commands#; }"                           # skip leading "; " of the command line
+        sudo bash -c "$commands"                            # run the pacdiffer
+    else
+        Info "Nothing to do."
+        return 2
+    fi
+}
+
+Usage() {
+    # caller variable read:  progname
+    cat <<EOF >&2
+Usage: $progname [options]
+Options:
+    -h, --help         This help.
+    -n, --nobak        Do not backup the originals.
+    -q, --quiet        Show only errors, not other messages.
+EOF
+    [ "$1" ] && exit $1
+}
+
+Backup() {
+    # caller variable read:    pacdiff_files progname create_backup
+
+    if [ $create_backup = yes ] ; then
+        local file
+        local bytes=0
+        local -r max=15000                                  # config files mostly < 10000 bytes, except e.g. locale.gen
+
+        for file in $pacdiff_files ; do
+            bytes=$(stat -c %s "${file%.*}")
+            if [ $bytes -le $max ] ; then
+                echo -n "; cp ${file%.*} ${file%.*}.bak"
+            else
+                Info "did not backup file ${file%.*} because size > $max bytes"
+            fi
+        done
+    fi
+}
+
+DIE()  { echo "==> $progname: error: $1" >&2; exit 1; }                        # caller variable read:  progname
+Info() { [ $quiet = no ] && echo "==> $progname: info: $1"  >&2; }             # caller variable read:  progname quiet
+
+Main "$@"

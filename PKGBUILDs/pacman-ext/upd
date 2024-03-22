@@ -448,7 +448,7 @@ Pacdiff() {
     [ "$pacdiff" = "yes" ] || return
     [ "$optimize_checks$updates_pacman$updates_aur" = "yes" ] && return   # test AUR too?
 
-    Cmd3 eos-pacdiff --quiet
+    Cmd3 eos-pacmerge --quiet
     case $? in
         1) RESULT "error" ;;
         2|3) RESULT "nothing to do." ;;
