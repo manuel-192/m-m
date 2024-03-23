@@ -10,74 +10,36 @@ _meld_do() {
     /usr/bin/meld "$@" &> /dev/null &
 }
 
-ConcludeVCS() {
-    GetAvailableVCS() {
-        # Is this a git tree? Or just RCS? Or both?
-        local parents="$PWD"
-
-        while [ -n "$parents" ] ; do
-            if [ -d "$parents/.git" ] ; then
-                has_git=yes
-                break
-            fi
-            [ "$parents" = "/" ] && break
-            parents="${parents%/*}"
-        done
-        [ -d RCS ] && has_rcs=yes
-    }
-    local has_git=no
-    local has_rcs=no
-    
-    GetAvailableVCS                # get values for 'has_{git,rcs}'
-
-    case "$has_git $has_rcs" in
-        "yes no")   prefer=GIT; return ;;  # obvious
-        "no yes")   prefer=RCS; return ;;  # obvious
-        "no no")    prefer=GIT; return ;;  # just comparing local files/folders? GIT is better!
-        "yes yes")
-            prefer=GIT
-            local rcs_found=no
-            for arg in "$@" ; do
-                case "$arg" in
-                    -*) ;;
-                    *)
-                        [ -d "$arg" ] && return                           # RCS does not handle folders
-                        if [ -f "$arg" ] && [ -f RCS/"$arg",v ] ; then
-                            rcs_found=yes                                 # RCS file found
-                        fi
-                        ;;
-                esac
-            done
-            [ $rcs_found = yes ] && prefer=RCS
-            return
-            ;;
-    esac
-    DIE "cannot conclude the preferred VCS"
-}
-
 meld() {
     # Adding support for 'meld' with
     # - git and hub
     # - RCS
     # - comparing two files when one of the args is a folder name
-    local arg
-    local prefer=""
 
-    case "$1" in                  # value for 'prefer'
-        -R) prefer=RCS; shift ;;
-        -G) prefer=GIT; shift ;;
-        *)  ConcludeVCS "$@" ;;
+    local comparison=""
+
+    case "$1" in                                 # try set value for 'comparison'
+        -R | --rcs) comparison=RCS; shift ;;
+        -G | --git) comparison=GIT; shift ;;
+        "")         comparison=GIT ;;
     esac
 
-    case "$prefer" in
+    case "$comparison" in
         RCS)
-            printf "==> RCS comparison.\n\n" >&2
+            printf "==> $comparison comparison.\n" >&2
+            [ "$1" ] || DIE "no parameters for RCS diff"
             meld-rcs-helper "$@" &
-            return
             ;;
         GIT)
-            if [ "$(git diff)" ] ; then
-                printf "==> GIT comparison.\n\n" >&2
+            local diffs code=0
+            diffs="$(git diff 2>/dev/null)" || code=$?
+            case "$code" in
+                0) ;;
+                129) DIE "'git diff' problem, code $code. $PWD is not git directory?" ;;
+                *)   DIE "'git diff' problem, code $code" ;;
+            esac
+            if [ "$diffs" ] ; then
+                printf "==> $comparison comparison.\n" >&2
                 case "$1" in
                     "")
                         _meld_do .        # meld for the current folder in git tree
@@ -105,6 +67,38 @@ meld() {
             else
                 echo "No diffs." >&2
             fi
+            ;;
+        *)
+            # ad hoc determination of GIT or RCS using parameters
+            local arg
+            local argdir argfile
+
+            for arg in "$@" ; do
+                case "$arg" in
+                    -*) ;;
+                    *)  if [ -d "$arg" ] ; then
+                            $FUNCNAME -G "$@"                      # folder -> GIT
+                            exit
+                        fi
+                        ;;
+                esac
+            done
+
+            for arg in "$@" ; do
+                case "$arg" in
+                    -*) ;;
+                    *)  if [ -f "$arg" ] ; then
+                            argdir=${arg%/*}
+                            argfile=${arg##*/}
+                            if [ -f "$argdir/RCS/$argfile",v ] ; then
+                                $FUNCNAME -R "$@"                                 # RCS file exists -> RCS
+                                exit
+                            fi
+                        fi
+                        ;;
+                esac
+            done
+            DIE "sorry, parameters '$*' don't help determining GIT or RCS"
             ;;
     esac
 }
