@@ -272,7 +272,7 @@ ExtraChecks() {
             echo2 "==> $pacdiffer"
             $pacdiffer --quiet
             case $? in
-                2|3) echo "    -> nothing to do." ;;
+                2|3) ;; #echo "    -> nothing to do." ;;
             esac
         fi
     fi
