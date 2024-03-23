@@ -2,7 +2,7 @@
 
 DIE() {
     local progname="$(basename "$0")"
-    echo "$progname: error: $1" >&2
+    echo -e "${RED}$progname: error: $1${RESET}" >&2
     exit 1
 }
 
@@ -15,6 +15,12 @@ meld() {
     # - git and hub
     # - RCS
     # - comparing two files when one of the args is a folder name
+
+    local -r RED=$'\e[0;91m'
+    local -r GREEN=$'\e[0;92m'
+    local -r BLUE=$'\e[0;94m'
+    local -r MAGENTA=$'\e[0;95m'
+    local -r RESET=$'\e[0m'
 
     local comparison=""
 
@@ -35,7 +41,7 @@ meld() {
             diffs="$(git diff 2>/dev/null)" || code=$?
             case "$code" in
                 0) ;;
-                129) DIE "'git diff' problem, code $code. $PWD is not git directory?" ;;
+                129) DIE "'git diff' problem, code $code.\n$PWD is not a git directory?" ;;
                 *)   DIE "'git diff' problem, code $code" ;;
             esac
             if [ "$diffs" ] ; then
@@ -88,8 +94,9 @@ meld() {
                 case "$arg" in
                     -*) ;;
                     *)  if [ -f "$arg" ] ; then
-                            argdir=${arg%/*}
                             argfile=${arg##*/}
+                            [ "$argfile" = "$arg" ] && arg="./$arg"  # helps with argdir!
+                            argdir=${arg%/*}
                             if [ -f "$argdir/RCS/$argfile",v ] ; then
                                 $FUNCNAME -R "$@"                                 # RCS file exists -> RCS
                                 exit
