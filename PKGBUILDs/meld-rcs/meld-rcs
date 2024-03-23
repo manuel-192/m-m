@@ -71,7 +71,7 @@ meld() {
                         ;;
                 esac
             else
-                echo "No diffs." >&2
+                echo "No git diffs." >&2
             fi
             ;;
         *)
