@@ -76,31 +76,35 @@ meld() {
             return
             ;;
         GIT)
-            printf "==> GIT comparison.\n\n" >&2
-            case "$1" in
-                "")
-                    _meld_do .        # meld for the current folder in git tree
-                    ;;
-                *)
-                    if [ -n "$1" ] && [ -n "$2" ] && [ -z "$3" ] && [ -e "$1" ] && [ -e "$2" ] ; then
-                        # Two args, files or folders.
-                        # If one of them is a folder, meld needs help to use the file in the folder.
-                        local f1="$1"
-                        local f2="$2"
-                        if [ -d "$f1" ] && [ ! -d "$f2" ] ; then
-                            f1="${f1%/}"                             # remove possible trailing slash
-                            f1="$f1/$(basename "$f2")"               # add file name after the folder name
-                        elif [ -d "$f2" ] && [ ! -d "$f1" ] ; then
-                            f2="${f2%/}"
-                            f2="$f2/$(basename "$f1")"
+            if [ "$(git diff)" ] ; then
+                printf "==> GIT comparison.\n\n" >&2
+                case "$1" in
+                    "")
+                        _meld_do .        # meld for the current folder in git tree
+                        ;;
+                    *)
+                        if [ -n "$1" ] && [ -n "$2" ] && [ -z "$3" ] && [ -e "$1" ] && [ -e "$2" ] ; then
+                            # Two args, files or folders.
+                            # If one of them is a folder, meld needs help to use the file in the folder.
+                            local f1="$1"
+                            local f2="$2"
+                            if [ -d "$f1" ] && [ ! -d "$f2" ] ; then
+                                f1="${f1%/}"                             # remove possible trailing slash
+                                f1="$f1/$(basename "$f2")"               # add file name after the folder name
+                            elif [ -d "$f2" ] && [ ! -d "$f1" ] ; then
+                                f2="${f2%/}"
+                                f2="$f2/$(basename "$f1")"
+                            fi
+                            _meld_do "$f1" "$f2"
+                        else
+                            # Other cases
+                            _meld_do "$@"
                         fi
-                        _meld_do "$f1" "$f2"
-                    else
-                        # Other cases
-                        _meld_do "$@"
-                    fi
-                    ;;
-            esac
+                        ;;
+                esac
+            else
+                echo "No diffs." >&2
+            fi
             ;;
     esac
 }
