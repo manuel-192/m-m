@@ -214,6 +214,8 @@ Params:
         Show the contents of the given package database (*.db.tar.xz).
     --mirrorlist-arch
         Download a generated mirrorlist from the Arch web page. Useful for testing only.
+    --local-repo
+        Check and build local repo packages.
 
 Options:
     -b                       Directly try to build packages.
@@ -243,7 +245,7 @@ EOF
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls"
                 op+=" --check-all --quick-check --assets.conf-check --pkgdb --changelog --changelog-modified --mirrorlist-arch"
-                op+=" -T --fetch-timeout -C --commit"
+                op+=" -T --fetch-timeout -C --commit --local-repo"
                 echo "$op"
                 return
                 ;;
@@ -256,6 +258,10 @@ EOF
                 ;;
             -T*)
                 cmd_options+=" -T=${1:2}"
+                ;;
+            --local-repo)
+                local-repo-manager --verbose
+                return
                 ;;
             --changelog | -c)
                 # example: pb -c rate-mirrors endeavouros
