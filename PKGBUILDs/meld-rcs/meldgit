@@ -9,29 +9,9 @@ DIE() {
     exit 1
 }
 
-MELD() { /bin/meld "$@" &> /dev/null & }
+MELD() { meld "$@" &> /dev/null & }
 
-MELD2PARA() {
-    # Handle two parameters.
-    # With parameters XX/file and a FOLDER, compare XX/file with FOLDER/file.
-
-    local aa="$1"
-    local bb="$2"
-
-    if [ -d "$aa" ] && [ -f "$bb" ] ; then
-        [ "${bb//\//}" = "$bb" ] && bb="./$bb"      # if no dir in the file, add ./ in front
-        [ "$aa" != "/" ]         && aa="${aa%/}"    # remove possible trailing slash
-        aa="$aa/${bb##*/}"                          # add file name after the folder name
-    elif [ -f "$aa" ] && [ -d "$bb" ] ; then
-        [ "${aa//\//}" = "$aa" ] && aa="./$aa"      # if no dir in the file, add ./ in front
-        [ "$bb" != "/" ]         && bb="${bb%/}"    # remove possible trailing slash
-        bb="$bb/${aa##*/}"                          # add file name after the folder name
-    fi
-
-    MELD "$aa" "$bb"
-}
-
-meld() {
+Meld() {
     # Changing meld operation:
     # - plain 'meld' means 'meld .'
     # - compare two files when one parameter is a folder
@@ -41,23 +21,13 @@ meld() {
 
     case "$code" in
         0)  if [ "$git_diffs" ] ; then
-                case "$1" in
-                    "") MELD . ;;       # meld for the current folder in git tree
-                    *)
-                        if [ "$1" ] && [ "$2" ] && [ -z "$3" ] ; then
-                            MELD2PARA "$1" "$2"
-                        else
-                            # Other cases
-                            MELD "$@"
-                        fi
-                        ;;
-                esac
+                MELD "$@"
             else
                 echo "No git diffs." >&2
             fi
             ;;
         129)
-            MELD "$@"  # no git, just run meld
+            MELD "$@"        # no git, just run meld
             # DIE "'git diff' problem, code $code.\n$PWD is not a git directory?"
             ;;
         *)
@@ -66,4 +36,4 @@ meld() {
     esac
 }
 
-meld "$@"
+Meld "$@"
