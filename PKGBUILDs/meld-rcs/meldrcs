@@ -22,12 +22,11 @@ RevFix() {
 
 Main()
 {
-    local progname=meld-rcs-helper
+    local progname=${0##*/}
     local arg args=()
     local revs=() rev1 rev2
     local filepath rcsdir filename
     local realmeld=/usr/bin/meld
-    #local HEAD1 HEAD2
 
     # look for RCS related stuff
     for arg in "$@" ; do
