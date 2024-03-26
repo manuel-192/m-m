@@ -21,7 +21,10 @@ Meld() {
 
     case "$code" in
         0)  if [ "$git_diffs" ] ; then
-                MELD "$@"
+                case "$1" in
+                    "") MELD . ;;
+                    *)  MELD "$@" ;;
+                esac
             else
                 echo "No git diffs." >&2
             fi

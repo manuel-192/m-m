@@ -28,6 +28,10 @@ Main()
     local filepath rcsdir filename
     local realmeld=/usr/bin/meld
 
+    case "$1" in
+        "") [ -d RCS ] && args=($(fzf)) ;;
+    esac
+
     # look for RCS related stuff
     for arg in "$@" ; do
         case "$arg" in

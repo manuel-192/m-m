@@ -31,19 +31,41 @@ MELD2PARA() {
     MELD "$aa" "$bb"
 }
 
+InGitTree() {
+    local dir="$PWD"
+    while [ "$dir" ] ; do
+        [ -d "$dir/.git" ] && return 0
+        dir="${dir%/*}"
+    done
+    return 1
+}
+
 meld() {
     # Changing meld operation:
     # - plain 'meld' means 'meld .'
     # - compare two files when one parameter is a folder
 
     case "$1" in
-        "") MELD . ;;       # meld for the current folder in git tree
+        -R) shift; meldrcs "$@" ;;
+        -G) shift; meldgit "$@" ;;
         *)
-            if [ "$2" ] && [ -z "$3" ] ; then
-                MELD2PARA "$1" "$2"      # 2 parameters, may have a file and a folder
-            else
-                MELD "$@"                # other cases
-            fi
+            case "$1" in
+                "")
+                    if InGitTree ; then
+                        meldgit
+                    elif [ -d RCS ] ; then
+                        meldrcs
+                    else
+                        MELD
+                    fi
+                    ;;
+                *)  if [ "$2" ] && [ -z "$3" ] ; then
+                        MELD2PARA "$1" "$2"      # 2 parameters, may have a file and a folder
+                    else
+                        MELD "$@"                # other cases
+                    fi
+                    ;;
+            esac
             ;;
     esac
 }
