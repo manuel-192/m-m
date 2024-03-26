@@ -6,7 +6,7 @@ pkgname=meld-rcs
 pkgdesc="Meld with RCS support and small UI changes"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=1.6
+pkgrel=1.7
 
 arch=('any')
 license=('GPL')
@@ -17,7 +17,7 @@ source=(
     $url/meldgit
     $url/bash-colors.conf
 )
-sha512sums=('8062be906b85bc14d127195da1f67d0bc3a79e73f24d519d42387b7e15821f7b4242bfa9301a6bb3fefd836a9f1591dafc4410654fdf596754cfeb83591fef70'
+sha512sums=('eea610ede8e17855dbf5f533fb5a11f53a09421e8ae1c1fa8c4678e786268bea4e2e6f8f49c0abefa8816773384a54d810357850e12d4367d6e83c9e6b3f164c'
             'e6281dac13858639af74d14221c05919882f7e0c406c2fbea83c5e5e49540f512ba3ab943999b99420f7f1bbd2f822be49396bd69c27cf0384e5489c06ff03b3'
             '1efc1f9488199724d16745eff9f5385aeef4fd451cb1e74c86390e0671fb6e9e7ebac82d4af9a5983cda0e7236bd6a4677397dfe2cc1c16ad5d89fbc0dea7cbc'
             '9c4e9274198780bb27aa5757aac812c47c4fc65a5a54ac66b9c7a274a462ab44e339cf798e71304b6f86321c0732e16019d37e8e7c27d269e521e2282fc90609')
