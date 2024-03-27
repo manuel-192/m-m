@@ -10,17 +10,18 @@ GetInfoPage() {
     # Make sure the download data is stored in a local file.
     if [ ! -e $datafile ] ; then
         curl --fail -Lsm 30 -o$datafile -u "$HELLO" $URLBASE || DIE "failed fetching the info page '$URLBASE'."
+        [ "$1" != "-q" ] && echo2 "==> Info about available downloads refreshed."
     fi
 }
 
 RefreshInfo() {
     rm -f $datafile
-    echo2 "==> Info about available downloads refreshed."
+    GetInfoPage "$@"
 }
 
 ShowFiles() {
-    # Show downloadable files from the stored local file.
-    GetInfoPage
+    # Show downloadable files from the fetched download page.
+    RefreshInfo "$@"
     grep "\-iso\.tar\.gz" $datafile | sed -E 's|.*">(.*-iso\.tar\.gz)<.*|\1|'
 }
 
@@ -39,9 +40,8 @@ Usage: $progname [options] [filename]
 
 Options:
     -h, --help           This help.
-    -r, --refresh        Refresh the info about available downloads.
 
-Tip1: Without parameters a selection of downloadable files is presented.
+Tip1: Without parameters a selection of downloadable files is presented (using fzf).
 Tip2: Use bash completion (by pressing the TAB key on the command line) to get the file to download.
 
 EOF
@@ -63,13 +63,12 @@ Main() {
     if [ "$1" ] ; then
         while [ "$1" ] ; do
             case "$1" in
-                -r | --refresh)   RefreshInfo ;;
-                --fetch-data)     GetInfoPage ;;
-                --show-files)     ShowFiles ;;
-                --dump-options)   echo "--help --refresh" ;;
-                -h | --help | "") Usage; exit 0 ;;
+                --dump-options)   echo "--help --show-files" ;;      # for bash completion
+                --show-files)     printf "%s\n" $(ShowFiles -q) ;;   # for bash completion
+                --help)           Usage; exit 0 ;;
                 -*)               DIE "option '$1' not supported." ;;
-                *)                FetchIsoFile "$1" ;;
+                *.iso.tar.gz)     FetchIsoFile "$1" ;;
+                *)                DIE "sorry, only *.iso.tar.gz files are supported."
             esac
             shift
         done
@@ -78,7 +77,7 @@ Main() {
             fzf --exact +i --tac
             --header="Navigation: Up, Down, PgUp, PgDn; ENTER=accept, ESC=quit"
         )
-        local selected=$(ShowFiles | "${fzf[@]}" )
+        local selected=$(ShowFiles -q | "${fzf[@]}" )
         if [ "$selected" ] ; then
             while true ; do
                 read -p "Download $selected now (Y/n)? "
