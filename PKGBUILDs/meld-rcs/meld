@@ -51,7 +51,7 @@ Meld() {
     lines=$(echo "$lines" | wc -l)
     local -r max_meld_instances=2
 
-    [ $lines -gt $max_meld_instances ] && DIE "sorry, max $max_meld_instances 'meld' instances are allowed to run."
+    [ $lines -gt $max_meld_instances ] && DIE "sorry, no more 'meld' instances are allowed to run."
 
     case "$1" in
         -R) shift; meldrcs "$@" ;;
