@@ -30,8 +30,8 @@ SettingsCommon()
     case "$-" in
         *i*)
             # history commands with arrow keys (on an interactive shell)
-            #bind '"\e[A":history-search-backward'      # up arrow
-            #bind '"\e[B":history-search-forward'       # down arrow
+            bind '"\e[A":history-search-backward'      # up arrow
+            bind '"\e[B":history-search-forward'       # down arrow
 
             bind 'set show-all-if-ambiguous on'        # complete with single TAB
             bind 'set mark-symlinked-directories on'   # complete directory symlinks with slash
