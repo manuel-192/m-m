@@ -51,7 +51,14 @@ AddNewParameters() {
     grep "$special_string" "$settings_file" >/dev/null || DIE "sorry, '$settings_file' does not contain the special bashdb launch configuration"
 
     # Add parameters via the 'args' field in settings.json.
-    sed -i "$settings_file" -E -e "s|^([ ]+\"args\":[ ]+)\[[^]]*\]|\1[$params]|"
+    # sed -i "$settings_file" -E -e "s|^([ ]+\"args\":[ ]+)\[[^]]*\]|\1[$params]|"
+    ModifyParameters "$params"
+}
+
+CleanUp() { ModifyParameters "" ; }
+
+ModifyParameters() {
+    sed -i "$settings_file" -E -e "s|^([ ]+\"args\":[ ]+)\[[^]]*\]|\1[$1]|"
 }
 
 IdeDebugBash() {
@@ -76,6 +83,7 @@ InstanceCheck() { ps -C $app >/dev/null && DIE "sorry, '$progname' supports only
 echo2()  { echo -e "$@" >&2 ; }
 Color2() { local color="$1"; shift; echo2 "${!color}""$@""${RESET}"; }
 DIE()    { Color2 RED "==> $progname: error: $1\n"; Usage 1; }
+Exit()   { CleanUp; exit "$1"; }
 
 Usage() {
     echo2 -n "$GREEN"
@@ -95,7 +103,7 @@ where
   script-parameters:    Parameters for the script-file.
 EOF
     echo2 -n "$RESET"
-    [ "$1" ] && exit "$1"
+    [ "$1" ] && Exit "$1"
 }
 
 Main() {
@@ -133,6 +141,8 @@ Main() {
     local dom=""
     local params=""
 
+    CleanUp
+
     while true ; do
         case "$1" in
             -c | --config)
@@ -143,6 +153,9 @@ Main() {
                     mv "$settings_file" "$settings_file".$dom.bak
                 fi
                 CreateSettingsJson
+                ;;
+            --cleanup)
+                Exit 0
                 ;;
             -h | --help)
                 Usage 0
@@ -161,6 +174,8 @@ Main() {
 
     InstanceCheck
     IdeDebugBash "$@"
+
+    Exit $?
 }
 
 Main "$@"
