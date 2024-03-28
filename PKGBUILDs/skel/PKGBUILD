@@ -6,15 +6,13 @@ pkgname=skel   # not really /etc/skel ...
 pkgdesc="/etc files"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=1
+pkgrel=1.1
 
 arch=(any)
 license=(GPL)
 
-source=(
-    $url/bashrc.min
-)
-sha512sums=('dbe70c394f7b2a3545f53879c1f70a3de9b3760719fcbf4455be3047ecc9ad7cc9e777b1ad49f19364ec623cc5074ea5fa13733b33e7d82b980bd94727eb2188')
+#source=()
+#sha512sums=('')
 
 package() {
     local item src
