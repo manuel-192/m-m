@@ -2,21 +2,19 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=skel
-pkgdesc="/etc/skel files"
+pkgname=skel   # not really /etc/skel ...
+pkgdesc="/etc files"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=23
-pkgrel=12.2
+pkgver=24
+pkgrel=1
 
 arch=(any)
 license=(GPL)
-depends=()
-backup=(etc/skel/m.bashrc)
 
 source=(
-    $url/m.bashrc
+    $url/bashrc.min
 )
-sha512sums=('b8b310448d17351ce22e068b3ec054016234fcf5a4051eb5fbbbdbc7ec6b9f0dbe70aef96dbb399ec607451dc9e6b8442688724a3fa5b3783ea19a00154e5a41')
+sha512sums=('dbe70c394f7b2a3545f53879c1f70a3de9b3760719fcbf4455be3047ecc9ad7cc9e777b1ad49f19364ec623cc5074ea5fa13733b33e7d82b980bd94727eb2188')
 
 package() {
     local item src
@@ -24,7 +22,7 @@ package() {
     for src in "${source[@]}" ; do
         item="${src##*/}"
         case "$item" in
-            m.*)         install -Dm644 "$item"  "$pkgdir/etc/skel/$item" ;;
+            *)         install -Dm644 "$item"  "$pkgdir/etc/$item" ;;
         esac
     done
 }

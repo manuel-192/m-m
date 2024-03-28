@@ -1,0 +1,1427 @@
+#!/bin/bash
+
+# Some convenient bash settings.
+
+NextInfo2() { printf "==> %s" "$1" >&2 ; }  # shows info about the next operation (to stderr)
+
+bashrc.min_echo2()   { echo -e "$@" >&2; }
+bashrc.min_error()   { echo -e "==> ${FUNCNAME[1]}: error: $1"   >&2; }
+bashrc.min_warning() { echo -e "==> ${FUNCNAME[1]}: warning: $1" >&2; }
+
+AssignDefaultApp() {
+    [ "$2" ] || return 1
+    local -n _app=$1
+    local _tmp
+    shift
+    for _tmp in "$@" ; do
+        if [ -x /bin/${_tmp%% *} ] ; then
+            _app="$_tmp"
+            return 0
+        fi
+    done
+    return 1
+}
+
+SettingsCommon()
+{
+    PATH_USR_BIN=/usr/bin
+
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc.min_echo2 "==> $FUNCNAME"
+    case "$-" in
+        *i*)
+            # history commands with arrow keys (on an interactive shell)
+            #bind '"\e[A":history-search-backward'      # up arrow
+            #bind '"\e[B":history-search-forward'       # down arrow
+
+            bind 'set show-all-if-ambiguous on'        # complete with single TAB
+            bind 'set mark-symlinked-directories on'   # complete directory symlinks with slash
+            ;;
+    esac
+    shopt -s autocd
+
+    PAGER="less -F"
+    AssignDefaultApp EDITOR codium emacs   # sets EDITOR to the first existing listed app
+
+    # Set in local ~/.bashrc:
+    # ROOTDIR_EOS
+    # ROOTDIR_MAN
+
+
+    #############################################################
+    # functions
+    #############################################################
+
+    Alias()
+    {
+        local name="$1"
+        local def="$2"
+        local force="$3"   # optional, values: "yes" "no" "", "" means "yes"
+        local alias="builtin alias"
+
+        [ "$force" = "" ] && force=yes
+
+        if [ -n "$name" ] ; then
+            if [ -n "$def" ] ; then
+                if [ "$force" = "yes" ] ; then
+                    $alias "$name"="$def"    # assign alias only if name is "free"
+                    return
+                fi
+                local defold=$(LANG=C type "$name" 2>/dev/null | head -n1)
+                if [ -z "$defold" ] ; then
+                    $alias "$name"="$def"    # assign alias only if name is "free"
+                    return
+                fi
+                [ $_COMMON_SETTINGS_VERBOSE_ALIAS = yes ] && bashrc.min_warning "overriding old definition: '$defold'."
+            else
+                $alias "$name"
+            fi
+        else
+            $alias
+        fi
+    }
+    AliasIfCommon() {
+        # make alias only if the app is available
+        local -r tester="$1"
+        shift
+        local -r app="$1"
+        if $tester "$app" &>/dev/null ; then
+            shift
+            Alias "$@"
+        else
+            [ $_COMMON_SETTINGS_VERBOSE_ALIAS = yes ] && bashrc.min_warning "sorry, program '$app' not found"
+        fi
+    }
+    AliasIfWhich() { AliasIfCommon which "$@" ; }
+    AliasIfType()  { AliasIfCommon type  "$@" ; }
+    Unalias()      { unalias "$1" 2>/dev/null ; }
+
+    who-needs-this-package() {                                                          # who has this dependency package
+        _C_who-needs-this-package() {
+            local cur prev words cword split
+            _init_completion -s || return
+            local -r app=who-needs-this-package
+            case "$cur" in
+                -*) COMPREPLY=($(compgen -W "$($app --dump-options)" -- "$cur")) ;;
+                "") case "$prev" in
+                        "$app") COMPREPLY=($(compgen -W "$($app --dump-options)" -- "$cur")) ;;
+                        *)      COMPREPLY=($(compgen -W "$(expac -S %n)"         -- "$cur")) ;;
+                    esac
+                    ;;
+                *)  COMPREPLY=($(compgen -W "$(expac -S %n)"         -- "$cur")) ;;
+            esac
+        }
+
+        local opt="-S"
+
+        case "$1" in
+            -Q) opt="$1"; shift ;;
+            -S) opt="$1"; shift ;;
+            -h | --help)
+                cat <<EOF >&2
+Usage: $FUNCNAME [options] package-name
+Options:
+    -S           Use package database for search (slower, default).
+    -Q           Use installed packages for search (faster).
+    -h, --help   This help.
+Tip: use bash completion with the TAB key.
+EOF
+                return 0
+                ;;
+            --dump-options) echo "-Q -S -h --help"; return 0 ;;
+            -*) echo "option '$1' not supported"; return 1 ;;
+        esac
+
+        while [ "$1" ] ; do
+            expac $opt "%n: %E" | grep -P " $1 | $1$"
+            shift
+        done
+    }
+    who-owns-this-app()      { pacman -Qo "$1" ; }                                      # which package owns this app
+
+    complete -F _C_who-needs-this-package who-needs-this-package
+    
+    WaitForConnection() {     # wait at most given seconds (or 10), then return 0=connection OK or 1=connection fail
+        local seconds="$1"
+        [ -n "$seconds" ] || seconds=10
+        local ix
+        for ix in $(seq $seconds) ; do
+            eos-connection-checker && { bashrc.min_echo2 " done." ; return 0 ; }
+            bashrc.min_echo2 -n "."
+            sleep 1
+        done
+        return 1
+    }
+
+    dmessages() {                        # show dmesg messages with a given level
+        local -r level="$1"
+        local messages=""
+        local prefix xx
+        local supported_levels=(
+            $(LANG=C dmesg -h | sed -n '/^Supported log levels/,/^$/p' | tail -n +2 | grep -v "^$" | awk '{print $1}' | sed -E 's|(.*)|\1 \1+|')
+            #emerg   alert   crit   err   warn   notice   info   debug
+            #emerg+  alert+  crit+  err+  warn+  notice+  info+  debug+
+        )
+
+        for xx in "${supported_levels[@]}" ; do
+            [ "$xx" = "$level" ] && break
+        done
+        [ "$xx" = "$level" ] || { echo "$FUNCNAME: unsupported level '$level'."; return 1; }
+
+        messages="$(sudo dmesg -l $level |& cat)"
+
+        if [ "$messages" ] ; then
+            clear
+            {
+                echo "############################################################################"
+                echo "####  dmesg messages with level: $level"
+                echo "############################################################################"
+                printf -v prefix "%10s: " "$level"
+                echo "$messages" | sed "s|^|$prefix|"
+            } | less -F
+        else
+            echo "No messages."
+        fi
+    }
+
+    doc2html() {
+        local in=""
+        local out=""
+        local overwrite=no
+
+        while [ -n "$1" ] ; do
+            case "$1" in
+                -f | --force)
+                    overwrite=yes
+                    ;;
+                -*)
+                    ;;
+                *)
+                    in="$1"
+                    out="${in%.*}".html
+                    ;;
+            esac
+            shift
+        done
+
+        if [ -z "$in" ] ; then
+            bashrc.min_error "input file needed"
+            return 1
+        fi
+        if [ "$in" = "$out" ] ; then
+            bashrc.min_error "will not convert '$in' to '$out'"
+            return 1
+        fi
+        if [ -e "$out" ] && [ "$overwrite" != "yes" ] ; then
+            bashrc.min_error "'$out' already exists (use option '--force' to overwrite)"
+            return 1
+        fi
+
+        case "$in" in
+            *.md | *.MD)
+                pandoc -f gfm -s -o "$out" "$in"
+                ;;
+            *)
+                pandoc -s -o "$out" "$in"
+                ;;
+        esac
+    }
+
+    # BytesInFile() { stat -c %s "$1"; }
+    VB-capacity() {
+        local capacity=$(VBoxManage showmediuminfo disk "$1" | grep "^Capacity:" | awk '{print $2}')  # MBytes
+        capacity=$((capacity * 1024 * 1024))                                                          # Bytes
+        echo "$capacity"
+    }
+
+    Add-50%-to-VB-disk() {
+        echo "NOT WORKING!"
+        return 1
+
+        local -r disk="$1"     # "EndeavourOS test latest official pure.vdi"
+
+        case "$disk" in
+            "")
+                echo "$FUNCNAME: error: please give a disk name." >&2
+                return 1
+                ;;
+            *.vdi)
+                if [ ! -w "$disk" ] ; then
+                    echo "$FUNCNAME: error: given disk ($disk) does not exist or is not writable." >&2
+                    return 1
+                fi
+                ;;
+            *)
+                echo "$FUNCNAME: error: given disk ($disk) must have suffix '.vdi'." >&2
+                return 1
+                ;;
+        esac
+
+        local oldsize=$(VB-capacity "$disk")
+        local newsize=$((oldsize*2 - oldsize/2))   # newsize is 50% more
+
+        echo -en "Create a (time consuming) backup first\n(N/y)? " >&2
+        read
+        case "$REPLY" in
+            [Yy]*) echo -n "please wait... " >&2; rm -f "$disk".bak; cp -a "$disk" "$disk".bak; echo "" >&2 ;;
+        esac
+
+        echo "Resizing $oldsize --> $newsize ..." >&2
+        # VBoxManage modifymedium disk "$disk" --resizebyte=$newsize
+
+        echo "" >&2
+        echo "NOTE: now you must resize the partition inside the VM!" >&2
+    }
+
+    kb() {   # knowledge base
+        case "$1" in
+            risks) arch-audit ;;
+            *) cat <<EOF
+Usage: $FUNCNAME parameters
+Parameters:
+   risks        Shows security risks in packages.
+EOF
+               ;;
+        esac
+    }
+
+    sou() {                            # allow parameters to ~/.bashrc
+        while true ; do
+            case "$1" in
+                *) break ;;
+            esac
+        done
+        # NextInfo2 "Source ~/.bashrc ..."
+        source ~/.bashrc "$@"
+    }
+
+    sudofuncs() {
+        local tmpfile=$(mktemp)
+        local name
+        for name in "$@" ; do
+            if [ -x /bin/$name ] ; then
+                echo "$name() { sudo /bin/$name \"\$@\" ; }" >> $tmpfile
+            fi
+        done
+        source $tmpfile
+        rm -f $tmpfile
+    }
+
+    pkgdiffs-source-installed() {
+        _echo2()   { bashrc.min_echo2 "$@" ; }
+        _printf2() { printf "$@" >&2 ; }
+
+        local pkg="$1"
+        local data=$(expac -l "\n" -Q %F "$pkg")        # local data=$(pacman -Flq "$pkg")
+        local file
+        local local
+
+        data=$(echo "$data" | grep -v "/$" | sed 's|^|/|')
+
+        for file in $data ; do
+            local="${file##*/}"
+            _printf2 "%-40s: " "$local"
+            if [ ! -e "$file" ] ; then
+                _echo2 "file '$file' not found"
+            elif [ ! -e "$local" ] ; then
+                _echo2 "file '$local' not found"
+            else
+                case "$file" in
+                    */bash-completion/*)
+                        local=("$local".*completion)
+                        if [ -e "$local" ] ; then
+                            if diff "$file" "$local" &> /dev/null ; then
+                                _echo2 OK
+                            else
+                                _echo2 DIFFS
+                                /bin/meld "$file" "$local"
+                            fi
+                        else
+                            _echo2 "didn't find local file for '$file'"
+                        fi
+                        ;;
+                    *)
+                        if diff "$file" "${file##*/}" &> /dev/null ; then
+                            _echo2 OK
+                        else
+                            _echo2 DIFFS
+                            /bin/meld "$file" "${file##*/}"
+                        fi
+                        ;;
+                esac
+            fi
+        done
+    }
+
+    Unalias type
+    type() {
+        # without parameters, show all aliases and functions
+        case "$1" in
+            "") { alias && declare -F ; } | less ;;
+            *) builtin type -a "$@" ;;
+        esac
+    }
+
+    # Functions to modify variables like PATH
+
+    VarAddFirst() {                               # adds $2 to the beginning of $1
+        local -n _VAR="$1"
+        local -r val="$2"
+
+        if [ -n "$_VAR" ] ; then
+            if [ -n "$val" ] ; then
+                case "$_VAR" in
+                    *":$val:"* | "$val:"* | *":$val" | "$val") ;;  # middle start end only
+                    *) _VAR="$val:$_VAR" ;;
+                esac
+            fi
+        else
+            _VAR="$val"
+        fi
+    }
+    VarAddLast() {                                # adds $2 to the end of $1
+        local -n _VAR="$1"
+        local -r val="$2"
+
+        if [ -n "$_VAR" ] ; then
+            if [ -n "$val" ] ; then
+                case "$_VAR" in
+                    *":$val:"* | "$val:"* | *":$val" | "$val") ;;  # middle start end only
+                    *) _VAR="$_VAR:$val" ;;
+                esac
+            fi
+        else
+            _VAR="$val"
+        fi
+    }
+    VarRemoveFirst() {                            # remove first item from $1
+        local -n _VAR="$1"
+        _VAR=${_VAR#*:}
+    }
+    VarRemoveLast() {                             # remove last item from $1
+        local -n _VAR="$1"
+        _VAR=${_VAR%:*}
+    }
+    VarRemoveAll() {                              # remove all occurrences of $2 in $1
+        local -n _VAR="$1"
+        _VAR=${_VAR//$1/}    # remove all occurrences of $2
+        _VAR=${_VAR//::/:}   # remove all ::
+        _VAR=${_VAR#:}       # remove prefix :
+        _VAR=${_VAR%:}       # remove suffix :
+    }
+
+    lsd()   { find . -type d -exec ls -ld {} \; ; }
+
+    drw()   {
+        # shellcheck disable=SC2010
+        ls -l "$@" | grep rw
+    }
+
+    lp()  { l  "$@" | less -F ; }   # show long listing but no hidden dotfiles except "."
+    llp() { ll "$@" | less -F ; }   # show long listing of all except ".."
+
+    less() {
+        # Like 'less' but shows the lines of /var/log/pacman.log from last to first.
+        #
+        # Note: this implementation may separate an option from its value if  '=' is not used (so use e.g. --buffers=<n>).
+        # Note2: use single character options separated.
+
+        local opts=()
+        local others=()
+        local para
+        local -r pager=/bin/less
+
+        for para in "$@" ; do
+            case "$para" in
+                -* | +*) opts+=("$para") ;;
+                *)       others+=("$para") ;;
+            esac
+        done
+
+        if [ ${#others[@]} -gt 0 ] ; then
+            for para in "${others[@]}" ; do
+                case "$(realpath "$para")" in
+                    /var/log/pacman.log)
+                        tac "$para" | $pager "${opts[@]}" ;;
+                    *)
+                        $pager "${opts[@]}" "$para" ;;
+                esac
+            done
+        else
+            $pager "${opts[@]}"
+        fi
+    }
+
+    lsblk() {
+        local lsblk="/bin/lsblk -w 300"    # width = 300 because the output is (usually) better when a window is resized
+
+        if [ -z "$1" ] ; then
+            $lsblk -f -o+SIZE
+        else
+            $lsblk "$@"
+        fi
+    }
+
+    BannerLine() {
+        local len="$1"
+        local str="$2"
+        local newlines="$3"                      # ^ = newline to head, $ = newline to tail (~like in grep)
+
+        if [ -z "$len" ] ; then
+            len=$((COLUMNS / 2))
+        elif [ -n "$(echo "$len" | tr -d '[0-9]')" ] ; then
+            bashrc.min_error "first parameter is not a number"
+            return 1
+        fi
+        case "$str" in
+            "" | default) str="=" ;;
+        esac
+
+        case "$newlines" in
+            "^" | "^$") echo "" ;;
+        esac
+        printf "%.0s$str" $(seq $len)
+        case "$newlines" in
+            "^$" | "$" | "") echo "" ;;
+        esac
+    }
+    BannerLine2() { BannerLine "$@" >&2 ; }
+
+    _AdHocChecks_() {
+        _CheckAlways_() {
+            # [ -z "$BASH_SETTINGS_FILE" ] && bashrc.min_warning "variable BASH_SETTINGS_FILE not set!"
+            [ -x /usr/local/bin/pacman ] && bashrc.min_warning "executable /usr/local/bin/pacman exists!"
+        }
+        _DailyChecks_() {
+            : #type eu &> /dev/null && eu
+        }
+        _DailyCheck_() {
+            local daynr=$(date +%j)
+            local daynrfile="$HOME/.daynr"
+
+            if [ "$daynr" != "$(cat "$daynrfile" 2>/dev/null)" ] ; then
+                echo "$daynr" > "$daynrfile"
+                _DailyChecks_
+            fi
+        }
+        _CheckAlways_            # check always when a terminal is launched
+        _DailyCheck_             # check once a day, first time a terminal is launched
+    }
+    _AdHocChecks_
+
+    eos_icon_path() {
+        # on success, echo full icon path and return 0
+        # on failure, return 1
+
+        local -r type="$1"
+        local -r name="$2"
+        local icon family
+
+        case "$type" in
+            actions|animations|apps|categories|devices|emblems|emotes|filesystems|intl|mimetypes|places|status|stock) ;;
+            *) return 1 ;;
+        esac
+        case "$name" in
+            "") return 1 ;;
+        esac
+
+        # use Qogir as default, then try other icons
+        local prefs="${EOS_ICON_SETS_PREFERENCE[@]/Qogir-dark/}"
+        prefs="${EOS_ICON_SETS_PREFERENCE[@]/Qogir/}"
+
+        for family in Qogir "${prefs[@]}"
+        do
+            family=${family##*/}
+            icon="/usr/share/icons/$family/scalable/$type/$name.svg"
+            if [ -e "$icon" ] ; then
+                echo "$icon"
+                return 0
+            fi
+        done
+        return 1
+    }
+
+    icons() {
+        find /usr/share/icons -name $1.\* 2> /dev/null | grep scalable | less -F
+        # find /usr/share/icons -name $1.\* 2> /dev/null | less -F
+    }
+
+    git() {        # preparations for doing a git command
+        _logstuff() { which logstuff &>/dev/null && logstuff "$@"; }
+
+        local arg
+        for arg in "$@" ; do
+            case "$arg" in
+                -*) ;;
+                *)
+                    case "$arg" in
+                        push)
+                            case "$(realpath .)" in
+                                /UNI/lisa/repo/*)  _logstuff on ;;
+                            esac
+                            ;;
+                        pull_NOT-USED)                     # pull disabled for now!
+                            case "$(realpath .)" in
+                                /UNI/lisa/repo/*/b-assets) _logstuff on ;;
+                            esac
+                            ;;
+                        add)
+                            # if args include local PKGBUILD and
+                            # if local PKGBUILD includes some sums and
+                            # if local PKGBUILD is not the newest file
+                            # then try update checksums
+                            if [ -n "$(printf "%s\n" "$@" | grep "^PKGBUILD$")" ] ; then
+                                if [ -r PKGBUILD ] && [ -w PKGBUILD ] && grep -P "^sha.*sums=|^md5sums=|^b2sums=" PKGBUILD >& /dev/null ; then
+                                    if [ "$(/usr/bin/ls -a1tr --ignore=. --ignore=.. | tail -n1)" != PKGBUILD ] ; then
+                                        read -p "Update checksums (Y/n)? " >&2
+                                        case "$REPLY" in
+                                            "" | [yY]*) updpkgsums ;;
+                                        esac
+                                    fi
+                                fi
+                            fi
+                            ;;
+                    esac
+                    break
+                    ;;
+            esac
+        done
+        unset -f _logstuff
+        /bin/git "$@"
+    }
+
+    sha512sum-check() {
+        local ret=0                        # $ret will contain "exit code"
+        local tailname=".iso.sha512sum"    # checksum file name should end with this string
+        local checksumfile=(*$tailname)    # may be more than one file
+        local csfile
+
+        case "$checksumfile" in
+            "*"$tailname)
+                echo "checksum file not found"
+                return 2
+                ;;
+            *$tailname)
+                readarray -t checksumfile <<< $(printf "%s\n" "${checksumfile[@]}" | fzf -m)
+                for csfile in "${checksumfile[@]}" ; do
+                    printf "==> sha512sum -c %s ... " "$csfile"
+                    if sha512sum -c "$csfile" &> /dev/null ; then
+                        echo OK
+                    else
+                        echo FAIL
+                        ret=1
+                    fi
+                done
+                return $ret
+                ;;
+            *)
+                echo "file '$checksumfile' not supported"
+                return 3
+                ;;
+        esac
+    }
+
+    linktype() {
+        local file="$1"
+        local result=""
+
+        [ -n "$file" ] || { bashrc.min_warning "${FUNCNAME[0]}: give file parameter" ; return 1 ; }
+
+        if [ -f "$file" ] ; then
+            if [ -L "$file" ] ; then
+                result="symlink"
+            else
+                case "$(stat -c %h "$file")" in
+                    1) result="regular file" ;;
+                    *) result="hardlink" ;;
+                esac
+            fi
+        else
+            result="not a regular file"
+        fi
+        echo "$result"
+    }
+
+    virtualbox-vram() {
+        local -r vmname="$1"
+        vboxmanage modifyvm "$vmname" --vram 256                       # set video memory to 256 MB
+    }
+
+    man-eos() {
+        local app=eos-apps-info-helper
+        which $app &> /dev/null || { bashrc.min_error "${app%-helper} not installed?"; return 1; }
+        bashrc.min_echo2 "==> $app $*"
+        $app "$@"
+    }
+    eos-man() {                                                        # 'man' extended for some external apps
+        _man-plain-help() {
+            if which "$1" &> /dev/null ; then
+                local out ret=0
+                read -p "Want to run '$* --help' (Y/n)? " >&2
+                case "$REPLY" in
+                    [Nn]*) return 0 ;;
+                esac
+                bashrc.min_echo2 "==> $* --help:"
+                out=$("$@" --help)
+                ret=$?
+                [ $ret -eq 0 ] && echo "$out" | less --quit-if-one-screen
+                return $ret
+            else
+                return 1
+            fi
+        }
+        _man-get-item() {
+            local arg
+            for arg in "$@" ; do
+                case "$arg" in
+                    -*) ;;
+                    *) echo "$arg"; return 0 ;;
+                esac
+            done
+            bashrc.min_error "${FUNCNAME[1]}: parameters include no item for getting help"
+            return 1
+        }
+
+        local ret_man=0
+        /usr/bin/man "$@"                                    # try normal man first
+        ret_man=$?
+        case "$ret_man" in
+            16)
+                local item="$(_man-get-item "$@")"
+                if [ -n "$item" ] ; then
+                    man-eos "$item"                                        # man failed, handle exit code 16 for unknown app
+                    [ $? -eq 0 ] && return 0
+                    _man-plain-help "$item"                                # eos-apps-info-helper failed, try 'command' --help
+                    [ $? -eq 0 ] && return 0
+                fi
+                bashrc.min_warning "no manual page about '$item'."
+                ;;
+        esac
+        return $ret_man
+    }
+    manx() { man -H "$@" ; }
+
+    my_prompt_command() {
+        # Show one or two line prompt (folder, time) after trying to slightly shorten the folder name.
+
+        # local pwd=${PWD/$HOME/\~}             # shorten for $HOME
+        #local -r time="${YELLOW}$(date +%a\ %H:%M.%S)${RESET}"
+        local -r time="$(date +%a\ %H:%M.%S)"
+
+        if [ -n "$HERE_ARROW" ] ; then
+            local -r rarrow=')'
+            local -r larrow='('
+            local -r here="$HERE_ARROW"
+        else
+            local -r rarrow=$'\u2773'            # nice delimiters, https://en.wikipedia.org/wiki/Arrow_(symbol)#Unicode
+            local -r larrow=$'\u2772'
+            local -r here=$'\u2ba9'
+        fi
+
+        #local -r pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"      # do color codes cause prompt issues??? YES!
+        local -r pwd="$larrow${PWD/$HOME/\~}$rarrow"
+
+        if [ ${#pwd} -gt $((COLUMNS / 2)) ] ; then
+            printf -v PS1 "%s\n%s %s "  "$pwd" "$time" "$here"   # two line prompt
+        else
+            printf -v PS1 "%11s %s %s " "$time" "$pwd" "$here"   # one line prompt
+        fi
+    }
+
+    p() {
+        local param=""
+        [ -z "$1" ] && param="-Syu -d"
+        pacman-ext --no-banner $param "$@"
+    }
+    # syu()  { p -${FUNCNAME^} ; }
+    # syyu() { p -${FUNCNAME^} ; }
+
+    #pf() { pgrep -a "$@" ; } # list processes
+
+    gpg-verify() {
+        local file
+
+        for file in "$@" ; do
+            case "$file" in
+                *.sig)
+                    bashrc.min_echo2 "$file"
+                    /bin/gpg --verify "$file" |& sed 's|^|    |'
+                    ;;
+                *)
+                    bashrc.min_echo2 "==> $FUNCNAME: sorry, '$file' is likely not a signature file."
+                    ;;
+            esac
+        done
+    }
+
+
+    _Check_CDPATH_ARR() {  # CDPATH_ARR should contain unique folders
+        local arrout=()
+        local dir added
+
+        for dir in "${CDPATH_ARR[@]}" ; do
+            for added in "${arrout[@]}" ; do
+                if [ "$dir" = "$added" ] ; then
+                    bashrc.min_warning "already added '$dir = $added'"
+                    continue 2
+                fi
+                if [ "$added" != "." ] && [ "$dir" != "." ] && [ "$dir" -ef "$added" ] ; then
+                    bashrc.min_warning "already added '$dir -ef $added'"
+                    continue 2
+                fi
+            done
+            arrout+=("$dir")
+        done
+        # echo "orig = ${#CDPATH_ARR[@]}" >&2
+        export CDPATH_ARR=("${arrout[@]}")
+        # echo "new  = ${#CDPATH_ARR[@]}" >&2
+    }
+    _Check_CDPATH_ARR
+
+    Unalias welcome
+    welcome() {
+        local arg welcome="eos-welcome --once"  # --lang=en"  # adding lang in this function is dangerous!!
+        for arg in "$@" ; do
+            case "$arg" in
+                --installer)
+                    $welcome "$@" &
+                    return
+                    ;;
+            esac
+        done
+        setsid $welcome "$@"
+    }
+
+    xfce4-terminal() {
+        /bin/xfce4-terminal --geometry=150x25 "$@"
+    }
+
+    # _set_terminal_title()       { printf "\e]2;%s\a" "$*" ; }
+    _set_terminal_window_title()  { printf "\e]0;%s\a" "$*" ; }
+    export -f _set_terminal_window_title   # _set_terminal_title
+
+    MyTermTitle() {
+        local dir="$PWD"
+        case "$dir" in
+            $HOME)   dir="~" ;;
+            $HOME/*) dir="${dir/$HOME/\~}" ;;
+        esac
+        local latest_user_command="[$(history 1 | sed -E 's|^[ ]+[0-9]+[ ]+||')] # [$dir]"
+        if [ "$latest_user_command" != "$latest_user_command_previous" ] ; then
+            latest_user_command_previous="$latest_user_command"
+            _set_terminal_window_title "$latest_user_command"
+        fi
+    }
+    export -f MyTermTitle
+    trap "MyTermTitle" DEBUG    # Set terminal title to currently running command:
+
+    if [ -x /bin/grub-install ] ; then
+        original-grub-install-parameters-f() {
+            local out=$(sudo grep 'grub-install' /var/log/{Calamares,endeavour-install}.log 2>/dev/null)
+            echo "$out" | sed -E -e 's|.*Running \(||' -e 's|"([^"]+)"[,)]*|\1|g' | head -n1
+        }
+        Alias original-grub-install-parameters original-grub-install-parameters-f
+    fi
+
+    forum() {
+        local forum="https://forum.endeavouros.com"
+
+        case "$1" in
+            --latest | -n)      forum="$forum/latest" ;;
+            --new)              forum="$forum/new" ;;
+            --unread)           forum="$forum/unread" ;;
+            --login | -l | "")  forum="$forum/login" ;;
+            -h | --help)
+                cat <<EOF >&2
+Usage: $FUNCNAME [options]
+Options:
+    -h, --help         This help.
+    -l, --login        Show the login page (default).
+    -n, --latest       Show all latest posts.
+    --new              Show the new posts page.
+    --unread           Show the unread posts page.
+
+Tips:
+    <kbd>word</kbd>    Show the 'word' in a button like box.
+EOF
+                return 0
+                ;;
+            *)
+                bashrc.min_warning "sorry, parameter '$1' not supported."
+                $FUNCNAME -h
+                return 1
+                ;;
+        esac
+        firefox "$forum"
+    }
+
+    # color codes:
+    RED=$'\e[1;91m'
+    GREEN=$'\e[1;92m'
+    YELLOW=$'\e[1;93m'
+    BLUE=$'\e[1;94m'
+    MAGENTA=$'\e[1;95m'
+    CYAN=$'\e[1;96m'
+    RESET=$'\e[0m'    # resets to normal
+
+    Red2()  { echo -e  "${RED}${1}${RESET}" >&2 ; }
+    Blue2() { echo -e "${BLUE}${1}${RESET}" >&2 ; }
+    Cyan2() { echo -e "${CYAN}${1}${RESET}" >&2 ; }
+
+    upd() {
+        local opt="-dopv"
+        [ "$(lspci -k | grep " VGA .* NVIDIA ")" ] && opt+="n"
+        LANG=C /bin/upd $opt "$@"
+    }
+
+    pbb() {
+        # Check all with 'pb'. If any fails, mark it and stop, and start from it next time.
+        local item
+        local last="dummy last"
+        local file="$HOME/.pbb.state"
+        local first=""
+        local head="====>"
+        local ITEMS=()           # fill this in config file
+
+        source /etc/pbb.conf || return 1
+
+        [ -r "$file" ] && first="$(cat "$file")"
+
+        for item in "${ITEMS[@]}" ; do
+            if [ "$item" = "$last" ] ; then
+                Blue2 "$head All done."
+                rm -f "$file"
+                return
+            fi
+            case "$first" in
+                "" | "$item")
+                    first=""
+                    Cyan2 "$head $item:"
+                    if ! pb $item ; then
+                        echo "$item" > "$file"
+                        Red2 "$head $item failed."
+                        return
+                    fi
+                    ;;
+            esac
+        done
+    }
+
+    paccache() {
+        # Changes to official paccache:
+        # 1. check if sudo is needed
+        # 2. be verbose always
+
+        paccache-options() {
+            local opts
+            local sopts="a:c:dfhi:k:m:rquvVz"
+            local lopts="dryrun,move:,remove,arch:,cachedir:,force,help,ignore:,keep:"
+            lopts+=",min-atime:,min-mtime:,nocolor,quiet,uninstalled,verbose,version"
+
+            opts="$(getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || {
+                #$FUNCNAME --help
+                return 1
+            }
+
+            eval set -- "$opts"
+
+            while true ; do
+                case "$1" in
+                    --dryrun | -d)      ;;
+                    --move | -m)        sudo=sudo; shift ;;
+                    --remove | -r)      sudo=sudo ;;
+                    --arch | -a)        shift ;;
+                    --cachedir | -c)    shift ;;
+                    --force | -f)       ;;
+                    --ignore | -i)      shift ;;
+                    --keep | -k)        shift ;;
+                    --min-atime)        shift ;;
+                    --min-mtime)        shift ;;
+                    --nocolor)          ;;
+                    --null | -z)        ;;
+                    --quiet | -q)       ;;
+                    --uninstalled | -u) ;;
+                    --verbose | -v)     verbose+=" $1" ;;
+                    --version | -V)     ;;
+                    --help | -h)        ;;
+
+                    --) shift ; break ;;
+                esac
+                shift
+            done
+        }
+
+        local progname="$FUNCNAME"
+        local sudo=""
+        local verbose="-v"
+
+        paccache-options "$@" || return
+        $sudo /bin/paccache $verbose "$@"
+    }
+
+    EmacsConfig() {
+        [ -e ~/.emacs ] && return
+        [ -x /bin/emacs ] || return
+
+        bashrc.min_echo2 "==> $FUNCNAME: configuring emacs"
+
+        cat <<EOF > ~/.emacs
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(c-guess-guessed-basic-offset 2 t)
+ '(column-number-mode t)
+ '(cua-mode t nil (cua-base))
+ '(gdb-many-windows t)
+ '(global-display-line-numbers-mode t)
+ '(indent-tabs-mode nil)
+ '(inhibit-startup-screen t)
+ '(make-backup-files nil)
+ '(next-line-add-newlines nil)
+; '(package-selected-packages '(realgud))
+ '(require-final-newline t)
+ '(scroll-step 1)
+ '(select-enable-clipboard t)
+ '(tool-bar-mode nil)
+ '(tool-bar-position 'right)
+ '(vc-follow-symlinks t)
+ '(x-select-enable-clipboard-manager nil)
+)
+EOF
+        chown $LOGNAME:$LOGNAME ~/.emacs
+    }
+    EmacsConfig
+
+    # m-aur()                   { cd "${FUNCNAME[0]}" ; }
+    # m-m()                     { cd "${FUNCNAME[0]}" ; }
+    # m-more2()                 { cd "${FUNCNAME[0]}" ; }
+    # endeavouros()             { cd "${FUNCNAME[0]}" ; }
+    # endeavouros-testing-dev() { cd "${FUNCNAME[0]}" ; }
+
+    command_not_found_handle() {
+        if [ -f "$1" ] ; then
+            eos-open "$@" 2>/dev/null
+        elif [ -d "$1" ] ; then
+            bashrc.min_warning "did you mean 'cd $*'?"    # cd is not working here...
+        else
+            bashrc.min_warning "'$*' not recognized."
+        fi
+    }
+
+    [ -x /bin/chdirex ] && cd() { builtin cd "$(/bin/chdirex "$@")" ; }
+
+    sudofuncs fstrim umount powertop  # mount
+
+    mount() {
+        local sudo=""
+        case "$1" in                 # just a simple check if sudo is needed, needs full option handling...
+            ""|-h|--help) ;;
+            *) sudo=sudo ;;
+        esac
+        $sudo /bin/mount "$@"
+    }
+
+    #############################################################
+    # variables
+    #############################################################
+
+    [ -z "$FUNCNEST" ] && export FUNCNEST=100
+
+    PROMPT_COMMAND=my_prompt_command
+
+    export HISTCONTROL="erasedups"
+    FIGNORE=".o:~"                      # ignored suffixes in filename completion
+
+    CDPATH="${CDPATH_ARR[*]}"
+    CDPATH="${CDPATH// /:}"
+    export CDPATH
+
+    #############################################################
+    # aliases
+    #############################################################
+
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc.min_echo2 "==> $FUNCNAME: aliases"
+
+    Alias Build-asdeps       "Build --pacman='--asdeps'"
+    Alias bat                "bat --style=number"
+    Alias pacman-branch      "pacman-conf --repo-list | grep '^testing$' || echo stable"
+    Alias ci                 "ci -u"
+    Alias cls                "clear"
+    Alias codium             "codium -n"
+    Alias curly              "curl --remote-name-all"
+    Alias df                 "LANG=C df -hT"
+    Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
+    Alias history-del        "history -c && history -w"
+    Alias history-select     "history | fzf --tac --no-separator --no-info"
+    Alias hlp                "eos-man"
+    Alias inxi               "inxi -z"
+    Alias local-repo-manager "local-repo-manager --verbose"
+    # Alias ls                 "/bin/ls $(l --get-ls-opts)"
+    Alias man                "eos-man"
+    Alias md                 "codium"
+    Alias nano               "nano -l"
+    Alias o                  "eos-open --pref exo-open"
+    Alias package-sizes      "expac -HM -Q '%m|%n' | column -t -s'|' | sort -nr | less"
+                             # M is reasonable now, later G might be too
+    Alias pacdiff            "eos-pacdiff"
+    Alias paq                "sudo paq"
+    Alias u                  "upd --instant --verbose"
+    Alias uu                 "upd"
+    Alias uuu                "upd --instant --verbose --aur"
+    #Alias uc                 "time uc-fast -aey --verbose"
+    #Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
+
+    AliasIfType  grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
+    AliasIfWhich pb             pb           "pb -nn -T0"
+    AliasIfWhich pb             pp           "pb"
+
+    Unalias l
+    AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
+    # AliasIfType grub-mkconfig  grub.cfg     "update-grub"                                   # needed ???
+
+    meld_old() {
+        if [ -x /bin/meld-rcs ] ; then
+            if ps -C meld,meld-rcs >/dev/null ; then
+                bashrc.min_warning "sorry, 'meld' is already running."
+                return 1
+            fi
+            meld-rcs "$@"
+        else
+            /bin/meld "$@"
+        fi
+    }
+
+    if true ; then
+        Alias mg         meldgit
+        Alias mr         meldrcs
+        Alias cp         "cp -i"
+        Alias ln         "ln -i"
+        Alias mv         "mv -i"
+        Alias rm         "rm -i"
+    fi
+    
+    shellcheck() {
+        /bin/shellcheck "$@"
+        if [ -x /bin/shellcheck-nameref ] && [ "$2" = "" ] && [ -f "$1" ] ; then
+            shellcheck-nameref "$@"
+        fi
+    }
+
+    _VisualStudioSet_() {
+        local _xxx
+        for _xxx in codium code ; do
+            if [ -x /bin/$_xxx ] ; then
+                Alias ide=$_xxx
+                break
+            fi
+        done
+    }
+    _VisualStudioSet_
+    unset -f _VisualStudioSet_
+
+    if [ "$(device-info --vm)" ] ; then
+        _boot_stuff() {
+            local -r app="${FUNCNAME[1]}"
+            echo "==> sync && $app" >&2
+            sleep 1
+            sync && /bin/$app
+        }
+        reboot()   { _boot_stuff ; }
+        poweroff() { _boot_stuff ; }
+        alias bye=poweroff
+    else
+        _dispatch_my_cmd() {
+            local cmd="$1"
+            bashrc.min_echo2 "==> $cmd"
+            sleep 1
+            bash -c "$cmd"
+        }
+        if which logstuff &> /dev/null ; then
+            Reboot()   { _dispatch_my_cmd "logstuff off && sync && Power-routines -s reboot" ; }
+            Poweroff() { _dispatch_my_cmd "history -c && history -w && logstuff off && sync && Power-routines -s poweroff" ; }
+        else
+            Reboot()   { _dispatch_my_cmd "sync && Power-routines -s reboot" ; }
+            Poweroff() { _dispatch_my_cmd "history -c && history -w && sync && Power-routines -s poweroff" ; }
+        fi
+        Nap()          { _dispatch_my_cmd "sync && Power-routines -s suspend" ; }
+        Alias ramsleep   Nap
+        Alias bye        Poweroff
+        Alias poweroff   Poweroff
+        Alias reboot     Reboot
+        Alias restart    Reboot
+    fi
+
+    #############################################################
+    # bash completions
+    #############################################################
+
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc.min_echo2 "==> $FUNCNAME: bash completions"
+
+    LoadCompletion() {
+        local -r cmdname="$1"                  # (new) command name
+        local -r completion_file_name="$2"     # in /usr/share/bash-completion/completions/
+        local compfunc="$3"                    # optional
+        local -r app_required="$4"             # optional
+        local -r dir=/usr/share/bash-completion/completions
+
+        if [ "$app_required" ] ; then
+            if [ ! -x "/bin/$app_required" ] ; then
+                bashrc.min_error "sorry, app '$app_required' does not exist"
+                return 1
+            fi
+        fi
+
+        local filename="${BASH_SOURCE[0]}"
+
+        [ -n "$compfunc" ] || compfunc="_${completion_file_name}_"
+
+        [ -r $dir/$completion_file_name ] || {
+            bashrc.min_error "sorry, $dir/$completion_file_name does not exist"
+            return 1
+        }
+        grep -w $compfunc $dir/$completion_file_name >/dev/null || {
+            bashrc.min_error "sorry, completion function '$compfunc' does not exist"
+            return 1
+        }
+
+        complete | grep "\-F" | grep " $cmdname$" >/dev/null || {
+            # echo "loading $compfunc completion" >&2
+            source $dir/$completion_file_name
+            complete -F $compfunc $cmdname
+        }
+    }
+
+    #                                                    optional                optional
+    #              cmdname              compfilename     completion func name    app_required
+    LoadCompletion pacman-sudo-internal pacman           _pacman
+    LoadCompletion p                    pacman-ext       _pacman-ext_
+    LoadCompletion u                    upd              _pe_upd_                upd
+    LoadCompletion pp                   pb               _pb_                    pb
+
+    [ -r ~/.dircolors ] && eval "$(dircolors ~/.dircolors)"
+
+    RunSilentlyInBackground() {
+        local app="$1"
+        local firstpara="$2"
+        shift
+
+        bashrc.min_echo2 "==> $app $@"
+
+        case "$firstpara" in 
+            -h | --help*) $app "$@" 2> /dev/null ;;
+            *)
+                case "$app" in
+                    kate)
+                        HERE_ARROW=">" setsid $app "$@" &> /dev/null ;;   # workaround prompt for kate's integrated terminal!
+                    *)
+                                       setsid $app "$@" &> /dev/null ;;
+                esac
+        esac
+    }
+
+    if [ -x /bin/qtcreator ] ; then
+        Unalias qtcreator
+        qtcreator() {
+            case "$1" in
+                -h | --help)   /bin/$FUNCNAME -client "$@" ;;
+                *)             setsid /bin/$FUNCNAME -client "$@" ;;
+            esac
+        }
+    fi
+
+
+    AppsToFuncsMaker() {
+        local apps=(
+            adie                             # lightning fast editor
+            # audacity
+            # bluefish
+            # chromium
+            dolphin
+            eog
+            firefox
+            firefox-developer-edition
+            # geany
+            # gedit
+            ghostwriter
+            gitk
+            # gnome-boxes
+            # gnome-builder
+            kate
+            # kdevelop
+            konsole
+            libreoffice
+            # mousepad
+            # notepadqq
+            pamac-manager
+            parole
+            # "qtcreator -client"
+            qterminal
+            ristretto
+            soffice
+            # terminator
+            thunderbird
+            xed
+            xfce4-screenshooter
+            xplayer
+            xreader
+
+            # eclipse
+            # tkdiff
+        )
+        apps+=(        # here for other reasons!
+            kaffeine
+            # krusader
+            # vivaldi-stable
+        )
+
+        if [ ${#apps[@]} -gt 0 ] ; then
+            local pr pr1
+            local tmpfile=$(mktemp)
+
+            for pr in "${apps[@]}" ; do
+                pr1=${pr%% *}
+                Unalias $pr1
+                which $pr1 &> /dev/null && echo "$pr1() { RunSilentlyInBackground $pr \"\$@\" ; }"
+            done >> $tmpfile
+
+            # shellcheck disable=SC1090
+            source $tmpfile
+            rm -f $tmpfile
+        fi
+    }
+    AppsToFuncsMaker
+    unset -f AppsToFuncsMaker
+
+    [ -f ~/unison.log ] && rm -i ~/unison.log
+}
+
+bashrc() { # load updated bash settings
+    case "$1" in
+        --update)
+            NextInfo2 "Updating settings ..."
+            if WaitForConnection 10 ; then
+                pushd $(dirname "$BASH_SOURCE") >/dev/null && git pull >/dev/null
+                popd >/dev/null
+                bashrc.min_echo2 " done."
+                return
+            else
+                bashrc.min_echo2 ""
+                bashrc.min_warning "sorry, no internet connection, update failed."
+            fi
+            
+            if false ; then
+                for _ix in {1..10} ; do
+                    if eos-connection-checker ; then
+                        pushd $(dirname "$BASH_SOURCE") >/dev/null && git pull >/dev/null
+                        popd >/dev/null
+                        bashrc.min_echo2 " done."
+                        return
+                    fi
+                    printf "."
+                    sleep 1
+                done
+                bashrc.min_echo2 ""
+                bashrc.min_warning "sorry, no internet connection, update failed."
+            fi
+            ;;
+        --plain)
+            _COMMON_SETTINGS_VERBOSE=no           # common verbosity
+            _COMMON_SETTINGS_VERBOSE_ALIAS=no     # verbosity specific to Alias()
+            case "$1" in
+                --verbose)       _COMMON_SETTINGS_VERBOSE=yes ;;
+                --verbose-alias) _COMMON_SETTINGS_VERBOSE_ALIAS=yes ;;
+            esac
+            local cd_config="$HOME/.config/cd-extended.conf"
+            if [ -f "$cd_config" ] && [ $(stat -c %s "$cd_config") -gt 0 ] ; then
+                :
+            else
+                bashrc.min_warning "file $cd_config is missing or empty, creating a skeleton."
+                if [ -n "$CODEDIR" ] ; then
+                    cat <<EOF > "$cd_config"
+CDPATH_ARR=(
+    ~
+    "$CODEDIR"
+    "$CODEDIR"/*/_BUILD_
+)
+EOF
+                else
+                    bashrc.min_warning "variable CODEDIR is not set!"
+                    cat <<EOF > "$cd_config"
+CDPATH_ARR=(
+    ~
+)
+EOF
+                fi
+            fi
+            source "$cd_config"
+            SettingsCommon
+            ;;
+        *)
+            bashrc --update
+            bashrc --plain
+            [ -e ~/.bashrc ] && source ~/.bashrc
+            bashrc.min_echo2 "==> bash settings updated."
+            ;;
+    esac
+}
+
+# Use current settings now. Update settings with 'bashrc'.
+bashrc --plain
+bashrc.min_echo2 "==> 'bashrc' updates bash settings."
+cat <<EOF
+
+TODO
+====
+21.10.2023 - lisää AUR-tuki user_commands.bash:iin
+
+EOF
+
+bashrc.min_echo2 "==> Running on $XDG_SESSION_TYPE"
+
+_Nvidia_driver() {
+    local driver=$(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use" | awk '{print $NF}')
+    case "$driver" in
+        nouveau)
+            if expac -Q %n xf86-video-nouveau >/dev/null ; then
+                bashrc.min_echo2 "==> GPU driver: xf86-video-nouveau"
+            else
+                bashrc.min_echo2 "==> GPU $(echo $(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use"))"
+            fi
+            ;;
+        nvidia)
+            bashrc.min_echo2 "==> GPU driver: $(expac %n nvidia nvidia-dkms)"
+            ;;
+    esac
+}
+_Nvidia_driver
+
+if true ; then
+
+    -() { builtin cd - ; }   # make plain - the same as "cd -"
+
+    ..() {
+        # cd to one of the parent folders, given number of levels (zero or more)
+        # Examples:
+        #    ..
+        #    .. 5
+
+        local levels="$1"                                 # how many directory levels to go "up"
+
+        # Make sure $levels is all numbers!
+        case "$levels" in
+            "")
+                levels=1                                  # default: 1 level "up"
+                ;;
+            *)
+                if [ "${levels//[0-9]/}" ] ; then         # hides numbers from $levels
+                    bashrc.min_error "the number of levels parameter ($levels) must be all numbers"
+                    return 1
+                fi
+                ;;
+        esac
+
+        local -r dir=$(seq $levels | awk '{printf "../"}')
+        builtin cd $dir
+    }
+fi
