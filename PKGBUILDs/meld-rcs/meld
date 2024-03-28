@@ -9,7 +9,9 @@ DIE() {
     exit 1
 }
 
-MELD() { /bin/meld "$@" &> /dev/null & }
+MELD() {
+    /bin/meld "$@" &  # &> /dev/null &
+}
 
 Modify2para() {
     local -n _ff="$1"   # file
@@ -58,16 +60,18 @@ Meld() {
     lines=$(echo "$lines" | grep -w meld)
     lines=$(echo "$lines" | wc -l)             # this instance counts...
     local -r max_meld_instances=2
-
     [ $lines -gt $max_meld_instances ] && DIE "sorry, no more 'meld' instances are allowed to run."
 
+    local -r meldgit=/bin/meldgit
+    local -r meldrcs=/bin/meldrcs
+
     case "$1" in
-        -R) shift; meldrcs "$@" ;;
-        -G) shift; meldgit "$@" ;;
+        -R) shift; $meldrcs "$@" ;;
+        -G) shift; $meldgit "$@" ;;
         "") if InGitTree ; then
-                meldgit
+                $meldgit
             elif [ -d RCS ] ; then
-                meldrcs
+                $meldrcs
             else
                 MELD
             fi

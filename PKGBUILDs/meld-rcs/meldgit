@@ -9,7 +9,9 @@ DIE() {
     exit 1
 }
 
-MELD() { meld "$@" &> /dev/null & }
+MELD() {
+    /bin/meld "$@" & #&> /dev/null &
+}
 
 Meld() {
     # Changing meld operation:
