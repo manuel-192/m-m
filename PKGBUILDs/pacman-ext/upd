@@ -56,11 +56,11 @@ Main() {
 
     local verbose=no   # for uc-fast only !?
     local debug=no
-    local pagerlines=20
+    local pager=no
 
     local SOPTS="acdfhil:nopqsv"
     local LOPTS="aur,begin:,clear-databases,clear-keyrings,connection,debug,descriptions,dump-options,end:,instant,instant-no-aur"
-    LOPTS+=",foreign,help,middle:,no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,pager-lines:,paru,quiet,sync,verbose,virtualbox"
+    LOPTS+=",foreign,help,middle:,no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,pager,paru,quiet,sync,verbose,virtualbox"
 
     local args=("$@")
 
@@ -170,7 +170,7 @@ $pre1
         --no-lock          Does not check pacman database lock.
     -i, --instant          Fast and simple check for updates. Experimental!
         --instant-no-aur   Same as --instant but AUR will not be checked.
-    -l, --pager-lines      Number of pager lines for the descriptions (see option --descriptions).
+     --pager               Use pager with the descriptions (see option --descriptions).
     -n, --nvidia           Checks validity of nvidia & linux updates.
     -o, --optimize-checks  Reduce redundancy in checks.
     -p, --pacdiff          Runs 'pacdiff & meld' in the end.
@@ -238,7 +238,7 @@ Options() {
                     --dump-options)          DumpOptions; Exit 0 ;;
                     -i | --instant)          Assign instant yes ;;
                     --instant-no-aur)        Assign instant yes; Assign aur no ;;
-                    -l | --pager-lines)      Assign pagerlines "$2"; shift ;;
+                    --pager)                 Assign pager yes ;;
                     -f | --foreign)          Assign foreign yes ;;
                     --no-keyrings)           Assign keyrings no ;;
                     --no-lock)               Assign lock_check no ;;
@@ -470,7 +470,11 @@ PagerOut() {
     local updates="$1"
     local title="$2"
 
-    Cmd1 hook-update-description --include-repo --title="$title" $updates | less -F
+    if [ $pager = yes ] ; then
+        Cmd1 hook-update-description --include-repo --title="$title" $updates | less -F
+    else
+        Cmd1 hook-update-description --include-repo --title="$title" $updates # | less -F
+    fi
 }
 
 ShowDescriptions() {
