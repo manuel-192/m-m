@@ -11,21 +11,29 @@ DIE() {
 
 MELD() { /bin/meld "$@" &> /dev/null & }
 
+Modify2para() {
+    local -n _ff="$1"   # file
+    local -n _dd="$2"   # folder
+
+    [ "${_ff//\//}" = "$_ff" ] && _ff="./$_ff"     # if no dir in the file, add ./ in front
+    [ "$_dd" != "/" ]          && _dd="${_dd%/}"   # remove possible trailing slash
+    _dd="$_dd/${_ff##*/}"                          # add file name after the folder name
+}
+
 MELD2PARA() {
     # Handle two parameters.
-    # With parameters XX/file and a FOLDER, compare XX/file with FOLDER/file.
+    # A special case: if the two parameters are (in either order):
+    #    - FolderA/file
+    #    - FolderB
+    # compare FolderA/file with FolderB/file.
 
     local aa="$1"
     local bb="$2"
 
     if [ -d "$aa" ] && [ -f "$bb" ] ; then
-        [ "${bb//\//}" = "$bb" ] && bb="./$bb"      # if no dir in the file, add ./ in front
-        [ "$aa" != "/" ]         && aa="${aa%/}"    # remove possible trailing slash
-        aa="$aa/${bb##*/}"                          # add file name after the folder name
+        Modify2para bb aa
     elif [ -f "$aa" ] && [ -d "$bb" ] ; then
-        [ "${aa//\//}" = "$aa" ] && aa="./$aa"      # if no dir in the file, add ./ in front
-        [ "$bb" != "/" ]         && bb="${bb%/}"    # remove possible trailing slash
-        bb="$bb/${aa##*/}"                          # add file name after the folder name
+        Modify2para aa bb
     fi
 
     MELD "$aa" "$bb"
@@ -48,7 +56,7 @@ Meld() {
     # Counting $lines does not work on a single line ???
     local lines=$(/bin/ps -C meld)
     lines=$(echo "$lines" | grep -w meld)
-    lines=$(echo "$lines" | wc -l)
+    lines=$(echo "$lines" | wc -l)             # this instance counts...
     local -r max_meld_instances=2
 
     [ $lines -gt $max_meld_instances ] && DIE "sorry, no more 'meld' instances are allowed to run."
@@ -56,24 +64,19 @@ Meld() {
     case "$1" in
         -R) shift; meldrcs "$@" ;;
         -G) shift; meldgit "$@" ;;
-        *)
-            case "$1" in
-                "")
-                    if InGitTree ; then
-                        meldgit
-                    elif [ -d RCS ] ; then
-                        meldrcs
-                    else
-                        MELD
-                    fi
-                    ;;
-                *)  if [ "$2" ] && [ -z "$3" ] ; then
-                        MELD2PARA "$1" "$2"      # 2 parameters, may have a file and a folder
-                    else
-                        MELD "$@"                # other cases
-                    fi
-                    ;;
-            esac
+        "") if InGitTree ; then
+                meldgit
+            elif [ -d RCS ] ; then
+                meldrcs
+            else
+                MELD
+            fi
+            ;;
+        *)  if [ "$2" ] && [ "$1 $2" = "$*" ] ; then
+                MELD2PARA "$@"           # 2 parameters, may have a file and a folder
+            else
+                MELD "$@"                # other cases
+            fi
             ;;
     esac
 }
