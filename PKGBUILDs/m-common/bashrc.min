@@ -1080,18 +1080,6 @@ EOF
     AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
     # AliasIfType grub-mkconfig  grub.cfg     "update-grub"                                   # needed ???
 
-    meld_old() {
-        if [ -x /bin/meld-rcs ] ; then
-            if ps -C meld,meld-rcs >/dev/null ; then
-                bashrc.min_warning "sorry, 'meld' is already running."
-                return 1
-            fi
-            meld-rcs "$@"
-        else
-            /bin/meld "$@"
-        fi
-    }
-
     if true ; then
         Alias mg         meldgit
         Alias mr         meldrcs
