@@ -61,8 +61,8 @@ _pb_GetPkgnames() {
 
 _pb_GetRepo() {
     if [ -e assets.conf ] ; then
-        local repo=(*.db.tar.xz)
-        echo "${repo[*]}"
+        local repo=(*.db.tar.*)
+        printf "%s\n" "${repo[@]}" | grep -v "*"
     fi
 }
 
