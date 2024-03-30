@@ -1113,7 +1113,7 @@ EOF
             local -r app="${FUNCNAME[1]}"
             echo "==> sync && $app" >&2
             sleep 1
-            sync && /bin/$app
+            sync && /bin/${app##*/}
         }
         reboot()   { _boot_stuff ; }
         poweroff() { _boot_stuff ; }
