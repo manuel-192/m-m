@@ -1052,7 +1052,7 @@ EOF
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
     Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
-    Alias history-del        "history -c && history -w"
+    Alias history-del        "history -cwc"
     Alias history-select     "history | fzf --tac --no-separator --no-info"
     Alias hlp                "eos-man"
     Alias inxi               "inxi -z"
