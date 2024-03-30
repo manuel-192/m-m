@@ -72,8 +72,10 @@ Main()
         [ -L $folder/.git ] && continue
 
         if [ -e $folder/.ask-auto-update ] ; then
-            read -p "want to check folder '$folder' (y/N)? " >&2
-            [ "${REPLY,,}" != "y" ] && continue
+            if false ; then
+                read -p "want to check folder '$folder' (y/N)? " >&2
+                [ "${REPLY,,}" != "y" ] && continue
+            fi
             which logstuff >& /dev/null && logstuff on
         fi
 
