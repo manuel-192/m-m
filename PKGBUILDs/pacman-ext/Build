@@ -34,7 +34,23 @@ HasSumDef()    { grep -P '^[a-z0-9]*sums=|^[a-z0-9]*sums_[a-z0-9_]*=' "$1" >/dev
 
 Build() {
     local progname="${0##*/}"
-    [ -r PKGBUILD ] || DIE "PKGBUILD not found."
+
+    # Need file PKGBUILD in the working folder.
+    [ -r PKGBUILD ] || DIE "PKGBUILD not found or readable."
+
+    # PKGBUILD must be a hard link for certain packages.
+    case "${PWD##*/}" in
+        eos-bash-shared | eos-pkgbuild-setup | welcome)
+            local -r hard_link_count="$(/bin/ls -l PKGBUILD | /bin/awk '{print $2}')"
+            if [ "$hard_link_count" = "1" ] ; then
+                read -p "$PWD/PKGBUILD is not a hard link. Continue $progname (y/N)? " >&2
+                case "$REPLY" in
+                    [Yy]*) ;;
+                    *) exit 0 ;;
+                esac
+            fi
+            ;;
+    esac
 
     local -r RED=$'\e[0;91m'         # starts this foreground text color
     local -r GREEN=$'\e[0;92m'
