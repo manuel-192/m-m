@@ -17,6 +17,8 @@ Main() {
         shift
     done
 
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1   # needs EOS_ROOTER
+
     local commands=""                                       # commands will be collected to this variable
     local pacdiff_files="$(/bin/pacdiff --output)"          # find .pac* files
     
@@ -24,7 +26,7 @@ Main() {
         commands+="$(Backup)"                               # backup most changed files for accident safety
         commands+="; DIFFPROG=/bin/meld /bin/pacdiff"       # actual pacdiffer
         commands="${commands#; }"                           # skip leading "; " of the command line
-        sudo bash -c "$commands"                            # run the pacdiffer
+        $EOS_ROOTER "$commands"                             # run the pacdiffer
     else
         Info "Nothing to do."
         return 2
