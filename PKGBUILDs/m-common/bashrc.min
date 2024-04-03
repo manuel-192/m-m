@@ -1030,6 +1030,8 @@ EOF
 
     PROMPT_COMMAND=my_prompt_command
 
+    export HISTFILESIZE=10
+    export HISTSIZE=100
     export HISTCONTROL="erasedups"
     FIGNORE=".o:~"                      # ignored suffixes in filename completion
 
@@ -1053,7 +1055,7 @@ EOF
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
     Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
-    Alias history-del        "history -cwc && rm -f ~/.bash_history"
+    # Alias history-del        "history -cwc && rm -f ~/.bash_history"
     Alias history-fuzzy      "history | fzf --tac --no-sort"
     Alias history-select     "history | fzf --tac --no-separator --no-info"
     Alias hlp                "eos-man"
@@ -1128,8 +1130,8 @@ EOF
             bash -c "$cmd"
         }
         if which logstuff &> /dev/null ; then
-            Reboot()   { _dispatch_my_cmd "logstuff off && sync && Power-routines -s reboot" ; }
-            Poweroff() { _dispatch_my_cmd "history -c && history -w && logstuff off && sync && Power-routines -s poweroff" ; }
+            Reboot()   { _dispatch_my_cmd "history-del && logstuff off && sync && Power-routines -s reboot" ; }
+            Poweroff() { _dispatch_my_cmd "history-del && logstuff off && sync && Power-routines -s poweroff" ; }
         else
             Reboot()   { _dispatch_my_cmd "sync && Power-routines -s reboot" ; }
             Poweroff() { _dispatch_my_cmd "history -c && history -w && sync && Power-routines -s poweroff" ; }
