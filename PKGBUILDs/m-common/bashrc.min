@@ -1121,7 +1121,6 @@ EOF
         }
         reboot()   { _boot_stuff ; }
         poweroff() { _boot_stuff ; }
-        alias bye=poweroff
     else
         _dispatch_my_cmd() {
             local cmd="$1"
@@ -1129,20 +1128,26 @@ EOF
             sleep 1
             bash -c "$cmd"
         }
-        if which logstuff &> /dev/null ; then
-            Reboot()   { _dispatch_my_cmd "history-del && logstuff off && sync && Power-routines -s reboot" ; }
-            Poweroff() { _dispatch_my_cmd "history-del && logstuff off && sync && Power-routines -s poweroff" ; }
-        else
-            Reboot()   { _dispatch_my_cmd "sync && Power-routines -s reboot" ; }
-            Poweroff() { _dispatch_my_cmd "history -c && history -w && sync && Power-routines -s poweroff" ; }
-        fi
-        Nap()          { _dispatch_my_cmd "sync && Power-routines -s suspend" ; }
-        Alias ramsleep   Nap
-        Alias bye        Poweroff
-        Alias poweroff   Poweroff
-        Alias reboot     Reboot
-        Alias restart    Reboot
+
+        POWER() {
+            local common_cmds="sync && Power-routines -s"
+
+            which logstuff &> /dev/null && common_cmds="logstuff off && $common_cmds"
+
+            case "$1" in
+                suspend | ramsleep) _dispatch_my_cmd "               $common_cmds suspend" ;;
+                reboot | restart)   _dispatch_my_cmd "               $common_cmds reboot" ;;
+                poweroff | bye)     _dispatch_my_cmd "history-del    $common_cmds poweroff" ;;
+                *)  echo "sorry, $FUNCNAME does not support $1" ;;
+            esac
+        }
+        reboot()   { POWER $FUNCNAME ; }
+        poweroff() { POWER $FUNCNAME ; }
+
+        ramsleep() { POWER suspend ; }
     fi
+    Alias bye      poweroff
+    Alias restart  reboot
 
     #############################################################
     # bash completions
