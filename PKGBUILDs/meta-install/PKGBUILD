@@ -5,7 +5,7 @@ pkgname=meta-install
 pkgdesc="Meta packages to install.."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=1
+pkgrel=2
 arch=(any)
 license=(GPL)
 depends=(
@@ -24,6 +24,7 @@ depends=(
     cd-extended
     emacs-tweaks
     hlp
+    m-common
     meld-rcs
     pacman-ext
     pkgcheck
