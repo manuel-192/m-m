@@ -1,0 +1,3 @@
+#!/bin/bash
+
+history -cwc && rm -f ~/.bash_history
