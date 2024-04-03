@@ -22,7 +22,11 @@ RefreshInfo() {
 ShowFiles() {
     # Show downloadable files from the fetched download page.
     RefreshInfo "$@"
-    grep "\-iso\.tar\.gz" $datafile | sed -E 's|.*">(.*-iso\.tar\.gz)<.*|\1|'
+    grep EndeavourOS[-_] $datafile | sed -E 's|.*">(En.*)</a.*|\1|'                                  # all downloads
+
+    # grep 'x86_64\.iso<' $datafile | sed -E 's|.*">(.*x86_64\.iso)<.*|\1|'                          # .iso
+    # grep 'x86_64\.iso\.sha512sum<' $datafile | sed -E 's|.*">(.*x86_64\.iso\.sha512sum)<.*|\1|'    # .iso.sha512sum
+    # grep "\-iso\.tar\.gz" $datafile | sed -E 's|.*">(.*-iso\.tar\.gz)<.*|\1|'                      # -iso.tar.gz
 }
 
 FetchIsoFile() {
