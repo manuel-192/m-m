@@ -5,7 +5,7 @@
 Main()
 {
     local progname=${0##*/}
-    local columns=yes
+    local columns=no
     local fmtix="" ix fmt=""
     local args=() arg
     local separator="|"
@@ -13,15 +13,11 @@ Main()
     ix=0
     for arg in "$@" ; do
         case "$arg" in
-            --columns=*)
-                columns="${arg#*=}"
-                case "$columns" in
-                    yes|no) ;;
-                    *) DIE "option value $arg not supported" ;;
-                esac
+            --columns | -c)
+                columns=yes
                 continue   # don't change ix
                 ;;
-            --separator=*)
+            --cutter=* | -C=*)
                 separator="${arg#*=}"
                 continue   # don't change ix
                 ;;
