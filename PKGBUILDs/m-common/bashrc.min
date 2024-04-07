@@ -1022,6 +1022,50 @@ EOF
         $sudo /bin/mount "$@"
     }
 
+    makepkg-error() {
+        _makepkg_error_msg() { echo "  ${FUNCNAME[1]}: " "$@" >&2 ; }
+        case "$1" in
+            0)  _makepkg_error_msg "Success." ;;
+            1)  _makepkg_error_msg "Unknown cause of failure." ;;
+            2)  _makepkg_error_msg "Error in configuration file." ;;
+            3)  _makepkg_error_msg "User specified an invalid option." ;;
+            4)  _makepkg_error_msg "Error in user-supplied function in PKGBUILD." ;;
+            5)  _makepkg_error_msg "Failed to create a viable package." ;;
+            6)  _makepkg_error_msg "A source or auxiliary file specified in the PKGBUILD is missing." ;;
+            7)  _makepkg_error_msg "The PKGDIR is missing." ;;
+            8)  _makepkg_error_msg "Failed to install dependencies." ;;
+            9)  _makepkg_error_msg "Failed to remove dependencies." ;;
+            10) _makepkg_error_msg "User attempted to run makepkg as root." ;;
+            11) _makepkg_error_msg "User lacks permissions to build or install to a given location." ;;
+            12) _makepkg_error_msg "Error parsing PKGBUILD." ;;
+            13) _makepkg_error_msg "A package has already been built." ;;
+            14) _makepkg_error_msg "The package failed to install." ;;
+            15) _makepkg_error_msg "Programs necessary to run makepkg are missing." ;;
+            16) _makepkg_error_msg "Specified GPG key does not exist." ;;
+            *)  _makepkg_error_msg "[Undefined error code '$1', see 'man makepkg'!]" ;;
+        esac
+    }
+    pacman-branch() {  # if using any testing repo, output "testing", otherwise output "stable"
+        local out=$(pacman-conf --repo-list | grep -P '\-testing$|\-unstable$')
+        [ "$out" ] && echo "testing due to: $(echo $out)" || echo stable
+    }
+    sleeps() {
+        # Sleep X seconds, show counter to 0.
+        # Saved if ever needed, probably not...
+        local seconds="$1"
+        local xx
+        if [ "$seconds" = "" ] ; then
+            seconds=0
+        fi
+        for xx in $(seq $((seconds-1)) -1 0)
+        do
+            printf "  seconds left:  %-03d\x0d" "$xx"
+            /usr/bin/sleep 1
+        done
+        echo ""
+    }
+
+
     #############################################################
     # variables
     #############################################################
@@ -1047,7 +1091,6 @@ EOF
 
     Alias Build-asdeps       "Build --pacman='--asdeps'"
     Alias bat                "bat --style=number"
-    Alias pacman-branch      "pacman-conf --repo-list | grep '^testing$' || echo stable"
     Alias ci                 "ci -u"
     Alias cls                "clear"
     Alias codium             "codium -n"
