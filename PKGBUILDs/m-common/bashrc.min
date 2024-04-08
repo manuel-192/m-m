@@ -100,7 +100,7 @@ SettingsCommon()
         [ "$repo" ] || { echo "give a repo name"; return 1; }
         pacman-conf --repo-list | grep -w "$repo" >/dev/null || { echo "repo '$repo' not supported"; return 1; }
 
-        LANG=C pacman -Ss | grep "^$repo/" | grep -w installed | awk '{print $1}' | sed "s|^$repo/||"
+        LANG=C pacman -Ss | grep "^$repo/" | grep -w "\[installed\]" | awk '{print $1}' | sed "s|^$repo/||"
     }
     who-needs-this-package() {                                                          # who has this dependency package
         _C_who-needs-this-package() {
