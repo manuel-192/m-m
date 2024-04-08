@@ -95,6 +95,13 @@ SettingsCommon()
     AliasIfType()  { AliasIfCommon type  "$@" ; }
     Unalias()      { unalias "$1" 2>/dev/null ; }
 
+    packagesof() {       # show packages installed from a given repo
+        local repo="$1"
+        [ "$repo" ] || { echo "give a repo name"; return 1; }
+        pacman-conf --repo-list | grep -w "$repo" >/dev/null || { echo "repo '$repo' not supported"; return 1; }
+
+        LANG=C pacman -Ss | grep "^$repo/" | grep -w installed | awk '{print $1}' | sed "s|^$repo/||"
+    }
     who-needs-this-package() {                                                          # who has this dependency package
         _C_who-needs-this-package() {
             local cur prev words cword split
