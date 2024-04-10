@@ -37,7 +37,7 @@ tar-name-components() {
 AskFolder() {
     RequireApp fzf
 #    local -r name=$(printf "%s\n" $(_pb --reponames) | fzf)
-    repodir=$(printf "%s\n" $(_pb --reponames) | fzf)
+    repodir=$(printf "%s\n" $(_pb --reponames) | sort | fzf)
 #    [ -n "$name" ] && $progname "$name"
     [ "$repodir" ] && _pb3
     WaitToQuit
