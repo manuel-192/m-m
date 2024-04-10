@@ -744,61 +744,6 @@ EOF
 
     #pf() { pgrep -a "$@" ; } # list processes
 
-    gpg-verify() {
-        local file
-
-        for file in "$@" ; do
-            case "$file" in
-                *.sig)
-                    bashrc.min_echo2 "$file"
-                    /bin/gpg --verify "$file" |& sed 's|^|    |'
-                    ;;
-                *)
-                    bashrc.min_echo2 "==> $FUNCNAME: sorry, '$file' is likely not a signature file."
-                    ;;
-            esac
-        done
-    }
-
-    gpg-sign-prepare-main() {
-        case "$1" in
-            --bg) ;;
-            *)    $FUNCNAME --bg "$@" &
-                  return
-                  ;;
-        esac
-
-        local gpg_code=0
-        local SIGNER=""
-        local tmpfile=""
-        local conf="$HOME/.signer-prep.conf"
-
-        while true ; do
-            [ "$SIGNER" ] || SIGNER="$(gpg -K | grep -w ^uid | awk '{print $NF}' | sed 's|[<>]||g')"
-            if [ $(echo "$SIGNER" | wc -l) -ne 1 ] ; then
-                echo "==> Sorry, 0 or >1 signers found." >&2
-                echo "==> Checking $conf:" >&2
-                source "$conf" || return 1
-                [ "$SIGNER" ]  || { echo "sorry, $conf failed." >&2; return 1; }
-            fi
-            tmpfile=$(mktemp)
-            gpg --local-user "$SIGNER" \
-                --output "$tmpfile.sig" --detach-sign "$tmpfile" \
-                || gpg_code=$?
-            SIGNER="khkjdhfhfkdhkfhkdjhkdhkdfhdfuhiuhfeuhiuwehiuh"
-            SIGNER=""
-            rm -f "$tmpfile" "$tmpfile.sig"
-
-            if [ $gpg_code -eq 0 ] ; then
-                sleep 5m
-            else
-                echo "$FUNCNAME: gpg failed with code $gpg_code." >&2
-                return $gpg_code
-            fi
-        done
-    }
-
-
     _Check_CDPATH_ARR() {  # CDPATH_ARR should contain unique folders
         local arrout=()
         local dir added
