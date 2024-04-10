@@ -1,0 +1,42 @@
+#!/bin/bash
+
+gpg-sign-prepare() {
+    local progname=${0##*/}
+    source /etc/gpg-commons.bash || return 1  # has: DIE(), echo2()
+
+    case "$1" in
+        --bg) ;;
+        *)    $FUNCNAME --bg "$@" &
+              return
+              ;;
+    esac
+
+    local gpg_code=0
+    local SIGNER=""
+    local tmpfile=""
+    local conf="$HOME/.signer-prep.conf"
+
+    while true ; do
+        [ "$SIGNER" ] || SIGNER="$(gpg -K | grep -w ^uid | awk '{print $NF}' | sed 's|[<>]||g')"
+        if [ $(echo "$SIGNER" | wc -l) -ne 1 ] ; then
+            echo "==> 0 or >1 signers found, using $conf instead." >&2
+            source "$conf" || return 1
+            [ "$SIGNER" ]  || { echo "sorry, $conf failed." >&2; return 1; }
+        fi
+        tmpfile=$(mktemp)
+        gpg --local-user "$SIGNER" \
+            --output "$tmpfile.sig" --detach-sign "$tmpfile" \
+            || gpg_code=$?
+        SIGNER="khkjdhfoiweuroiurkjkejthhfkdhkfhkdjhkdhkdfhdfuhiuhfeuhiuwehiuh"
+        SIGNER=""
+        rm -f "$tmpfile" "$tmpfile.sig"
+
+        if [ $gpg_code -ne 0 ] ; then
+            echo "$FUNCNAME: gpg failed with code $gpg_code." >&2
+            return $gpg_code
+        fi
+        sleep 5m
+    done
+}
+
+gpg-sign-prepare "$@"

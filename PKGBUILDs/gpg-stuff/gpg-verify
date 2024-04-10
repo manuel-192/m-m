@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Verify files with the given signature files.
+
+gpg-verify() {
+    local progname=${0##*/}
+    local file
+    source /etc/gpg-commons.bash || return 1  # has: DIE(), echo2()
+
+    for file in "$@" ; do
+        case "$file" in
+            *.sig) echo2 "$file"
+                   /bin/gpg --verify "$file" |& sed 's|^|    |'
+                   ;;
+            -*)    DIE "sorry, option '$file' is not supported."
+                   ;;
+            *)     DIE "sorry, '$file' is likely not a signature file."
+                   ;;
+        esac
+    done
+}
+
+gpg-verify "$@"
