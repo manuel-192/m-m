@@ -5,7 +5,7 @@ pkgname=gpg-stuff
 pkgdesc="Common apps, libs, and settings for gpg."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=1.1
+pkgrel=1.2
 arch=('any')
 license=('GPL')
 
@@ -15,7 +15,7 @@ source=(
     $url/gpg-verify
 )
 sha512sums=('ba7e724d28d2979dfabd6a795e489a8ddf41f8d0d8e65a251fe6a7270c0d47ef621c54869b1ae4875b29cde98dec9f630169a383eae6cadac6cc04592375df1c'
-            'f56d9d3d289f24223ee7f3c11f968a3c242f5d7c77ffef5f0ec3889fc53a57493db70141fbc575bb8feae275783f9bdfd0ee1cf015d9091cd8a541739a453655'
+            'bec06f4954d3449a963571b571f4885df899ac2ec153bbb65b1ee0c67eb553b7994d7cd5d557533ab0c7515c44d585d8ec33f48126ad60b8751fcf292d8f0681'
             '794d8e87bcbc2c518cb36cd08710713343adf49ab52b9987fcda188569bc41fd90e01211a8251cca4ba965ba6bebcbe42422d69582dcd1c3f71d32882010f64b')
 
 package() {
