@@ -36,10 +36,12 @@ tar-name-components() {
 
 AskFolder() {
     RequireApp fzf
-#    local -r name=$(printf "%s\n" $(_pb --reponames) | fzf)
-    repodir=$(printf "%s\n" $(_pb --reponames) | sort | fzf)
-#    [ -n "$name" ] && $progname "$name"
-    [ "$repodir" ] && _pb3
+    repodir=$(printf "%s\n" $(_pb --reponames) --assets.conf-check --pulls | sort -V | fzf)
+    case "$repodir" in
+        "") ;;
+        -*) _pb "$repodir" ;;
+        *) _pb3
+    esac
     WaitToQuit
     exit
 }
