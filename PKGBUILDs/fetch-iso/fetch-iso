@@ -9,7 +9,10 @@ DIE() {
 GetInfoPage() {
     # Make sure the download data is stored in a local file.
     if [ ! -e $datafile ] ; then
-        curl --fail -Lsm 30 -o$datafile -u "$HELLO" $URLBASE || DIE "failed fetching the info page '$URLBASE'."
+        case "$getter" in
+            curl) /bin/curl --fail -Lsm 30 -o$datafile -u "$HELLO" $URLBASE                      || DIE "failed fetching the info page '$URLBASE'." ;;
+            wget) /bin/wget -qO $datafile --user "${HELLO%:*}" --password "${HELLO#*:}" $URLBASE || DIE "failed fetching the info page '$URLBASE'." ;;
+        esac
         [ "$1" != "-q" ] && echo2 "==> Info about available downloads refreshed."
     fi
 }
@@ -33,8 +36,14 @@ FetchIsoFile() {
     # Fetch the given ISO file.
     echo2 "==> Downloading..."
     local file="$1"
-    curl --fail --remote-name-all -u "$HELLO" "$URLBASE/$file" || exitcode=$?
-    [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
+    case "$getter" in
+        curl) /bin/curl --fail --remote-name-all -u "$HELLO" "$URLBASE/$file" || exitcode=$?
+              [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
+              ;;
+        wget) /bin/wget -q --show-progress --user "${HELLO%:*}" --password "${HELLO#*:}" "$URLBASE/$file" || exitcode=$?
+              [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'wget'" "$exitcode"
+              ;;
+    esac
 }
 
 Usage() {
@@ -56,13 +65,23 @@ Main() {
     local -r config="$HOME/.config/$progname.conf"
     local URLBASE=""
     local HELLO=""
+    local APP=""
     local exitcode=0
     local file
     local datafile=/tmp/$progname.tmp   # remove this if new files should be available
+    local getter=curl                   # curl is used by default
 
+    # config file sets important values
     source "$config" || DIE "file $config has a problem"
+
     [ "$URLBASE" ]   || DIE "URLBASE has no value in $config"
     [ "$HELLO" ]     || DIE "HELLO has no value in $config"
+    [ "$APP" ]       && getter="$APP"
+
+    case "$getter" in
+        wget | curl) ;;
+        *) DIE "value '$getter' for APP in $config is not supported. Use either 'wget' or 'curl'." ;;
+    esac
 
     if [ "$1" ] ; then
         while [ "$1" ] ; do
