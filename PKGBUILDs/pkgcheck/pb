@@ -148,6 +148,13 @@ CheckHardLink() {
     esac
 }
 
+RunIfExists() {
+    local app
+    for app in "$@" ; do
+        which "${app## *}" >/dev/null && { echo2 "==> $app:"; "$app"; }
+    done
+}
+
 _pb() {
     local -r RED=$'\e[0;91m'
     local -r GREEN=$'\e[0;92m'
@@ -218,6 +225,8 @@ Params:
         Download a generated mirrorlist from the Arch web page. Useful for testing only.
     --local-repo
         Check and build local repo packages.
+    --extras
+        Run some extra tests.
 
 Options:
     -b                       Directly try to build packages.
@@ -240,6 +249,10 @@ EOF
                 ;;
             --editme)
                 Edit --show-cmd "$0"
+                return
+                ;;
+            --extras)
+                RunIfExists arch-audit cookbook
                 return
                 ;;
             --dump-options)
