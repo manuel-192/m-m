@@ -1330,22 +1330,6 @@ EOF
 
 bashrc() { # load updated bash settings
     case "$1" in
-        --update)
-            return   # nothing to do anymore
-
-            if false ; then
-                NextInfo2 "Updating settings ..."
-                if WaitForConnection 10 ; then
-                    pushd $(dirname "$BASH_SOURCE") >/dev/null && git pull >/dev/null
-                    popd >/dev/null
-                    bashrc.min_echo2 " done."
-                    return
-                else
-                    bashrc.min_echo2 ""
-                    bashrc.min_warning "sorry, no internet connection, update failed."
-                fi
-            fi
-            ;;
         --plain)
             _COMMON_SETTINGS_VERBOSE=no           # common verbosity
             _COMMON_SETTINGS_VERBOSE_ALIAS=no     # verbosity specific to Alias()
@@ -1379,9 +1363,8 @@ EOF
             SettingsCommon
             ;;
         *)
-            bashrc --update
             bashrc --plain
-            [ -e ~/.bashrc ] && source ~/.bashrc
+            # [ -e ~/.bashrc ] && source ~/.bashrc
             bashrc.min_echo2 "==> bash settings updated."
             ;;
     esac
