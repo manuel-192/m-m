@@ -100,7 +100,12 @@ Main() {
             fzf --exact +i --tac
             --header="Navigation: Up, Down, PgUp, PgDn; ENTER=accept, ESC=quit"
         )
-        local selected=$(ShowFiles -q | "${fzf[@]}" )
+        if true ; then
+            local selected=$(${progname}-show-all-info | "${fzf[@]}" )
+            selected=${selected%% *}
+        else
+            local selected=$(ShowFiles -q | "${fzf[@]}" )
+        fi
         if [ "$selected" ] ; then
             while true ; do
                 read -p "Download $selected now (Y/n)? "

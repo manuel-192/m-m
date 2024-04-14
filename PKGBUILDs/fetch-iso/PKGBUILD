@@ -5,8 +5,8 @@
 pkgname=fetch-iso
 pkgdesc="Fetch ISO"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24
-pkgrel=1.8
+pkgver=24.4
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -16,9 +16,11 @@ backup=(etc/$pkgname.conf)
 source=(
     $url/$pkgname
     $url/$pkgname.completion
+    $url/$pkgname-show-all-info
 )
-sha512sums=('166c1f3fbe65050afc543977b768b54029eede012ea1eed3e63d7930d25d7b3b67861fb7e0081daa97a94bcb98a22693e6a4d7227c9c13f4521bfbe7e0edf2b7'
-            'bbe87775fd414169f9138fd876126b0ac440769ee33544d6148a6bbdd520a37a41b2896eecce2cf607c13a53ac197deda0f65da1e2195da2f6f6b4f45d4d1f16')
+sha512sums=('2550276071d161c7c234bd500ae1a3cbb966600b048c24d1583a68fc05dd334e2f12548a5a3001fc8e7148dd41b057eabae691ce4013dc2c3836fe5c5963a74a'
+            'bbe87775fd414169f9138fd876126b0ac440769ee33544d6148a6bbdd520a37a41b2896eecce2cf607c13a53ac197deda0f65da1e2195da2f6f6b4f45d4d1f16'
+            'ebb906347b66ec53831dabd02fa12a93ab9687b085cbdc7043541ddc961eb456b419e1a22666170520fd5bc23d552cb1ebac7f141835756555e27c5e53ce3961')
 
 package() {
     local xx name
