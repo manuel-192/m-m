@@ -37,7 +37,7 @@ FetchIsoFile() {
     echo2 "==> Downloading..."
     local file="$1"
     case "$getter" in
-        curl) /bin/curl --fail --remote-name-all -u "$HELLO" "$URLBASE/$file" || exitcode=$?
+        curl) /bin/curl --fail -m 300 --remote-name-all -u "$HELLO" "$URLBASE/$file" || exitcode=$?
               [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
               ;;
         wget) /bin/wget -q --show-progress --user "${HELLO%:*}" --password "${HELLO#*:}" "$URLBASE/$file" || exitcode=$?

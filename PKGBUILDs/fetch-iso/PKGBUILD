@@ -5,7 +5,7 @@
 pkgname=fetch-iso
 pkgdesc="Fetch ISO"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.4
+pkgver=24.4.1
 pkgrel=1
 
 arch=('any')
@@ -18,7 +18,7 @@ source=(
     $url/$pkgname.completion
     $url/$pkgname-show-all-info
 )
-sha512sums=('2550276071d161c7c234bd500ae1a3cbb966600b048c24d1583a68fc05dd334e2f12548a5a3001fc8e7148dd41b057eabae691ce4013dc2c3836fe5c5963a74a'
+sha512sums=('93ac21722e95f8906a57e67b087c361e00c1b22a44d35bc8d3bdc35ec71e0bd1de21cbebedda318fde1052f55ddc55e23cd968baded3792eed40d6034930734f'
             'bbe87775fd414169f9138fd876126b0ac440769ee33544d6148a6bbdd520a37a41b2896eecce2cf607c13a53ac197deda0f65da1e2195da2f6f6b4f45d4d1f16'
             'ebb906347b66ec53831dabd02fa12a93ab9687b085cbdc7043541ddc961eb456b419e1a22666170520fd5bc23d552cb1ebac7f141835756555e27c5e53ce3961')
 
