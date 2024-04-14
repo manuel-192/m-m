@@ -1079,6 +1079,7 @@ EOF
 
     [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc.min_echo2 "==> $FUNCNAME: aliases"
 
+    Alias akm                "akm --no-progress --quiet"
     Alias Build-asdeps       "Build --pacman='--asdeps'"
     Alias bat                "bat --style=number"
     Alias ci                 "ci -u"
