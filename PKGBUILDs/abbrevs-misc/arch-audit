@@ -23,7 +23,9 @@ _arch-audit() {
             echo "$out" | TextInColor "High risk" $RED | TextInColor "Medium risk" $YELLOW | TextInColor "Low risk" $BLUE
         } | column -t -s'|'
     else
-        echo "Nothing found."
+        case "$*" in
+            -u | --upgradable) echo "Nothing found." ;;
+        esac
     fi
 }
 
