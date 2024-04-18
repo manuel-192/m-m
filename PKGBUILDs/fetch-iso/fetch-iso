@@ -107,15 +107,19 @@ Main() {
             local selected=$(ShowFiles -q | "${fzf[@]}" )
         fi
         if [ "$selected" ] ; then
-            while true ; do
-                read -p "Download $selected now (Y/n)? "
-                case "$REPLY" in
-                    [Nn]*) return ;;
-                    "" | [Yy]*) FetchIsoFile $selected ; return ;;
-                esac
-            done
+            read -p "Download $selected now (Y/n)? "
+            case "$REPLY" in
+                "" | [Yy]*) FetchIsoFile $selected ;;
+                *) return 1 ;;
+            esac
+        else
+            DIE "nothing selected"
         fi
     fi
+
+    # Exit code:
+    #    0       download OK
+    #    else    failure, nothing downloaded
 }
 
 Main "$@"
