@@ -383,11 +383,11 @@ CheckNvidia() {
     [ "$optimize_checks$updates_pacman" = "yes" ] && return
 
     EMPHASIZED_COLOR --no-newline-at-end "Check Nvidia & kernel:"
-    if PkgInUpdates nvidia && ! PkgInUpdates linux  ; then
-        DIE "packages 'nvidia' and 'linux' must be updated together"
+    if PkgInUpdates linux && ! PkgInUpdates nvidia  ; then
+        DIE "package nvidia must be updated together with linux"
     fi
-    if PkgInUpdates nvidia-lts && ! PkgInUpdates linux-lts  ; then
-        DIE "packages 'nvidia-lts' and 'linux-lts' must be updated together"
+    if PkgInUpdates linux-lts && ! PkgInUpdates nvidia-lts  ; then
+        DIE "package nvidia-lts must be updated together with linux-lts"
     fi
     RESULT "OK"
 }
