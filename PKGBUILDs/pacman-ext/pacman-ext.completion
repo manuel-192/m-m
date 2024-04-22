@@ -28,33 +28,38 @@ _pacman_ext_all() {
     compopt -o nosort
 }
 
+IncludesAUR() {
+    local xx
+    for xx in "${words[@]}" ; do
+        case "$xx" in
+            --aur | --paru | --yay) return 0 ;;
+        esac
+    done
+    return 1
+}
+
 _pacman_ext_pkgs() {
-    local pkgs="$(expac -Q %n)"
-    if [ -z "$pkgs" ] ; then
-        pkgs="$(expac -S %n | sort)"
-        if [ -z "$pkgs" ] ; then
-            pkgs="$(yay -Pc | awk '{print $1}' | sort)"
-        fi
+    if IncludesAUR ; then
+        _yay "$@"
+    else
+        _pacman "$@"
     fi
-    _pacman-ext_complete "$pkgs"
 }
 
 _pacman-ext_() 
 {
     source /usr/share/bash-completion/completions/pacman || return 1
+    source /usr/share/bash-completion/completions/yay || return 1
 
     local cur prev words #cword split
     _init_completion -s || return
 
-    #local native_options="--paru --yay --aur --dg --downgrade --no-banner --show-cmd --wait-enter --build"
     local native_options="$(pacman-ext --show-native-options)"
 
     # Handle options that need sub-options.
     # Each option "case" should return immediately.
 
     case "$prev" in
-        "") _pacman_ext_options "${words[*]}" ;;
-        -*) _pacman_ext_all "${words[*]}" ;;
         *)
             # Handle all top-level parameters.
             case "$cur" in
