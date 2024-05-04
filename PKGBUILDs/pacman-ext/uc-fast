@@ -167,12 +167,12 @@ MainNext() {
     if [ -f "$lastupdate_saved" ] ; then
         diff "$lastupdate" "$lastupdate_saved" >/dev/null
         if [ $? -eq 0 ] ; then   # && [ -e $right_after_boot_file ] ; then
-            Verbose "No ${os} updates.\n"
+            Verbose "no\n"
             rm -f "$lastupdate"
         else
             # touch $right_after_boot_file
 
-            Verbose "${os} updates *may* be available.\n"  # ... but the updated packages might *not* be installed!
+            Verbose "maybe\n"  # ... but the updated packages might *not* be installed!
             case "$os" in
                 Arch)
                     Verbosex "    %-30s: %s\n" "$lastupdate"       "$(date --date="@$(head -n1 "$lastupdate")")"
