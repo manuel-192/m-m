@@ -79,7 +79,7 @@ Main() {
     local out=""
 
     Operate "$@"
-    echo "$out" | column -t -s'|'
+    echo "$out" | column -t -o" " -s'|'
 
     if [ $ret_arch -eq $EXIT_UPDATES_YES ] || [ $ret_eos -eq $EXIT_UPDATES_YES ] || [ $ret_aur -eq $EXIT_UPDATES_YES ]
     then
@@ -167,12 +167,12 @@ MainNext() {
     if [ -f "$lastupdate_saved" ] ; then
         diff "$lastupdate" "$lastupdate_saved" >/dev/null
         if [ $? -eq 0 ] ; then   # && [ -e $right_after_boot_file ] ; then
-            Verbose "no\n"
+            Verbose "0\n"
             rm -f "$lastupdate"
         else
             # touch $right_after_boot_file
 
-            Verbose "maybe\n"  # ... but the updated packages might *not* be installed!
+            Verbose "?\n"  # ... but the updated packages might *not* be installed!
             case "$os" in
                 Arch)
                     Verbosex "    %-30s: %s\n" "$lastupdate"       "$(date --date="@$(head -n1 "$lastupdate")")"
