@@ -133,7 +133,7 @@ Main() {
     local -r maxlen=$(echo "$out" | wc -L)
 
     BannerLine '='
-    echo "$out"
+    echo "$out" | sort
     BannerLine '='
 }
 
