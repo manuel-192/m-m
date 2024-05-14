@@ -108,6 +108,7 @@ Main() {
 
     local out=""
     local SEP=$'\e'
+    local data=""
 
     case "$has_repo" in
         no)  repo=""; source="-Q" ;;
@@ -115,8 +116,8 @@ Main() {
     esac
 
     case "$has_version" in
-        no)  local -r data=$(expac $source "$repo%n${SEP}%d" "${pkgnames[@]}") ;;
-        yes) local -r data=$(expac-aur -S "$repo%n${SEP}%v${SEP}%d" "${pkgnames[@]}") ;;
+        no)  data=$(expac $source "$repo%n${SEP}%d" "${pkgnames[@]}"        | sort) ;;
+        yes) data=$(expac-aur -S "$repo%n${SEP}%v${SEP}%d" "${pkgnames[@]}" | sort) ;;
     esac
 
     if [ "$header" = "yes" ] ; then
@@ -133,7 +134,7 @@ Main() {
     local -r maxlen=$(echo "$out" | wc -L)
 
     BannerLine '='
-    echo "$out" | sort
+    echo "$out"
     BannerLine '='
 }
 
