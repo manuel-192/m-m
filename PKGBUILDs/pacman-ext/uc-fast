@@ -110,12 +110,19 @@ GetUrlFromMirrorsFile() {
     url=${url#*= }
 }
 
+GetEosPart() {
+    grep "^Server =" /etc/pacman.d/endeavouros-mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/$arch|\1|'
+}
+GetArchPart() {
+    grep "^Server =" /etc/pacman.d/mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/os/$arch|\1|'
+}
+
 DiscoverUrl() {
     [ -r /etc/$progname.conf ] && source /etc/$progname.conf &>/dev/null
     case "$os" in
         EndeavourOS)
             if [ "$EOS_MIRROR" ] ; then
-                url="$EOS_MIRROR"
+                url="$(GetEosPart $EOS_MIRROR)"/$file
             else
                 GetUrlFromMirrorsFile
                 url=${url%\$repo/\$arch}$file
@@ -123,7 +130,7 @@ DiscoverUrl() {
             ;;
         Arch)
             if [ "$ARCH_MIRROR" ] ; then
-                url="$ARCH_MIRROR"
+                url="$(GetArchPart $ARCH_MIRROR)"/$file
             else
                 GetUrlFromMirrorsFile
                 url=${url%\$repo/os/\$arch}$file
