@@ -68,11 +68,8 @@ Main() {
 
     OptionsBeforeSudo "${args[@]}"
 
-    if [ "$EUID" != "0" ] ; then
-        InstantCheck
-        sudo "/bin/$progname" "${args[@]}"
-        Exit $?
-    fi
+    InstantCheck
+
     local updates_pacman=""
     local updates_aur=""
     local AUR_install=()
@@ -85,7 +82,7 @@ Main() {
 
     EMPHASIZED_COLOR "COMMAND: ${RED}$progname $*"
 
-    CheckPrivileges
+    # CheckPrivileges
     CheckConnection
     CheckDbLock
     Xadditions begin "$begin"
@@ -215,12 +212,10 @@ Options() {
         OptionsBeforeSudo)               # handle a subset of given options before possible sudo
             while true ; do
                 case "$1" in
-                    --) break ;;
-                    -a|--aur | --help | --dump-options | -i|--instant|--instant-no-aur | --verbose | --debug)
+                    --) shift; break ;;
+                    -a|--aur | -h|--help | --dump-options | -i|--instant|--instant-no-aur | --verbose | --debug | --clear-keyrings | --clear-databases)
                         Options $1       # handle these options here
                         ;;
-                    --*) ;;              # these will be handle elsewhere
-                    -*h*) Options -h ;;  # handle -h here too
                 esac
                 shift
             done
@@ -291,10 +286,10 @@ EMPHASIZED_COLOR() {
     echo2 $lastopt "${RESET}"
 }
 
-Cmd()   { [ "$quiet" = no ] && EMPHASIZED_COLOR "$@" ":" ;             "$@" || DIE "'$* failed.'" ; }
+Cmd()   { [ "$quiet" = no ] && EMPHASIZED_COLOR "$@" ": " ;             "$@" || DIE "'$* failed.'" ; }
 Cmd1()  { [ "$quiet" = no ] && EMPHASIZED_COLOR "$1:" ;                "$@" || DIE "'$* failed.'" ; }
 Cmd2()  { [ "$quiet" = no ] && EMPHASIZED_COLOR "COMMAND: ${RED}bash -c '$*'" ; bash -c "$*" || DIE "'$* failed.'" ; }
-Cmd3()  { [ "$quiet" = no ] && EMPHASIZED_COLOR --no-newline-at-end "$RED" "$@" ":" ;  "$@" ; }
+Cmd3()  { [ "$quiet" = no ] && EMPHASIZED_COLOR --no-newline-at-end "$RED" "$@" ": " ;  "$@" ; }
 
 AsPlainUser() {
     local prompt=""
@@ -315,7 +310,7 @@ AsPlainUser() {
     done
     local cmd=""
     case "$SUDO_USER" in
-        "") cmd="/bin/runuser -u $PLAIN_USER -- $*" ;;
+        "") cmd="/bin/sudo /bin/runuser -u $PLAIN_USER -- $*" ;;
         *)  cmd="/bin/sudo -u $PLAIN_USER $*" ;;
     esac
     if [ "$quiet" = "no" ] ; then
@@ -360,18 +355,18 @@ UpdateKeyrings() {
     done
     if [ ${#updated[@]} -gt 0 ] ; then
         RESULT "keyring update"
-        Cmd pacman -S --noconfirm "${updated[@]}"
+        Cmd sudo pacman -S --noconfirm "${updated[@]}"
     else
         RESULT "OK"
     fi
 }
 
 ClearKeyrings() {
-    Cmd mv /etc/pacman.d/gnupg /root/pacman-key.bak
-    Cmd pacman-key --init
-    Cmd pacman-key --populate archlinux endeavouros
-    Cmd pacman -Syy --noconfirm archlinux-keyring endeavouros-keyring
-    Cmd pacman -Su
+    Cmd sudo mv /etc/pacman.d/gnupg /root/pacman-key.bak
+    Cmd sudo pacman-key --init
+    Cmd sudo pacman-key --populate archlinux endeavouros
+    Cmd sudo pacman -Syy --noconfirm archlinux-keyring endeavouros-keyring
+    Cmd sudo pacman -Su
 }
 
 ClearDatabases() {
@@ -404,7 +399,7 @@ CheckVirtualbox() {
         version_vbext=$(expac-aur -S %v virtualbox-ext-oracle)
         if [ "${version_vb%-*}" != "${version_vbext%-*}" ] ; then
             echo2 ""
-            Cmd pacman -R  --noconfirm virtualbox-ext-oracle
+            Cmd sudo pacman -R  --noconfirm virtualbox-ext-oracle
             AUR_install+=(virtualbox-ext-oracle)
             RESULT "OK (uninstalled virtualbox-ext-oracle temporarily)"
         else
@@ -421,13 +416,13 @@ CheckPrivileges() {
 
 CheckDbLock() {
     [ "$lock_check" = "yes" ] || return
-    EMPHASIZED_COLOR --no-newline-at-end "Check database lock:"
+    EMPHASIZED_COLOR --no-newline-at-end "Check database lock: "
     local lck=/var/lib/pacman/db.lck
     if [ -e $lck ] ; then
         if fuser $lck &>/dev/null ; then
             DIE "sorry, $lck is in use"
         fi
-        rm -f $lck
+        sudo rm -f $lck
         RESULT "OK (lock removed)"
     else
         RESULT "OK"
@@ -469,11 +464,12 @@ Foreign() {
 PagerOut() {
     local updates="$1"
     local title="$2"
+    local -r options="--include-repo --include-version"
 
     if [ $pager = yes ] ; then
-        Cmd1 hook-update-description --include-repo --title="$title" $updates | less -F
+        Cmd1 hook-update-description $options --title="$title" $updates | less -F
     else
-        Cmd1 hook-update-description --include-repo --title="$title" $updates # | less -F
+        Cmd1 hook-update-description $options --title="$title" $updates # | less -F
     fi
 }
 
@@ -525,9 +521,9 @@ Sync() {
 
 Pacman-Su() {
     if [ "$optimize_checks$updates_pacman" = "yes" ] ; then
-        pacman -Su >/dev/null   # to give potential warnings!
+        sudo pacman -Su >/dev/null   # to give potential warnings!
     else
-        Cmd3 pacman -Su
+        Cmd3 sudo pacman -Su
     fi
 }
 
@@ -548,7 +544,7 @@ UpdatePackages() {
 }
 
 UpdateDatabase() {
-    Cmd3 pacman -Sy               # update package database
+    Cmd3 sudo pacman -Sy               # update package database
 }
 
 AppendCmd() { local -n _var="$1" ; _var+=" && $2" ; }
