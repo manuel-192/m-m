@@ -110,14 +110,13 @@ GetUrlFromMirrorsFile() {
     url=${url#*= }
 }
 
-GetEosPart() {
-    grep "^Server =" /etc/pacman.d/endeavouros-mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/$arch|\1|'
-}
-GetArchPart() {
-    grep "^Server =" /etc/pacman.d/mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/os/$arch|\1|'
-}
+GetEosPart()  { grep -w "^Server" /etc/pacman.d/endeavouros-mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/$arch|\1|'    ; }
+GetArchPart() { grep -w "^Server" /etc/pacman.d/mirrorlist             | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/os/$arch|\1|' ; }
 
 DiscoverUrl() {
+    local EOS_MIRROR=""
+    local ARCH_MIRROR=""
+
     [ -r /etc/$progname.conf ] && source /etc/$progname.conf &>/dev/null
     case "$os" in
         EndeavourOS)
@@ -137,6 +136,10 @@ DiscoverUrl() {
             fi
             ;;
     esac
+    case "$url" in
+        http*) ;;
+        *) DIE "$FUNCNAME: getting proper $os URL failed" ;;
+    esac
 }
 
 MainNext() {
@@ -152,7 +155,7 @@ MainNext() {
     local -r lastupdate_saved="$savedir/uc-${renamedos[$os]}-${renamedfile[$file]}"
     local -r lastupdate="${lastupdate_saved}_new"
     local lastupdate_val=""
-    local url
+    local url=""
 
     DiscoverUrl
 
