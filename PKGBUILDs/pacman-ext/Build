@@ -3,7 +3,7 @@
 DIE()         { echo2 "$progname: error:" "$@"; exit 1; }
 echo2()       { echo "$@" >&2; }
 verbose2cmd() { [ $show_commands = yes ] && echo2 "${YELLOW}""===> ""$@""${RESET}"; }
-Cmd()         { verbose2cmd "$*" ; "$@" ; }
+Cmd()         { LANG=C verbose2cmd "$*" ; "$@" ; }
 
 _Build_pkgname-pkgver-pkgrel() {
     source PKGBUILD
