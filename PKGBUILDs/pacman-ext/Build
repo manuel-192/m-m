@@ -3,7 +3,7 @@
 DIE()         { echo2 "$progname: error:" "$@"; exit 1; }
 echo2()       { echo "$@" >&2; }
 verbose2cmd() { [ $show_commands = yes ] && echo2 "${YELLOW}""===> ""$@""${RESET}"; }
-Cmd()         { LANG=C verbose2cmd "$*" ; "$@" ; }
+Cmd()         { verbose2cmd "$*" ; "$@" ; }
 
 _Build_pkgname-pkgver-pkgrel() {
     source PKGBUILD
@@ -97,7 +97,7 @@ Build() {
     if [ "$updatesums" = "yes" ] ; then
         Cmd updpkgsums || DIE "updpkgsums failed."
     fi
-    Cmd makepkg -cf $makepkg_opts || DIE "makepkg failed."
+    LANG=C Cmd makepkg -cf $makepkg_opts || DIE "makepkg failed."
 
     local files=(${Pkgname}-*.pkg.tar.zst)
 
