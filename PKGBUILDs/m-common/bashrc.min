@@ -1170,9 +1170,12 @@ EOF
             which logstuff &> /dev/null && common_cmds="logstuff off && $common_cmds"
 
             case "$1" in
-                suspend | ramsleep) _dispatch_my_cmd "               $common_cmds suspend" ;;
-                reboot | restart)   _dispatch_my_cmd "               $common_cmds reboot" ;;
-                poweroff | bye)     _dispatch_my_cmd "history-del    $common_cmds poweroff" ;;
+                suspend | ramsleep) _dispatch_my_cmd "$common_cmds suspend" ;;
+                reboot | restart)   _dispatch_my_cmd "$common_cmds reboot" ;;
+                poweroff | bye)
+                                    common_cmds="history-del && $common_cmds"
+                                    _dispatch_my_cmd "$common_cmds poweroff"
+                                    ;;
                 *)  echo "sorry, $FUNCNAME does not support $1" ;;
             esac
         }
