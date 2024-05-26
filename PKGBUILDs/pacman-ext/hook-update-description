@@ -58,8 +58,10 @@ Options:
     --title[=*]        Adds the given title to the banner line surrounding update descriptions.
     --header[=*]       Specfies if a header is shown for the updates (yes or no).
     --separator[=*]    Specified if the banner lines will be displayed or not (yes or no).
-    --include-repo     Includes the repo of the package.
+    --include-repo     Includes the repo of the package. Same as -S.
     --include-version  Includes the latest package versions.
+    -S                 Same as --include-repo.
+    -Q                 Use local database.
 
 Package names are optional, and can be used for avoiding to fetch the updates separately.
 
@@ -92,6 +94,8 @@ Main() {
             --separator=*)     separator="${1#*=}" ;;
             --separator)       separator="$2" ; shift ;;
             --include-repo)    has_repo=yes ;;
+            -S)                has_repo=yes ;;
+            -Q)                has_repo=no ;;
             --include-version) has_version=yes ;;
             -*)                DIE "unsupported option '$1'" ;;
             *)                 pkgnames+=("$1") ;;                        # packages as parameters

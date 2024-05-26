@@ -55,7 +55,7 @@ _package_checks() {
         fi
     fi
     if [ "$descriptions" = "yes" ] ; then
-        hook-update-description
+        hook-update-description -S
     fi
 
     # Parameters are package(s) that should be installed before others.
