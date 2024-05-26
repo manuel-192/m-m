@@ -76,7 +76,7 @@ Main() {
     local pkgnames=()
     local repo=""
     local source=""
-    local has_repo=no
+    local has_repo=yes
     local has_version=no
     local helper=yay                # helper = one of: yay, paru, pacman
 
