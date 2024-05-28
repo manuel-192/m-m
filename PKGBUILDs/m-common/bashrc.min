@@ -1105,8 +1105,11 @@ EOF
                              # M is reasonable now, later G might be too
     Alias pacdiff            "eos-pacdiff"
     Alias paq                "sudo paq"
+    Alias I                  "paf -i"
+    Alias Install            "paf -i"
     Alias U                  "upd --instant --verbose"
-    Alias UU                 "upd --instant --verbose --aur"
+    Alias Update             "upd --instant --verbose"
+    Alias UA                 "upd --instant --verbose --aur"
     #Alias uc                 "time uc-fast -aey --verbose"
     #Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
 
