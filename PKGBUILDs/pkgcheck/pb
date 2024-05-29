@@ -259,7 +259,7 @@ EOF
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls"
-                op+=" --check-all --quick-check --assets.conf-check --pkgdb --changelog --changelog-modified --mirrorlist-arch"
+                op+=" --check-all --quick-check --assets.conf-check --extras --pkgdb --changelog --changelog-modified --mirrorlist-arch"
                 op+=" -T --fetch-timeout -C --commit --local-repo"
                 echo "$op"
                 return
