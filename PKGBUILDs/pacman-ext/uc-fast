@@ -168,7 +168,7 @@ MainNext() {
         EndeavourOS) ;;
     esac
 
-    ShowResult "$url" "$file=$lastupdate_val"
+    ShowResult "$url" "$lastupdate_val"
 
     local ret=$EXIT_UPDATES_NO     # by default, don't expect updates
 
