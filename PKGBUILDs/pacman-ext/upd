@@ -465,11 +465,22 @@ PagerOut() {
     local updates="$1"
     local title="$2"
     local -r options="--include-repo --include-version"
+    local -r max=20                                         # over 20 gets slow ...
+    local max_descriptions_to_show=$max
+    local count=$(echo "$updates" | wc -l)
 
-    if [ $pager = yes ] ; then
-        Cmd1 hook-update-description $options --title="$title" $updates | less -F
-    else
-        Cmd1 hook-update-description $options --title="$title" $updates # | less -F
+    if [ -x /bin/bc ] ; then
+        max_descriptions_to_show=$(echo "scale=0; $LINES*4/10" | bc -l)
+        [ $max_descriptions_to_show -gt $max ] && max_descriptions_to_show=$max
+    fi
+
+    # ad hoc check: if too many updates for the window, skip showing them
+    if [ $count -le $max_descriptions_to_show ] ; then
+        if [ $pager = yes ] ; then
+            Cmd1 hook-update-description $options --title="$title" $updates | less -F
+        else
+            Cmd1 hook-update-description $options --title="$title" $updates # | less -F
+        fi
     fi
 }
 
