@@ -1104,7 +1104,7 @@ EOF
     Alias package-sizes      "expac -HM -Q '%m|%n' | column -t -s'|' | sort -nr | less"
                              # M is reasonable now, later G might be too
     # Alias pacdiff            "eos-pacdiff"
-    Alias pacdiff            "DIFFPROG=/bin/meld /bin/pacdiff -s"
+    Alias pacdiff            "DIFFPROG=/bin/meld /bin/pacdiff --sudo"
     Alias paq                "sudo paq"
     Alias I                  "paf -i"
     Alias Install            "paf -i"
