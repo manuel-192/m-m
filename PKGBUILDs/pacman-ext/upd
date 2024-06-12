@@ -469,6 +469,7 @@ PagerOut() {
     local max_descriptions_to_show=$max
     local count=$(echo "$updates" | wc -l)
 
+    # Limit max number of descriptions to show because it gets slower if many updates.
     if [ -x /bin/bc ] ; then
         max_descriptions_to_show=$(echo "scale=0; $LINES*4/10" | bc -l)
         [ $max_descriptions_to_show -gt $max ] && max_descriptions_to_show=$max
