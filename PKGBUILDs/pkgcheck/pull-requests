@@ -36,12 +36,10 @@ Main3()
     for nr in $issue_numbers ; do
         issue_text=$(echo "$pagedata" | sed -n "/^<div id=\"issue_$nr\"/,/^<\/div>$/p")
         comments="$(echo "$issue_text" | grep -E 'Link--muted.*"[0-9]+ comment' | sed -E 's|.*aria-label="([0-9]+).*|\1|')"
+        interesting_urls+=("$url/$nr")
         case "$comments" in
-            "") Result $first "#$nr: no comments yet" ;;
-            *)
-                Result $first "#$nr: $comments comments"
-                interesting_urls+=("$url/$nr")
-                ;;
+            "") Result $first "#$nr: no comments yet"    ;;
+            *)  Result $first "#$nr: $comments comments" ;;
         esac
         first=no
     done
