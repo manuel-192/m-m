@@ -5,12 +5,16 @@
 pkgname=fetch-iso
 pkgdesc="Fetch ISO"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.4.2
+pkgver=24.6
 pkgrel=1
 
 arch=('any')
 license=('GPL')
 depends=(fzf)
+optdepends=(
+    'wget: alternative fetcher'
+    'curl: alternative fetcher'
+)
 backup=(etc/$pkgname.conf)
 
 source=(
@@ -18,7 +22,7 @@ source=(
     $url/$pkgname.completion
     $url/$pkgname-show-all-info
 )
-sha512sums=('7996fb238c75f98717b213594e1a5b406b195d0376a7dd97b0bc792eb05fe86083cdc7452a0ebcfe6feb6c1fe4e23b160154c466b5900638fac87ee3e3844d51'
+sha512sums=('f4e8f71514c41f4e99c7bd7a9521276b3caf6e4e9db946e69f4ca2012322bccc55e5a41aaa273ca02ffddc72f5138f1df30e60229d234b386eda10993e6e71cf'
             'bbe87775fd414169f9138fd876126b0ac440769ee33544d6148a6bbdd520a37a41b2896eecce2cf607c13a53ac197deda0f65da1e2195da2f6f6b4f45d4d1f16'
             'ebb906347b66ec53831dabd02fa12a93ab9687b085cbdc7043541ddc961eb456b419e1a22666170520fd5bc23d552cb1ebac7f141835756555e27c5e53ce3961')
 

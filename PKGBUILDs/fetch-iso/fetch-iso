@@ -69,7 +69,7 @@ Main() {
     local exitcode=0
     local file
     local datafile=/tmp/$progname.tmp   # remove this if new files should be available
-    local getter=curl                   # curl is used by default
+    local getter=wget                   # curl or wget
 
     # config file sets important values
     source "$config" || DIE "file $config has a problem"
@@ -79,7 +79,7 @@ Main() {
     [ "$APP" ]       && getter="$APP"
 
     case "$getter" in
-        wget | curl) ;;
+        curl | wget) [ -x /bin/$getter ] || DIE "$getter not installed" ;;
         *) DIE "value '$getter' for APP in $config is not supported. Use either 'wget' or 'curl'." ;;
     esac
 
@@ -90,7 +90,9 @@ Main() {
                 --show-files)     printf "%s\n" $(ShowFiles -q) ;;   # for bash completion
                 --help)           Usage; exit 0 ;;
                 -*)               DIE "option '$1' not supported." ;;
-                *.iso.tar.gz)     FetchIsoFile "$1" ;;
+                *.iso.tar.gz | *.iso | *.iso.sha512sum)
+                                  FetchIsoFile "$1"
+                                  ;;
                 *)                DIE "sorry, only *.iso.tar.gz files are supported."
             esac
             shift
