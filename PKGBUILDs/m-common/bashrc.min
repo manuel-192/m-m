@@ -1055,7 +1055,6 @@ EOF
         echo ""
     }
 
-
     #############################################################
     # variables
     #############################################################
@@ -1089,8 +1088,11 @@ EOF
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
     Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
-    # Alias history-del        "$(cat /usr/local/bin/history-del | grep ^history)"
-    Alias history-del        "history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp"
+    if [ -x /usr/local/bin/history-del ] ; then
+        Alias history-del        "$(cat /usr/local/bin/history-del | grep ^history)"
+    else
+        Alias history-del        "history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp"
+    fi
     Alias history-fuzzy      "history | fzf --tac --no-sort"
     Alias history-select     "history | fzf --tac --no-separator --no-info"
     Alias hlp                "eos-man"
