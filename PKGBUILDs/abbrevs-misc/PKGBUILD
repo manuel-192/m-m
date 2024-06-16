@@ -5,8 +5,8 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24
-pkgrel=9
+pkgver=24.6
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -63,8 +63,8 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
 
 package() {
     local item
-    for item in $(echo "${source[@]}") ; do
-        item=$(basename "$item")
+    for item in "${source[@]}" ; do
+        item=${item##*/}
         case "$item" in
             *.bash)
                 install -Dm644 $item      $pkgdir/etc/skel/$item ;;
