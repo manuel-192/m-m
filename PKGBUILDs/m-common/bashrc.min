@@ -359,15 +359,6 @@ EOF
         done
     }
 
-    Unalias type
-    type() {
-        # without parameters, show all aliases and functions
-        case "$1" in
-            "") { alias && declare -F ; } | less ;;
-            *) builtin type -a "$@" ;;
-        esac
-    }
-
     # Functions to modify variables like PATH
 
     VarAddFirst() {                               # adds $2 to the beginning of $1
@@ -1107,6 +1098,7 @@ EOF
                              # M is reasonable now, later G might be too
     # Alias pacdiff            "eos-pacdiff"
     Alias pacdiff            "DIFFPROG=/bin/meld /bin/pacdiff --sudo"
+    Alias pacdiff            "eos-pacmerge"
     Alias paq                "sudo paq"
     Alias I                  "paf -i"
     Alias Install            "paf -i"
@@ -1122,7 +1114,8 @@ EOF
 
     Unalias l
     AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
-    # AliasIfType grub-mkconfig  grub.cfg     "update-grub"                                   # needed ???
+
+    [ -x /usr/local/bin/type ] && alias type=/usr/local/bin/type     # in package abbrevs-misc
 
     if true ; then
         Alias mg         meldgit
