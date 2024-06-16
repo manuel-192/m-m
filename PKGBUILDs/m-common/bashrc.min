@@ -1093,7 +1093,7 @@ EOF
     Alias man                "eos-man"
     Alias md                 "codium"
     Alias nano               "nano -l"
-    Alias o                  "eos-open --pref exo-open"
+    Alias o                  "open"
     Alias package-sizes      "expac -HM -Q '%m|%n' | column -t -s'|' | sort -nr | less"
                              # M is reasonable now, later G might be too
     # Alias pacdiff            "eos-pacdiff"
