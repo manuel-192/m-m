@@ -1,0 +1,62 @@
+#!/bin/bash
+
+DIE() {
+    echo "error: $1" >&2
+    exit 1
+}
+
+IsTextFile() {
+    case "$(xdg-mime query filetype "$1")" in
+        application/x-shellscript) return 0 ;;
+        text/plain) return 0 ;;
+    esac
+    # local info=$(file "$1")
+    # case "$info" in
+    #     *"ASCII text"*)    return 0 ;;
+    #     *"Unicode text"*)  return 0 ;;
+    #     *"UTF-8 text"*)    return 0 ;;
+    #     *"symbolic link"*) IsTextFile $(echo "$info" | awk '{print $NF}') && return 0 ;;
+    # esac
+    return 1
+}
+
+Opener() {
+    local openers=(/bin/exo-open /bin/kde-open /bin/xdg-open)
+
+    for opener in "${openers[@]}" ; do
+        if [ -x $opener ] ; then
+            return 0
+        fi
+    done
+    DIE "general mime app for editing files not found"
+}
+
+Main()
+{
+    local files=()
+    local arg path
+    local opener=""
+
+    Opener
+
+    for arg in "$@" ; do
+        case "$arg" in
+            -*) DIE "unknown arg '$arg'" ;;
+            *)
+                if IsTextFile "$arg" ; then
+                    files+=("$arg")
+                else
+                    path=$(which "$arg" 2>/dev/null)
+                    if [ "$path" ] && IsTextFile "$path" ; then
+                        files+=("$path")
+                    else
+                        files+=("$arg")
+                    fi
+                fi
+                ;;
+        esac
+    done
+    [ ${#files[@]} -gt 0 ] && exo-open "${files[@]}"
+}
+
+Main "$@"
