@@ -6,7 +6,7 @@ DIE() {
 }
 
 IsTextFile() {
-    case "$(xdg-mime query filetype "$1")" in
+    case "$(xdg-mime query filetype "$1" 2>/dev/null)" in
         application/x-shellscript) return 0 ;;
         text/plain) return 0 ;;
     esac
