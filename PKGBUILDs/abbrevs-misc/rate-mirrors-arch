@@ -68,6 +68,7 @@ EOF
             --country-test-mirrors-per-country $count
             --country-neighbors-per-country 0
             arch
+            --fetch-first-tier-only
             --max-delay=$delay
         )
         "${cmd[@]}" | grep -v "^Server = "
