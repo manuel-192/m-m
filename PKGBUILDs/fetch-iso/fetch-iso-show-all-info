@@ -13,9 +13,19 @@ Main() {
     local ix count
     local HELLO=""
     local URLBASE=""
+    local ACCOUNT=""
+    local PASSWORD=""
     local APP="curl"
 
     source $HOME/.config/fetch-iso.conf || return 1
+
+    if [ -z "$HELLO" ] ; then
+        if [ "$ACCOUNT$PASSWORD" ] ; then
+            HELLO="$ACCOUNT:$PASSWORD"
+        else
+            DIE "no account/password"
+        fi
+    fi
 
     case "$APP" in
         curl) data=$(/bin/curl --fail -Lsm 30 -o- -u "$HELLO" "$URLBASE")                      || DIE "failed fetching the info page '$URLBASE'." ;;

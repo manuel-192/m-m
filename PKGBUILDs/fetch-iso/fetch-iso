@@ -10,8 +10,8 @@ GetInfoPage() {
     # Make sure the download data is stored in a local file.
     if [ ! -e $datafile ] ; then
         case "$getter" in
-            curl) /bin/curl --fail -Lsm 30 -o$datafile -u "$HELLO" $URLBASE                      || DIE "failed fetching the info page '$URLBASE'." ;;
-            wget) /bin/wget -qO $datafile --user "${HELLO%:*}" --password "${HELLO#*:}" $URLBASE || DIE "failed fetching the info page '$URLBASE'." ;;
+            curl) /bin/curl --fail -Lsm 30 -o$datafile -u "$HELLO" $URLBASE                 || DIE "failed fetching the info page '$URLBASE'." ;;
+            wget) /bin/wget -qO $datafile --user "$ACCOUNT" --password "$PASSWORD" $URLBASE || DIE "failed fetching the info page '$URLBASE'." ;;
         esac
         [ "$1" != "-q" ] && echo2 "==> Info about available downloads refreshed."
     fi
@@ -40,7 +40,7 @@ FetchIsoFile() {
         curl) /bin/curl --fail -m 300 --remote-name-all -u "$HELLO" "$URLBASE/$file" || exitcode=$?
               [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
               ;;
-        wget) /bin/wget -q --show-progress --user "${HELLO%:*}" --password "${HELLO#*:}" "$URLBASE/$file" || exitcode=$?
+        wget) /bin/wget -q --show-progress --user "$ACCOUNT" --password "$PASSWORD" "$URLBASE/$file" || exitcode=$?
               [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'wget'" "$exitcode"
               ;;
     esac
@@ -54,8 +54,12 @@ Usage: $progname [options] [filename]
 Options:
     -h, --help           This help.
 
-Tip1: Without parameters a selection of downloadable files is presented (using fzf).
-Tip2: Use bash completion (by pressing the TAB key on the command line) to get the file to download.
+Tip1: Write a config file at ~/.config/$progname.conf. It must contain variables
+      URLBASE, ACCOUNT and PASSWORD with their proper values.
+      Alternatively, variable HELLO can replace values "\$ACCOUNT:\$PASSWORD".
+Tip2: Without parameters a selection of downloadable files is presented (using fzf).
+Tip3: Use bash completion (by pressing the TAB key on the command line)
+      to get the file to download.
 
 EOF
 }
@@ -65,6 +69,7 @@ Main() {
     local -r config="$HOME/.config/$progname.conf"
     local URLBASE=""
     local HELLO=""
+    local ACCOUNT="" PASSWORD=""
     local APP=""
     local exitcode=0
     local file
@@ -73,10 +78,16 @@ Main() {
 
     # config file sets important values
     source "$config" || DIE "file $config has a problem"
-
     [ "$URLBASE" ]   || DIE "URLBASE has no value in $config"
-    [ "$HELLO" ]     || DIE "HELLO has no value in $config"
-    [ "$APP" ]       && getter="$APP"
+    if [ "$HELLO" ] ; then
+        ACCOUNT="${HELLO%:*}"
+        PASSWORD="${HELLO#*:}"
+    elif [ "$ACCOUNT$PASSWORD" ] ; then
+        HELLO="$ACCOUNT:$PASSWORD"
+    else
+        DIE "HELLO or ACCOUNT/PASSWORD have no proper value in $config"
+    fi
+    [ "$APP" ] && getter="$APP"
 
     case "$getter" in
         curl | wget) [ -x /bin/$getter ] || DIE "$getter not installed" ;;
@@ -88,7 +99,7 @@ Main() {
             case "$1" in
                 --dump-options)   echo "--help --show-files" ;;      # for bash completion
                 --show-files)     printf "%s\n" $(ShowFiles -q) ;;   # for bash completion
-                --help)           Usage; exit 0 ;;
+                -h | --help)      Usage; exit 0 ;;
                 -*)               DIE "option '$1' not supported." ;;
                 *.iso.tar.gz | *.iso | *.iso.sha512sum)
                                   FetchIsoFile "$1"

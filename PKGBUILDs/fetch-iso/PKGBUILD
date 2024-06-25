@@ -5,7 +5,7 @@
 pkgname=fetch-iso
 pkgdesc="Fetch ISO"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.6
+pkgver=24.6.1
 pkgrel=1
 
 arch=('any')
@@ -15,16 +15,17 @@ optdepends=(
     'wget: alternative fetcher'
     'curl: alternative fetcher'
 )
-backup=(etc/$pkgname.conf)
-
 source=(
     $url/$pkgname
+    $url/$pkgname.conf
     $url/$pkgname.completion
     $url/$pkgname-show-all-info
 )
-sha512sums=('f4e8f71514c41f4e99c7bd7a9521276b3caf6e4e9db946e69f4ca2012322bccc55e5a41aaa273ca02ffddc72f5138f1df30e60229d234b386eda10993e6e71cf'
+sha512sums=('8a81ec7d67c49bf297c14b1d350a7ec1579fc846dec280cf9463fbc84966b7120670b79b20317adcf57ec7b3cf8c1b9a387ef65169b45b7da7dc3add9bc4104c'
+            '78ccbd5921e6733b474d8aafac609cf300ab58d58963d0f2c11627425c3a9c08f081b36efbf64589e595d58cfed7440183725fef91503864a8f53b8adc14b941'
             'bbe87775fd414169f9138fd876126b0ac440769ee33544d6148a6bbdd520a37a41b2896eecce2cf607c13a53ac197deda0f65da1e2195da2f6f6b4f45d4d1f16'
-            'ebb906347b66ec53831dabd02fa12a93ab9687b085cbdc7043541ddc961eb456b419e1a22666170520fd5bc23d552cb1ebac7f141835756555e27c5e53ce3961')
+            '912328012dd10abd824c768179467102a6dbfc933adad7d277bdb83acb576bc82ae6785e6eca0e0bb2407b7c0489a49583e1c3eba32a9edc25575678d5915321')
+# backup=(etc/skel/$pkgname.conf)
 
 package() {
     local xx name
@@ -32,7 +33,7 @@ package() {
         name=$(basename "$xx")
         case "$name" in
             *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
-            *.conf)       install -Dm644 $name   $pkgdir/etc/$name ;;
+            *.conf)       install -Dm644 $name   $pkgdir/etc/skel/$name ;;
             *)            install -Dm755 $name   $pkgdir/usr/bin/$name ;;
         esac
     done
