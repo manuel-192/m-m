@@ -25,24 +25,25 @@ RefreshInfo() {
 ShowFiles() {
     # Show downloadable files from the fetched download page.
     RefreshInfo "$@"
-    grep EndeavourOS[-_] $datafile | sed -E 's|.*">(En.*)</a.*|\1|'                                  # all downloads
-
-    # grep 'x86_64\.iso<' $datafile | sed -E 's|.*">(.*x86_64\.iso)<.*|\1|'                          # .iso
-    # grep 'x86_64\.iso\.sha512sum<' $datafile | sed -E 's|.*">(.*x86_64\.iso\.sha512sum)<.*|\1|'    # .iso.sha512sum
-    # grep "\-iso\.tar\.gz" $datafile | sed -E 's|.*">(.*-iso\.tar\.gz)<.*|\1|'                      # -iso.tar.gz
+    grep EndeavourOS[-_] $datafile | sed -E 's|.*">(En.*)</a.*|\1|'             # all downloads
 }
 
 FetchIsoFile() {
     # Fetch the given ISO file.
     echo2 "==> Downloading..."
+    local targetopt=""
     local file="$1"
     case "$getter" in
-        curl) /bin/curl --fail -m 300 --remote-name-all -u "$HELLO" "$URLBASE/$file" || exitcode=$?
-              [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
-              ;;
-        wget) /bin/wget -q --show-progress --user "$ACCOUNT" --password "$PASSWORD" "$URLBASE/$file" || exitcode=$?
-              [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'wget'" "$exitcode"
-              ;;
+        curl)
+            [ "$TARGETDIR" ] && targetopt="-o$TARGETDIR/$file"
+            /bin/curl --fail -m 300 --remote-name-all "$targetopt" -u "$HELLO" "$URLBASE/$file" || exitcode=$?
+            [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
+            ;;
+        wget)
+            [ "$TARGETDIR" ] && targetopt="-O$TARGETDIR/$file"
+            /bin/wget -q "$targetopt" --show-progress --user "$ACCOUNT" --password "$PASSWORD" "$URLBASE/$file" || exitcode=$?
+            [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'wget'" "$exitcode"
+            ;;
     esac
 }
 
@@ -55,7 +56,7 @@ Options:
     -h, --help           This help.
 
 Tip1: Write a config file at ~/.config/$progname.conf. It must contain variables
-      URLBASE, ACCOUNT and PASSWORD with their proper values.
+      URLBASE, ACCOUNT, PASSWORD, and optionally TARGETDIR with their proper values.
       Alternatively, variable HELLO can replace values "\$ACCOUNT:\$PASSWORD".
 Tip2: Without parameters a selection of downloadable files is presented (using fzf).
 Tip3: Use bash completion (by pressing the TAB key on the command line)
@@ -71,6 +72,7 @@ Main() {
     local HELLO=""
     local ACCOUNT="" PASSWORD=""
     local APP=""
+    local TARGETDIR=""
     local exitcode=0
     local file
     local datafile=/tmp/$progname.tmp   # remove this if new files should be available
@@ -88,6 +90,9 @@ Main() {
         DIE "HELLO or ACCOUNT/PASSWORD have no proper value in $config"
     fi
     [ "$APP" ] && getter="$APP"
+    [ "$TARGETDIR" ] || TARGETDIR="."
+    [ -d "$TARGETDIR" ] || DIE "$TARGETDIR is not a folder"
+    [ -w "$TARGETDIR" ] || DIE "cannot write to TARGETDIR ($TARGETDIR)"
 
     case "$getter" in
         curl | wget) [ -x /bin/$getter ] || DIE "$getter not installed" ;;
