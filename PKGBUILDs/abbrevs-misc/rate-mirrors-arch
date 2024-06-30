@@ -31,10 +31,13 @@ rate-mirrors-arch() {
         local count_def=6
         local delay=$delay_def        # --delay=Y
         local count=$count_def        # --count=X
+        local country="DE"
 
         # optspecs: c:d:h count:,delay:,help
         while [ -n "$1" ] ; do
             case "$1" in
+                --country=*) country=${1#*=} ;;
+                --country)   country="$2"; shift ;;
                 --count=* | -c=*) count=${1#*=} ;;
                 --count   | -c  ) count="$2"; shift ;;
                 -c*             ) count=${1:2} ;;       # no --count* ...
@@ -47,6 +50,7 @@ Usage: $FUNCNAME [options]
 Options:
     -c | --count <number>   Mirrors per country. Default: $count_def.
     -d | --delay <number>   Max time in seconds after the last sync. Default: $delay_def.
+    --country <country>     The entry-country, e.g. DE. GB, or US.
 EOF
                     return 0
                     ;;
@@ -64,7 +68,7 @@ EOF
             --disable-comments-in-file
             --protocol https
             --save /tmp/mirrorlist
-            --entry-country DE
+            --entry-country "$country"
             --country-test-mirrors-per-country $count
             --country-neighbors-per-country 0
             arch
