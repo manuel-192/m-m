@@ -464,7 +464,7 @@ Foreign() {
 PagerOut() {
     local updates="$1"
     local title="$2"
-    local -r options="--include-repo --include-version"
+    local options=""    # "--include-version --include-repo"
     local -r max=20                                         # over 20 gets slow ...
     local max_descriptions_to_show=$max
     local count=$(echo "$updates" | wc -l)
