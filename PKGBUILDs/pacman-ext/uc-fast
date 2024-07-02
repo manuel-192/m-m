@@ -104,42 +104,58 @@ EOF
     [ "$1" ] && exit "$1"
 }
 
+GetEosPart()  { grep -w "^Server" /etc/pacman.d/endeavouros-mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/$arch|\1|'    ; }
+GetArchPart() {
+    grep -w "^Server" /etc/pacman.d/mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/os/$arch|\1|'
+}
+
 GetUrlFromMirrorsFile() {
-    url=$(grep -m1 "^Server = " /etc/pacman.d/$ml)
+    local count="$1"
+    [ "$count" ] || count=1
+    url=$(grep -m$count "^Server = " /etc/pacman.d/$ml | tail -n1)
     [ "$url" ] || DIE "/etc/pacman.d/$ml has no mirrors configured!"
     url=${url#*= }
 }
 
-GetEosPart()  { grep -w "^Server" /etc/pacman.d/endeavouros-mirrorlist | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/$arch|\1|'    ; }
-GetArchPart() { grep -w "^Server" /etc/pacman.d/mirrorlist             | grep -m1 $1 | sed 's|^Server = \(http.*\)/$repo/os/$arch|\1|' ; }
+DiscoverUrlAndData() {
+    # local EOS_MIRROR=""
+    # local ARCH_MIRROR=""
+    # [ -r /etc/$progname.conf ] && source /etc/$progname.conf &>/dev/null
 
-DiscoverUrl() {
-    local EOS_MIRROR=""
-    local ARCH_MIRROR=""
+    local ix=0
 
-    [ -r /etc/$progname.conf ] && source /etc/$progname.conf &>/dev/null
-    case "$os" in
-        EndeavourOS)
-            if [ "$EOS_MIRROR" ] ; then
-                url="$(GetEosPart $EOS_MIRROR)"/$file
-            else
-                GetUrlFromMirrorsFile
-                url=${url%\$repo/\$arch}$file
-            fi
-            ;;
-        Arch)
-            if [ "$ARCH_MIRROR" ] ; then
-                url="$(GetArchPart $ARCH_MIRROR)"/$file
-            else
-                GetUrlFromMirrorsFile
-                url=${url%\$repo/os/\$arch}$file
-            fi
-            ;;
-    esac
-    case "$url" in
-        http*) ;;
-        *) DIE "$FUNCNAME: getting proper $os URL failed" ;;
-    esac
+    while true ; do
+        (( ix++ ))
+        case "$os" in
+            EndeavourOS)
+                # if [ "$EOS_MIRROR" ] ; then
+                #     url="$(GetEosPart $EOS_MIRROR)"/$file
+                # else
+                    GetUrlFromMirrorsFile $ix
+                    url=${url%\$repo/\$arch}$file
+                # fi
+                ;;
+            Arch)
+                # if [ "$ARCH_MIRROR" ] ; then
+                #     url="$(GetArchPart $ARCH_MIRROR)"/$file
+                # else
+                    GetUrlFromMirrorsFile $ix
+                    url=${url%\$repo/os/\$arch}$file
+                # fi
+                ;;
+        esac
+
+        case "$url" in
+            http*) ;;
+            *) DIE "$FUNCNAME: getting proper $os URL failed" ;;
+        esac
+
+        data=$(curl --fail -Lsm 10 -o- "$url") || { echo2 " -> fetching $url failed"; continue; }
+        [ "$data" ]                            || { echo2 " -> no data from $url"; continue; }
+        [ "${data//[0-9]*/}" ]                 && { echo2 " -> $url data corrupt"; continue; }             # data must be numbers only
+        return
+    done
+    DIE "fetching data from $os mirrors failed"
 }
 
 MainNext() {
@@ -156,11 +172,10 @@ MainNext() {
     local -r lastupdate="${lastupdate_saved}_new"
     local lastupdate_val=""
     local url=""
+    local data
 
-    DiscoverUrl
+    DiscoverUrlAndData
 
-    local -r data=$(curl --fail -Lsm 10 -o- "$url")
-    [ "$data" ] || DIE "fetching data from '$url' failed"
     echo "$data" | head -n1 > "$lastupdate"
     lastupdate_val=$(head -n1 $lastupdate)
     case "$os" in
@@ -220,6 +235,7 @@ Verbosex() {
 
 ShowResult() { Verbose "%-s|($2)|:|" "$1" ; }
 
+echo2() { echo "$@" >&2 ; }
 DIE() {
     printf "%s: error: %s\n\n" "$progname" "$1" >&2
     Usage $EXIT_ERROR
