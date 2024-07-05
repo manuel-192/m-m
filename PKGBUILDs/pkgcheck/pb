@@ -40,7 +40,7 @@ AskFolder() {
     case "$repodir" in
         "") ;;
         -*) _pb "$repodir" ;;
-        *) _pb3
+        *) _pb2
     esac
     WaitToQuit
     exit
@@ -378,7 +378,7 @@ EOF
         shift
     done
 
-    [ ${#repodirs[@]} -eq 0 ] && repodirs=("$PWD")
+    [ ${#repodirs[@]} -eq 0 ] && AskFolder
 
     for repodir in "${repodirs[@]}" ; do
         _pb2
@@ -398,16 +398,19 @@ RunInDir() {
 _banner() { printf "\n============================ %s ============================\n" "$repodir"; }
 
 _pb2() {
-    if ! pb_IsSupportedFolderName "$repodir" && [ $commit = no ] ; then
-        # DIEF "repo/folder '$folder' is not supported." "Supported: $supported_folders"
-        AskFolder # "$repodir"
-    else
-        _pb3
-    fi
-}
-
-_pb3() {
     case "$repodir" in
+        man)
+            for repodir in m-m m-more2 m-aur2 ; do
+                _pb3
+            done
+            return
+            ;;
+        eos)
+            for repodir in endeavouros endeavouros-testing-dev ; do
+                _pb3
+            done
+            return
+            ;;
         MAN | EOS | */MAN | */EOS)
             # special for UpdateSources
             _banner
@@ -425,8 +428,17 @@ _pb3() {
             #WaitToQuit
             return
             ;;
+        *)
+            if pb_IsSupportedFolderName "$repodir" && [ $commit = no ] ; then
+                _pb3
+            else
+                AskFolder
+            fi
+            ;;
     esac
+}
 
+_pb3() {
     for dir1 in "${CDPATH_ARR[@]}" ; do
         case "$dir1" in
             */_BUILD_)
