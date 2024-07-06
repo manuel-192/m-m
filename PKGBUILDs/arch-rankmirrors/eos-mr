@@ -1,0 +1,153 @@
+#!/bin/bash
+
+echo2()       { echo "$@" >&2; }
+DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage; exit 1; }
+WARN()        { echo2 -e "==> $progname: warning: $1"; }
+
+GetFile() {
+    local url="$1"
+
+    [ "$url" ] || DIE "no URL to test"
+
+    local curl_exitcode=0
+    local syncnr time result
+
+    result=$(curl --fail -Lsm $timeout -w "%{time_total}" "$url") || curl_exitcode=$?
+
+    case $curl_exitcode in
+        0)
+            time=$(  echo "$result" | tail -n1)
+            syncnr=$(echo "$result" | head -n1)
+
+	    if [ "${syncnr//[0-9]/}" ] ; then   # $syncnr must be a number!
+		WARN "unrecognized data returned by $url."
+                return 1
+	    fi
+	    if [ "${time//[0-9\.]/}" ] ; then   # $time may contain numbers and a dot!
+		WARN "unrecognized data returned by $url."
+                return 1
+	    fi
+
+            if [ "$distro" = "arch" ] && [ "$time_as_datetime" = "yes" ] ; then
+                syncnr=$(date --date="@$syncnr" "+%Y%m%d-%H%M%S")
+            fi
+
+            echo "${url%/*}|$syncnr|$time"
+            ;;
+        *)
+            WARN "$url failed, code $curl_exitcode"
+            ;;
+    esac
+}
+
+GetCurrentCountry() { cc="$(show-location-info country)"; [ "$cc" ] ; }
+
+TraverseMirrors() {
+    local mirror
+    local ix=1
+    local count=$(echo "$mirrors" | wc -l)
+
+    for mirror in $mirrors ; do
+        mirror="${mirror%%/\$repo/os/\$arch}/$syncfile"
+        printf "\r==> ranking %s/$count" $((ix++)) >&2
+        GetFile "$mirror"
+    done
+    echo2 ""
+}
+
+Usage() {
+    cat <<EOF
+Usage: $progname [options] [parameters]
+
+Options:
+    --help                     This help.
+    --distro <name>            Distro who's native repos are ranked. Supported: 'arch' (default).
+    --country <country-list>   A comma separated list of country code(s) for ranking their mirrors.
+                               Case insensitive. Example: "--country de,gb".
+    --country-current          Add current country code for mirrors to rank.
+    --ranking-data             Show ranking data too.
+
+Parameters:                    URL(s) of mirrors to rank.
+EOF
+}
+
+Options() {
+    local opts
+    local lopts="country:,country-current,distro:,help,ranking-data"
+    local sopts="c:d:hlr"
+
+    opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || DIE "getopt error"
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --) shift; break ;;
+            -h | --help)            Usage; exit 0 ;;
+            -c | --country)         tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;            # must be country codes!
+            -l | --country-current) GetCurrentCountry && countries+=($cc) ;;
+            -d | --distro)          distro="$2"; shift ;;
+            -r | --ranking-data)    ranking_data=yes ;;
+        esac
+        shift
+    done
+    urls+=("$@")
+}
+
+Main() {
+    local progname=${0##*/}
+
+    local distro=""             # arch or endeavouros
+    local urls=() url
+    local timeout=10
+    local syncfile=""
+    local mirrors
+    local mirrorlist=""
+    local time_as_datetime=no
+    local ranking_data=no
+    local countries=()          # contains only uppercase country codes
+    local cc                    # current country
+    local tmp
+    local suffix=""
+
+    Options "$@"
+
+    case "$distro" in
+        "" | arch)
+            distro=arch
+            if [ ${#countries[@]} -eq 0 ] ; then
+                echo2 "==> option --country not used -> automatically adding the current country for ranking, if possible"
+                GetCurrentCountry && countries+=($cc) && echo2 "==> added: FI" || DIE "no countries given for ranking."
+            fi
+            mirrorlist=/etc/pacman.d/mirrorlist
+            syncfile=lastupdate
+            time_as_datetime=yes
+            suffix='/$repo/os/$arch'
+            url="https://archlinux.org/mirrorlist/?protocol=https&ip_version=4&use_mirror_status=on"
+            for tmp in "${countries[@]}" ; do
+                url+="&country=$tmp"
+            done
+            mirrors=$(curl -Lsm $timeout "$url" | grep "^#Server = " | awk '{print $NF}')
+            ;;
+        endeavouros)
+            DIE "sorry, waiting for implementation!"
+            mirrorlist=/etc/pacman.d/endeavouros-mirrorlist
+            syncfile=state
+            suffix='/$repo/$arch'
+            # TODO: fetch endeavouros-mirrorlist !!
+            mirrors=$(grep "^Server[ \t]*=[ \t]*" "$mirrorlist" | awk '{print $NF}')
+            ;;
+        *)  DIE "distro $distro not supported." ;;
+    esac
+
+    result=$(TraverseMirrors)
+
+    local ranked=$(echo "$result" | column -t -s'|' | LC_ALL=C sort -k2rb,2 -k3b,3)   # sort: age
+
+    ShowMirrorlist    "\n### ${distro^} mirror list, ranked by command:\n### $progname $*"
+    ShowRankingResult "\n### Ranking data:"
+}
+
+ShowMirrorlist()    { echo -e "$1"; echo "$ranked" | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|"; }
+ShowRankingResult() { [ $ranking_data = yes ] && { echo -e "$1"; echo "$ranked" | sed -E "s|^([^ ]+)|### \1$suffix|"; } ; }
+
+Main "$@"

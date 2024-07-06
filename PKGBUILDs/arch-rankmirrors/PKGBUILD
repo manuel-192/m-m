@@ -5,8 +5,8 @@
 pkgname=arch-rankmirrors
 pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=23
-pkgrel=3
+pkgver=24
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -21,13 +21,16 @@ source=(
     $url/long-time-rank-arch.service      # user service
     $url/long-time-rank-arch.timer        # user service timer
     $url/long-time-rank-service-install   # run this manually once
+
+    $url/eos-mr                           # yet another mirror ranker, experimental
 )
 sha512sums=('141503786be1dcb917cbb569a4c0db81c0bd1bd2aa3e9124a68064fa6b8534dd9d1d31f3c97b9ca07162b83842dbee8f64fa4412453c19fe182c5d7ebfc69f66'
             'e3555d56888a4b34e1ff8a28d8e344f0fdbe3eb9d2b2bb8e3f6ed5a4f073aac62a19af34417d79b983ae624f7a407fe747388a1cc3961fba60da279357015e0f'
             '727f559c2ba429ede98624e7f21a7b0313a0aa20935cb91cbc15cbf046c77c88ad1924922e643d4e6d56516cdfb283d17a4c10621ceae4f5e8353203c85dc090'
             '0352bd54fd246fef7531323c701eae5fe687dcadf0a75abd8b3a4d367759f173b4265898d63ab29edf6bb6175bfae6b5de2aaca32dd95fba57b89f24eaeb8ca3'
             '9eded1b08f1e423bf06d805840cd7a45766c854f148be0efba3e61544638324d90baaa7274621c01d722a428a748c2a4ec64e00ec43909a7b12085fe28e4cf7a'
-            'f3d845cef134dbcd048ce9d45d4d8a67980595dea3e455c6f91032108c34bc26c4db920b4633f0f4ab2c3fa777ea17678facceb99a518b80f518296119c23f5a')
+            'f3d845cef134dbcd048ce9d45d4d8a67980595dea3e455c6f91032108c34bc26c4db920b4633f0f4ab2c3fa777ea17678facceb99a518b80f518296119c23f5a'
+            '303c688a299bedf07437886d13100d7e009037dd83d8f108cfae4cfe66c7994f4be86889baf15b50dfa112bc56279b89dbc298f53dfc630b0b1a496640a0e259')
 
 package() {
     local src
