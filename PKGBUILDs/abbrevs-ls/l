@@ -2,7 +2,7 @@
 
 Main() {
     local ls_opts=(
-        -v   # natural sort of (version) numbers
+        # -v   # natural sort of (version) numbers
         --group-directories-first --color=auto
         --time-style=long-iso --file-type
     )

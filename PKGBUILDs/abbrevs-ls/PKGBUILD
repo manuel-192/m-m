@@ -5,8 +5,8 @@
 pkgname=abbrevs-ls
 pkgdesc="Various short commands related to ls"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=23
-pkgrel=2
+pkgver=24
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -17,7 +17,7 @@ source=(       # don't include 'ls' !!
     $url/lss
     $url/lt
 )
-sha512sums=('47483c470fe57ad3fcd6040d52f1843639cceb5361e1195116064904c519e009f0828dbdfd4c5e1abc4239313d2186ded37a7c4525001fc2b664b7dcc316479b'
+sha512sums=('10538700acf3d720430ff6fcd16a257180b109191861016224fd3d47b3d4c554070635651cc534530b61939c68dbd6a7125b9cb5ede20ebfb985d7f55239f941'
             '4a63ad8e485c8418a8db9e8c905893ef60edb12aa49f056894490c9cee12b8b889faf7eb4f412083df53b4dc353b361f7a01429b5220df92f73bf5666242ad47'
             '389c7a86ab9235c435e8eb292144b09e88faed100ca0dea649ee7e256a9288edcd8181361ee31a01215b5f51c2a1af06f5693465b0bb29271e49815da100a73d'
             '5a626fac04c3d5a36e5b99f2e8d54e3f99b199b8d05a47909abfe2931fb1d8a1f78f8bf1c972f05c26d92e8b407aa730972e7cf4924ba82f199a70506966800e')
