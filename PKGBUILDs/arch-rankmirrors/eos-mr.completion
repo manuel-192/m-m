@@ -1,0 +1,62 @@
+# bash completion for eos-mr        -*- shell-script -*-
+
+
+_eos-mr_listselector()
+{
+    local cur="$1"
+    local list_elems_all="$2"
+
+    local realcur="${cur##*,}"
+    local prefix="${cur%$realcur}"
+    local elems word
+
+    for word in $list_elems_all
+    do
+        if ! [[ $prefix == *"$word"* ]]; then
+            elems="$word $elems"
+        fi
+    done
+    COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -S ',' -- $realcur) )
+    compopt -o nospace
+}
+
+
+_eos-mr_complete() {
+    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_eos-mr_complete_list() {
+    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
+    compopt -o nospace
+}
+
+_eos-mr_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    local dir="$HOME/.cache/eos-mr"              # does $HOME work ???
+    local timefile="$dir/timeinfo.txt"
+    local countryfile="$dir/countryfile.txt"
+    local optionsfile="$dir/optionsfile.txt"
+    local now=$(date +%j)
+    local prevtime=""
+
+    mkdir -p "$dir"
+
+    [ -e "$timefile" ] && prevtime=$(< "$timefile")
+    if [ "$now" != "$prevtime" ] ; then
+        echo "$now" > "$timefile"
+        eos-mr --list-countries > "$countryfile"
+        eos-mr --dump-options > "$optionsfile"
+    fi
+    local options=$(< "$optionsfile")
+    case "$prev" in
+        -d | --distro)   _eos-mr_complete "arch" ;;
+        -c | --country)  _eos-mr_listselector "$cur" "$(< "$countryfile")" ;;
+        *)               _eos-mr_complete "$options" ;;
+    esac
+}
+complete -F _eos-mr_    eos-mr

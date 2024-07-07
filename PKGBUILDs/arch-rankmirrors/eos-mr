@@ -55,9 +55,29 @@ TraverseMirrors() {
     echo2 ""
 }
 
+DumpOptions() {
+    if [ "$lopts" ] ; then
+        lopts=${lopts//:/}          # remove all : chars
+        lopts="--${lopts//,/ --}"   # make all words as options with prefix "--"
+    fi
+    if [ "$sopts" ] ; then
+        sopts=${sopts//:/}          # remove all : chars
+        sopts=${sopts//?/ -&}       # make all letters as options with prefix "-"
+        sopts=${sopts:1}            # remove the first space
+    fi
+
+    [ "$lopts$sopts" ] && echo $lopts $sopts
+}
+
+ListCountries() {
+    local data=$(reflector --list-countries | tail -n +3)
+    echo "$data" | awk '{print $(NF-1)}'
+    exit 0
+}
+
 Usage() {
     cat <<EOF
-Usage: $progname [options] [parameters]
+Usage: $progname [options] [URLs]
 
 Options:
     --help                     This help.
@@ -67,13 +87,13 @@ Options:
     --country-current          Add current country code for mirrors to rank.
     --ranking-data             Show ranking data too.
 
-Parameters:                    URL(s) of mirrors to rank.
+URLs:                          URL(s) of mirrors to rank.
 EOF
 }
 
 Options() {
     local opts
-    local lopts="country:,country-current,distro:,help,ranking-data"
+    local lopts="country:,country-current,distro:,dump-options,help,list-countries,ranking-data"
     local sopts="c:d:hlr"
 
     opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || DIE "getopt error"
@@ -87,6 +107,8 @@ Options() {
             -l | --country-current) GetCurrentCountry && countries+=($cc) ;;
             -d | --distro)          distro="$2"; shift ;;
             -r | --ranking-data)    ranking_data=yes ;;
+            --dump-options)         DumpOptions; exit 0 ;;
+            --list-countries)       ListCountries ;;
         esac
         shift
     done

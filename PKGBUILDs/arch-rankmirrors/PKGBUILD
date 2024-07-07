@@ -5,7 +5,7 @@
 pkgname=arch-rankmirrors
 pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24
+pkgver=24.7
 pkgrel=1
 
 arch=('any')
@@ -23,6 +23,7 @@ source=(
     $url/long-time-rank-service-install   # run this manually once
 
     $url/eos-mr                           # yet another mirror ranker, experimental
+    $url/eos-mr.completion
 )
 sha512sums=('141503786be1dcb917cbb569a4c0db81c0bd1bd2aa3e9124a68064fa6b8534dd9d1d31f3c97b9ca07162b83842dbee8f64fa4412453c19fe182c5d7ebfc69f66'
             'e3555d56888a4b34e1ff8a28d8e344f0fdbe3eb9d2b2bb8e3f6ed5a4f073aac62a19af34417d79b983ae624f7a407fe747388a1cc3961fba60da279357015e0f'
@@ -30,7 +31,8 @@ sha512sums=('141503786be1dcb917cbb569a4c0db81c0bd1bd2aa3e9124a68064fa6b8534dd9d1
             '0352bd54fd246fef7531323c701eae5fe687dcadf0a75abd8b3a4d367759f173b4265898d63ab29edf6bb6175bfae6b5de2aaca32dd95fba57b89f24eaeb8ca3'
             '9eded1b08f1e423bf06d805840cd7a45766c854f148be0efba3e61544638324d90baaa7274621c01d722a428a748c2a4ec64e00ec43909a7b12085fe28e4cf7a'
             'f3d845cef134dbcd048ce9d45d4d8a67980595dea3e455c6f91032108c34bc26c4db920b4633f0f4ab2c3fa777ea17678facceb99a518b80f518296119c23f5a'
-            '303c688a299bedf07437886d13100d7e009037dd83d8f108cfae4cfe66c7994f4be86889baf15b50dfa112bc56279b89dbc298f53dfc630b0b1a496640a0e259')
+            '4084f471721ab775a5f154f7f5185d82f7d664a21ccca4cc76684fee631f24548f8fea2b7256f9a08b6db482b18a96bc1da1a69fd1f09cccdaa5212357ff7bda'
+            '9c98367db82f1b74afca9c0ed447ca8a91ff34594e823758d56e4854527e5fb9adcfb51bcc5076c33ece4ca9513115fcf756e5227cddaad37573212d40009dc6')
 
 package() {
     local src
@@ -41,6 +43,7 @@ package() {
         case "$src" in
             *.timer | *.service) ;;  # cannot install user services
             *.conf)              install -Dm644 $src  "$pkgdir/etc/$src" ;;
+            *.completion)        install -Dm644 $src  "$pkgdir/usr/share/bash-completion/completions/${src%.completion}" ;;
             *)                   install -Dm755 $src  "$pkgdir/$bin/$src" ;;
         esac
     done
