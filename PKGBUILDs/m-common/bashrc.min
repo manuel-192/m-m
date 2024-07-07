@@ -854,38 +854,35 @@ EOF
         LANG=C /bin/upd $opt "$@"
     }
 
-    pbb() {
-        # Check all with 'pb'. If any fails, mark it and stop, and start from it next time.
-        local item
-        local last="dummy last"
-        local file="$HOME/.pbb.state"
-        local first=""
-        local head="====>"
-        local ITEMS=()           # fill this in config file
-
-        source /etc/pbb.conf || return 1
-
-        [ -r "$file" ] && first="$(cat "$file")"
-
-        for item in "${ITEMS[@]}" ; do
-            if [ "$item" = "$last" ] ; then
-                Blue2 "$head All done."
-                rm -f "$file"
-                return
-            fi
-            case "$first" in
-                "" | "$item")
-                    first=""
-                    Cyan2 "$head $item:"
-                    if ! pb $item ; then
-                        echo "$item" > "$file"
-                        Red2 "$head $item failed."
-                        return
-                    fi
-                    ;;
-            esac
-        done
-    }
+    #pbb() {
+    #    # Check all with 'pb'. If any fails, mark it and stop, and start from it next time.
+    #    local item
+    #    local last="dummy last"
+    #    local file="$HOME/.pbb.state"
+    #    local first=""
+    #    local head="====>"
+    #    local ITEMS=()           # fill this in config file
+    #    source /etc/pbb.conf || return 1
+    #    [ -r "$file" ] && first="$(cat "$file")"
+    #    for item in "${ITEMS[@]}" ; do
+    #        if [ "$item" = "$last" ] ; then
+    #            Blue2 "$head All done."
+    #            rm -f "$file"
+    #            return
+    #        fi
+    #        case "$first" in
+    #            "" | "$item")
+    #                first=""
+    #                Cyan2 "$head $item:"
+    #                if ! pb $item ; then
+    #                    echo "$item" > "$file"
+    #                    Red2 "$head $item failed."
+    #                    return
+    #                fi
+    #                ;;
+    #        esac
+    #    done
+    #}
 
     paccache() {
         # Changes to official paccache:
