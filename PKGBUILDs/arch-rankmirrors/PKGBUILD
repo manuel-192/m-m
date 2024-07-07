@@ -6,7 +6,7 @@ pkgname=arch-rankmirrors
 pkgdesc="Rank Arch mirrors, prefers up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24.7
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -32,7 +32,7 @@ sha512sums=('141503786be1dcb917cbb569a4c0db81c0bd1bd2aa3e9124a68064fa6b8534dd9d1
             '9eded1b08f1e423bf06d805840cd7a45766c854f148be0efba3e61544638324d90baaa7274621c01d722a428a748c2a4ec64e00ec43909a7b12085fe28e4cf7a'
             'f3d845cef134dbcd048ce9d45d4d8a67980595dea3e455c6f91032108c34bc26c4db920b4633f0f4ab2c3fa777ea17678facceb99a518b80f518296119c23f5a'
             '4084f471721ab775a5f154f7f5185d82f7d664a21ccca4cc76684fee631f24548f8fea2b7256f9a08b6db482b18a96bc1da1a69fd1f09cccdaa5212357ff7bda'
-            '9c98367db82f1b74afca9c0ed447ca8a91ff34594e823758d56e4854527e5fb9adcfb51bcc5076c33ece4ca9513115fcf756e5227cddaad37573212d40009dc6')
+            '471eb4064f245bff3dd3887070358a8a0f1f058a6f0ce2922b451f5da8bebb96532f92b028f134e012cfc72f5b73dfccfeabd0c2b616d27d500576916582fba6')
 
 package() {
     local src

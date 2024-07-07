@@ -1,6 +1,5 @@
 # bash completion for eos-mr        -*- shell-script -*-
 
-
 _eos-mr_listselector()
 {
     local cur="$1"
@@ -25,11 +24,6 @@ _eos-mr_complete() {
     COMPREPLY=( $(compgen -W "$1" -- "$cur") )
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     compopt -o nosort
-}
-
-_eos-mr_complete_list() {
-    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
-    compopt -o nospace
 }
 
 _eos-mr_() 
