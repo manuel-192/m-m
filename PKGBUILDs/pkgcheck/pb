@@ -378,7 +378,13 @@ EOF
         shift
     done
 
-    [ ${#repodirs[@]} -eq 0 ] && AskFolder
+    if [ ${#repodirs[@]} -eq 0 ] ; then
+        if pb_IsSupportedFolderName "." ; then
+            repodirs+=(.)   # or use the current working folder
+        else
+            AskFolder
+        fi
+    fi
 
     for repodir in "${repodirs[@]}" ; do
         _pb2
