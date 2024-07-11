@@ -124,35 +124,27 @@ Options() {
     local lopts="country:,country-current,distro:,dump-options,help,list-country-codes,list-country-names,ranking-data"
     lopts+=",show-continent-countrycodes:,show-continent-countrynames:"
     lopts+=",show-current-continent-countrycodes,show-current-continent-countrynames,current-continent"
-    local sopts="c:d:hlr"
+    local sopts="c:d:hlrt"
 
     opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || DIE "getopt error"
     eval set -- "$opts"
 
     while true ; do
         case "$1" in
-            --) shift; break ;;
-            -h | --help)            Usage; exit 0 ;;
-            -c | --country)         tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;   # must be country codes!
-            -l | --country-current) GetCurrentCountry && countries+=($cc) ;;
-            --current-continent)    # rank all countries in the current continent
-                Options -c $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',')
-                ;;
-            -d | --distro)          distro="$2"; shift ;;
-            -r | --ranking-data)    ranking_data=yes ;;
-            --dump-options)         DumpOptions; exit 0 ;;
-            --list-country-codes)   ListCountryCodes; exit 0 ;;
-            --list-country-names)   ListCountryNames; exit 0 ;;
-            --show-continent-countrycodes) ShowContinentCountries "$2" code; exit ;;
-            --show-continent-countrynames) ShowContinentCountries "$2" name; exit ;;
-            --show-current-continent-countrycodes)
-                GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code
-                exit
-                ;;
-            --show-current-continent-countrynames)
-                GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name
-                exit
-                ;;
+            --)                                    shift; break ;;
+            -h | --help)                           Usage; exit 0 ;;
+            -c | --country)                        local tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;   # must be country codes!
+            -l | --country-current)                GetCurrentCountry && countries+=($cc) ;;
+            -t | --current-continent)              Options -c $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',') ;;
+            -d | --distro)                         distro="$2"; shift ;;
+            -r | --ranking-data)                   ranking_data=yes ;;
+            --dump-options)                        DumpOptions; exit 0 ;;
+            --list-country-codes)                  ListCountryCodes; exit 0 ;;
+            --list-country-names)                  ListCountryNames; exit 0 ;;
+            --show-continent-countrycodes)         ShowContinentCountries "$2" code; exit ;;
+            --show-continent-countrynames)         ShowContinentCountries "$2" name; exit ;;
+            --show-current-continent-countrycodes) GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code; exit ;;
+            --show-current-continent-countrynames) GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name; exit ;;
         esac
         shift
     done
@@ -209,14 +201,15 @@ Main() {
         *)  DIE "distro $distro not supported." ;;
     esac
 
+    local msg=""
     case "$has_parallel" in
-        yes) result=$(TraverseMirrors-parallel) ;;
-        no)  result=$(TraverseMirrors-sequential) ;;
+        yes) result=$(TraverseMirrors-parallel); msg="in parallel" ;;
+        no)  result=$(TraverseMirrors-sequential); msg="sequentially" ;;
     esac
 
     local ranked=$(echo "$result" | column -t -s'|' | LC_ALL=C sort -k2rb,2 -k3b,3)   # sort: age
 
-    ShowMirrorlist    "\n### ${distro^} mirror list, ranked by command:\n### $progname $*\n"
+    ShowMirrorlist    "\n### ${distro^} mirror list, ranked $msg by command:\n### $progname $*\n"
     ShowRankingResult "\n### Ranking data:"
 }
 
