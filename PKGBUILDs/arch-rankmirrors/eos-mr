@@ -9,7 +9,8 @@ GetCurrentCountry() { cc="$(show-location-info country)"; [ "$cc" ] ; }
 GetContinentOfCountry() {
     local countrycode="${1^^}"   # uppercase
     GetContinents
-    echo "$countries_continents" | grep -w "$countrycode" | awk '{print $2}'
+    local out=$(echo "$countries_continents" | grep -w "$countrycode" | awk '{print $2}')
+    echo "$out"
 }
 GetContinents() {
     [ "$countries_continents" ] || countries_continents=$(location list-countries --show-continent)
@@ -21,13 +22,19 @@ ShowContinentCountries() {
         [ "$cc" ] || GetCurrentCountry
         GetContinents
         local cont_country_codes=$(echo "$countries_continents" | grep "$continent" | awk '{print $1}')
-        local code
+        local code 
         GetCountries
         case "$show" in
             code)
                 # echo "$cont_country_codes"
+                local out
                 for code in $cont_country_codes ; do
-                    echo "$reflector_list_countries" | grep "$code" | awk '{print $(NF-1)}'
+                    out=$(echo "$reflector_list_countries" | grep "$code" | awk '{print $(NF-1)}')
+                    if [ "$IGNORED_COUNTRY_CODES" ] ; then
+                        echo "$out" | grep -Pv "$IGNORED_COUNTRY_CODES"
+                    else
+                        echo "$out"
+                    fi
                 done
                 ;;
             name)
@@ -168,6 +175,10 @@ Main() {
     local suffix=""
     local reflector_list_countries=""
     local has_parallel=yes
+    local IGNORED_COUNTRY_CODES=""
+    local conf=$HOME/.config/$progname.conf
+
+    [ -e "$conf" ] && source "$conf"
 
     [ -x /bin/parallel ] || has_parallel=no # DIE "package 'parallel' is required"
 
