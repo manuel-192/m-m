@@ -4,55 +4,12 @@ echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage; exit 1; }
 WARN()        { echo2 -e "==> $progname: warning: $1"; }
 
-GetFile() {
-    local url="$1"
-
-    [ "$url" ] || DIE "no URL to test"
-
-    local curl_exitcode=0
-    local syncnr time result
-
-    result=$(curl --fail -Lsm $timeout -w "%{time_total}" "$url") || curl_exitcode=$?
-
-    case $curl_exitcode in
-        0)
-            time=$(  echo "$result" | tail -n1)
-            syncnr=$(echo "$result" | head -n1)
-
-	    if [ "${syncnr//[0-9]/}" ] ; then   # $syncnr must be a number!
-		WARN "unrecognized data returned by $url."
-                return 1
-	    fi
-	    if [ "${time//[0-9\.]/}" ] ; then   # $time may contain numbers and a dot!
-		WARN "unrecognized data returned by $url."
-                return 1
-	    fi
-
-            if [ "$distro" = "arch" ] && [ "$time_as_datetime" = "yes" ] ; then
-                syncnr=$(date --date="@$syncnr" "+%Y%m%d-%H%M%S")
-            fi
-
-            echo "${url%/*}|$syncnr|$time"
-            ;;
-        *)
-            WARN "$url failed, code $curl_exitcode"
-            ;;
-    esac
-}
-
 GetCurrentCountry() { cc="$(show-location-info country)"; [ "$cc" ] ; }
 
 TraverseMirrors() {
-    local mirror
-    local ix=1
-    local count=$(echo "$mirrors" | wc -l)
-
-    for mirror in $mirrors ; do
-        mirror="${mirror%%/\$repo/os/\$arch}/$syncfile"
-        printf "\r==> ranking %s/$count" $((ix++)) >&2
-        GetFile "$mirror"
-    done
-    echo2 ""
+    local timeout_rank=10
+    local mirrors_with_statefiles=$(echo "$mirrors" | sed "s|/\$repo/os/\$arch|/$syncfile|")
+    echo "$mirrors_with_statefiles" | parallel "eos-mr-rank-mirror {} $timeout_rank $distro $time_as_datetime"
 }
 
 DumpOptions() {
@@ -69,22 +26,38 @@ DumpOptions() {
     [ "$lopts$sopts" ] && echo $lopts $sopts
 }
 
-ListCountries() {
-    local data=$(reflector --list-countries | tail -n +3)
-    echo "$data" | awk '{print $(NF-1)}'
+GetCountries() {
+    local timeinfo="$HOME/.cache/$progname/timeinfo.txt"
+    local now=$(date +%j)
+    
+    if [ -z "$reflector_list_countries" ] || [ "$(< "$timeinfo")" != "$now" ] ; then
+        reflector_list_countries=$(reflector --list-countries) || DIE "cannot get list of countries"
+        reflector_list_countries=$(echo "$reflector_list_countries" | tail -n +3)
+    fi
+}
+ListCountryCodes() {
+    GetCountries
+    echo "$reflector_list_countries" | awk '{print $(NF-1)}'
+    exit 0
+}
+ListCountryNames() {
+    GetCountries
+    echo "$reflector_list_countries" | sed -E 's|([A-Z].+[a-z]) .*|"\1"|'
     exit 0
 }
 
 Usage() {
     cat <<EOF
+Rank Arch mirrors.
+
 Usage: $progname [options] [URLs]
 
 Options:
     --help                     This help.
-    --distro <name>            Distro who's native repos are ranked. Supported: 'arch' (default).
     --country <country-list>   A comma separated list of country code(s) for ranking their mirrors.
                                Case insensitive. Example: "--country de,gb".
     --country-current          Add current country code for mirrors to rank.
+    --list-country-codes       Show available country codes. See also: 'reflector --list-countries'.
     --ranking-data             Show ranking data too.
 
 URLs:                          URL(s) of mirrors to rank.
@@ -93,7 +66,7 @@ EOF
 
 Options() {
     local opts
-    local lopts="country:,country-current,distro:,dump-options,help,list-countries,ranking-data"
+    local lopts="country:,country-current,distro:,dump-options,help,list-country-codes,list-country-names,ranking-data"
     local sopts="c:d:hlr"
 
     opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || DIE "getopt error"
@@ -103,12 +76,13 @@ Options() {
         case "$1" in
             --) shift; break ;;
             -h | --help)            Usage; exit 0 ;;
-            -c | --country)         tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;            # must be country codes!
+            -c | --country)         tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;   # must be country codes!
             -l | --country-current) GetCurrentCountry && countries+=($cc) ;;
             -d | --distro)          distro="$2"; shift ;;
             -r | --ranking-data)    ranking_data=yes ;;
             --dump-options)         DumpOptions; exit 0 ;;
-            --list-countries)       ListCountries ;;
+            --list-country-codes)   ListCountryCodes; exit 0 ;;
+            --list-country-names)   ListCountryNames; exit 0 ;;
         esac
         shift
     done
@@ -117,7 +91,6 @@ Options() {
 
 Main() {
     local progname=${0##*/}
-
     local distro=""             # arch or endeavouros
     local urls=() url
     local timeout=10
@@ -130,6 +103,9 @@ Main() {
     local cc                    # current country
     local tmp
     local suffix=""
+    local reflector_list_countries=""
+
+    [ -x /bin/parallel ] || DIE "package 'parallel' is required"
 
     Options "$@"
 
@@ -165,7 +141,7 @@ Main() {
 
     local ranked=$(echo "$result" | column -t -s'|' | LC_ALL=C sort -k2rb,2 -k3b,3)   # sort: age
 
-    ShowMirrorlist    "\n### ${distro^} mirror list, ranked by command:\n### $progname $*"
+    ShowMirrorlist    "\n### ${distro^} mirror list, ranked by command:\n### $progname $*\n"
     ShowRankingResult "\n### Ranking data:"
 }
 

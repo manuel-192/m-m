@@ -1,0 +1,42 @@
+#!/bin/bash
+
+GetFile() {
+    local url="$1"
+    local timeout_rank="$2"
+    local distro="$3"
+    local time_as_datetime="$4"
+
+    [ "$url" ] || DIE "no URL to test"
+
+    local curl_exitcode=0
+    local syncnr time result
+
+    result=$(curl --fail -Lsm $timeout_rank -w "%{time_total}" "$url") || curl_exitcode=$?
+
+    case $curl_exitcode in
+        0)
+            time=$(  echo "$result" | tail -n1)
+            syncnr=$(echo "$result" | head -n1)
+
+	    if [ "${syncnr//[0-9]/}" ] ; then   # $syncnr must be a number!
+		WARN "unrecognized data returned by $url."
+                return 1
+	    fi
+	    if [ "${time//[0-9\.]/}" ] ; then   # $time may contain numbers and a dot!
+		WARN "unrecognized data returned by $url."
+                return 1
+	    fi
+
+            if [ "$distro" = "arch" ] && [ "$time_as_datetime" = "yes" ] ; then
+                syncnr=$(date --date="@$syncnr" "+%Y%m%d-%H%M%S")
+            fi
+
+            echo "${url%/*}|$syncnr|$time"
+            ;;
+        *)
+            WARN "$url failed, code $curl_exitcode"
+            ;;
+    esac
+}
+
+GetFile "$@"
