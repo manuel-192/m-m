@@ -1,10 +1,15 @@
 #!/bin/bash
 
-GetFile() {
+echo2()       { echo "$@" >&2; }
+DIE()         { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
+WARN()        { echo2 -e "==> $progname: warning: $1"; }
+
+RankMirror() {
     local url="$1"
     local timeout_rank="$2"
     local distro="$3"
     local time_as_datetime="$4"
+    local -r progname=${0##*/}
 
     [ "$url" ] || DIE "no URL to test"
 
@@ -34,9 +39,9 @@ GetFile() {
             echo "${url%/*}|$syncnr|$time"
             ;;
         *)
-            WARN "$url failed, code $curl_exitcode"
+            WARN "$url fetching failed\n      -> (curl: $(curl-exit-code-to-string $curl_exitcode))"
             ;;
     esac
 }
 
-GetFile "$@"
+RankMirror "$@"
