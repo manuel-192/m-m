@@ -110,6 +110,8 @@ Main() {
     # Vscodium that supports bash debugging.
     # Delivers app parameters by changing 'args' in settings.json.
 
+    local -r progname=${0##*/}
+
     local -r RED=$'\e[0;91m'         # starts this foreground text color
     local -r GREEN=$'\e[0;92m'
     local -r RESET=$'\e[0m'          # back to normal colors
@@ -133,7 +135,6 @@ Main() {
     done
     [ "$appconfdir" ] || DIE "none of '${APPS_SUPPORTED[*]}' is installed?"
 
-    local -r progname=${0##*/}
     local -r settings_file="$HOME/.config/$appconfdir/User/settings.json"
     local -r own_settings_file="$HOME/.config/$appconfdir/User/own-settings.json"
     local -r special_string="# 'bide' will overwrite only the parameter list on this line"
