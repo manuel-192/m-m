@@ -31,12 +31,13 @@ _eos-mr_()
     local cur prev #words cword split
     _init_completion -s || return
 
-    local dir="$HOME/.cache/eos-mr"              # does $HOME work ???
-    local timefile="$dir/timeinfo.txt"
-    local countrycodes="$dir/countrycodes.txt"
-    local countrynames="$dir/countrynames.txt"
-    local optionsfile="$dir/optionsfile.txt"
-    local now=$(date +%j)
+    local -r dir="$HOME/.cache/eos-mr"              # does $HOME work ???
+    local -r timefile="$dir/timeinfo.txt"
+    local -r countrycodes="$dir/countrycodes.txt"
+    local -r countrynames="$dir/countrynames.txt"
+    local -r optionsfile="$dir/optionsfile.txt"
+    local -r continents=(AF AN AS EU NA OC SA)
+    local -r now=$(date +%j)
     local prevtime=""
 
     mkdir -p "$dir"
@@ -52,6 +53,7 @@ _eos-mr_()
     case "$prev" in
         -d | --distro)   _eos-mr_complete "arch" ;;
         -c | --country)  _eos-mr_listselector "$cur" "$(< "$countrycodes")" ;;
+        --show-continent-countrycodes | --show-continent-countrynames) _eos-mr_complete "${continents[*]}" ;;
         *)               _eos-mr_complete "$options" ;;
     esac
 }
