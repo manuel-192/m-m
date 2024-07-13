@@ -8,22 +8,36 @@ GetCurrentCountry() { cc="$(show-location-info country)"; [ "$cc" ] ; }
 
 GetContinentOfCountry() {
     local countrycode="${1^^}"   # uppercase
-    GetContinents
+    GetContinentsData
     local out=$(echo "$countries_continents" | grep -w "$countrycode" | awk '{print $2}')
     echo "$out"
 }
-GetContinents() {
+GetContinentsData() {
     [ "$countries_continents" ] || countries_continents=$(location list-countries --show-continent)
+}
+ShowContinents() {
+    [ "$continents" ] || GetContinentsData
+    echo "$countries_continents" | awk '{print $NF}' | sort -u
+}
+ShowContinentsCountries() {
+    local continents="$1"
+    local continent=""
+    local tmp=$(
+    for continent in $continents ; do
+        ShowContinentCountries "$continent" code
+    done)
+    tmp=$(echo $tmp | tr ' ' '\,' | sed 's|\,\,|\,|g')
+    echo "$tmp"
 }
 ShowContinentCountries() {
     local continent="$1"
     local show="$2"       # name or code
     if [ -x /bin/location ] ; then
         [ "$cc" ] || GetCurrentCountry
-        GetContinents
+        GetContinentsData
         local cont_country_codes=$(echo "$countries_continents" | grep "$continent" | awk '{print $1}')
         local code 
-        GetCountries
+        GetCountriesData
         case "$show" in
             code)
                 # echo "$cont_country_codes"
@@ -52,16 +66,16 @@ ShowContinentCountries() {
     fi
 }
 ListCountryCodes() {
-    GetCountries
+    GetCountriesData
     echo "$reflector_list_countries" | awk '{print $(NF-1)}'
     exit 0
 }
 ListCountryNames() {
-    GetCountries
+    GetCountriesData
     echo "$reflector_list_countries" | sed -E 's|([A-Z].+[a-z]) .*|"\1"|'
     exit 0
 }
-GetCountries() {
+GetCountriesData() {
     local timeinfo="$HOME/.cache/$progname/timeinfo.txt"
     local now=$(date +%j)
     
@@ -108,30 +122,32 @@ DumpOptions() {
 }
 
 Usage() {
+#Usage: $progname [options] [URLs]
+#URLs:                          URL(s) of mirrors to rank.
+#    --list-country-codes           Show available country codes. See also: 'reflector --list-countries'.
+#    --list-country-names           Show available country names. See also: 'reflector --list-countries'.
+#    --show-continent-countries     Show the country codes of a continent based on given country code.
     cat <<EOF
 Rank Arch mirrors.
 
-Usage: $progname [options] [URLs]
+Usage: $progname [options]
 
 Options:
-    --help                     This help.
-    --country <country-list>   A comma separated list of country code(s) for ranking their mirrors.
-                               Case insensitive. Example: "--country de,gb".
-    --country-current          Add current country code for mirrors to rank.
-    --list-country-codes       Show available country codes. See also: 'reflector --list-countries'.
-    --ranking-data             Show ranking data too.
-    --show-continent-countries Show the country codes of a continent based on given country code.
-
-URLs:                          URL(s) of mirrors to rank.
+    -h, --help                     This help.
+    -A, --all                      Rank all available mirrors.
+    -C, --continent                Rank all available countries of the current continent.
+    -c, --country <country-list>   A comma separated list of country code(s) for ranking their mirrors.
+                                   Codes are case insensitive. Example: "--country de,gb".
+    -l, --country-current          Add current country code for mirrors to rank.
+    --ranking-data                 Show ranking data too.
 EOF
 }
-
 Options() {
     local opts
-    local lopts="country:,country-current,distro:,dump-options,help,list-country-codes,list-country-names,ranking-data"
+    local lopts="all,continent,country:,country-current,distro:,dump-options,help,list-country-codes,list-country-names,ranking-data"
     lopts+=",show-continent-countrycodes:,show-continent-countrynames:"
-    lopts+=",show-current-continent-countrycodes,show-current-continent-countrynames,current-continent"
-    local sopts="c:d:hlrt"
+    lopts+=",show-current-continent-countrycodes,show-current-continent-countrynames"
+    local sopts="Ac:d:hlrt"
 
     opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || DIE "getopt error"
     eval set -- "$opts"
@@ -140,9 +156,14 @@ Options() {
         case "$1" in
             --)                                    shift; break ;;
             -h | --help)                           Usage; exit 0 ;;
+            -A | --all)                             local tmp1=$(ShowContinentsCountries "AF AN AS EU NA OC SA")
+                                                    Options -c $tmp1
+                                                    #exit
+                                                    ;;
+                                                    # Options -c $(ShowContinentsCountries "AF AN AS EU NA OC SA"); exit ;;
+            -C | --continent)                      Options -c $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',') ;;
             -c | --country)                        local tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;   # must be country codes!
             -l | --country-current)                GetCurrentCountry && countries+=($cc) ;;
-            -t | --current-continent)              Options -c $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',') ;;
             -d | --distro)                         distro="$2"; shift ;;
             -r | --ranking-data)                   ranking_data=yes ;;
             --dump-options)                        DumpOptions; exit 0 ;;
