@@ -31,12 +31,14 @@ _eos-mr_()
     local cur prev #words cword split
     _init_completion -s || return
 
-    local -r dir="$HOME/.cache/eos-mr"              # does $HOME work ???
-    local -r timefile="$dir/timeinfo.txt"
-    local -r countrycodes="$dir/countrycodes.txt"
-    local -r countrynames="$dir/countrynames.txt"
-    local -r optionsfile="$dir/optionsfile.txt"
-    local -r continents=(AF AN AS EU NA OC SA)
+    local completion_files=($(eos-mr --dump-completion-files))
+
+    local -r dir="${completion_files[0]}"
+    local -r timefile="${completion_files[1]}"
+    local -r countrycodes="${completion_files[2]}"
+    local -r countrynames="${completion_files[3]}"
+    local -r optionsfile="${completion_files[4]}"
+    local -r continents=(${completion_files[5]//,/ } )
     local -r now=$(date +%j)
     local prevtime=""
 

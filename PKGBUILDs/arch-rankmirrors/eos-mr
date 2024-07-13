@@ -134,7 +134,7 @@ Usage: $progname [options]
 
 Options:
     -h, --help                     This help.
-    -A, --all                      Rank all available mirrors.
+    -A, --all                      Rank all available mirrors on all continents.
     -C, --continent                Rank all available countries of the current continent.
     -c, --country <country-list>   A comma separated list of country code(s) for ranking their mirrors.
                                    Codes are case insensitive. Example: "--country de,gb".
@@ -144,39 +144,50 @@ EOF
 }
 Options() {
     local opts
-    local lopts="all,continent,country:,country-current,distro:,dump-options,help,list-country-codes,list-country-names,ranking-data"
-    lopts+=",show-continent-countrycodes:,show-continent-countrynames:"
+    local lopts="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,help"
+    lopts+=",list-country-codes,list-country-names,ranking-data"
+    lopts+=",reset-completion-files,show-continent-countrycodes:,show-continent-countrynames:"
     lopts+=",show-current-continent-countrycodes,show-current-continent-countrynames"
-    local sopts="Ac:d:hlrt"
+    local sopts="ACc:d:hlrt"
 
     opts="$(/usr/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || DIE "getopt error"
     eval set -- "$opts"
 
     while true ; do
         case "$1" in
-            --)                                    shift; break ;;
-            -h | --help)                           Usage; exit 0 ;;
-            -A | --all)                             local tmp1=$(ShowContinentsCountries "AF AN AS EU NA OC SA")
+            --)                                     shift; break ;;
+            -h | --help)                            Usage; exit 0 ;;
+            -A | --all)                             local tmp1=$(ShowContinentsCountries "$all_continents")
                                                     Options -c $tmp1
-                                                    #exit
                                                     ;;
-                                                    # Options -c $(ShowContinentsCountries "AF AN AS EU NA OC SA"); exit ;;
-            -C | --continent)                      Options -c $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',') ;;
-            -c | --country)                        local tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;   # must be country codes!
-            -l | --country-current)                GetCurrentCountry && countries+=($cc) ;;
-            -d | --distro)                         distro="$2"; shift ;;
-            -r | --ranking-data)                   ranking_data=yes ;;
-            --dump-options)                        DumpOptions; exit 0 ;;
-            --list-country-codes)                  ListCountryCodes; exit 0 ;;
-            --list-country-names)                  ListCountryNames; exit 0 ;;
-            --show-continent-countrycodes)         ShowContinentCountries "$2" code; exit ;;
-            --show-continent-countrynames)         ShowContinentCountries "$2" name; exit ;;
-            --show-current-continent-countrycodes) GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code; exit ;;
-            --show-current-continent-countrynames) GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name; exit ;;
+            -C | --continent)                       Options -c $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',') ;;
+            -c | --country)                         local tmp="${2^^}"; countries+=( ${tmp//,/ } ); shift ;;   # must be country codes!
+            -l | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
+            -d | --distro)                          distro="$2"; shift ;;
+            -r | --ranking-data)                    ranking_data=yes ;;
+            --dump-options)                         DumpOptions; exit 0 ;;
+            --dump-completion-files)                ShowCompletionFiles; exit 0 ;;
+            --reset-completion-files)               ResetCompletionFiles; exit 0 ;;
+            --list-country-codes)                   ListCountryCodes; exit 0 ;;
+            --list-country-names)                   ListCountryNames; exit 0 ;;
+            --show-continent-countrycodes)          ShowContinentCountries "$2" code; exit ;;
+            --show-continent-countrynames)          ShowContinentCountries "$2" name; exit ;;
+            --show-current-continent-countrycodes)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code; exit ;;
+            --show-current-continent-countrynames)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name; exit ;;
         esac
         shift
     done
     urls+=("$@")
+}
+
+ShowCompletionFiles() {
+    local -r dir="$HOME/.cache/$progname"
+    echo "$dir" "$dir/timeinfo.txt" "$dir/countrycodes.txt" "$dir/countrynames.txt" "$dir/optionsfile.txt" \
+         "${all_continents// /,}"   # ShowContinents
+}
+ResetCompletionFiles() {
+    local xx=($(ShowCompletionFiles))
+    rm -f ${xx[0]}/*.txt
 }
 
 Main() {
@@ -198,6 +209,7 @@ Main() {
     local has_parallel=yes
     local IGNORED_COUNTRY_CODES=""
     local conf=$HOME/.config/$progname.conf
+    local -r all_continents="AF AN AS EU NA OC SA"
 
     [ -e "$conf" ] && source "$conf"
 
