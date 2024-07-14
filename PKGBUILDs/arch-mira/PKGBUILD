@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=arch-mira
+pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=24
+pkgrel=0.1
+
+arch=('any')
+license=('GPL')
+depends=(
+    bash
+    curl
+    python-location         # for finding continent info
+    reflector               # for listing available Arch mirrors
+)
+optdepends=(
+    'parallel: for ranking mirrors in parallel'
+    'eos-bash-shared: curl exit code as string'
+)
+backup=()
+
+source=(
+    $url/$pkgname                         # ranks Arch mirrors
+    $url/$pkgname.completion              # bash completion
+    $url/${pkgname}-rank-mirror           # rank a mirror
+)
+sha512sums=('4263dc9ce4174d0dbd6a7050c6b634c9b5f54547e4ce561cc02ad85d66ed20b568bf9e2e3543b0cf70dcad60532ec33c0944fcceb372605405e70a38f3cd21e6'
+            'c2fa71993a3c7dcecb6b761ad6980f2532348adc934d0da07770ef797d913c4f44bfbea7896eb8d87b1ec70c68a635a6fad6238a9be1f483905b0b66d4f1e762'
+            'd3beac869b409ecd80b3e016fdf41a1c8504d27166e733360128801c3e30bfc07ca64c09fc1491dc3795d6ebf0ecfdeab7e15373bf09d29e6e5d639a181a45c7')
+
+package() {
+    local src
+    local bin=usr/bin
+
+    for src in "${source[@]}" ; do
+        src="$(basename "$src")"
+        case "$src" in
+            *.conf)              install -Dm644 $src  "$pkgdir/etc/$src" ;;
+            *.completion)        install -Dm644 $src  "$pkgdir/usr/share/bash-completion/completions/${src%.completion}" ;;
+            *)                   install -Dm755 $src  "$pkgdir/$bin/$src" ;;
+        esac
+    done
+}
