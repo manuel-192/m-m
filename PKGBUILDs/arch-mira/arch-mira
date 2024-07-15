@@ -223,7 +223,7 @@ Options() {
 
 Main() {
     local -r progname=${0##*/}
-    local -r progname_helper=${progname}-rank-mirror
+    local -r progname_helper=${progname}-helper
     local distro=""             # arch or endeavouros
     local urls=() url
     local timeout=10

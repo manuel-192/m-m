@@ -48,4 +48,4 @@ _arch-mira_()
         *)               _arch-mira_complete "$options" ;;
     esac
 }
-complete -F _arch-mira_    arch-mira
+complete -F _arch-mira_    arch-mira 
