@@ -6,7 +6,7 @@ pkgname=arch-mira
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=0.2
+pkgrel=0.3
 
 arch=('any')
 license=('GPL')
@@ -19,15 +19,17 @@ depends=(
 optdepends=(
     'parallel: for ranking mirrors in parallel'
     'eos-bash-shared: curl exit code as string'
+#    'time: supports total time calculation'
 )
 backup=()
 
 source=(
     $url/$pkgname                         # ranks Arch mirrors
+#    $url/${pkgname}2                      # ranks Arch mirrors 2
     $url/$pkgname.completion              # bash completion
     $url/${pkgname}-helper                # rank a mirror
 )
-sha512sums=('7b37e2d82af725f247aaa0607cd0c2f5df40c4ba51ca7c1dbce70676f385c6ba0db1fb4078520b0aa627b69b40a96d8357930d3dc31394680633e4c7628e8482'
+sha512sums=('8aa55810979b875ecfb36490dd7f5c165f0c680fabca1db8d5a65529b6ad0d752c5c63927c2f914f1a974b6e6689771b091fa5359f5aac069a24d8b9c8e4578e'
             '70362ad580b81daf29bb5e89414ae56891e34ad18e6d0dcfc9f40de40326f77b05a5258e6f7ca296dc536b539f648b2c3a07f7a49823691ddaf5e3a4db4f9490'
             'd3beac869b409ecd80b3e016fdf41a1c8504d27166e733360128801c3e30bfc07ca64c09fc1491dc3795d6ebf0ecfdeab7e15373bf09d29e6e5d639a181a45c7')
 
