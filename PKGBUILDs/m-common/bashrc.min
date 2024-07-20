@@ -1075,7 +1075,7 @@ EOF
     Alias complete-packages  "complete -F _complete-packages_"
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
-    Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
+    # Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
     if [ -x /usr/local/bin/history-del ] ; then
         Alias history-del        "$(cat /usr/local/bin/history-del | grep ^history)"
     else
