@@ -4,7 +4,7 @@ echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
 WARN()        { echo2 -e "==> $progname: warning: $1"; }
 
-RankMirror() {
+RankOneMirror() {  # ranks one mirror
     local url="$1"
     local timeout_rank="$2"
     local distro="$3"
@@ -14,7 +14,9 @@ RankMirror() {
     [ "$url" ] || DIE "no URL to test"
 
     local curl_exitcode=0
-    local syncnr time result
+    local syncnr
+    local time
+    local result
 
     result=$(curl --fail -Lsm $timeout_rank -w "%{time_total}" "$url") || curl_exitcode=$?
 
@@ -32,9 +34,9 @@ RankMirror() {
                 return 1
 	    fi
 
-            if [ "$distro" = "arch" ] && [ "$time_as_datetime" = "yes" ] ; then
-                syncnr=$(date --date="@$syncnr" "+%Y%m%d-%H%M%S")
-            fi
+            case "$distro" in
+                arch) [ "$time_as_datetime" = "yes" ] && syncnr=$(date --date="@$syncnr" "+%Y%m%d-%H%M%S") ;;
+            esac
 
             echo "${url%/*}|$syncnr|$time"
             ;;
@@ -48,4 +50,4 @@ RankMirror() {
     esac
 }
 
-RankMirror "$@"
+RankOneMirror "$@"

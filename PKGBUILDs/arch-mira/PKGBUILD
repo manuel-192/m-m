@@ -6,7 +6,7 @@ pkgname=arch-mira
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=0.3
+pkgrel=0.4
 
 arch=('any')
 license=('GPL')
@@ -25,13 +25,14 @@ backup=()
 
 source=(
     $url/$pkgname                         # ranks Arch mirrors
-#    $url/${pkgname}2                      # ranks Arch mirrors 2
     $url/$pkgname.completion              # bash completion
-    $url/${pkgname}-helper                # rank a mirror
+    $url/arch-mira-helper
+    $url/arch-mirror-status
 )
-sha512sums=('8aa55810979b875ecfb36490dd7f5c165f0c680fabca1db8d5a65529b6ad0d752c5c63927c2f914f1a974b6e6689771b091fa5359f5aac069a24d8b9c8e4578e'
-            '70362ad580b81daf29bb5e89414ae56891e34ad18e6d0dcfc9f40de40326f77b05a5258e6f7ca296dc536b539f648b2c3a07f7a49823691ddaf5e3a4db4f9490'
-            'd3beac869b409ecd80b3e016fdf41a1c8504d27166e733360128801c3e30bfc07ca64c09fc1491dc3795d6ebf0ecfdeab7e15373bf09d29e6e5d639a181a45c7')
+sha512sums=('0d7c41134770dd3a6d40ed82715e8b84b253e0803e4d0e4a4c8022b9c75554c6a01b8184beb17a849b356aa1bc98c6f4fc964f5c8303ceaa469187b4500d9e2d'
+            'f49530584823221622b9542f52f85a6ecb2cc1f7ba673d9e9a7bdc6d4cb7846c73f7ce33a21fdd20dadb2a8753dc23af1579a2828d4888b5d711f0f397cccbc9'
+            'e63bece1e650e6ccf4e77c202b3245d54cd69c44520c3f5ece206a683caf472fc9eeb95af1082fdffc9c57422cfd8e6dd3cca05d22440fcd72e628410222dd58'
+            '7f1acd85c06aef6a261188a6adc4740d9f67b4e691a55e1164b55e1d714262b456b38cd4de781414cdc221b088ec5d5bbb80a43f515430d63bfe84f2cdb8cd65')
 
 package() {
     local src

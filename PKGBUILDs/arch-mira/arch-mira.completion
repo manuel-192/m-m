@@ -23,7 +23,7 @@ _arch-mira_listselector()
 _arch-mira_complete() {
     COMPREPLY=( $(compgen -W "$1" -- "$cur") )
     [[ $COMPREPLY == *= ]] && compopt -o nospace
-    compopt -o nosort
+    # compopt -o nosort
 }
 
 _arch-mira_() 

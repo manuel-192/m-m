@@ -2,7 +2,11 @@
 
 echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage; exit 1; }
-WARN()        { echo2 -e "==> $progname: warning: $1"; }
+WARN()        {
+    local app="$progname"
+    [ "$app" ] || app="${FUNCNAME[1]}"
+    echo2 -e "==> $app: warning: $1"
+}
 
 GetCurrentCountry() { cc="$(show-location-info country)"; [ "$cc" ] ; }
 
@@ -90,39 +94,58 @@ UpdateCompletionFiles() {
     local -r countrynames="${completion_files[3]}"
     local -r optionsfile="${completion_files[4]}"
     # local -r continents=(${completion_files[5]//,/ } )
+    local -r reflector_countries_file="$dir/reflectorcountries.txt"
     local -r now=$(GetTimeInfo)
     local prevtime=""
 
     mkdir -p "$dir"
 
     [ -e "$timefile" ] && prevtime=$(< "$timefile")
-    if [ "$now" != "$prevtime" ] ; then
-        echo "$now"                 > "$timefile"
-        $progname --list-country-codes > "$countrycodes"
-        $progname --list-country-names > "$countrynames"
-        $progname --dump-options       > "$optionsfile"
-        # printf "%s\n" "$dir"/*.txt | sed "s|^$HOME|  ~|"
-    fi
+    [ -e "$reflector_countries_file" ] && reflector_list_countries=$(< "$reflector_countries_file")
+
     if [ -z "$reflector_list_countries" ] || [ "$now" != "$prevtime" ] ; then
         reflector_list_countries=$(reflector --list-countries) || DIE "cannot get list of countries"
         reflector_list_countries=$(echo "$reflector_list_countries" | tail -n +3)
+        echo "$reflector_list_countries" > "$reflector_countries_file"
+    fi
+
+    if [ "$now" != "$prevtime" ] ; then
+        echo "$now"      > "$timefile"
+        ListCountryCodes > "$countrycodes"
+        ListCountryNames > "$countrynames"
+        DumpOptions      > "$optionsfile"
     fi
 }
 
 ShowCompletionFiles() {
     local -r dir="$HOME/.cache/$progname"
-    echo "$dir" "$dir/timeinfo.txt" "$dir/countrycodes.txt" "$dir/countrynames.txt" "$dir/optionsfile.txt" \
-         "${all_continents// /,}"   # ShowContinents
+    local -r continents=(
+        "$dir"
+        "$dir/timeinfo.txt"
+        "$dir/countrycodes.txt"
+        "$dir/countrynames.txt"
+        "$dir/optionsfile.txt"
+        "${all_continents// /,}"
+        "$dir/reflectorcountries.txt"
+    )
+    echo "${continents[@]}"
 }
 ResetCompletionFiles() {
     local xx=($(ShowCompletionFiles))
-    rm -f ${xx[0]}/*.txt
+    local item
+
+    for item in "${xx[@]}" ; do
+        case "$item" in
+            *.txt) echo2 "rm -f $item"; rm -f "$item" ;;
+        esac
+    done
+    
 }
 
 TraverseMirrors-parallel() {
     echo2 "==> $progname: ranking mirrors in parallel"
     local mirrors_with_statefiles=$(echo "$mirrors" | sed "s|/\$repo/os/\$arch|/$syncfile|")
-    echo "$mirrors_with_statefiles" | parallel "$progname_helper {} $timeout_rank $distro $time_as_datetime"
+    echo "$mirrors_with_statefiles" | parallel "$progname_helper {} '$timeout_rank' '$distro' '$time_as_datetime'"
 }
 
 TraverseMirrors-sequential() {
@@ -160,6 +183,7 @@ Usage() {
 #    --list-country-names           Show available country names. See also: 'reflector --list-countries'.
 #    --show-continent-countries     Show the country codes of a continent based on given country code.
     cat <<EOF
+
 Rank Arch mirrors and display them.
 
 Usage: $progname [options]
@@ -173,6 +197,7 @@ Options:
     -i, --ignored-countries <list>   A pipe separated list of country codes to ignore.
     -l, --list-country-codes-names   List all available country codes and names.
     -r, --ranking-data               Show ranking data too.
+    -u                               Update mirror info first.
     --timeout-rank                   Max timeout in seconds for ranking a mirror.
     --timeout                        Max timeout in seconds for other than ranking.
     -h, --help                       This help.
@@ -188,13 +213,13 @@ EOF
 Options() {
     local opts
     local lopts=""
-    lopts+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,help"
+    lopts+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,full-data,help"
     lopts+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data"
     lopts+=",reset-completion-files,show-continent-countrycodes:,show-continent-countrynames:,update-completion-files"
     lopts+=",show-current-continent-countrycodes,show-current-continent-countrynames,get-time-info"
-    lopts+=",ignored-countries:,timeout:,timeout-rank:"
+    lopts+=",ignored-countries:,timeout:,timeout-rank:,no-parallel,no-config"
     # lopts+=",save:"
-    local sopts="ACc:d:hi:lrt"
+    local sopts="ACc:d:hi:lrtu"
 
     opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || DIE "getopt error"
     eval set -- "$opts"
@@ -213,6 +238,10 @@ Options() {
             -l | --list-country-codes-names)        ListCountryCodesNames; exit 0 ;;
             -t | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
             -r | --ranking-data)                    ranking_data=yes ;;
+            --full-data)                            full_data=yes ;;
+            --no-parallel)                          has_parallel=no ;;
+            --no-config)                            read_config=no ;;
+            -u)                                     update_mirrordata_first=yes ;;
             --dump-options)                         DumpOptions; exit 0 ;;
             --dump-completion-files)                ShowCompletionFiles; exit 0 ;;
             --update-completion-files)              UpdateCompletionFiles; exit 0 ;;
@@ -224,7 +253,7 @@ Options() {
             --show-continent-countrynames)          ShowContinentCountries "$2" name; exit ;;
             --show-current-continent-countrycodes)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code; exit ;;
             --show-current-continent-countrynames)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name; exit ;;
-            --timeout)                              timeout="$2"; shift ;;
+            --timeout)                              timeout_distro="$2"; shift ;;
             --timeout-rank)                         timeout_rank="$2"; shift ;;
             # --save)                                 savefile="$2"; shift ;;
         esac
@@ -233,18 +262,27 @@ Options() {
     urls+=("$@")
 }
 
+PreHandleOptions() {
+    local arg
+    for arg in "$@" ; do
+        case "$arg" in
+            --no-config) read_config=no; break ;;
+        esac
+    done
+}
+
 Main() {
     local -r progname=${0##*/}
-    local -r progname_helper=${progname%2}-helper
-    local distro=""             # arch or endeavouros
+    local -r progname_helper=arch-mira-helper  # ${progname%2}-helper
+    local distro=arch                   # arch (maybe later: endeavouros)
     local urls=() url
-    local timeout=10
+    local timeout_distro=30
     local timeout_rank=20
     local syncfile=""
     local mirrors
-    local mirrorlist=""
     local time_as_datetime=no
     local ranking_data=no
+    local full_data=no
     local countries=()                  # contains only uppercase country codes
     local cc=""                         # current country
     local countries_continents=""
@@ -253,43 +291,45 @@ Main() {
     local suffix=""
     local reflector_list_countries=""
     local has_parallel=yes
+    local read_config=yes
+    local update_mirrordata_first=no
     local ignored_country_codes=""
     local CONFIG_OPTIONS=""
+    local ecode=0
     local -r config_file="$HOME/.config/$progname.conf"
     local -r all_continents="AF AN AS EU NA OC SA"
 
     [ -x /bin/parallel ] || has_parallel=no
 
-    [ -e "$config_file" ] && source "$config_file"
+    PreHandleOptions "$@"
+    if [ $read_config = yes ] && [ -e "$config_file" ] ; then
+        source "$config_file"
+    fi
 
     Options "${CONFIG_OPTIONS[@]}" "$@"
 
     case "$distro" in
-        "" | arch)
-            distro=arch
+        arch)
             if [ ${#countries[@]} -eq 0 ] ; then
                 echo2 "==> option --country not used -> automatically adding the current country for ranking, if possible"
                 GetCurrentCountry && countries+=($cc) && echo2 "==> added: $cc" || DIE "no countries given for ranking."
             fi
-            mirrorlist=/etc/pacman.d/mirrorlist
             syncfile=lastupdate
             time_as_datetime=yes
             suffix='/$repo/os/$arch'
-            url="https://archlinux.org/mirrorlist/?protocol=https&ip_version=4&use_mirror_status=on"
-            for tmp in "${countries[@]}" ; do
-                url+="&country=$tmp"
-            done
-            mirrors=$(curl -Lsm $timeout "$url" | grep "^#Server = " | awk '{print $NF}')
+            local countries2="${countries[*]}"
+            local update=""
+            [ $update_mirrordata_first = yes ] && update="-u"
+            mirrors=$(arch-mirror-status -c ${countries2// /,} -t $timeout_distro $update) || exit 1
             ;;
         endeavouros)
-            DIE "sorry, waiting for implementation!"
-            mirrorlist=/etc/pacman.d/endeavouros-mirrorlist
+            DIE "sorry, support for EndeavourOS not yet implemented."
             syncfile=state
             suffix='/$repo/$arch'
-            # TODO: fetch endeavouros-mirrorlist !!
+            local mirrorlist=""    # TODO: fetch endeavouros-mirrorlist !!
             mirrors=$(grep "^Server[ \t]*=[ \t]*" "$mirrorlist" | awk '{print $NF}')
             ;;
-        *)  DIE "distro $distro not supported." ;;
+        *)  DIE "sorry, distro '$distro' not supported." ;;
     esac
 
     local msg=""
@@ -314,9 +354,16 @@ Main() {
 CreateMirrorlistFile() {
     ShowMirrorlist    "\n### ${distro^} mirror list, ranked $msg by command:\n### $progname ${CONFIG_OPTIONS[*]} $*\n"
     ShowRankingData
+    ShowFullData
 }
 
-ShowMirrorlist()    { echo -e "$1"; echo "$ranked" | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|"; }
+ShowFullData()    {
+    if [ $full_data = yes ] ; then
+        echo -e "\n### Full data:"
+        echo "$ranked"
+    fi
+}
+ShowMirrorlist()  { echo -e "$1"; echo "$ranked" | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|"; }
 ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         local -r count=$(echo "$ranked" | wc -l)
