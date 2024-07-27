@@ -1,0 +1,21 @@
+# Maintainer: EndeavourOS-Team <info@endeavouros.com>
+
+pkgname=expac-bash-completion
+pkgdesc="Bash completion support for 'expac'"
+pkgver=24
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(bash-completion
+         expac)
+url=https://github.com/endeavouros-team/PKGBUILDS/tree/master/$pkgname
+_url="https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/$pkgname"
+
+source=(
+  $_url/$pkgname
+)
+sha512sums=('1213accd9f08c23086a13781b9b4481592f24c6c5fb817020f8970dea5a93d87c3f241567fd3ab330fd39b74bb67810c019ce343d0fad3c07c3c7a9425158e54')
+
+package() {
+  install -Dm644 $pkgname  $pkgdir/usr/share/bash-completion/completions/${pkgname%%-*}
+}

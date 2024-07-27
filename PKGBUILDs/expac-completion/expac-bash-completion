@@ -1,0 +1,122 @@
+# bash completion for expac        -*- shell-script -*-
+
+_expac_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_expac_complete_delay() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))          # float
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_expac_complete_threads() {
+    COMPREPLY=($(compgen -W "{1..99}" -- "$cur"))     # uint8
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_expac_complete_countries() {
+    local -r file=$folder/countrylist.$(/bin/date +%Y%V)     # update countrylist weekly
+    local country_names
+
+    mkdir -p $folder
+    if [ -r $file ] ; then
+        country_names="$(< $file)"
+    else
+        rm -f ${file%.*}.*
+        country_names=$(/bin/expac --list-countries) || return 1
+        country_names=$(echo "$country_names" | /bin/sed -e '1,2d' -e 's|^\(.*[a-z]\)[ ]*[A-Z][A-Z].*$|\1|')
+        echo "$country_names" > $file
+    fi
+
+    local IFS=$'\n'
+    COMPREPLY=( $(compgen -W "$country_names" -- "$cur") )
+    compopt -o nosort
+    compopt -o filenames
+}
+
+_expac_complete_mirrors() {
+    local -r file=$folder/mirrors.$date
+    mkdir -p $folder
+    if [ -r $file ] ; then
+        local mirrors=$(< $file)
+    else
+        local -r timeout=30
+        local -r url="https://archlinux.org/mirrorlist/?protocol=https&ip_version=4&use_mirror_status=on"
+        local mirrors=$(curl --fail -Lsm $timeout "$url" | grep "^#Server = " | awk '{print $NF}')
+        [ "$mirrors" ] || exit 1
+        echo "$mirrors" > $file
+    fi
+    mirrors=$(fzf -m < $file)
+
+    local IFS=$'\n'
+    COMPREPLY=( $(compgen -W "$mirrors" -- "$cur") )
+    compopt -o nosort
+    #compopt -o filenames
+}
+
+_expac_options() {
+    local opts=(
+        --help     -h
+        --query    -Q
+        --sync     -S
+        --search   -s
+        --group    -g
+        --config
+        --humanize -H
+        --readone  -1
+        --delim    -d
+        --listdelim -l
+        --file      -p
+        --timefmt   -t
+        --verbose   -v
+        --version   -V
+    )
+    echo "${opts[*]}"
+}
+
+_expac_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    local -r folder=$HOME/.config/expac-complete
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        --config)
+            _filedir
+            #COMPREPLY=($(compgen -P "$cur" -W "{0..9}"))
+            #compopt -o nospace
+            ;;
+        --humanize | -H)
+            COMPREPLY=($(compgen -W "B K M G T P E Z Y" -- "$cur"))
+            ;;
+        --delim | -d)
+            ;;
+        #--completion-percent)
+        #    COMPREPLY=($(compgen -W "{0..100}" -- "$cur"))
+        #    compopt -o nosort
+        #    ;;
+
+        *)
+            # Handle all top-level parameters.
+            case "$cur" in
+                -* | "")
+                    # Any option or nothing yet.
+                    _expac_complete "$(_expac_options)"
+                    ;;
+                *)
+                    # Non-option parameters.
+                    _expac_complete "$(expac %n)"
+                    ;;
+            esac
+            ;;
+    esac
+} &&
+complete -F _expac_ expac
