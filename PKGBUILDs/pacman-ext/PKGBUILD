@@ -6,7 +6,7 @@ pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24.7
-pkgrel=2
+pkgrel=3
 arch=(any)
 license=(GPL)
 depends=(bash expac
@@ -47,6 +47,7 @@ source=(
     $url/eos-pacmerge
     $url/update-system
     $url/expac-aur
+    $url/expac-aur.completion
     $url/fit
     $url/hook-update-description
     $url/local-update-checker   # don't installed
@@ -70,7 +71,8 @@ sha512sums=('100d92150f2195da9d8fa2e18d82c0a05a31089c0f943c6c4416d572d157371084b
             '2910e388755e63bed6935b5fb13e6b272c5f8316bd5fc2c85aebb1f95064f06096861c4167fbcf14b8da43cba19268c9918b90056f36600eb5d403d0b27cc72e'
             'bd59ec3e3f314228c43e0df0214757a17fc0f454d343ad9f48e161a578f3adae3205d83b528246e5ad8b1bde1de2aae4b913b0ff71b791d7520f4859a01a89e0'
             'd2cf54eb5cc28792119dec4feac125e1e0130130c3f7709e00e99bbefbc04585b1ae3b4a025952b2a8b7489e3aff74d4534e1951540a736fa8b0206d7d349172'
-            'd4ea3c9581af6d4dc03e846071875baf78d8cbe6718eb3cf2958e0730d6dcf12e7a27fd4389ffb006274fbb32b62746f48ae1c4ae4ceed0658cab6d0f16e93c5'
+            '15633ae2896322c62e419b77febd43a4887b63e1dfaab58d3cbb08001fcb5852cf7ac4b551d0b5d410cbbe133f3cc92169fa83e21bc6cbf397482ec653556439'
+            '0073861182839fd337a8f6a92474f0a882794311d3b40f9b609d451d1595a1223e2c3f9a5336f7e89810b98993ebf95ae3d1c3acfaad15321a00da35f4412b06'
             '97d53b212a7aa3835d09ccfe6d943c0634ee781c0e913095351d1027751afc17a85822d5a6d927d6f3422617b927e60ca8214944df7d4bae2a136cd75ac67d3c'
             '7514c14b3afdd557c72adbfd7029134b5aaf1676e306fa2a64ba3f12aa140c69f66b6018142213bb50c960e877a967bbb5dbbc7186025e51d1d8b8e986cf26c0'
             '091bb7afc755e65592131a15c1447e76b69b804d95e8ca5d8897c314ba47c2b7ecf84107c06640eae155d4a41105c2a292c35a5933c33af7f5967c72a2ef4dc9')

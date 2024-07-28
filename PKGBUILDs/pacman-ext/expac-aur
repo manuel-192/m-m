@@ -140,6 +140,20 @@ EOF
     done
 }
 
+MakeAurPkgList() {
+    if [ "$1" = "%n" ] && [ -z "$2" ] ; then
+        local -r timefile="$HOME/.cache/$progname.time"
+        local -r pkglistfile="$HOME/.cache/$progname.pkglist"
+        local -r now=$(/bin/date +%Y%V)
+        if [ "$now" != "$(/bin/cat "$timefile" 2>/dev/null)" ] ; then
+            yay -Pc | awk '{print $1}' > "$pkglistfile"
+            echo "$now" > "$timefile"
+        fi
+        cat "$pkglistfile"
+        exit
+    fi
+}
+
 Main()
 {
     local progname=${0##*/}
@@ -153,6 +167,8 @@ Main()
     local targets_installed=() targets_notinstalled=()
     local pkg
     local info_found=no
+
+    #MakeAurPkgList "$@"
 
     # rm -f "$errlog"
 
