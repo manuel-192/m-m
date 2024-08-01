@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIE() {
-    echo "error: $1" >&2
+    echo "$progname: error: $1" >&2
     exit 1
 }
 
@@ -33,11 +33,12 @@ Opener() {
 
 Main()
 {
+    local progname=${0##*/}
     local files=()
     local arg path
-    local opener=""
+    local opener=exo-open
 
-    Opener
+    which ${opener%% *} &>/dev/null || Opener
 
     for arg in "$@" ; do
         case "$arg" in
@@ -56,7 +57,11 @@ Main()
                 ;;
         esac
     done
-    [ ${#files[@]} -gt 0 ] && exo-open "${files[@]}"
+    if [ ${#files[@]} -gt 0 ] ; then
+        "$opener" "${files[@]}"
+    else
+        DIE "==> nothing to open."
+    fi
 }
 
 Main "$@"
