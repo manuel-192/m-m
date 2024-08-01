@@ -760,7 +760,8 @@ EOF
 
     Unalias welcome
     welcome() {
-        local arg welcome="eos-welcome --once"  # --lang=en"  # adding lang in this function is dangerous!!
+        local welcome="eos-welcome --once"  # --lang=en"  # adding lang in this function is dangerous!!
+        local arg
         for arg in "$@" ; do
             case "$arg" in
                 --installer)
