@@ -1,11 +1,9 @@
 #!/bin/bash
 
 # TODO:
-# - ignore mirrors
 # - favorite mirrors
 # - long time statistics?
 # - less failure output
-# - 
 
 echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage; exit 1; }
@@ -249,6 +247,16 @@ DumpOptions() {
     [ "$LOPTS$SOPTS" ] && echo $LOPTS $SOPTS
 }
 
+Edit() {
+    local editor=exo-open
+    which $editor &>/dev/null || editor=xdg-open
+    which $editor &>/dev/null || editor=kde-open
+    which $editor &>/dev/null || editor=emacs
+    which $editor &>/dev/null || editor=kate
+    which $editor &>/dev/null || DIE2 "no text editor found!"
+    $editor "$@"
+}
+
 Usage() {
 #Usage: $progname [options] [URLs]
 #URLs:                          URL(s) of mirrors to rank.
@@ -270,6 +278,7 @@ Options:
                                         --country de,gb          # adds DE and GB for ranking
                                         --country /de,dk         # sets DE and DK for ranking
     -t, --country-current            Include current country to be ranked.
+    -e, --edit-config                Edit your configuration file.
     -i, --ignore-mirrors <list>      A comma separated list of mirrors to ignore.
                                      A mirror can be a unique part of the mirror address.
     -x, --ignore-countries <list>    A comma separated list of country codes to ignore.
@@ -313,6 +322,7 @@ Options() {
             -c | --country)                         AddCountries "$2"; shift ;;                         # must be country codes!
             --continent-given)                      GivenContinent "$2"; shift ;;
             -d | --distro)                          distro="$2"; shift ;;
+            -e | --edit-config)                     exit 0 ;; # already handled
             -x | --ignore-countries)                IgnoreCountries "$2"; shift ;;
             -X | --ignore-continents)               IgnoreContinents "$2"; shift ;;
             -t | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
@@ -356,6 +366,7 @@ OptionsPreHandle() {
     while [ "$1" ] ; do
         case "$1" in
             -h | --help)                       Usage; exit 0 ;;
+            -e | --edit-config)                Edit "$config_file"; exit 0 ;;
             -i | --ignore-mirrors)             IgnoreMirrors "$2"; shift ;;
             --dump-completion-files)           ShowCompletionFiles; exit 0 ;;
             -l | --list-country-codes-names)   ListCountryCodesNames; exit 0 ;;
@@ -408,7 +419,7 @@ Main() {
     local args=() args_orig=("$@")
     local completion_files_updated=no
 
-    local SOPTS="ACc:d:hi:x:lrtu"
+    local SOPTS="ACc:d:ehi:x:lrtu"
     SOPTS+="I"
 
     local LOPTS=""
@@ -417,7 +428,7 @@ Main() {
     LOPTS+=",reset-completion-files,show-continent-countrycodes:,show-continent-countrynames:,update-completion-files"
     LOPTS+=",show-current-continent-countrycodes,show-current-continent-countrynames,get-time-info"
     LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
-    LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:"
+    LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config"
     # LOPTS+=",save:"
 
     [ -x /bin/parallel ] || has_parallel=no
