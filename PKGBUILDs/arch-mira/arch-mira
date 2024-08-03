@@ -114,7 +114,7 @@ ListCountryCodesNames() {
     echo "$reflector_list_countries" | sed -E 's/([A-Z].+[a-z])[ ]+([A-Z][A-Z]) .*/\2  \1/'
 }
 GetCountriesData() {
-    UpdateCompletionFiles
+    [ "$reflector_list_countries" ] || UpdateCompletionFiles
 }
 GivenContinent() {
     local continent1="$1"
@@ -176,23 +176,20 @@ UpdateCompletionFiles() {
     local -r now=$(GetTimeInfo)
     local prevtime=""
 
+    [ "$dir" ] || DIE "no folder name for the completion files"
+
     mkdir -p "$dir"
 
-    [ -e "$timefile" ] && prevtime=$(< "$timefile")
-    [ -e "$reflector_countries_file" ] && reflector_list_countries=$(< "$reflector_countries_file")
+    [ -e "$timefile" ] && rm -f "$timefile" "$reflector_countries_file" "$countrycodes" "$countrynames" "$optionsfile"
 
-    if [ -z "$reflector_list_countries" ] || [ "$now" != "$prevtime" ] ; then
-        reflector_list_countries=$(reflector --list-countries) || DIE "cannot get list of countries"
-        reflector_list_countries=$(echo "$reflector_list_countries" | tail -n +3)
-        echo "$reflector_list_countries" > "$reflector_countries_file"
-    fi
+    reflector_list_countries=$(reflector --list-countries) || DIE "cannot get list of countries"
+    reflector_list_countries=$(echo "$reflector_list_countries" | tail -n +3)
+    echo "$reflector_list_countries" > "$reflector_countries_file"
 
-    if [ "$now" != "$prevtime" ] ; then
-        echo "$now"      > "$timefile"
-        ListCountryCodes > "$countrycodes"
-        ListCountryNames > "$countrynames"
-        DumpOptions      > "$optionsfile"
-    fi
+    echo "$now"      > "$timefile"
+    ListCountryCodes > "$countrycodes"
+    ListCountryNames > "$countrynames"
+    DumpOptions      > "$optionsfile"
 }
 
 ShowCompletionFiles() {
@@ -309,7 +306,7 @@ Options() {
             --no-config)                            ;;   # already handled in OptionsPreHandle()
             -I | --no-ignore-countries)             ;;   # already handled in OptionsPreHandle()
             -l | --list-country-codes-names)        ;;   # already handled in OptionsPreHandle()
-            -i | --ignore-mirrors)                  ;;   # already handled in OptionsPreHandle()
+            -i | --ignore-mirrors)                  shift ;;   # already handled in OptionsPreHandle()
             --dump-options)                         ;;   # already handled in OptionsPreHandle()
             -A | --all)                             AllContinents ;;
             -C | --continent)                       Options --country $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',') ;;
@@ -359,7 +356,7 @@ OptionsPreHandle() {
     while [ "$1" ] ; do
         case "$1" in
             -h | --help)                       Usage; exit 0 ;;
-            -i | --ignore-mirrors)             IgnoreMirrors "$2"; args+=("$1" "$2"); shift ;;
+            -i | --ignore-mirrors)             IgnoreMirrors "$2"; shift ;;
             --dump-completion-files)           ShowCompletionFiles; exit 0 ;;
             -l | --list-country-codes-names)   ListCountryCodesNames; exit 0 ;;
             --dump-options)                    DumpOptions; exit 0 ;;
@@ -409,6 +406,7 @@ Main() {
     local -r config_file="$HOME/.config/$progname.conf"
     local -r all_continents="AF AN AS EU NA OC SA"
     local args=() args_orig=("$@")
+    local completion_files_updated=no
 
     local SOPTS="ACc:d:hi:x:lrtu"
     SOPTS+="I"
@@ -430,7 +428,8 @@ Main() {
     fi
 
     OptionsPreHandle "${CONFIG_OPTIONS[@]}" "$@"
-    Options "${CONFIG_OPTIONS[@]}" "${args[@]}"
+
+    Options "${args[@]}"
 
     case "$distro" in
         arch)
