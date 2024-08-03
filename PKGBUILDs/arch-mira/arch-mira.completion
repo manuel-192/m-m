@@ -23,7 +23,19 @@ _arch-mira_listselector()
 _arch-mira_complete() {
     COMPREPLY=( $(compgen -W "$1" -- "$cur") )
     [[ $COMPREPLY == *= ]] && compopt -o nospace
-    # compopt -o nosort
+    #compopt -o nosort
+}
+
+_arch-mira_complete_nr() {
+    COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
+    compopt -o nospace
+    compopt -o nosort
+}
+
+_arch-mira_complete_list() {
+    COMPREPLY=( $(compgen -P "$cur" -S"," -W "$1") )
+    compopt -o nospace
+    compopt -o nosort
 }
 
 _arch-mira_() 
@@ -44,7 +56,13 @@ _arch-mira_()
     case "$prev" in
         -d | --distro)   _arch-mira_complete "arch" ;;
         -c | --country)  _arch-mira_listselector "$cur" "$(< "$countrycodes")" ;;
+        --timeout | --timeout-rank)       _arch-mira_complete_nr ;;
+      #  --ignore-countries)  _arch-mira_listselector "$cur" "$(< "$countrycodes")" ;;
+        --ignore-countries)  _arch-mira_complete_list "$(< "$countrycodes")" ;;
+        --ignore-continents | --continent-given | --show-continent-countrycodes | --show-continent-countrycodes)
+            _arch-mira_listselector "$cur" "$continents" ;;
         --show-continent-countrycodes | --show-continent-countrynames) _arch-mira_complete "${continents[*]}" ;;
+        --ignore-mirrors) _arch-mira_complete "unique-list" ;;
         *)               _arch-mira_complete "$options" ;;
     esac
 }
