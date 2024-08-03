@@ -1,6 +1,6 @@
-# bash completion for arch-mira        -*- shell-script -*-
+# bash completion for armi        -*- shell-script -*-
 
-_arch-mira_listselector()
+_armi_listselector()
 {
     local cur="$1"
     local list_elems_all="$2"
@@ -20,50 +20,65 @@ _arch-mira_listselector()
 }
 
 
-_arch-mira_complete() {
+_armi_complete() {
     COMPREPLY=( $(compgen -W "$1" -- "$cur") )
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     #compopt -o nosort
 }
 
-_arch-mira_complete_nr() {
+_armi_complete_nr() {
     COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
     compopt -o nospace
     compopt -o nosort
 }
 
-_arch-mira_complete_list() {
+_armi_complete_list() {
     COMPREPLY=( $(compgen -P "$cur" -S"," -W "$1") )
     compopt -o nospace
     compopt -o nosort
 }
 
-_arch-mira_() 
+_armi_() 
 {
     local cur prev #words cword split
     _init_completion -s || return
 
-    local -r app=arch-mira
+    local -r app=armi
 
     local -r completion_files=($($app --dump-completion-files))
     local -r countrycodes="${completion_files[2]}"
     local -r optionsfile="${completion_files[4]}"
     local -r continents=(${completion_files[5]//,/ } )
 
-    $app --update-completion-files
+    [ -e "$optionsfile" ] || $app --update-completion-files
 
     local options=$(< "$optionsfile")
     case "$prev" in
-        -d | --distro)   _arch-mira_complete "arch" ;;
-        -c | --country)  _arch-mira_listselector "$cur" "$(< "$countrycodes")" ;;
-        --timeout | --timeout-rank)       _arch-mira_complete_nr ;;
-      #  --ignore-countries)  _arch-mira_listselector "$cur" "$(< "$countrycodes")" ;;
-        --ignore-countries)  _arch-mira_complete_list "$(< "$countrycodes")" ;;
+        -d | --distro)
+            _armi_complete "arch"
+            ;;
+        -c | --country)
+            _armi_listselector "$cur" "$(< "$countrycodes")"
+            ;;
+        --timeout | --timeout-rank)
+            _armi_complete_nr
+            ;;
+        --ignore-countries)
+            _armi_complete_list "$(< "$countrycodes")"
+            ;;
         --ignore-continents | --continent-given | --show-continent-countrycodes | --show-continent-countrycodes)
-            _arch-mira_listselector "$cur" "$continents" ;;
-        --show-continent-countrycodes | --show-continent-countrynames) _arch-mira_complete "${continents[*]}" ;;
-        --ignore-mirrors) _arch-mira_complete "unique-list" ;;
-        *)               _arch-mira_complete "$options" ;;
+            _armi_listselector "$cur" "$continents"
+            ;;
+        --show-continent-countrycodes | --show-continent-countrynames)
+            _armi_complete "${continents[*]}"
+            ;;
+        --ignore-mirrors)
+            _armi_complete "unique-list"
+            ;;
+        *)
+            _armi_complete "$options"
+            ;;
     esac
+    #  --ignore-countries)  _armi_listselector "$cur" "$(< "$countrycodes")" ;;
 }
-complete -F _arch-mira_    arch-mira 
+complete -F _armi_    armi 

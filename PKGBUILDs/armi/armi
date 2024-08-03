@@ -178,16 +178,16 @@ UpdateCompletionFiles() {
 
     mkdir -p "$dir"
 
-    [ -e "$timefile" ] && rm -f "$timefile" "$reflector_countries_file" "$countrycodes" "$countrynames" "$optionsfile"
+    # [ -e "$timefile" ] && rm -f "$timefile" "$reflector_countries_file" "$countrycodes" "$countrynames" "$optionsfile"
 
     reflector_list_countries=$(reflector --list-countries) || DIE "cannot get list of countries"
     reflector_list_countries=$(echo "$reflector_list_countries" | tail -n +3)
-    echo "$reflector_list_countries" > "$reflector_countries_file"
 
-    echo "$now"      > "$timefile"
-    ListCountryCodes > "$countrycodes"
-    ListCountryNames > "$countrynames"
-    DumpOptions      > "$optionsfile"
+    echo "$reflector_list_countries" > "$reflector_countries_file"
+    echo "$now"                      > "$timefile"
+    ListCountryCodes                 > "$countrycodes"
+    ListCountryNames                 > "$countrynames"
+    DumpOptions                      > "$optionsfile"
 }
 
 ShowCompletionFiles() {
@@ -389,8 +389,8 @@ RemoveIgnoredFromCountries() {
 }
 Main() {
     local -r progname=${0##*/}
-    local -r progname_helper=arch-mira-helper  # ${progname%2}-helper
-    local distro=arch                   # arch (maybe later: endeavouros)
+    local -r progname_helper=${progname}-helper  # ${progname%2}-helper
+    local distro=arch                             # arch (maybe later: endeavouros)
     local urls=() url
     local timeout_distro=30
     local timeout_rank=20
@@ -454,7 +454,7 @@ Main() {
             local countries2="${countries[*]}"
             local update=""
             [ $update_mirrordata_first = yes ] && update="-u"
-            mirrors=$(arch-mirror-status -c ${countries2// /,} -t $timeout_distro $update) || exit 1
+            mirrors=$(${progname}-status -c ${countries2// /,} -t $timeout_distro $update) || exit 1
             ;;
         endeavouros)
             DIE "sorry, support for EndeavourOS not yet implemented."

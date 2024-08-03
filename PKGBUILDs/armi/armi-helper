@@ -4,7 +4,7 @@ echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
 WARN()        { echo2 -e "==> $progname: warning: $1"; }
 
-RankOneMirror() {  # ranks one mirror
+RankOneMirror() {
     local url="$1"
     local timeout_rank="$2"
     local distro="$3"

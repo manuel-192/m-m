@@ -2,11 +2,11 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=arch-mira
+pkgname=armi
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=0.8
+pkgrel=0.9
 
 arch=('any')
 license=('GPL')
@@ -26,13 +26,13 @@ source=(
     $url/$pkgname                         # ranks Arch mirrors
     $url/$pkgname.conf                    # config file
     $url/$pkgname.completion              # bash completion
-    $url/arch-mira-helper
-    $url/arch-mirror-status
+    $url/${pkgname}-helper
+    $url/${pkgname}-status
 )
-sha512sums=('ab62da3f599dab870eb36413ae2cc5ab681f1f2ff84ea7ce075528b2d8fafca01f1e7802cb08e1027c931aec5db2c221b0d92e0672fb7f7c7e92697bef0e0ad2'
-            'cf3c3cb1e7d5a47c97c66681e68892f9e322afcbecfb6ce53d5174aedff53b809818913b03c374226fe11600768cf0213d5bffea1dc2c8abee2fa5af32c6f58a'
-            '19c25720ba2f81769bead0328f66a318d59a892f7862f98e0f451e4b5e1b089ef300c91a428669e8cc7286aca76f65dd3eba56593820349db38aac67794ccd04'
-            'e63bece1e650e6ccf4e77c202b3245d54cd69c44520c3f5ece206a683caf472fc9eeb95af1082fdffc9c57422cfd8e6dd3cca05d22440fcd72e628410222dd58'
+sha512sums=('3cbd276994744e47b4d9e5ace9b6ecc0b52e4f3898a55956b521f6f857f4dd72be0e8961aaa4aae6bf564de78f3163ae7550f590a200efc99a568c947c965737'
+            '8fbff84ac5f2af1c7285c0afdd18bcde4492f671dba1f5b5d17153d6fc9e8101fb291c5f9a6937a22651639d8bc57094a11eb10338abbde5326d43f013a8ab60'
+            '834c483c15c9a0f8e72aa86768ca56077a83628dd5b43ab1910c05ef99cc318ff41a4b8616a9872fe3359dc92598013a3b9c6898da121668fda7850f0781997b'
+            '86f59c969db8c1b6f8b65097d97954b6c621353c7809ebe1894a87c4664ef935a122ffeb0c833972bedc8838dc9738d4f99489ca93eb08eb59c198b352475345'
             '7f1acd85c06aef6a261188a6adc4740d9f67b4e691a55e1164b55e1d714262b456b38cd4de781414cdc221b088ec5d5bbb80a43f515430d63bfe84f2cdb8cd65')
 
 package() {
