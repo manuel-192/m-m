@@ -6,7 +6,7 @@ pkgname=arch-mira
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=0.6
+pkgrel=0.7
 
 arch=('any')
 license=('GPL')
@@ -17,9 +17,8 @@ depends=(
     reflector               # for listing available Arch mirrors
 )
 optdepends=(
-    'parallel: for ranking mirrors in parallel'
+    'parallel: for parallel operations'
     'eos-bash-shared: curl exit code as string'
-#    'time: supports total time calculation'
 )
 backup=()
 
