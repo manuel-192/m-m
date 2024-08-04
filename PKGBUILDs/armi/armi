@@ -4,6 +4,7 @@
 # - favorite mirrors
 # - long time statistics?
 # - less failure output
+# - add country to ranking data
 
 echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage; exit 1; }
