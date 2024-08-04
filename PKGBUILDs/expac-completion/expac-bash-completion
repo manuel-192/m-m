@@ -5,6 +5,14 @@ _expac_complete() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     compopt -o nosort
 }
+_expac_complete_format() {
+    local formats=(a B b C D d E e f F g G H h i k l L m M n)
+    formats+=(N O o P R r s S T u V v w "!" %)
+    COMPREPLY=($(compgen -P "$cur" -W "${formats[*]}"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nospace
+    compopt -o nosort
+}
 
 _expac_complete_delay() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))          # float
@@ -111,6 +119,7 @@ _expac_()
                     # Any option or nothing yet.
                     _expac_complete "$(_expac_options)"
                     ;;
+                *%)   _expac_complete_format ;;
                 *)
                     # Non-option parameters.
                     _expac_complete "$(expac %n)"
