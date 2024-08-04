@@ -1044,6 +1044,23 @@ EOF
         echo ""
     }
 
+    eos-packagelist() {
+        local opt_list_pkgs="--all-pkgs"
+        case "$1" in
+            $opt_list_pkgs)   # list all packages, sorted
+                local profiles
+                readarray -t profiles <<< $(/bin/eos-packagelist --list)
+                /bin/eos-packagelist "${profiles[@]}" | sort -u
+                ;;
+            -h | --help)
+                /bin/eos-packagelist $1 | sed -E "s|(\[--list\])|\1 [$opt_list_pkgs]|"
+                ;;
+            *)
+                /bin/eos-packagelist "$@"
+                ;;
+        esac
+    }
+
     #############################################################
     # variables
     #############################################################
