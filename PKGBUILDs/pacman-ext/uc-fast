@@ -170,20 +170,24 @@ MainNext() {
     local -r savedir="$HOME/.cache"
     local -r lastupdate_saved="$savedir/uc-${renamedos[$os]}-${renamedfile[$file]}"
     local -r lastupdate="${lastupdate_saved}_new"
-    local lastupdate_val=""
+    local lastupdate_val="" old_val=""
     local url=""
     local data
 
     DiscoverUrlAndData
 
+    [ -e "$lastupdate" ] && old_val=$(head -n1 "$lastupdate")
     echo "$data" | head -n1 > "$lastupdate"
-    lastupdate_val=$(head -n1 $lastupdate)
+    lastupdate_val=$(head -n1 "$lastupdate")
     case "$os" in
-        Arch)        lastupdate_val=$(date --date @$lastupdate_val +%Y%m%d-%H%M.%S) ;;
+        Arch)
+            lastupdate_val=$(date --date @"$lastupdate_val" +%Y%m%d-%H%M%S)
+            [ "$old_val" ] && old_val=$(date --date @"$old_val" +%Y%m%d-%H%M%S)
+            ;;
         EndeavourOS) ;;
     esac
 
-    ShowResult "$url" "$lastupdate_val"
+    ShowResult "$url" "$lastupdate_val" "$old_val"
 
     local ret=$EXIT_UPDATES_NO     # by default, don't expect updates
 
@@ -233,7 +237,13 @@ Verbosex() {
     fi
 }
 
-ShowResult() { Verbose "%-s|($2)|:|" "$1" ; }
+ShowResult() {
+    if [ "$3" ] ; then
+        Verbose "%-s|($3 -> $2)|:|" "$1"
+    else
+        Verbose "%-s|($2)|:|" "$1"
+    fi
+}
 
 echo2() { echo "$@" >&2 ; }
 DIE() {
