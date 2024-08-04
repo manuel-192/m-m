@@ -249,13 +249,19 @@ DumpOptions() {
 }
 
 Edit() {
-    local editor=exo-open
-    which $editor &>/dev/null || editor=xdg-open
-    which $editor &>/dev/null || editor=kde-open
-    which $editor &>/dev/null || editor=emacs
-    which $editor &>/dev/null || editor=kate
-    which $editor &>/dev/null || DIE2 "no text editor found!"
-    $editor "$@"
+    local file="$1"
+    local editors=( exo-open xdg-open kde-open emacs kate )
+    local editor
+    for editor in "${editors[@]}" ; do
+        if which $editor &>/dev/null ; then
+            if [ ! -e "$file" ] ; then
+                touch "$file" || DIE2 "cannot create file '$file'"
+            fi
+            $editor "$file"
+            return
+        fi
+    done
+    DIE2 "no text editor found!"
 }
 
 Usage() {
