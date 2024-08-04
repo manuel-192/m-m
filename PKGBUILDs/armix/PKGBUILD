@@ -2,11 +2,11 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=armi
+pkgname=armix
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=0.12
+pkgrel=0.1
 
 arch=('any')
 license=('GPL')
@@ -19,6 +19,7 @@ depends=(
 optdepends=(
     'parallel: for parallel operations'
     'eos-bash-shared: curl exit code as string'
+    'time: for option --time'
 )
 backup=()
 
@@ -37,14 +38,12 @@ sha512sums=('30e6ac6514a5554f969c46507c9aed834428a7974b99e36e64adfc34a401267db85
 
 package() {
     local src
-    local bin=usr/bin
-
     for src in "${source[@]}" ; do
-        src="$(basename "$src")"
+        src=${src##*/}
         case "$src" in
             *.conf)              install -Dm644 $src  "$pkgdir/etc/skel/$src" ;;
             *.completion)        install -Dm644 $src  "$pkgdir/usr/share/bash-completion/completions/${src%.completion}" ;;
-            *)                   install -Dm755 $src  "$pkgdir/$bin/$src" ;;
+            *)                   install -Dm755 $src  "$pkgdir/usr/bin/$src" ;;
         esac
     done
 }

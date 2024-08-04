@@ -1,6 +1,6 @@
-# bash completion for armi        -*- shell-script -*-
+# bash completion for armix        -*- shell-script -*-
 
-_armi_listselector()
+_armix_listselector()
 {
     local cur="$1"
     local list_elems_all="$2"
@@ -20,30 +20,30 @@ _armi_listselector()
 }
 
 
-_armi_complete() {
+_armix_complete() {
     COMPREPLY=( $(compgen -W "$1" -- "$cur") )
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     #compopt -o nosort
 }
 
-_armi_complete_nr() {
+_armix_complete_nr() {
     COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
     compopt -o nospace
     compopt -o nosort
 }
 
-_armi_complete_list() {
+_armix_complete_list() {
     COMPREPLY=( $(compgen -P "$cur" -S"," -W "$1") )
     compopt -o nospace
     compopt -o nosort
 }
 
-_armi_() 
+_armix_() 
 {
     local cur prev #words cword split
     _init_completion -s || return
 
-    local -r app=armi
+    local -r app=armix
 
     local -r completion_files=($($app --dump-completion-files))
     local -r countrycodes="${completion_files[2]}"
@@ -55,30 +55,30 @@ _armi_()
     local options=$(< "$optionsfile")
     case "$prev" in
         -d | --distro)
-            _armi_complete "arch"
+            _armix_complete "arch"
             ;;
         -c | --country)
-            _armi_listselector "$cur" "$(< "$countrycodes")"
+            _armix_listselector "$cur" "$(< "$countrycodes")"
             ;;
         --timeout | --timeout-rank)
-            _armi_complete_nr
+            _armix_complete_nr
             ;;
         --ignore-countries)
-            _armi_complete_list "$(< "$countrycodes")"
+            _armix_complete_list "$(< "$countrycodes")"
             ;;
         --ignore-continents | --continent-given | --show-continent-countrycodes | --show-continent-countrycodes)
-            _armi_listselector "$cur" "$continents"
+            _armix_listselector "$cur" "$continents"
             ;;
         --show-continent-countrycodes | --show-continent-countrynames)
-            _armi_complete "${continents[*]}"
+            _armix_complete "${continents[*]}"
             ;;
         --ignore-mirrors)
-            _armi_complete "unique-list"
+            _armix_complete "unique-list"
             ;;
         *)
-            _armi_complete "$options"
+            _armix_complete "$options"
             ;;
     esac
-    #  --ignore-countries)  _armi_listselector "$cur" "$(< "$countrycodes")" ;;
+    #  --ignore-countries)  _armix_listselector "$cur" "$(< "$countrycodes")" ;;
 }
-complete -F _armi_    armi 
+complete -F _armix_    armix 

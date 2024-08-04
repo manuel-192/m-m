@@ -396,6 +396,22 @@ RemoveIgnoredFromCountries() {
 }
 Main() {
     local -r progname=${0##*/}
+
+    case "$1" in
+        --time) shift
+                if [ -x /bin/time ] ; then
+                    local tmpfile=$(mktemp)
+                    /bin/time --output=$tmpfile -p $progname "$@"
+                    echo -e "\n#### Total measurement time (seconds):"
+                    sed 's|^|####   |' < $tmpfile
+                    rm -f $tmpfile
+                    exit
+                else
+                    DIE "package 'time' is required for option --time"
+                fi
+                ;;
+    esac
+
     local -r progname_helper=${progname}-helper  # ${progname%2}-helper
     local distro=arch                             # arch (maybe later: endeavouros)
     local urls=() url
