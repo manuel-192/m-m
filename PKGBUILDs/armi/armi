@@ -250,7 +250,7 @@ DumpOptions() {
 
 Edit() {
     local file="$1"
-    local editors=( exo-open xdg-open kde-open emacs kate )
+    local editors=( exo-open xdg-open kde-open emacs kate gnome-text-editor xed mousepad )
     local editor
     for editor in "${editors[@]}" ; do
         if which $editor &>/dev/null ; then
