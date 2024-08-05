@@ -8,14 +8,14 @@ bashrc.min_echo2()   { echo -e "$@" >&2; }
 bashrc.min_error()   { echo -e "==> ${FUNCNAME[1]}: error: $1"   >&2; }
 bashrc.min_warning() { echo -e "==> ${FUNCNAME[1]}: warning: $1" >&2; }
 
-AssignDefaultApp() {
+SetVarToFirstApp() {
     [ "$2" ] || return 1
-    local -n _app=$1
-    local _tmp
+    local -n _variable1=$1
+    local app
     shift
-    for _tmp in "$@" ; do
-        if [ -x /bin/${_tmp%% *} ] ; then
-            _app="$_tmp"
+    for app in "$@" ; do
+        if [ -x "/bin/${app%% *}" ] ; then
+            _variable1="$app"
             return 0
         fi
     done
@@ -39,8 +39,8 @@ SettingsCommon()
     esac
     shopt -s autocd
 
-    PAGER="less -F"
-    AssignDefaultApp EDITOR codium emacs   # sets EDITOR to the first existing listed app
+    SetVarToFirstApp PAGER "less -F" "most"
+    SetVarToFirstApp EDITOR codium emacs   # sets EDITOR to the first existing listed app
 
     # Set in local ~/.bashrc:
     # ROOTDIR_EOS
@@ -447,6 +447,21 @@ EOF
         else
             $pager "${opts[@]}"
         fi
+    }
+
+    page() {  # page one text file
+        local -r file="$1"
+        if [ "$file" ] && [ -r "$file" ] && [[ $(file "$file") =~ text ]] ; then
+            local pager="/bin/less -F"
+            case "$(realpath "$file")" in
+                /var/log/pacman.log)
+                    tac "$file" | $pager ;;
+                *)
+                    $pager "$file" ;;
+            esac
+            return 0
+        fi
+        return 1
     }
 
     lsblk() {
