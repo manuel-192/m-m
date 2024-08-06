@@ -59,10 +59,10 @@ Main() {
     local urls=(
         https://github.com/endeavouros-team/PKGBUILDS
         https://github.com/endeavouros-team/eos-bash-shared
-        https://github.com/endeavouros-team/eos-pkgbuild-setup
         https://github.com/endeavouros-team/welcome
-        https://github.com/endeavouros-team/Important-news
+        https://github.com/endeavouros-team/eos-pkgbuild-setup
         https://github.com/endeavouros-team/ISO-hotfixes
+        https://github.com/endeavouros-team/Important-news
         https://github.com/endeavouros-team/EndeavourOS-ISO
         # https://github.com/endeavouros-team/repo
 
