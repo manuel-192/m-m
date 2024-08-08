@@ -1,44 +1,42 @@
 #!/bin/bash
 
-DIE() {
-    echo "$progname: error: $1" >&2
-    exit 1
+DIE()       { echo "$progname: error: $1" >&2; exit 1; }
+MakeSound() { gsound-play -f $sound_file; }
+
+Options() {
+    while [ "$1" ] ; do
+        case "$1" in
+            -u | --uplimit)         uplimit="$2";               shift ;;
+            -l | --lowlimit)        lowlimit="$2";              shift ;;
+            -c | --charge-sleep)    sleeptime_charging="$2";    shift ;;
+            -d | --discharge-sleep) sleeptime_discharging="$2"; shift ;;
+            -p | --power-device)    power_device="$2";          shift ;;
+            -s | --sound-file)      sound_file="$2";            shift ;;
+            -v | --verbose)         ;;
+            *)                      DIE "unsupported parameter '$1'" ;;
+        esac
+        shift
+    done
 }
 
-AssertIsNumber() {
-    if [ -z "$1" ] || [ "${1//[0-9]/}" ] ; then
-        DIE "value '$val' is not a number"
-    fi
-}
-AssertCanRead() {
-    if [ -z "$1" ] || [ ! -r "$1" ] ; then
-        DIE "cannot read file '$1'"
-    fi
-}
-
-SetupVar() {
-    local -n _var="$1"     # varible to assign
-    local val="$2"         # value for the variable
-    local -r default="$3"  # default value
-    local valtype="$4"     # number/"" or filename
-
-    [ "$valtype" ] || valtype=number
-    [ "$val" ]     || val="$default"
-
-    case "$valtype" in
-        number)   AssertIsNumber "$val" ;;
-        filename) AssertCanRead  "$val" ;;
-    esac
-    _var="$val"
-}
-
-Main()
-{
+Main() {
     local -r progname=${0##*/}
+    local arg
     local verbose=no
-    case "$1" in
-        -v | --verbose) verbose=yes ;;
-    esac
+    local power_device=/sys/class/power_supply/BAT1/uevent
+    local uplimit=90
+    local lowlimit=22
+    local sleeptime_charging=60
+    local sleeptime_discharging=600
+    local sound_file=/usr/share/sounds/Oxygen-Sys-Question.ogg
+    local CONFIG_CMDS=()
+
+    for arg in "$@" ; do
+        case "$arg" in
+            -v | --verbose) verbose=yes; break ;;
+        esac
+    done
+
     local -r pids=$(pgrep $progname)
     if [ $(echo "$pids" | wc -l) -gt 1 ] ; then
         [ $verbose = yes ] && echo "$progname already running"
@@ -46,26 +44,16 @@ Main()
     else
         [ $verbose = yes ] && echo "Starting $progname"
     fi
-    local conf=$HOME/.config/$progname.conf
+    local conf="$HOME/.config/$progname.conf"
     local cmd=(notify-send --icon=battery --urgency=normal --expire-time=30000 --app-name=$progname)
-    local power_device
-    local uplimit
-    local lowlimit
-    local sleeptime_charging
-    local sleeptime_discharging
     local percent
     local percent_prev=""
     local status
     local status_prev=""
 
-    if [ -e "$conf" ] ; then
-        source "$conf" || exit 1
-    fi
-    SetupVar uplimit               "$BAT_UP_LIMIT"                 90
-    SetupVar lowlimit              "$BAT_LOW_LIMIT"                22
-    SetupVar sleeptime_charging    "$SLEEP_TIME_WHEN_CHARGING"     60
-    SetupVar sleeptime_discharging "$SLEEP_TIME_WHEN_DISCHARGING"  600
-    SetupVar power_device          "$POWER_DEVICE"                 /sys/class/power_supply/BAT1/uevent filename
+    [ -r "$conf" ] && source "$conf"
+
+    Options "${CONFIG_CMDS[@]}" "$@"
 
     while true ; do
         percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
@@ -79,12 +67,14 @@ Main()
             Charging)
                 if [ $percent -ge $uplimit ] && [ "$percent" != "$percent_prev" ] ; then
                     "${cmd[@]}" "Battery high" "${percent}%, charging"
+                    MakeSound
                 fi
                 sleep $sleeptime_charging
                 ;;
             Discharging)
                 if [ $percent -le $lowlimit ] && [ "$percent" != "$percent_prev" ] ; then
                     "${cmd[@]}" "Battery low" "${percent}%, not charging"
+                    MakeSound
                 fi
                 sleep $sleeptime_discharging
                 ;;
@@ -98,3 +88,15 @@ Main()
 }
 
 Main "$@"
+
+
+# AssertIsNumber() {
+#     if [ -z "$1" ] || [ "${1//[0-9]/}" ] ; then
+#         DIE "value '$val' is not a number"
+#     fi
+# }
+# AssertCanRead() {
+#     if [ -z "$1" ] || [ ! -r "$1" ] ; then
+#         DIE "cannot read file '$1'"
+#     fi
+# }
