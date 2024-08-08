@@ -5,6 +5,33 @@ DIE() {
     exit 1
 }
 
+AssertIsNumber() {
+    if [ -z "$1" ] || [ "${1//[0-9]/}" ] ; then
+        DIE "value '$val' is not a number"
+    fi
+}
+AssertCanRead() {
+    if [ -z "$1" ] || [ ! -r "$1" ] ; then
+        DIE "cannot read file '$1'"
+    fi
+}
+
+SetupVar() {
+    local -n _var="$1"     # varible to assign
+    local val="$2"         # value for the variable
+    local -r default="$3"  # default value
+    local valtype="$4"     # number/"" or filename
+
+    [ "$valtype" ] || valtype=number
+    [ "$val" ]     || val="$default"
+
+    case "$valtype" in
+        number)   AssertIsNumber "$val" ;;
+        filename) AssertCanRead  "$val" ;;
+    esac
+    _var="$val"
+}
+
 Main()
 {
     local -r progname=${0##*/}
@@ -19,26 +46,34 @@ Main()
     else
         [ $verbose = yes ] && echo "Starting $progname"
     fi
-    local file=/sys/class/power_supply/BAT1/uevent
+    local conf=$HOME/.config/$progname.conf
     local cmd=(notify-send --icon=battery --urgency=normal --expire-time=30000 --app-name=$progname)
-    local uplimit=90 #98
-    local lowlimit=22
-    local sleeptime_charging=60
-    local sleeptime_not_charging=600
+    local power_device
+    local uplimit
+    local lowlimit
+    local sleeptime_charging
+    local sleeptime_discharging
     local percent
     local percent_prev=""
     local status
     local status_prev=""
 
-    [ -e "$file" ] || DIE "file $file not found"
+    if [ -e "$conf" ] ; then
+        source "$conf" || exit 1
+    fi
+    SetupVar uplimit               "$BAT_UP_LIMIT"                 90
+    SetupVar lowlimit              "$BAT_LOW_LIMIT"                22
+    SetupVar sleeptime_charging    "$SLEEP_TIME_WHEN_CHARGING"     60
+    SetupVar sleeptime_discharging "$SLEEP_TIME_WHEN_DISCHARGING"  600
+    SetupVar power_device          "$POWER_DEVICE"                 /sys/class/power_supply/BAT1/uevent filename
 
     while true ; do
-        percent=$(grep ^POWER_SUPPLY_CAPACITY= $file | cut -d'=' -f2)
+        percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
         [ "$percent" ] || DIE "cannot determine battery level"
-        status=$(grep ^POWER_SUPPLY_STATUS= $file | cut -d'=' -f2)
+        status=$(grep ^POWER_SUPPLY_STATUS= $power_device | cut -d'=' -f2)
         [ "$status" ] || DIE "cannot determine charging status"
 
-        [ "$status" != "$status_prev" ] && "${cmd[@]}" "Charging status changed to $status" "${percent}%"
+        [ "$status" != "$status_prev" ] && "${cmd[@]}" "Charging status: $status" "${percent}%"
 
         case "$status" in
             Charging)
@@ -51,7 +86,7 @@ Main()
                 if [ $percent -le $lowlimit ] && [ "$percent" != "$percent_prev" ] ; then
                     "${cmd[@]}" "Battery low" "${percent}%, not charging"
                 fi
-                sleep $sleeptime_not_charging
+                sleep $sleeptime_discharging
                 ;;
             *)
                 sleep 30
