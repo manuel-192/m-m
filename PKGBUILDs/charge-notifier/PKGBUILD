@@ -2,7 +2,7 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=battnot
+pkgname=charge-notifier
 pkgdesc="Notify when battery is low or high"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
@@ -14,7 +14,7 @@ depends=()
 backup=()
 
 source=(
-    $url/$pkgname
+    $url/battnot
 )
 sha512sums=('041ff38491ca0331f754c288b21e0264f9b45b770fbe3814a1a33662c86b9a50021e72c6bb555d3bf2785d66b663e554345f905ef0b229ae331833b0ff09634d')
 
