@@ -498,7 +498,7 @@ Main() {
         no)  result=$(TraverseMirrors-sequential); mode="sequentially" ;;
     esac
 
-    local ranked=$(echo "$result" | column -t -s'|' | LC_ALL=C sort -k2rb,2 -k3b,3)   # sort: age
+    local ranked=$(echo "$result" | column -t -s'|' | LC_ALL=C sort -k2rb,2 -k3V,3)   # sort: age
     local ranked_full=""
 
     CreateMirrorlistFile
