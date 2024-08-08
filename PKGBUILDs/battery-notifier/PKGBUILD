@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=battnot
+pkgdesc="Notify when battery is low or high"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=24
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+depends=()
+backup=()
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('041ff38491ca0331f754c288b21e0264f9b45b770fbe3814a1a33662c86b9a50021e72c6bb555d3bf2785d66b663e554345f905ef0b229ae331833b0ff09634d')
+
+package() {
+    local xx name
+    for xx in "${source[@]}" ; do
+        name=${xx##*/}
+        case "$name" in
+            *.completion) install -Dm644 $name   $pkgdir/usr/share/bash-completion/completions/${name%.*} ;;
+            *.conf)       install -Dm644 $name   $pkgdir/etc/$name ;;
+            *)            install -Dm755 $name   $pkgdir/usr/bin/$name ;;
+        esac
+    done
+}

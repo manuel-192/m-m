@@ -1,0 +1,65 @@
+#!/bin/bash
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main()
+{
+    local -r progname=${0##*/}
+    local verbose=no
+    case "$1" in
+        -v | --verbose) verbose=yes ;;
+    esac
+    local -r pids=$(pgrep $progname)
+    if [ $(echo "$pids" | wc -l) -gt 1 ] ; then
+        [ $verbose = yes ] && echo "$progname already running"
+        exit 1
+    else
+        [ $verbose = yes ] && echo "Starting $progname"
+    fi
+    local file=/sys/class/power_supply/BAT1/uevent
+    local cmd=(notify-send --icon=battery --urgency=normal --expire-time=30000 --app-name=$progname)
+    local uplimit=90 #98
+    local lowlimit=22
+    local sleeptime_charging=60
+    local sleeptime_not_charging=600
+    local percent
+    local percent_prev=""
+    local status
+    local status_prev=""
+
+    [ -e "$file" ] || DIE "file $file not found"
+
+    while true ; do
+        percent=$(grep ^POWER_SUPPLY_CAPACITY= $file | cut -d'=' -f2)
+        [ "$percent" ] || DIE "cannot determine battery level"
+        status=$(grep ^POWER_SUPPLY_STATUS= $file | cut -d'=' -f2)
+        [ "$status" ] || DIE "cannot determine charging status"
+
+        [ "$status" != "$status_prev" ] && "${cmd[@]}" "Charging status changed to $status" "${percent}%"
+
+        case "$status" in
+            Charging)
+                if [ $percent -ge $uplimit ] && [ "$percent" != "$percent_prev" ] ; then
+                    "${cmd[@]}" "Battery high" "${percent}%, charging"
+                fi
+                sleep $sleeptime_charging
+                ;;
+            Discharging)
+                if [ $percent -le $lowlimit ] && [ "$percent" != "$percent_prev" ] ; then
+                    "${cmd[@]}" "Battery low" "${percent}%, not charging"
+                fi
+                sleep $sleeptime_not_charging
+                ;;
+            *)
+                sleep 30
+                ;;
+        esac
+        percent_prev=$percent
+        status_prev=$status
+    done
+}
+
+Main "$@"
