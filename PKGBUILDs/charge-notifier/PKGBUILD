@@ -6,7 +6,7 @@ pkgname=charge-notifier
 pkgdesc="Notify when battery is low or high"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24
-pkgrel=3
+pkgrel=4
 
 arch=('any')
 license=('GPL')
@@ -16,7 +16,7 @@ backup=()
 source=(
     $url/battnot
 )
-sha512sums=('c3949e3f46e51d0b2aa8ca91a32610c861a9c7069155819defb35064052445386dc434f16ed14d0a8e1d59a61fdca5d2317c10e40bcf0a82c7b71363e126642b')
+sha512sums=('389ad54f33579433cadb0f4cd787126ef4b268c6f355e6477346207c56b60232c1fb337d88a1ab6f4d348f662b3775ff3cb1cb6ca0e05fc07a8d5494c66101e8')
 
 package() {
     local xx name

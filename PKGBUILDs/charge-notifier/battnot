@@ -6,12 +6,14 @@ MakeSound() { gsound-play -f $sound_file; }
 Options() {
     while [ "$1" ] ; do
         case "$1" in
-            -u | --uplimit)         uplimit="$2";               shift ;;
-            -l | --lowlimit)        lowlimit="$2";              shift ;;
             -c | --charge-sleep)    sleeptime_charging="$2";    shift ;;
             -d | --discharge-sleep) sleeptime_discharging="$2"; shift ;;
+            -l | --lowlimit)        lowlimit="$2";              shift ;;
             -p | --power-device)    power_device="$2";          shift ;;
             -s | --sound-file)      sound_file="$2";            shift ;;
+            -u | --uplimit)         uplimit="$2";               shift ;;
+
+            -r | --no-reread-conf)  ;;
             -v | --verbose)         ;;
             *)                      DIE "unsupported parameter '$1'" ;;
         esac
@@ -21,19 +23,21 @@ Options() {
 
 Main() {
     local -r progname=${0##*/}
-    local arg
-    local verbose=no
     local power_device=/sys/class/power_supply/BAT1/uevent
     local uplimit=90
     local lowlimit=22
     local sleeptime_charging=60
     local sleeptime_discharging=600
     local sound_file=/usr/share/sounds/Oxygen-Sys-Question.ogg
+    local reread_conf=yes
+    local verbose=no
     local CONFIG_CMDS=()
+    local arg
 
     for arg in "$@" ; do
         case "$arg" in
-            -v | --verbose) verbose=yes; break ;;
+            -r | --no-reread-conf) reread_conf=no ;;
+            -v | --verbose)        verbose=yes ;;
         esac
     done
 
@@ -50,6 +54,8 @@ Main() {
     local percent_prev=""
     local status
     local status_prev=""
+    local -r sleeptime_def=10
+    local sleeptime=$sleeptime_def
 
     [ -r "$conf" ] && source "$conf"
 
@@ -58,32 +64,39 @@ Main() {
     while true ; do
         percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
         [ "$percent" ] || DIE "cannot determine battery level"
+
         status=$(grep ^POWER_SUPPLY_STATUS= $power_device | cut -d'=' -f2)
         [ "$status" ] || DIE "cannot determine charging status"
 
-        [ "$status" != "$status_prev" ] && "${cmd[@]}" "Charging status: $status" "${percent}%"
+        if [ "$status" != "$status_prev" ] ; then
+            "${cmd[@]}" "Charging status: $status" "${percent}%"
+            [ "$status_prev" ] && sleeptime=$sleeptime_def
+        fi
 
         case "$status" in
             Charging)
                 if [ $percent -ge $uplimit ] && [ "$percent" != "$percent_prev" ] ; then
                     "${cmd[@]}" "Battery high" "${percent}%, charging"
                     MakeSound
+                    sleeptime=$sleeptime_charging
                 fi
-                sleep $sleeptime_charging
                 ;;
             Discharging)
                 if [ $percent -le $lowlimit ] && [ "$percent" != "$percent_prev" ] ; then
                     "${cmd[@]}" "Battery low" "${percent}%, not charging"
                     MakeSound
+                    sleeptime=$sleeptime_discharging
                 fi
-                sleep $sleeptime_discharging
-                ;;
-            *)
-                sleep 30
                 ;;
         esac
+        sleep $sleeptime
         percent_prev=$percent
         status_prev=$status
+
+        if [ $reread_conf = yes ] && [ -r "$conf" ] ; then
+            source "$conf"
+            Options "${CONFIG_CMDS[@]}"
+        fi
     done
 }
 
