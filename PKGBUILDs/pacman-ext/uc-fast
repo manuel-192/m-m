@@ -60,7 +60,6 @@ Main() {
     local ret_arch=$EXIT_UPDATES_NO
     local ret_eos=$EXIT_UPDATES_NO
     local ret_aur=$EXIT_UPDATES_NO
-    # local -r right_after_boot_file=/tmp/$progname.tmp
 
     [ "$1" ] || Usage $EXIT_ERROR
 
@@ -118,30 +117,18 @@ GetUrlFromMirrorsFile() {
 }
 
 DiscoverUrlAndData() {
-    # local EOS_MIRROR=""
-    # local ARCH_MIRROR=""
-    # [ -r /etc/$progname.conf ] && source /etc/$progname.conf &>/dev/null
-
     local ix=0
 
     while true ; do
         (( ix++ ))
         case "$os" in
             EndeavourOS)
-                # if [ "$EOS_MIRROR" ] ; then
-                #     url="$(GetEosPart $EOS_MIRROR)"/$file
-                # else
-                    GetUrlFromMirrorsFile $ix
-                    url=${url%\$repo/\$arch}$file
-                # fi
+                GetUrlFromMirrorsFile $ix
+                url=${url%\$repo/\$arch}$file
                 ;;
             Arch)
-                # if [ "$ARCH_MIRROR" ] ; then
-                #     url="$(GetArchPart $ARCH_MIRROR)"/$file
-                # else
-                    GetUrlFromMirrorsFile $ix
-                    url=${url%\$repo/os/\$arch}$file
-                # fi
+                GetUrlFromMirrorsFile $ix
+                url=${url%\$repo/os/\$arch}$file
                 ;;
         esac
 
@@ -152,7 +139,7 @@ DiscoverUrlAndData() {
 
         data=$(curl --fail -Lsm 10 -o- "$url") || { echo2 " -> fetching $url failed"; continue; }
         [ "$data" ]                            || { echo2 " -> no data from $url"; continue; }
-        [ "${data//[0-9]*/}" ]                 && { echo2 " -> $url data corrupt"; continue; }             # data must be numbers only
+        [ "${data//[0-9]*/}" ]                 && { echo2 " -> $url data corrupt"; continue; }       # data must be numbers only
         return
     done
     DIE "fetching data from $os mirrors failed"
@@ -167,7 +154,7 @@ MainNext() {
         [state]=X
         [lastupdate]=X
     )
-    local -r savedir="$HOME/.cache"
+    local -r savedir="$HOME/.config"    # ~/.cache may change at reboot
     local -r lastupdate_saved="$savedir/uc-${renamedos[$os]}-${renamedfile[$file]}"
     local -r lastupdate="${lastupdate_saved}_new"
     local lastupdate_val="" old_val=""
@@ -181,6 +168,7 @@ MainNext() {
     lastupdate_val=$(head -n1 "$lastupdate")
     case "$os" in
         Arch)
+            # convert time from epoch to human
             lastupdate_val=$(date --date @"$lastupdate_val" +%Y%m%d-%H%M%S)
             [ "$old_val" ] && old_val=$(date --date @"$old_val" +%Y%m%d-%H%M%S)
             ;;
