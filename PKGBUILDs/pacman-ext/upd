@@ -106,7 +106,7 @@ Main() {
 
 Usage() {
     local tmpdoc=/tmp/upd-doc-tmp.html
-    if true && [ -x /bin/pandoc ] ; then
+    if false && [ -x /bin/pandoc ] ; then
         local -r has_pandoc=yes
     else
         local -r has_pandoc=no
@@ -159,8 +159,12 @@ $pre1
     -a, --aur              Updates AUR packages too.
         --clear-keyrings   If update fails with keyring issues, try this option.
         --clear-databases  If update fails with e.g. database signature issues, try this option.
-        --update-mirrors-arch   Update Arch mirrors.
-        --update-mirrors-eos    Update EndeavourOS mirrors.
+        --update-mirrors-arch   Update Arch mirrors with armix.
+                                Tip: all preferred configurations must be set up in file
+                                \$HOME/.config/armix.conf.
+        --update-mirrors-eos    Update EndeavourOS mirrors with eos-rankmirrors.
+                                Tip: all preferred configurations must be set up in file
+                                /etc/eos-rankmirrors.conf.
     -c, --connection       Checks internet connection first.
         --debug            Show debugging output.
     -d, --descriptions     Shows descriptions of the packages to update.
