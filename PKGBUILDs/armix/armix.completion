@@ -66,10 +66,10 @@ _armix_()
         --ignore-countries)
             _armix_complete_list "$(< "$countrycodes")"
             ;;
-        --ignore-continents | --continent-given | --show-continent-countrycodes | --show-continent-countrycodes)
+        --ignore-continents | --continent-given | --list-continent-countrycodes | --list-continent-countrycodes)
             _armix_listselector "$cur" "$continents"
             ;;
-        --show-continent-countrycodes | --show-continent-countrynames)
+        --list-continent-countrycodes | --list-continent-countrynames)
             _armix_complete "${continents[*]}"
             ;;
         --ignore-mirrors)

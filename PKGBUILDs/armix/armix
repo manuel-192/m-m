@@ -7,7 +7,7 @@
 # - add country to ranking data
 
 echo2()       { echo "$@" >&2; }
-DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage; exit 1; }
+DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage 1; }
 DIE2()        { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
 WARN()        {
     local app="$progname"
@@ -120,18 +120,21 @@ GivenContinent() {
     local tmp1=$(ShowContinentsCountries "$continent1")
     printf "%s\n" $all_continents | grep "^$continent1$" >/dev/null || DIE2 "continent '$continent1' not found"
     [ "$tmp1" ] || DIE2 "no mirrors found in: $continent1"
-    Options --country $tmp1
+    AddCountries $tmp1
+}
+AddContinentCountries() {
+    AddCountries $(echo $(GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code) | tr ' ' ',')
 }
 AllContinents() {
     local tmp1=$(ShowContinentsCountries "$all_continents")
     [ "$tmp1" ] || DIE "no mirrors found in: $all_continents"
-    Options --country $tmp1
+    AddCountries $tmp1
 }
 IgnoreContinents() {
     local list="$1"
     local tmp1=$(ShowContinentsCountries "$list")
     [ "$tmp1" ] || DIE "no mirrors found in: $list"
-    Options --ignore-countries ${tmp1// /,}
+    IgnoreCountries ${tmp1// /,}
 }
 IgnoreCountries() {
     if [ $prevent_ignoring_countries = no ] ; then
@@ -265,11 +268,6 @@ Edit() {
 }
 
 Usage() {
-#Usage: $progname [options] [URLs]
-#URLs:                          URL(s) of mirrors to rank.
-#    --list-country-codes           Show available country codes. See also: 'reflector --list-countries'.
-#    --list-country-names           Show available country names. See also: 'reflector --list-countries'.
-#    --show-continent-countries     Show the country codes of a continent based on given country code.
     cat <<EOF
 
 Rank Arch mirrors and display them.
@@ -308,6 +306,7 @@ Command line options override configuration file options.
 Note: there are additional options available, see them with option --dump-options
       and the source code at $(which $progname).
 EOF
+    [ "$1" ] && exit $1
 }
 Options() {
     local opts
@@ -318,18 +317,29 @@ Options() {
     while true ; do
         case "$1" in
             --)                                     shift; break ;;
-            -h | --help)                            ;;   # already handled in OptionsPreHandle()
-            --no-config)                            ;;   # already handled in OptionsPreHandle()
-            -I | --no-ignore-countries)             ;;   # already handled in OptionsPreHandle()
-            -l | --list-country-codes-names)        ;;   # already handled in OptionsPreHandle()
-            -i | --ignore-mirrors)                  shift ;;   # already handled in OptionsPreHandle()
-            --dump-options)                         ;;   # already handled in OptionsPreHandle()
+            -h | --help)                            ;;         # already handled in OptionsPreHandle()
+            --no-config)                            ;;         # already handled in OptionsPreHandle0()
+            -I | --no-ignore-countries)             ;;         # already handled in OptionsPreHandle()
+            -l | --list-country-codes-names)        ;;         # already handled in OptionsPreHandle()
+            -e | --edit-config)                     ;;         # already handled in OptionsPreHandle()
+            --dump-options)                         ;;         # already handled in OptionsPreHandle()
+            --dump-completion-files)                ;;         # already handled in OptionsPreHandle()
+            --update-completion-files)              ;;         # already handled in OptionsPreHandle()
+            --get-time-info)                        ;;         # already handled in OptionsPreHandle()
+            --reset-completion-files)               ;;         # already handled in OptionsPreHandle()
+            --list-continent-codes)                 ;;         # already handled in OptionsPreHandle()
+            --list-country-codes)                   ;;         # already handled in OptionsPreHandle()
+            --list-country-names)                   ;;         # already handled in OptionsPreHandle()
+            --list-continent-countrycodes)          ;;         # already handled in OptionsPreHandle()
+            --list-continent-countrynames)          ;;         # already handled in OptionsPreHandle()
+            --list-current-continent-countrycodes)  ;;         # already handled in OptionsPreHandle()
+            --list-current-continent-countrynames)  ;;         # already handled in OptionsPreHandle()
+            -i | --ignore-mirrors)                  shift ;;   # already handled in OptionsPreHandle(), but must skip the next parameter
             -A | --all)                             AllContinents ;;
-            -C | --continent)                       Options --country $(echo $(Options --show-current-continent-countrycodes) | tr ' ' ',') ;;
+            -C | --continent)                       AddContinentCountries ;;
             -c | --country)                         AddCountries "$2"; shift ;;                         # must be country codes!
             --continent-given)                      GivenContinent "$2"; shift ;;
             -d | --distro)                          distro="$2"; shift ;;
-            -e | --edit-config)                     exit 0 ;; # already handled
             -x | --ignore-countries)                IgnoreCountries "$2"; shift ;;
             -X | --ignore-continents)               IgnoreContinents "$2"; shift ;;
             -t | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
@@ -337,17 +347,6 @@ Options() {
             --full-data)                            full_data=yes ;;
             --no-parallel)                          has_parallel=no ;;
             -u)                                     update_mirrordata_first=yes ;;
-            --dump-completion-files)                ShowCompletionFiles; exit 0 ;;
-            --update-completion-files)              UpdateCompletionFiles; exit 0 ;;
-            --get-time-info)                        GetTimeInfo; exit 0 ;;
-            --reset-completion-files)               ResetCompletionFiles; exit 0 ;;
-            --list-continent-codes)                 echo "$all_continents"; exit 0 ;;
-            --list-country-codes)                   ListCountryCodes; exit 0 ;;
-            --list-country-names)                   ListCountryNames; exit 0 ;;
-            --show-continent-countrycodes)          ShowContinentCountries "$2" code; exit ;;
-            --show-continent-countrynames)          ShowContinentCountries "$2" name; exit ;;
-            --show-current-continent-countrycodes)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code; exit ;;
-            --show-current-continent-countrynames)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name; exit ;;
             --timeout)                              timeout_distro="$2"; shift ;;
             --timeout-rank)                         timeout_rank="$2"; shift ;;
 
@@ -359,28 +358,40 @@ Options() {
     urls+=("$@")
 }
 
-OptionsPreHandle0() {
-    local arg
-    for arg in "$@" ; do
-        case "$arg" in
-            --no-config) read_config=no; break ;;
-        esac
-    done
-}
+OptionsPreHandle0() { [ "$(printf "%s\n" "$@" | grep "\--no-config")" ] && read_config=no; }
+
 OptionsPreHandle() {
-    # - handle some special options
-    # - collect args array to be handled later
-    while [ "$1" ] ; do
+    # - collect limited_options array to be handled later
+    # - handle some options here for speed (e.g. -l) or validity (e.g. -i)
+
+    local opts
+
+    opts="$(/bin/getopt -o=$SOPTS --longoptions $LOPTS --name "$progname" -- "$@")" || DIE "getopt error"
+    eval set -- "$opts"
+
+    while true ; do
         case "$1" in
-            -h | --help)                       Usage; exit 0 ;;
-            -e | --edit-config)                Edit "$config_file"; exit 0 ;;
-            -i | --ignore-mirrors)             IgnoreMirrors "$2"; shift ;;
-            --dump-completion-files)           ShowCompletionFiles; exit 0 ;;
-            -l | --list-country-codes-names)   ListCountryCodesNames; exit 0 ;;
-            --dump-options)                    DumpOptions; exit 0 ;;
-            --no-config)                       ;;   # already handled in OptionsPreHandle0()
-            -I | --no-ignore-countries)        prevent_ignoring_countries=yes ;;
-            *) args+=("$1") ;;
+            --)                                     shift; break ;;
+            -h | --help)                            Usage 0 ;;
+            --dump-completion-files)                ShowCompletionFiles;    exit 0 ;;
+            --update-completion-files)              UpdateCompletionFiles;  exit 0 ;;
+            --get-time-info)                        GetTimeInfo;            exit 0 ;;
+            --reset-completion-files)               ResetCompletionFiles;   exit 0 ;;
+            --list-continent-codes)                 echo "$all_continents"; exit 0 ;;
+            --list-country-codes)                   ListCountryCodes;       exit 0 ;;
+            --list-country-names)                   ListCountryNames;       exit 0 ;;
+            --list-continent-countrycodes)          ShowContinentCountries "$2" code; exit ;;
+            --list-continent-countrynames)          ShowContinentCountries "$2" name; exit ;;
+            --list-current-continent-countrycodes)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code; exit ;;
+            --list-current-continent-countrynames)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name; exit ;;
+            -e | --edit-config)                     Edit "$config_file";    exit 0 ;;
+            --dump-completion-files)                ShowCompletionFiles;    exit 0 ;;
+            -l | --list-country-codes-names)        ListCountryCodesNames;  exit 0 ;;
+            --dump-options)                         DumpOptions;            exit 0 ;;
+            -i | --ignore-mirrors)                  IgnoreMirrors "$2";     shift ;;
+            --no-config)                            ;;                                  # already handled in OptionsPreHandle0()
+            -I | --no-ignore-countries)             prevent_ignoring_countries=yes ;;
+            *) limited_options+=("$1")                         ;;
         esac
         shift
     done
@@ -439,7 +450,7 @@ Main() {
     local ecode=0
     local -r config_file="$HOME/.config/$progname.conf"
     local -r all_continents="AF AN AS EU NA OC SA"
-    local args=() args_orig=("$@")
+    local limited_options=() args_orig=("$@")
     local completion_files_updated=no
 
     local SOPTS="ACc:d:ehi:x:lrtu"
@@ -448,8 +459,8 @@ Main() {
     local LOPTS=""
     LOPTS+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,full-data,help"
     LOPTS+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data"
-    LOPTS+=",reset-completion-files,show-continent-countrycodes:,show-continent-countrynames:,update-completion-files"
-    LOPTS+=",show-current-continent-countrycodes,show-current-continent-countrynames,get-time-info"
+    LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
+    LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
     LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
     LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config"
     # LOPTS+=",save:"
@@ -463,7 +474,7 @@ Main() {
 
     OptionsPreHandle "${CONFIG_OPTIONS[@]}" "$@"
 
-    Options "${args[@]}"
+    Options "${limited_options[@]}"
 
     case "$distro" in
         arch)
@@ -504,11 +515,11 @@ Main() {
     CreateMirrorlistFile
 
     #if [ -z "$savefile" ] ; then
-    #    CreateMirrorlistFile "${args[@]}"
+    #    CreateMirrorlistFile "${limited_options[@]}"
     #elif [ -w ${savefile%/*} ] && [ -w "$savefile" ] ; then
-    #    CreateMirrorlistFile "${args[@]}" | tee "$savefile"
+    #    CreateMirrorlistFile "${limited_options[@]}" | tee "$savefile"
     #else
-    #    CreateMirrorlistFile "${args[@]}" | sudo tee "$savefile"
+    #    CreateMirrorlistFile "${limited_options[@]}" | sudo tee "$savefile"
     #fi
 }
 
