@@ -61,6 +61,7 @@ Main() {
     local SOPTS="acdfhil:nopqsv"
     local LOPTS="aur,begin:,clear-databases,clear-keyrings,connection,debug,descriptions,dump-options,end:,instant,instant-no-aur"
     LOPTS+=",foreign,help,middle:,no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,pager,paru,quiet,sync,verbose,virtualbox"
+    LOPTS+=",update-mirrors-arch,update-mirrors-eos"
 
     local args=("$@")
 
@@ -158,6 +159,8 @@ $pre1
     -a, --aur              Updates AUR packages too.
         --clear-keyrings   If update fails with keyring issues, try this option.
         --clear-databases  If update fails with e.g. database signature issues, try this option.
+        --update-mirrors-arch   Update Arch mirrors.
+        --update-mirrors-eos    Update EndeavourOS mirrors.
     -c, --connection       Checks internet connection first.
         --debug            Show debugging output.
     -d, --descriptions     Shows descriptions of the packages to update.
@@ -229,6 +232,8 @@ Options() {
                     --clear-databases)       ClearDatabases; Exit 0 ;;
                     -c | --connection)       Assign connection yes ;;
                     --debug)                 Assign debug yes ;;
+                    --update-mirrors-arch)   armix | sudo tee /etc/pacman.d/mirrorlist; exit ;;
+                    --update-mirrors-eos)    eos-rankmirrors; exit ;;
                     -d | --descriptions)     Assign descriptions yes ;;
                     --dump-options)          DumpOptions; Exit 0 ;;
                     -i | --instant)          Assign instant yes ;;
