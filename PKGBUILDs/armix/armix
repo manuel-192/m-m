@@ -292,7 +292,7 @@ Options:
     --list-continent-codes           List all available continent codes.
     -r, --ranking-data               Show ranking data too.
     -u                               Update mirror info first.
-    --timeout-rank                   Max timeout in seconds for ranking a mirror.
+    -k, --timeout-rank               Max timeout in seconds for ranking a mirror.
     --timeout                        Max timeout in seconds for other than ranking.
     -h, --help                       This help.
 
@@ -348,7 +348,7 @@ Options() {
             --no-parallel)                          has_parallel=no ;;
             -u)                                     update_mirrordata_first=yes ;;
             --timeout)                              timeout_distro="$2"; shift ;;
-            --timeout-rank)                         timeout_rank="$2"; shift ;;
+            -k | --timeout-rank)                    timeout_rank="$2"; shift ;;
 
             # --save)                                 savefile="$2"; shift ;;                 # option --save likely will not be supported
         esac
@@ -453,7 +453,7 @@ Main() {
     local limited_options=() args_orig=("$@")
     local completion_files_updated=no
 
-    local SOPTS="ACc:d:ehi:x:lrtu"
+    local SOPTS="ACc:d:ehi:k:x:lrtu"
     SOPTS+="I"
 
     local LOPTS=""
