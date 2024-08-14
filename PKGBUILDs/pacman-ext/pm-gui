@@ -45,98 +45,46 @@ EditFile() {
     fi
 }
 
-SystemSuggestions() {
-    # give ad hoc system config tips based on detected hw, e.g. ibt=off
-    local msgs=()
-    local cpu_gen_intel=""
 
-    # preparations for the tests
-    if [ "$(device-info --cpu)" = "GenuineIntel" ] ; then
-        cpu_gen_intel="$(inxi -Cazc0 | grep -w gen: | sed -E 's|.* gen: core ([0-9]+) .*|\1|')"
-        [ -n "$cpu_gen_intel" ] || PMGUI_WARN "failed to detect CPU generation"
-    fi
-    IsInstalled() { pacman -Q "$1" >& /dev/null ; }
-
-    # available tests
-    test_nvidia-ibt-off() {
-        if [ -n "$(lsmod | grep nvidia)" ] && [ "$(device-info --cpu)" = "GenuineIntel" ] ; then
-            if [ -n "$cpu_gen_intel" ] && [ $cpu_gen_intel -ge 11 ] ; then
-                msgs+=("Kernel parameter 'ibt=off' may be needed, see https://wiki.archlinux.org/title/NVIDIA#Installation.")
-            fi
-        fi
-    }
-    test_xf86-video-intel() {
-        if [ -n "$cpu_gen_intel" ] ; then
-            local pkg=xf86-video-intel
-            if IsInstalled $pkg ; then
-                if [ $cpu_gen_intel -gt 3 ] ; then
-                    msgs+=("Package $pkg may need to be uninstalled.")
-                fi
-            else
-                if [ $cpu_gen_intel -le 3 ] && [ -n "$(device-info --graphics | grep -w Intel)" ] ; then
-                    msgs+=("Package $pkg may need to be installed.")
-                fi
-            fi
-        fi
-    }
-
-    # do the tests now
-    test_nvidia-ibt-off
-    test_xf86-video-intel
-
-    # show test results
-    local title="Tips and suggestions for the system"
-    local icon=info
-    local timeout=""   # not set!
-    if [ ${#msgs[@]} -gt 0 ] ; then
-        eos_yad --form --title="$title" --text="$(printf "%s\n" "${msgs[@]}")" --button=yad-quit
-    else
-        eos_yad_nothing_todo "No system suggestions." "$timeout" "$title" "$icon"  # $icon not used in eos_yad_nothing_todo !!!
-    fi
-}
-
-export -f PMGUI_MSG PMGUI_DIE PMGUI_WARN FirstAppOf EditFile SystemSuggestions
+export -f PMGUI_MSG PMGUI_DIE PMGUI_WARN FirstAppOf EditFile
 export PMGUI_PROGNAME="$(basename "$0")"
 
 Main() {
+    AssignIconVariables_in_eos_bash_shared
+
     local pacman_conf=/etc/pacman.conf
-    local pacman_ext_conf=/etc/pacman-ext.conf
 
     local -r amp="&amp;"
     local -r and="&#38;"
 
-    local -r icon_prefs=preferences-system
-    local -r icon_update=system-software-update
-    local -r icon_install=system-software-install
-    local -r icon_manager=software-manager
-    local -r icon_edit=accessories-text-editor
+    local -r icon_prefs=$ICO_PREFERENCES_SYSTEM
+    local -r icon_update=$ICO_UPDATE
+    local -r icon_install=$ICO_INSTALL
+    local -r icon_remove=/usr/share/icons/Qogir/scalable/apps/software-manager.svg
+    local -r icon_edit=$ICO_EDIT_CONFIG                                  # accessories-text-editor
     
     local cmd=(
-        eos_yad --form --align-buttons
-        --use-interp
+        eos_yad --form --align-buttons --use-interp
         --title="Package management"
-        --text="Manage installed packages with the buttons below"
-        --window-icon=/usr/share/endeavouros/EndeavourOS-icon.png
+        --text="Manage system packages with the buttons below"
+        --window-icon=$EOS_WICON                                         # /usr/share/endeavouros/EndeavourOS-icon.png
         --image=system-software-install
-        --columns=3
+        --columns=2
         --button=yad-quit
 
-        --field="Check $amp Update!$icon_update!If updates are available, run system update":fbtn "RunInTerminal 'pacman-ext'"
-        --field="Update!$icon_update!Run system update directly":fbtn "RunInTerminal 'echo System Update ; pacman-ext -Syu --aur'"
-        --field="Install!$icon_install!Select and install packages":fbtn "RunInTerminal 'paf -i'"
-        --field="Remove!$icon_manager!Select and remove packages":fbtn "RunInTerminal 'paf -r'"
+        --field="Update system!$icon_update!Update packages with eos-update, including AUR":fbtn      "RunInTerminal 'echo System Update ; eos-update --aur'"
+        --field="Install packages!$icon_install!Select and install packages":fbtn                     "RunInTerminal 'paf -i'"                                     # ???
+        --field="Remove packages!$icon_remove!Select and remove packages":fbtn                        "RunInTerminal 'paf -r'"                                     # ???
 
-        --field="Edit $pacman_conf!$icon_edit!Change general package management settings":fbtn "EditFile $pacman_conf"
-        --field="Edit $pacman_ext_conf!$icon_edit!Change settings of pacman-ext":fbtn "EditFile $pacman_ext_conf"
-        --field="Edit Arch mirrorlist!$icon_edit!Change the list of Arch mirrors":fbtn "EditFile /etc/pacman.d/mirrorlist"
-        --field="Edit EndeavourOS mirrorlist!$icon_edit!Change the list of EndeavourOS mirrors":fbtn "EditFile /etc/pacman.d/endeavouros-mirrorlist"
+        --field="Rank Arch mirrors!$icon_prefs!Rank the list of Arch mirrors":fbtn                    "RunInTerminal 'armix | sudo tee /etc/pacman.d/mirrorlist'"  # ???
+        --field="Rank EndeavourOS mirrors!$icon_prefs!Rank the list of EndeavourOS mirrors":fbtn      "RunInTerminal eos-rankmirrors"
 
-        --field="Rank Arch mirrors!$icon_prefs!Re-organize list of Arch mirrors":fbtn "reflector-simple"
-        --field="Rank EndeavourOS mirrors!$icon_prefs!Re-organize list of EndeavourOS mirrors":fbtn "RunInTerminal eos-rankmirrors"
+        --field="Edit $pacman_conf!$icon_edit!Change general package management settings":fbtn        "EditFile $pacman_conf"
+        --field="Edit Arch mirrorlist!$icon_edit!Change the list of Arch mirrors":fbtn                "EditFile /etc/pacman.d/mirrorlist"
+        --field="Edit EndeavourOS mirrorlist!$icon_edit!Change the list of EndeavourOS mirrors":fbtn  "EditFile /etc/pacman.d/endeavouros-mirrorlist"
 
-        --field=" Pacdiff $and meld!$icon_prefs!Use apps pacdiff and meld to manage system config changes":fbtn "eos-pacdiff --nt"
-        --field=" Configure package cache management!$icon_prefs!Configure management of the package cache)":fbtn 'paccache-service-manager'
-        # --field=" System suggestions!$icon_prefs!Propose potentially needed changes to your system":fbtn "SystemSuggestions"
+        --field=" Manage config changes!$icon_prefs!Use eos-pacdiff to manage system config changes":fbtn       "RunInTerminal 'echo Running eos-pacdiff: ;  eos-pacdiff'"
+        --field=" Configure package cache!$icon_prefs!Configure the management of the package cache":fbtn      "paccache-service-manager"
     )
 
     "${cmd[@]}" >/dev/null &
@@ -145,7 +93,5 @@ Main() {
 source /usr/share/endeavouros/scripts/eos-script-lib-yad --limit-icons || exit 1
 export -f eos_yad
 export -f eos_yad_nothing_todo
-
-# SystemSuggestions
 
 Main "$@"
