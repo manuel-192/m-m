@@ -15,6 +15,8 @@ WARN()        {
     echo2 -e "==> $app: warning: $1"
 }
 
+AssertNumber() { [ "${1//[0-9]/}" ] && DIE "option $2 requires a number"; }
+
 GetCurrentCountry() { cc="$(show-location-info country)"; [ "$cc" ] ; }
 
 GetContinentOfCountry() {
@@ -342,6 +344,7 @@ Options() {
             -d | --distro)                          distro="$2"; shift ;;
             -x | --ignore-countries)                IgnoreCountries "$2"; shift ;;
             -X | --ignore-continents)               IgnoreContinents "$2"; shift ;;
+            -m | --max)                             AssertNumber "$2" "$1"; max_nr_of_mirrors="$2"; shift ;;
             -t | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
             -r | --ranking-data)                    ranking_data=yes ;;
             --full-data)                            full_data=yes ;;
@@ -452,8 +455,9 @@ Main() {
     local -r all_continents="AF AN AS EU NA OC SA"
     local limited_options=() args_orig=("$@")
     local completion_files_updated=no
+    local max_nr_of_mirrors=1000
 
-    local SOPTS="ACc:d:ehi:k:x:lrtu"
+    local SOPTS="ACc:d:ehi:k:m:x:lrtu"
     SOPTS+="I"
 
     local LOPTS=""
@@ -462,7 +466,7 @@ Main() {
     LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
     LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
-    LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config"
+    LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config,max:"
     # LOPTS+=",save:"
 
     [ -x /bin/parallel ] || has_parallel=no
@@ -545,13 +549,13 @@ ShowFullData()    {
 }
 ShowMirrorlist()  {
     echo -e "$1"
-    echo "$ranked" | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|"
+    echo "$ranked" | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|" | head -n $max_nr_of_mirrors
 }
 ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         local -r count=$(echo "$ranked" | wc -l)
         echo -e "\n### Ranking data ($count mirrors):"
-        echo "$ranked" | sed -E "s|^([^ ]+)|### \1$suffix|"
+        echo "$ranked" | sed -E "s|^([^ ]+)|### \1$suffix|" | head -n $max_nr_of_mirrors
     fi
 }
 
