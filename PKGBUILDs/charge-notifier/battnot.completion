@@ -26,8 +26,6 @@ _battnot_complete_percent() {
     [ "$val" -gt 100 ]   && val=100         # limit to 0..100 %
     [ "$val" -lt 0 ]     && val=0           # limit to 0..100 %
     COMPREPLY[0]=$val
-
-    # [[ $COMPREPLY == *= ]] && compopt -o nospace
     compopt -o nospace
     compopt -o nosort
 }
@@ -44,10 +42,10 @@ _battnot_()
         --charge-sleep | --discharge-sleep)
             _battnot_complete_seconds "{0..9}"
             ;;
-        --lowlimit)
+        --min)
             _battnot_complete_percent 0 "{0..9}"
             ;;
-        --uplimit)
+        --max)
             _battnot_complete_percent 100 "{0..9}"
             ;;
         --power-device)
@@ -59,8 +57,7 @@ _battnot_()
             _battnot_complete "${files[*]}"
             ;;
         *)
-            local -r options="$(/usr/bin/battnot --dump-options)"
-            _battnot_complete "$options"
+            _battnot_complete "$(/bin/battnot --dump-options)"
             ;;
     esac
 } &&

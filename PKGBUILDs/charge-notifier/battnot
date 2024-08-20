@@ -2,25 +2,108 @@
 
 echo2()     { echo -e "$@" >&2; }
 DIE()       { echo2 "$progname: error: $1"; exit 1; }
-MakeSound() { gsound-play -f $sound_file; }
+MakeSound() {
+    [ "$sound_file" ] || DIE "no sound file"
+    [ -r "$sound_file" ] || DIE "sound file $sound_file cannot be used"
+    gsound-play -f $sound_file
+}
+
+GetSoundFile() {
+    local -n _file_ret="$1"
+    local ret=0
+
+    case "$2" in
+        "" | -*)
+            local -r files=$(/bin/ls -1 --indicator-style slash /usr/share/sounds | grep -v /$)
+            local -r f=$(printf "%s\n" "${files[@]}" | fzf)
+            [ "$f" ] || DIE "no sound file"
+            _file_ret="$f"
+            return 0
+            ;;
+        *)
+            _file_ret="$2"
+            return 1
+            ;;
+    esac
+}
+GetPowerDevice() {
+    local -n _file_ret="$1"
+    local ret=0
+
+    case "$2" in
+        "" | -*)
+            local -r files=(/sys/class/power_supply/BAT*/uevent)
+            local -r f=$(printf "%s\n" "${files[@]}" | fzf)
+            [ "$f" ] || DIE "no power device file"
+            _file_ret="$f"
+            return 0
+            ;;
+        *)
+            _file_ret="$2"
+            return 1
+            ;;
+    esac
+}
 
 Options() {
     while [ "$1" ] ; do
         case "$1" in
-            -c | --charge-sleep)    sleeptime_charging="$2";    shift ;;
-            -d | --discharge-sleep) sleeptime_discharging="$2"; shift ;;
-            -l | --lowlimit)        lowlimit="$2";              shift ;;
-            -p | --power-device)    power_device="$2";          shift ;;
-            -s | --sound-file)      sound_file="$2";            shift ;;
-            -u | --uplimit)         uplimit="$2";               shift ;;
+            --charge-sleep)    sleeptime_charging="$2";    shift ;;
+            --discharge-sleep) sleeptime_discharging="$2"; shift ;;
+            --min)             min="$2";                   shift ;;
+            --power-device)    GetPowerDevice power_device "$2" || shift ;;
+            --sound-file)      GetSoundFile   sound_file   "$2" || shift ;;
+            --max)             max="$2";                   shift ;;
 
-            -r | --no-reread-conf)  ;;
-            -v | --verbose)         ;;
-            --dump-options)         ;;                                   # handled already
-            *)                      DIE "unsupported parameter '$1'" ;;
+            --no-reread-conf)  ;;
+            --dump-options)    ;;                                   # handled already
+            *)                 DIE "unsupported parameter '$1'" ;;
         esac
         shift
     done
+}
+
+Usage() {
+    cat <<EOF
+$progname: show reoccurring notifications when battery reaches given max or min level.
+
+Usage: $progname [flags]
+Flags: --charge-sleep      Sets sleep time between checks when charging.
+       --discharge-sleep   Sets sleep time between checks when discharging.
+       --dump-options      Show all flags.
+       --edit-config       Edit the user configuration file.
+       --max               Start notifications when battery reaches this level while charging.
+       --min               Start notifications when battery reaches this level while discharging.
+       --no-reread-conf    Read the config file only at start.
+       --power-device      Set the power device path.
+       --sound-file        Set the sound file for the notification.
+EOF
+}
+
+EditConfig() {
+    if [ ! -e "$conf" ] ; then
+        cat <<EOF > "$conf"
+#!/bin/bash
+
+CONFIG_CMDS=(
+    --max             90
+    --min             22
+    --power-device    /sys/class/power_supply/BAT1/uevent
+    --sound-file      /usr/share/sounds/Oxygen-Sys-Question.ogg
+    --charge-sleep    60
+    --discharge-sleep 120
+)
+EOF
+    fi
+    local editors=(exo-open xdg-open kde-open)
+    local ed
+    for ed in "${editors[@]}" ; do
+        if [ -x /bin/${ed%% *} ] ; then
+            /bin/$ed "$conf"
+            exit 0
+        fi
+    done
+    DIE "editor not found"
 }
 
 GetTheOtherPid() {
@@ -29,35 +112,35 @@ GetTheOtherPid() {
 
 Main() {
     local reread_conf=yes
-    local verbose=no
     local arg
+    local -r progname=${0##*/}
+    local -r conf="$HOME/.config/$progname.conf"
 
     for arg in "$@" ; do
         case "$arg" in
-            -r | --no-reread-conf) reread_conf=no ;;
-            -v | --verbose)        verbose=yes ;;
+            --edit-config)         EditConfig ;;
+            --no-reread-conf)      reread_conf=no ;;
             --dump-options)
-                local FLAGS=(
+                local -r FLAGS=(
                     --charge-sleep
                     --discharge-sleep
-                    --lowlimit
+                    --dump-options
+                    --edit-config
+                    --max
+                    --min
+                    --no-reread-conf
                     --power-device
                     --sound-file
-                    --uplimit
-                    --no-reread-conf
-                    --verbose
-                    --dump-options
                 )
-                echo "${FLAGS[*]}"
+                printf "%s\n" "${FLAGS[@]}"
                 exit 0
                 ;;
         esac
     done
 
-    local -r progname=${0##*/}
     local power_device=/sys/class/power_supply/BAT1/uevent
-    local uplimit=90
-    local lowlimit=22
+    local max=90
+    local min=22
     local sleeptime_charging=60
     local sleeptime_discharging=600
     local sound_file=/usr/share/sounds/Oxygen-Sys-Question.ogg
@@ -70,10 +153,7 @@ Main() {
         [ "$(echo "$pids" | grep "^$orig_pid$")" ] && orig_pid=" (PID $orig_pid)" || orig_pid=""
         echo2 "$progname already running$orig_pid"
         exit 1
-    else
-        echo2 "Starting $progname"
     fi
-    local conf="$HOME/.config/$progname.conf"
     local cmd=(notify-send --icon=battery --urgency=normal --expire-time=30000 --app-name=$progname)
     local percent
     local percent_prev=""
@@ -85,6 +165,8 @@ Main() {
     [ -r "$conf" ] && source "$conf"
 
     Options "${CONFIG_CMDS[@]}" "$@"
+
+    echo2 "Starting $progname"
 
     while true ; do
         percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
@@ -100,14 +182,14 @@ Main() {
 
         case "$status" in
             Charging)
-                if [ $percent -ge $uplimit ] && [ "$percent" != "$percent_prev" ] ; then
+                if [ $percent -ge $max ] && [ "$percent" != "$percent_prev" ] ; then
                     "${cmd[@]}" "Battery high" "${percent}%, charging"
                     MakeSound
                     sleeptime=$sleeptime_charging
                 fi
                 ;;
             Discharging)
-                if [ $percent -le $lowlimit ] && [ "$percent" != "$percent_prev" ] ; then
+                if [ $percent -le $min ] && [ "$percent" != "$percent_prev" ] ; then
                     "${cmd[@]}" "Battery low" "${percent}%, not charging"
                     MakeSound
                     sleeptime=$sleeptime_discharging
