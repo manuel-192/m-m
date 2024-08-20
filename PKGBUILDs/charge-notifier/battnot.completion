@@ -1,0 +1,67 @@
+# bash completion for battnot        -*- shell-script -*-
+
+_battnot_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+_battnot_complete_seconds() {
+    COMPREPLY=($(compgen -P "$cur" -W "$1"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nospace
+    compopt -o nosort
+}
+_battnot_complete_percent() {
+    local -r defval="$1"
+    shift
+
+    case "$cur" in
+        "" | ? | 10) COMPREPLY=($(compgen -P "$cur" -W "$1")) ;;
+        ??)          COMPREPLY=("$cur") ;;
+        *)           COMPREPLY=($defval) ;;
+    esac
+
+    local val="${COMPREPLY[0]}"
+    [ "${var//[0-9]/}" ] && val=$defval     # $val was invalid
+    [ "$val" -gt 100 ]   && val=100         # limit to 0..100 %
+    [ "$val" -lt 0 ]     && val=0           # limit to 0..100 %
+    COMPREPLY[0]=$val
+
+    # [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nospace
+    compopt -o nosort
+}
+
+_battnot_() 
+{
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        --charge-sleep | --discharge-sleep)
+            _battnot_complete_seconds "{0..9}"
+            ;;
+        --lowlimit)
+            _battnot_complete_percent 0 "{0..9}"
+            ;;
+        --uplimit)
+            _battnot_complete_percent 100 "{0..9}"
+            ;;
+        --power-device)
+            local -r files=(/sys/class/power_supply/BAT*/uevent)
+            _battnot_complete "${files[*]}"
+            ;;
+        --sound-file)
+            local -r files=(/usr/share/sounds/*.ogg)
+            _battnot_complete "${files[*]}"
+            ;;
+        *)
+            local -r options="$(/usr/bin/battnot --dump-options)"
+            _battnot_complete "$options"
+            ;;
+    esac
+} &&
+complete -F _battnot_ battnot

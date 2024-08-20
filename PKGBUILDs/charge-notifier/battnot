@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DIE()       { echo "$progname: error: $1" >&2; exit 1; }
+echo2()     { echo -e "$@" >&2; }
+DIE()       { echo2 "$progname: error: $1"; exit 1; }
 MakeSound() { gsound-play -f $sound_file; }
 
 Options() {
@@ -15,13 +16,44 @@ Options() {
 
             -r | --no-reread-conf)  ;;
             -v | --verbose)         ;;
+            --dump-options)         ;;                                   # handled already
             *)                      DIE "unsupported parameter '$1'" ;;
         esac
         shift
     done
 }
 
+GetTheOtherPid() {
+    ps -ef | grep battnot | grep -w '?' | awk '{print $2}'
+}
+
 Main() {
+    local reread_conf=yes
+    local verbose=no
+    local arg
+
+    for arg in "$@" ; do
+        case "$arg" in
+            -r | --no-reread-conf) reread_conf=no ;;
+            -v | --verbose)        verbose=yes ;;
+            --dump-options)
+                local FLAGS=(
+                    --charge-sleep
+                    --discharge-sleep
+                    --lowlimit
+                    --power-device
+                    --sound-file
+                    --uplimit
+                    --no-reread-conf
+                    --verbose
+                    --dump-options
+                )
+                echo "${FLAGS[*]}"
+                exit 0
+                ;;
+        esac
+    done
+
     local -r progname=${0##*/}
     local power_device=/sys/class/power_supply/BAT1/uevent
     local uplimit=90
@@ -29,24 +61,17 @@ Main() {
     local sleeptime_charging=60
     local sleeptime_discharging=600
     local sound_file=/usr/share/sounds/Oxygen-Sys-Question.ogg
-    local reread_conf=yes
-    local verbose=no
     local CONFIG_CMDS=()
-    local arg
-
-    for arg in "$@" ; do
-        case "$arg" in
-            -r | --no-reread-conf) reread_conf=no ;;
-            -v | --verbose)        verbose=yes ;;
-        esac
-    done
 
     local -r pids=$(pgrep $progname)
+
     if [ $(echo "$pids" | wc -l) -gt 1 ] ; then
-        [ $verbose = yes ] && echo "$progname already running"
+        local orig_pid=$(ps -ef | grep $progname | grep -w '?' | awk '{print $2}')
+        [ "$(echo "$pids" | grep "^$orig_pid$")" ] && orig_pid=" (PID $orig_pid)" || orig_pid=""
+        echo2 "$progname already running$orig_pid"
         exit 1
     else
-        [ $verbose = yes ] && echo "Starting $progname"
+        echo2 "Starting $progname"
     fi
     local conf="$HOME/.config/$progname.conf"
     local cmd=(notify-send --icon=battery --urgency=normal --expire-time=30000 --app-name=$progname)
