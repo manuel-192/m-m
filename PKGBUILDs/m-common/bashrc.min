@@ -159,6 +159,16 @@ EOF
         return 1
     }
 
+    find_func_hyphens() {
+        # Find hyphens in a bash function names.
+        # Recurse from current folder.
+        cd "$CODEDIR/EOS" || return 1
+        echo "==> please wait..." >&2
+        grep -E -r '\(\)[ ]+{' 2>/dev/null | \
+            grep -Pwv 'PKGBUILD|EXPERIMENTAL|WANHAA|_BUILD_|OLD-PKGBUILDS|MUUTA|eos-pkgbuild-setup|ISO-hotfixes|calamares|EndeavourOS-ISO' | \
+            grep -E ':.+[^ ]-.+\(\)'
+    }
+
     dmessages() {                        # show dmesg messages with a given level
         local -r level="$1"
         local messages=""
