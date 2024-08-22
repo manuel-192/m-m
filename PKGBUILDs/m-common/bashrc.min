@@ -766,20 +766,27 @@ EOF
 
         for dir in "${CDPATH_ARR[@]}" ; do
             for added in "${arrout[@]}" ; do
-                if [ "$dir" = "$added" ] ; then
-                    bashrc.min_warning "already added '$dir = $added'"
-                    continue 2
-                fi
-                if [ "$added" != "." ] && [ "$dir" != "." ] && [ "$dir" -ef "$added" ] ; then
-                    bashrc.min_warning "already added '$dir -ef $added'"
-                    continue 2
+                if true ; then
+                    if [ "$dir" -ef "$added" ] ; then
+                        bashrc.min_warning "'$dir' was already added as '$added'"
+                        continue 2
+                    fi
+                else
+                    if [ "$dir" = "$added" ] ; then
+                        bashrc.min_warning "already added '$dir = $added'"
+                        continue 2
+                    fi
+                    if [ "$added" != "." ] && [ "$dir" != "." ] && [ "$dir" -ef "$added" ] ; then
+                        bashrc.min_warning "already added '$dir -ef $added'"
+                        continue 2
+                    fi
                 fi
             done
             arrout+=("$dir")
         done
         # echo "orig = ${#CDPATH_ARR[@]}" >&2
+        # echo "new  = ${#arrout[@]}" >&2
         export CDPATH_ARR=("${arrout[@]}")
-        # echo "new  = ${#CDPATH_ARR[@]}" >&2
     }
     _Check_CDPATH_ARR
 
@@ -1099,8 +1106,10 @@ EOF
     export HISTCONTROL="erasedups"
     FIGNORE=".o:~"                      # ignored suffixes in filename completion
 
-    CDPATH="${CDPATH_ARR[*]}"
-    CDPATH="${CDPATH// /:}"
+    # CDPATH="${CDPATH_ARR[*]}"
+    # CDPATH="${CDPATH// /:}"
+    printf -v CDPATH "%s:" "${CDPATH_ARR[@]}"
+    CDPATH=${CDPATH%:}
     export CDPATH
 
     #############################################################
