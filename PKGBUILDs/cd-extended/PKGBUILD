@@ -5,35 +5,31 @@
 pkgname=cd-extended
 pkgdesc="cd extended"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=23
-pkgrel=2.10
+pkgver=24
+pkgrel=1
 
 arch=('any')
 license=('GPL')
 depends=(fzf)
 
 source=(
-    $url/$pkgname
+    # $url/$pkgname
     $url/chdirex
 )
-sha512sums=('da27671cbebab6238e404493dd81c5c94eee58e13646010b98ec30dbe35145bad17c69a32618331d8e5c8a245ca9ba0f4e33837516b217943913eae9fea82fb5'
-            'cf637ec0e4a02c91e503ce52d3d07f3d9d6c5b9ce150a6bb608e4b123f14990ca67613b7af6a1f7f53442c7361e09611de6b377ca3c544648775dcd028f73938')
+sha512sums=('b5f57711a9c9719fe21ae8b2a491f518b4947b08560197a006efc57d579ccd596b6726142d4c484c9db79d8252c301a9dc7eaa6321d9bc97b13d02ae45461d42')
 
 package() {
-    #source /usr/share/endeavouros/scripts/PackageFunc || return 1
-    #Package "$@"
+    # source /usr/share/endeavouros/scripts/PackageFunc || return 1
+    # Package "$@"
 
     local item src
 
     for src in "${source[@]}" ; do
         item="${src##*/}"
         case "$item" in
-            *.completion)
-                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)" ;;
-            *.conf)
-                install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
-            *)
-                install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
+            *.completion) install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/${item%.completion}" ;;
+            *.conf)       install -Dm644 "$item"   "$pkgdir/etc/$item" ;;
+            *)            install -Dm755 "$item"   "$pkgdir/usr/bin/$item" ;;
         esac
     done
 

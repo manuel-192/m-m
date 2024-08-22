@@ -32,21 +32,23 @@ HandleCdpathMatches() {
 }
 
 Main() {
+    local prefer_direct_subdir=no    # yes or no
+    case "$1" in
+        --prefer-direct-subdir) prefer_direct_subdir=yes; shift ;;
+    esac
     case "$1" in
         --) shift ;;
     esac
 
     case "$1" in
-        "") echo "$HOME" ;;
-        .* | /* | -*)
-            echo "$@" ;;                    # handled by builtin cd
-        *)
-            if [ -d "./$1" ] ; then
-                echo "./$1"                 # always prefer direct subdir
-            else
-                HandleCdpathMatches "$1"
-            fi
-            ;;
+        .* | /* | -*) echo "$@" ;;                    # handled by builtin cd
+        "")           echo "$HOME" ;;
+        *)            if [ $prefer_direct_subdir = yes ] && [ -d "./$1" ] ; then
+                          echo "./$1"
+                          return
+                      fi
+                      HandleCdpathMatches "$1"
+                      ;;
     esac
 }
 
