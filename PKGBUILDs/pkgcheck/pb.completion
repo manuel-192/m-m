@@ -70,21 +70,18 @@ _pb_() {
     local cur prev words cword split
     _init_completion -s || return
 
-    local -r repos=$(pb --reponames)
-    local -r options=$(pb --dump-options)
-
     case "$prev" in
         -p | --pkgnames)       _pb_complete_pkgnames_list ;;
         --pkgdb)               _pb_complete "$(_pb_GetRepo)" ;;
         -c | --changelog)      _pb_complete "$(_pb_GetPkgnames)" ;;
         -T)                    _pb_complete_nr "{1..99}" ;;
         --fetch-timeout)       _pb_complete "{1..99}" ;;
-        -*)                    _pb_complete "$options" ;;
+        -*)                    _pb_complete "$(pb --dump-options)" ;;
         *)
             case "$cur" in
                 -T?*)          _pb_complete_nr "{1..99}" ;;
-                -*)            _pb_complete "$options" ;;
-                 *)            _pb_complete "$repos $options" ;;
+                -*)            _pb_complete "$(pb --dump-options)" ;;
+                 *)            _pb_complete "$(pb --reponames) $(pb --dump-options)" ;;
             esac
             ;;
     esac

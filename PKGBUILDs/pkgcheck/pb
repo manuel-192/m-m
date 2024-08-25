@@ -36,7 +36,7 @@ tar-name-components() {
 
 AskFolder() {
     RequireApp fzf
-    repodir=$(printf "%s\n" $(_pb --reponames) --assets.conf-check --pulls --extras | sort -V | fzf)
+    repodir=$(printf "%s\n" $(_pb --reponames) --assets.conf-check --assets.conf-e --assets.conf-m --pulls --extras | sort -V | fzf)
     case "$repodir" in
         "") ;;
         -*) _pb "$repodir" ;;
@@ -218,7 +218,11 @@ Params:
     --quick-check
         Check just EOS and endeavouros.
     --assets.conf-check
-        Check for changes of file assets.conf.
+        Check for changes of file assets.conf for all.
+    --assets.conf-e
+        Check for changes of file assets.conf for EndeavourOS.
+    --assets.conf-m
+        Check for changes of file assets.conf for others.
     --pkgdb <db-filename>
         Show the contents of the given package database (*.db.tar.xz).
     --mirrorlist-arch
@@ -259,7 +263,8 @@ EOF
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls"
-                op+=" --check-all --quick-check --assets.conf-check --extras --pkgdb --changelog --changelog-modified --mirrorlist-arch"
+                op+=" --check-all --quick-check --assets.conf-check --assets.conf-e --assets.conf-m"
+                op+=" --extras --pkgdb --changelog --changelog-modified --mirrorlist-arch"
                 op+=" -T --fetch-timeout -C --commit --local-repo"
                 echo "$op"
                 return
@@ -336,27 +341,20 @@ EOF
                 pb -n endeavouros
                 return
                 ;;
+            --assets.conf-e)
+                local folders=("$EOS/eos-pkgbuild-setup")
+                AssetsConfCheck
+                return $?
+                ;;
+            --assets.conf-m)
+                local folders=("$MAN/b-assets")
+                AssetsConfCheck
+                return $?
+                ;;
             --assets.conf-check)
-                local ret=0
-                local len=0
-                
-                for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets" ; do
-                    [ ${#folder} -gt $len ] && len=${#folder}
-                done
-                for folder in "$EOS/eos-pkgbuild-setup" "$MAN/b-assets" ; do
-                    printf2 "%-*s : " "$len" "$folder"
-                    pushd "$folder" >/dev/null || DIE "folder '$folder' does not exist."
-                    if [ -n "$(git diff)" ] ; then
-                        echo2 "Diffs detected"
-                        ret=1
-                        meld
-                    else
-                        echo2 "OK"
-                    fi
-                    popd >/dev/null || DIE "popd from '$folder' failed"
-                done
-                WaitToQuit $ret
-                return $ret
+                local folders=("$EOS/eos-pkgbuild-setup" "$MAN/b-assets")
+                AssetsConfCheck
+                return $?
                 ;;
             --pkgdb=* | --pkgdb)
                 local pkgdb
@@ -389,6 +387,29 @@ EOF
     for repodir in "${repodirs[@]}" ; do
         _pb2
     done
+}
+
+AssetsConfCheck() {
+    local ret=0
+    local len=0
+
+    for folder in "${folders[@]}" ; do
+        [ ${#folder} -gt $len ] && len=${#folder}
+    done
+    for folder in "${folders[@]}" ; do
+        printf2 "%-*s : " "$len" "$folder"
+        pushd "$folder" >/dev/null || DIE "folder '$folder' does not exist."
+        if [ -n "$(git diff)" ] ; then
+            echo2 "Diffs detected"
+            ret=1
+            meld
+        else
+            echo2 "OK"
+        fi
+        popd >/dev/null || DIE "popd from '$folder' failed"
+    done
+    WaitToQuit $ret
+    return $ret
 }
 
 RunInDir() {
