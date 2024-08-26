@@ -36,7 +36,7 @@ tar-name-components() {
 
 AskFolder() {
     RequireApp fzf
-    repodir=$(printf "%s\n" $(_pb --reponames) --assets.conf-check --assets.conf-e --assets.conf-m --pulls --extras | sort -V | fzf)
+    repodir=$(printf "%s\n" $(_pb --reponames) --assets.conf-e --assets.conf-m --pulls --extras | sort -V | fzf)
     case "$repodir" in
         "") ;;
         -*) _pb "$repodir" ;;
