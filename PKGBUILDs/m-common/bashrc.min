@@ -4,9 +4,9 @@
 
 NextInfo2() { printf "==> %s" "$1" >&2 ; }  # shows info about the next operation (to stderr)
 
-bashrc.min_echo2()   { echo -e "$@" >&2; }
-bashrc.min_error()   { echo -e "==> ${FUNCNAME[1]}: error: $1"   >&2; }
-bashrc.min_warning() { echo -e "==> ${FUNCNAME[1]}: warning: $1" >&2; }
+bashrc_min_echo2()   { echo -e "$@" >&2; }
+bashrc_min_error()   { echo -e "==> ${FUNCNAME[1]}: error: $1"   >&2; }
+bashrc_min_warning() { echo -e "==> ${FUNCNAME[1]}: warning: $1" >&2; }
 
 SetVarToFirstApp() {
     [ "$2" ] || return 1
@@ -26,7 +26,7 @@ SettingsCommon()
 {
     PATH_USR_BIN=/usr/bin
 
-    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc.min_echo2 "==> $FUNCNAME"
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME"
     case "$-" in
         *i*)
             # history commands with arrow keys (on an interactive shell)
@@ -71,7 +71,7 @@ SettingsCommon()
                     $alias "$name"="$def"    # assign alias only if name is "free"
                     return
                 fi
-                [ $_COMMON_SETTINGS_VERBOSE_ALIAS = yes ] && bashrc.min_warning "overriding old definition: '$defold'."
+                [ $_COMMON_SETTINGS_VERBOSE_ALIAS = yes ] && bashrc_min_warning "overriding old definition: '$defold'."
             else
                 $alias "$name"
             fi
@@ -88,7 +88,7 @@ SettingsCommon()
             shift
             Alias "$@"
         else
-            [ $_COMMON_SETTINGS_VERBOSE_ALIAS = yes ] && bashrc.min_warning "sorry, program '$app' not found"
+            [ $_COMMON_SETTINGS_VERBOSE_ALIAS = yes ] && bashrc_min_warning "sorry, program '$app' not found"
         fi
     }
     AliasIfWhich() { AliasIfCommon which "$@" ; }
@@ -152,8 +152,8 @@ EOF
         [ -n "$seconds" ] || seconds=10
         local ix
         for ix in $(seq $seconds) ; do
-            eos-connection-checker && { bashrc.min_echo2 " done." ; return 0 ; }
-            bashrc.min_echo2 -n "."
+            eos-connection-checker && { bashrc_min_echo2 " done." ; return 0 ; }
+            bashrc_min_echo2 -n "."
             sleep 1
         done
         return 1
@@ -221,15 +221,15 @@ EOF
         done
 
         if [ -z "$in" ] ; then
-            bashrc.min_error "input file needed"
+            bashrc_min_error "input file needed"
             return 1
         fi
         if [ "$in" = "$out" ] ; then
-            bashrc.min_error "will not convert '$in' to '$out'"
+            bashrc_min_error "will not convert '$in' to '$out'"
             return 1
         fi
         if [ -e "$out" ] && [ "$overwrite" != "yes" ] ; then
-            bashrc.min_error "'$out' already exists (use option '--force' to overwrite)"
+            bashrc_min_error "'$out' already exists (use option '--force' to overwrite)"
             return 1
         fi
 
@@ -324,7 +324,7 @@ EOF
     }
 
     pkgdiffs-source-installed() {
-        _echo2()   { bashrc.min_echo2 "$@" ; }
+        _echo2()   { bashrc_min_echo2 "$@" ; }
         _printf2() { printf "$@" >&2 ; }
 
         local pkg="$1"
@@ -492,7 +492,7 @@ EOF
         if [ -z "$len" ] ; then
             len=$((COLUMNS / 2))
         elif [ -n "$(echo "$len" | tr -d '[0-9]')" ] ; then
-            bashrc.min_error "first parameter is not a number"
+            bashrc_min_error "first parameter is not a number"
             return 1
         fi
         case "$str" in
@@ -511,8 +511,8 @@ EOF
 
     _AdHocChecks_() {
         _CheckAlways_() {
-            # [ -z "$BASH_SETTINGS_FILE" ] && bashrc.min_warning "variable BASH_SETTINGS_FILE not set!"
-            [ -x /usr/local/bin/pacman ] && bashrc.min_warning "executable /usr/local/bin/pacman exists!"
+            # [ -z "$BASH_SETTINGS_FILE" ] && bashrc_min_warning "variable BASH_SETTINGS_FILE not set!"
+            [ -x /usr/local/bin/pacman ] && bashrc_min_warning "executable /usr/local/bin/pacman exists!"
         }
         _DailyChecks_() {
             : #type eu &> /dev/null && eu
@@ -647,7 +647,7 @@ EOF
         local file="$1"
         local result=""
 
-        [ -n "$file" ] || { bashrc.min_warning "${FUNCNAME[0]}: give file parameter" ; return 1 ; }
+        [ -n "$file" ] || { bashrc_min_warning "${FUNCNAME[0]}: give file parameter" ; return 1 ; }
 
         if [ -f "$file" ] ; then
             if [ -L "$file" ] ; then
@@ -671,8 +671,8 @@ EOF
 
     man-eos() {
         local app=eos-apps-info-helper
-        which $app &> /dev/null || { bashrc.min_error "${app%-helper} not installed?"; return 1; }
-        bashrc.min_echo2 "==> $app $*"
+        which $app &> /dev/null || { bashrc_min_error "${app%-helper} not installed?"; return 1; }
+        bashrc_min_echo2 "==> $app $*"
         $app "$@"
     }
     eos-man() {                                                        # 'man' extended for some external apps
@@ -683,7 +683,7 @@ EOF
                 case "$REPLY" in
                     [Nn]*) return 0 ;;
                 esac
-                bashrc.min_echo2 "==> $* --help:"
+                bashrc_min_echo2 "==> $* --help:"
                 out=$("$@" --help)
                 ret=$?
                 [ $ret -eq 0 ] && echo "$out" | less --quit-if-one-screen
@@ -700,7 +700,7 @@ EOF
                     *) echo "$arg"; return 0 ;;
                 esac
             done
-            bashrc.min_error "${FUNCNAME[1]}: parameters include no item for getting help"
+            bashrc_min_error "${FUNCNAME[1]}: parameters include no item for getting help"
             return 1
         }
 
@@ -716,7 +716,7 @@ EOF
                     _man-plain-help "$item"                                # eos-apps-info-helper failed, try 'command' --help
                     [ $? -eq 0 ] && return 0
                 fi
-                bashrc.min_warning "no manual page about '$item'."
+                bashrc_min_warning "no manual page about '$item'."
                 ;;
         esac
         return $ret_man
@@ -768,16 +768,16 @@ EOF
             for added in "${arrout[@]}" ; do
                 if true ; then
                     if [ "$dir" -ef "$added" ] ; then
-                        bashrc.min_warning "'$dir' was already added as '$added'"
+                        bashrc_min_warning "'$dir' was already added as '$added'"
                         continue 2
                     fi
                 else
                     if [ "$dir" = "$added" ] ; then
-                        bashrc.min_warning "already added '$dir = $added'"
+                        bashrc_min_warning "already added '$dir = $added'"
                         continue 2
                     fi
                     if [ "$added" != "." ] && [ "$dir" != "." ] && [ "$dir" -ef "$added" ] ; then
-                        bashrc.min_warning "already added '$dir -ef $added'"
+                        bashrc_min_warning "already added '$dir -ef $added'"
                         continue 2
                     fi
                 fi
@@ -860,7 +860,7 @@ EOF
                 return 0
                 ;;
             *)
-                bashrc.min_warning "sorry, parameter '$1' not supported."
+                bashrc_min_warning "sorry, parameter '$1' not supported."
                 $FUNCNAME -h
                 return 1
                 ;;
@@ -973,7 +973,7 @@ EOF
         [ -e ~/.emacs ] && return
         [ -x /bin/emacs ] || return
 
-        bashrc.min_echo2 "==> $FUNCNAME: configuring emacs"
+        bashrc_min_echo2 "==> $FUNCNAME: configuring emacs"
 
         cat <<EOF > ~/.emacs
 (custom-set-variables
@@ -1014,9 +1014,9 @@ EOF
         if [ -f "$1" ] ; then
             eos-open "$@" 2>/dev/null
         elif [ -d "$1" ] ; then
-            bashrc.min_warning "did you mean 'cd $*'?"    # cd is not working here...
+            bashrc_min_warning "did you mean 'cd $*'?"    # cd is not working here...
         else
-            bashrc.min_warning "'$*' not recognized."
+            bashrc_min_warning "'$*' not recognized."
         fi
     }
 
@@ -1116,7 +1116,7 @@ EOF
     # aliases
     #############################################################
 
-    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc.min_echo2 "==> $FUNCNAME: aliases"
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME: aliases"
 
     Alias akm                "akm --no-progress --quiet"
     Alias Build-asdeps       "Build --pacman='--asdeps'"
@@ -1206,7 +1206,7 @@ EOF
     else
         _dispatch_my_cmd() {
             local cmd="$1"
-            bashrc.min_echo2 "==> $cmd"
+            bashrc_min_echo2 "==> $cmd"
             sleep 1
             bash -c "$cmd"
         }
@@ -1238,7 +1238,7 @@ EOF
     # bash completions
     #############################################################
 
-    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc.min_echo2 "==> $FUNCNAME: bash completions"
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME: bash completions"
 
     LoadCompletion() {
         local -r cmdname="$1"                  # (new) command name
@@ -1249,7 +1249,7 @@ EOF
 
         if [ "$app_required" ] ; then
             if [ ! -x "/bin/$app_required" ] ; then
-                bashrc.min_error "sorry, app '$app_required' does not exist"
+                bashrc_min_error "sorry, app '$app_required' does not exist"
                 return 1
             fi
         fi
@@ -1259,11 +1259,11 @@ EOF
         [ -n "$compfunc" ] || compfunc="_${completion_file_name}_"
 
         [ -r $dir/$completion_file_name ] || {
-            bashrc.min_error "sorry, $dir/$completion_file_name does not exist"
+            bashrc_min_error "sorry, $dir/$completion_file_name does not exist"
             return 1
         }
         grep -w $compfunc $dir/$completion_file_name >/dev/null || {
-            bashrc.min_error "sorry, completion function '$compfunc' does not exist"
+            bashrc_min_error "sorry, completion function '$compfunc' does not exist"
             return 1
         }
 
@@ -1288,7 +1288,7 @@ EOF
         local firstpara="$2"
         shift
 
-        bashrc.min_echo2 "==> $app $@"
+        bashrc_min_echo2 "==> $app $@"
 
         case "$firstpara" in 
             -h | --help*) $app "$@" 2> /dev/null ;;
@@ -1391,7 +1391,7 @@ bashrc() { # load updated bash settings
             if [ -f "$cd_config" ] && [ $(stat -c %s "$cd_config") -gt 0 ] ; then
                 :
             else
-                bashrc.min_warning "file $cd_config is missing or empty, creating a skeleton."
+                bashrc_min_warning "file $cd_config is missing or empty, creating a skeleton."
                 if [ -n "$CODEDIR" ] ; then
                     cat <<EOF > "$cd_config"
 CDPATH_ARR=(
@@ -1401,7 +1401,7 @@ CDPATH_ARR=(
 )
 EOF
                 else
-                    bashrc.min_warning "variable CODEDIR is not set!"
+                    bashrc_min_warning "variable CODEDIR is not set!"
                     cat <<EOF > "$cd_config"
 CDPATH_ARR=(
     ~
@@ -1415,14 +1415,14 @@ EOF
         *)
             bashrc --plain
             # [ -e ~/.bashrc ] && source ~/.bashrc
-            bashrc.min_echo2 "==> bash settings updated."
+            bashrc_min_echo2 "==> bash settings updated."
             ;;
     esac
 }
 
 # Use current settings now. Update settings with 'bashrc'.
 bashrc --plain
-bashrc.min_echo2 "==> 'bashrc' updates bash settings."
+bashrc_min_echo2 "==> 'bashrc' updates bash settings."
 cat <<EOF
 
 TODO
@@ -1431,20 +1431,20 @@ TODO
 
 EOF
 
-bashrc.min_echo2 "==> Running on $XDG_SESSION_TYPE"
+bashrc_min_echo2 "==> Running on $XDG_SESSION_TYPE"
 
 _Nvidia_driver() {
     local driver=$(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use" | awk '{print $NF}')
     case "$driver" in
         nouveau)
             if expac -Q %n xf86-video-nouveau >/dev/null ; then
-                bashrc.min_echo2 "==> GPU driver: xf86-video-nouveau"
+                bashrc_min_echo2 "==> GPU driver: xf86-video-nouveau"
             else
-                bashrc.min_echo2 "==> GPU $(echo $(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use"))"
+                bashrc_min_echo2 "==> GPU $(echo $(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use"))"
             fi
             ;;
         nvidia)
-            bashrc.min_echo2 "==> GPU driver: $(expac %n nvidia nvidia-dkms)"
+            bashrc_min_echo2 "==> GPU driver: $(expac %n nvidia nvidia-dkms)"
             ;;
     esac
 }
@@ -1469,7 +1469,7 @@ if true ; then
                 ;;
             *)
                 if [ "${levels//[0-9]/}" ] ; then         # hides numbers from $levels
-                    bashrc.min_error "the number of levels parameter ($levels) must be all numbers"
+                    bashrc_min_error "the number of levels parameter ($levels) must be all numbers"
                     return 1
                 fi
                 ;;
