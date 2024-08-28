@@ -80,7 +80,10 @@ Build() {
     [ "${old_pkgs[*]}" != "${Pkgname}-*.pkg.tar.zst" ] && rm -i "${old_pkgs[@]}"
 
     case "$Pkgname" in
-        eos-apps-info-*) ./eos-apps-info-collect ;;  # update actual html pages before build
+        eos-apps-info-*)
+            # update actual html pages before build
+            ./eos-apps-info-collect || exit $?
+            ;;
     esac
 
     if HasSourceDef PKGBUILD ; then
