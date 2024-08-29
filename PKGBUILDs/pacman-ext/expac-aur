@@ -49,44 +49,52 @@ handle_formats() {
         # Some formats have not been tested and may fail.
 
         case "$format" in
-            %a*) GetSimpleField "Architecture" ;;      # works
-            %B*) GetSimpleField "Backup Files" ;;      # unknown
-            %b*) GetSimpleField "Build Date" ;;        # works
-            %C*) ConflictsWith ;;                      # works
-            %D*) DependsOn full ;;                     # works
-            %d*) GetSimpleField "Description" ;;       # works
-            %E*) DependsOn ;;                          # works
-            %e*) GetSimpleField "Package Base" ;;      # only natives?
-            %f*) Filename ;;                           # 
-            %F*) GetSimpleField "Files" ;;
-            %g*) GetSimpleField "PGP Signature" ;;
-            %G*) GetSimpleField "Groups" ;;
-            %H*) ConflictsWith full ;;                 # works
-            %h*) GetSimpleField "Sha256sum" ;;
-            %i*) GetSimpleField "Install Script" ;;
-            %k*) GetSimpleField "Download Size" ;;
-            %l*) GetSimpleField "Install Date" ;;
-            %L*) GetSimpleField "Licenses" ;;
-            %m*) GetSimpleField "Installed Size" ;;
-            %M*) GetSimpleField "Modified Backup Files" ;;
-            %N*) GetSimpleField "Required By" ;;
-            %O*) OptionalDeps full ;;
-            %o*) OptionalDeps ;;
-            %p*) GetSimpleField "Packager" ;;
-            %P*) GetSimpleField "Provides" ;;
-            %R*) GetSimpleField "Replaces" ;;
-            %r*) GetSimpleField "Repository" ;;
-            %s*) GetSimpleField "Md5sum" ;;
-            %S*) GetSimpleField "Provides" ;;        # no version string ??
-            %T*) GetSimpleField "Replaces" ;;
-            %u*) GetSimpleField "URL" ;;
-            %V*) GetSimpleField "Validation Method" ;;
-            %v*) GetSimpleField "Version" ;;
-            %w*) GetSimpleField "Install Reason" ;;
+            %a*)   GetSimpleField "Architecture" ;;      # works
+            %B*)   GetSimpleField "Backup Files" ;;      # unknown
+            %b*)   GetSimpleField "Build Date" ;;        # works
+            %C*)   ConflictsWith ;;                      # works
+            %D*)   DependsOn full ;;                     # works
+            %d*)   GetSimpleField "Description" ;;       # works
+            %E*)   DependsOn ;;                          # works
+            %e*)   GetSimpleField "Package Base" ;;      # only natives?
+            %f*)   Filename ;;                           # 
+            %F*)   GetSimpleField "Files" ;;
+            %g*)   GetSimpleField "PGP Signature" ;;
+            %G*)   GetSimpleField "Groups" ;;
+            %H*)   ConflictsWith full ;;                 # works
+            %h*)   GetSimpleField "Sha256sum" ;;
+            %i*)   GetSimpleField "Install Script" ;;
+            %k*)   GetSimpleField "Download Size" ;;
+            %l*)   GetSimpleField "Install Date" ;;
+            %L*)   GetSimpleField "Licenses" ;;
+            %m*)   GetSimpleField "Installed Size" ;;
+            %M*)   GetSimpleField "Modified Backup Files" ;;
+            %N*)   GetSimpleField "Required By" ;;
+            %O*)   OptionalDeps full ;;
+            %o*)   OptionalDeps ;;
+            %p*)   GetSimpleField "Packager" ;;
+            %P*)   GetSimpleField "Provides" ;;
+            %R*)   GetSimpleField "Replaces" ;;
+            %r*)   GetSimpleField "Repository" ;;
+            %s*)   GetSimpleField "Md5sum" ;;
+            %S*)   GetSimpleField "Provides" ;;        # no version string ??
+            %T*)   GetSimpleField "Replaces" ;;
+            %u*)   GetSimpleField "URL" ;;
+            %V*)   GetSimpleField "Validation Method" ;;
+            %v*)   GetSimpleField "Version" ;;
+            %w*)   GetSimpleField "Install Reason" ;;
             "%!"*) GetSimpleField "Result Number" ;;
-            %n*) line+="$pkg";          format=${format:2} ;;
-            %%*) line+="%";             format=${format:2} ;;
-            *)   line+="${format%%%*}"; format="%${format#*%}" ;;
+            %n*)   line+="$pkg";          format=${format:2} ;;
+            %%*)   line+="%";             format=${format:2} ;;
+
+	    # AUR stuff!
+            %A*)   GetSimpleField "AUR URL" ;;
+            %K*)   GetSimpleField "Maintainer" ;;
+            %J*)   GetSimpleField "Popularity" ;;
+            %j*)   GetSimpleField "Votes" ;;
+            %Q*)   GetSimpleField "Out-of-date" ;;
+
+            *)     line+="${format%%%*}"; format="%${format#*%}" ;;
         esac
     done
     [ "$line" ] && echo "$line"
