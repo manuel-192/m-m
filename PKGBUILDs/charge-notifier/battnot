@@ -77,7 +77,7 @@ Flags: --charge-sleep      Sets sleep time (seconds) between checks when chargin
        --min               Start notifications when battery reaches this percentage while discharging.
        --no-reread-conf    Read the config file only at start.
        --power-device      Set the power device info file path.
-       --silent-max        Do not notify after reaching the max charge.
+       --keep-showing-max  Keep notifying after reaching the max charge.
        --sound-file        Set the sound file path for the notification.
 EOF
 }
@@ -125,7 +125,7 @@ Main() {
             --help | -h)           Usage; exit 0 ;;
             --is-running)          check_is_running=yes ;;
             --no-reread-conf)      reread_conf=no ;;
-            --silent-max)          max=110 ;;
+            --keep-showing-max)    max_show_always=yes ;;
             --dump-options)
                 local -r FLAGS=(
                     --charge-sleep
@@ -133,11 +133,11 @@ Main() {
                     --dump-options
                     --edit-config
                     --is-running
+                    --keep-showing-max
                     --max
                     --min
                     --no-reread-conf
                     --power-device
-                    --silent-max
                     --sound-file
                 )
                 printf "%s\n" "${FLAGS[@]}"
@@ -149,6 +149,7 @@ Main() {
     local power_device=/sys/class/power_supply/BAT1/uevent
     local max=90
     local min=22
+    local max_show_always=no
     local sleeptime_charging=60
     local sleeptime_discharging=600
     local sound_file=/usr/share/sounds/Oxygen-Sys-Question.ogg
@@ -195,17 +196,22 @@ Main() {
 
         case "$status" in
             Charging)
-                if [ $percent -ge $max ] && [ "$percent" != "$percent_prev" ] ; then
-                    "${cmd[@]}" "Battery high" "${percent}%, charging"
-                    MakeSound
-                    sleeptime=$sleeptime_charging
+                if [ $percent -ge $max ] ; then
+                    if [ "$percent" != "$percent_prev" ] || [ $max_show_always = yes ] ; then
+                        "${cmd[@]}" "Battery high" "${percent}%, charging"
+                        MakeSound
+                        sleeptime=$sleeptime_charging
+                    fi
                 fi
                 ;;
             Discharging)
-                if [ $percent -le $min ] && [ "$percent" != "$percent_prev" ] ; then
-                    "${cmd[@]}" "Battery low" "${percent}%, not charging"
-                    MakeSound
-                    sleeptime=$sleeptime_discharging
+                if [ $percent -le $min ] ; then
+                    if [ "$percent" != "$percent_prev" ] ; then
+                        # no need to test $min_show_always since the battery will run out
+                        "${cmd[@]}" "Battery low" "${percent}%, not charging"
+                        MakeSound
+                        sleeptime=$sleeptime_discharging
+                    fi
                 fi
                 ;;
         esac
