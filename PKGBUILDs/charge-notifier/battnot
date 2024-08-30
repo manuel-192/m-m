@@ -77,6 +77,7 @@ Flags: --charge-sleep      Sets sleep time (seconds) between checks when chargin
        --min               Start notifications when battery reaches this percentage while discharging.
        --no-reread-conf    Read the config file only at start.
        --power-device      Set the power device info file path.
+       --silent-max        Do not notify after reaching the max charge.
        --sound-file        Set the sound file path for the notification.
 EOF
 }
@@ -124,6 +125,7 @@ Main() {
             --help | -h)           Usage; exit 0 ;;
             --is-running)          check_is_running=yes ;;
             --no-reread-conf)      reread_conf=no ;;
+            --silent-max)          max=110 ;;
             --dump-options)
                 local -r FLAGS=(
                     --charge-sleep
@@ -135,6 +137,7 @@ Main() {
                     --min
                     --no-reread-conf
                     --power-device
+                    --silent-max
                     --sound-file
                 )
                 printf "%s\n" "${FLAGS[@]}"
@@ -186,7 +189,7 @@ Main() {
         [ "$status" ] || DIE "cannot determine charging status"
 
         if [ "$status" != "$status_prev" ] ; then
-            "${cmd[@]}" "Charging status: $status" "${percent}%"
+            "${cmd[@]}" "$status" "${percent}%"
             [ "$status_prev" ] && sleeptime=$sleeptime_def
         fi
 
