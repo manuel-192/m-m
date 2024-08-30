@@ -190,7 +190,8 @@ Main() {
         [ "$status" ] || DIE "cannot determine charging status"
 
         if [ "$status" != "$status_prev" ] ; then
-            "${cmd[@]}" "$status" "${percent}%"
+            # "${cmd[@]}" "Status: $status" "${percent}%"
+            "${cmd[@]}" "$percent% ${status,,}"
             [ "$status_prev" ] && sleeptime=$sleeptime_def
         fi
 
