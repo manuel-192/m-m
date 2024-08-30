@@ -48,16 +48,17 @@ GetPowerDevice() {
 Options() {
     while [ "$1" ] ; do
         case "$1" in
-            --charge-sleep)    sleeptime_charging="$2";    shift ;;
-            --discharge-sleep) sleeptime_discharging="$2"; shift ;;
-            --min)             min="$2";                   shift ;;
-            --power-device)    GetPowerDevice power_device "$2" || shift ;;
-            --sound-file)      GetSoundFile   sound_file   "$2" || shift ;;
-            --max)             max="$2";                   shift ;;
+            --charge-sleep)     sleeptime_charging="$2";    shift ;;
+            --discharge-sleep)  sleeptime_discharging="$2"; shift ;;
+            --min)              min="$2";                   shift ;;
+            --power-device)     GetPowerDevice power_device "$2" || shift ;;
+            --sound-file)       GetSoundFile   sound_file   "$2" || shift ;;
+            --max)              max="$2";                   shift ;;
+            --keep-showing-max) max_show_always=yes ;;
 
-            --no-reread-conf)  ;;
-            --dump-options)    ;;                                   # handled already
-            *)                 DIE "unsupported parameter '$1'" ;;
+            --no-reread-conf)   ;;
+            --dump-options)     ;;                                   # handled already
+            *)                  DIE "unsupported parameter '$1'" ;;
         esac
         shift
     done
@@ -125,7 +126,6 @@ Main() {
             --help | -h)           Usage; exit 0 ;;
             --is-running)          check_is_running=yes ;;
             --no-reread-conf)      reread_conf=no ;;
-            --keep-showing-max)    max_show_always=yes ;;
             --dump-options)
                 local -r FLAGS=(
                     --charge-sleep
