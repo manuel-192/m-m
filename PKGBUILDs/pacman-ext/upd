@@ -387,11 +387,15 @@ CheckNvidia() {
     [ "$optimize_checks$updates_pacman" = "yes" ] && return
 
     EMPHASIZED_COLOR --no-newline-at-end "Check Nvidia & kernel:"
-    if PkgInUpdates linux && ! PkgInUpdates nvidia  ; then
-        DIE "package nvidia must be updated together with linux"
-    fi
-    if PkgInUpdates linux-lts && ! PkgInUpdates nvidia-lts  ; then
-        DIE "package nvidia-lts must be updated together with linux-lts"
+    if true ; then
+        eos-kernel-nvidia-update-check $updates_pacman || DIE "'Nvidia & kernel' check failed"
+    else
+        if PkgInUpdates linux && ! PkgInUpdates nvidia  ; then
+            DIE "package nvidia must be updated together with linux"
+        fi
+        if PkgInUpdates linux-lts && ! PkgInUpdates nvidia-lts  ; then
+            DIE "package nvidia-lts must be updated together with linux-lts"
+        fi
     fi
     RESULT "OK"
 }
