@@ -1128,11 +1128,9 @@ EOF
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
     # Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
-    if [ -x /usr/local/bin/history-del ] ; then
-        Alias history-del        "$(cat /usr/local/bin/history-del | grep ^history)"
-    else
-        Alias history-del        "history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp"
-    fi
+    [ -x /usr/local/bin/history-del ] && echo "==> WARNING: file /usr/local/bin/history-del exists." >&2
+    # Alias history-del        "$(cat /usr/local/bin/history-del | grep ^history)"
+    Alias history-del        "history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp"
     Alias history-fuzzy      "history | fzf --tac --no-sort"
     Alias history-select     "history | fzf --tac --no-separator --no-info"
     Alias hlp                "eos-man"
