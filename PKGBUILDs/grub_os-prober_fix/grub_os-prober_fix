@@ -32,6 +32,11 @@ _check_bashisms() {
     local errfile=/tmp/check_bashisms.tmp
     local retcode=0
 
+    if [ ! -x /bin/checkbashisms ] ; then
+        echo "==> $progname: warning: 'checkbashisms' is not installed"
+        return
+    fi
+
     LANG=C checkbashisms $file 2> "$errfile" || retcode=$?
 
     if [ $retcode -ne 0 ] ; then

@@ -2,7 +2,7 @@
 
 pkgname=grub_os-prober_fix
 pkgdesc="Fixes, additions and enhancements to grub and os-prober."
-pkgver=1
+pkgver=24
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -16,7 +16,7 @@ source=(
   $_url/$pkgname       # Command modifies os-prober and grub to fix 'initrd' line generation.
   $_url/$pkgname.hook  # Calls the fixer after grub or os-prober upgrades.
 )
-sha512sums=('9154c96321f49751bcfd7726c8c4b5339db793e13d737063cab8010254f571e50190281d4f6f502bcedada78489e825d82acd6699ff71a6b245c9c43ad55f257'
+sha512sums=('1e16a369ca67197efe48a64c465c7933a31c35be64d44b4b09b5700b6543b0db7930b71f89eda26d3c18a6bd70cc30549813c684a26d50a1d4780582c502e7c4'
             '70c75aae6d223c55935a793b54abbc546773616939a059f64c8aa385aa02d1040e2bf48779e31ccf9d79c9ad932737bbb863bb700547be734344f7b9bb70502a')
 
 package() {
