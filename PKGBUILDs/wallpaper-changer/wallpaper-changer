@@ -29,8 +29,13 @@ Main() {
     local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
     local SUPPORTED_SUFFIXES=(jpg png)
     local SEARCH_CASE_SENSITIVE="no"
+    local -r myconf="$HOME/.config/$progname.conf"
 
-    source "/etc/$progname.conf" || return 1
+    if [ -e "$myconf" ] ; then
+        source "$myconf" || return 1
+    else
+        source "/etc/$progname.conf" || return 1
+    fi
 
     local opt_name=""
     local opt_depth="--maxdepth 1"

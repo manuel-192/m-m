@@ -17,3 +17,5 @@ Install package `wallpaper-changer`. Then run program `install-wallpaper-changer
 
 File `/etc/wallpaper-changer.conf` contains available configurations like folders and time period as mentioned above.<br>
 This file includes documentation about the configuration in comments.
+
+User can create a personal configuration in file `~/.config/wallpapwer-changer.conf` as well. The contents can be copied from the system's config file. Only the personal file will be used if it exists.
