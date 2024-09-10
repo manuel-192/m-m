@@ -6,4 +6,4 @@ Type=oneshot
 ExecStart=/usr/bin/wallpaper-changer
 
 [Install]
-WantedBy=notme.timer
+WantedBy=wallpaper-changer.timer
