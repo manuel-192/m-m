@@ -212,7 +212,11 @@ Params:
         - "": uses current folder
         - One of: $supported_folders
     --pulls
-        Show potential pull requests and issues. Options ignored.
+        Show all potential pull requests and issues. Options ignored.
+    --pulls-e
+        Show (EndeavourOS) potential pull requests and issues. Options ignored.
+    --pulls-m
+        Show (non-EOS) potential pull requests and issues. Options ignored.
     --check-all
         Check all supported folders.
     --quick-check
@@ -262,7 +266,7 @@ EOF
             --dump-options)
                 op="-p --pkgnames --dryrun --dryrun-local --build --repoup --allow-downgrade"
                 op+=" -n -nn -b"
-                op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls"
+                op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls --pulls-e --pulls-m"
                 op+=" --check-all --quick-check --assets.conf-check --assets.conf-e --assets.conf-m"
                 op+=" --extras --pkgdb --changelog --changelog-modified --mirrorlist-arch"
                 op+=" -T --fetch-timeout -C --commit --local-repo"
@@ -311,6 +315,16 @@ EOF
                 ;;
             --pulls)   # | pull)
                 pull-requests
+                WaitToQuit
+                return
+                ;;
+            --pulls-e)   # | pull)
+                pull-requests -e
+                WaitToQuit
+                return
+                ;;
+            --pulls-m)   # | pull)
+                pull-requests -m
                 WaitToQuit
                 return
                 ;;

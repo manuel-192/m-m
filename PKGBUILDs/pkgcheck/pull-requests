@@ -54,9 +54,30 @@ Main2() {
     done
 }
 
+Main1() {
+    local who="$1"
+    shift
+    case "$who" in
+        e)
+            for url in "${urls_e[@]}" "$@" ; do
+                Main2 "$url"
+            done
+            ;;
+        m)
+            for url in "${urls_m[@]}" "$@" ; do
+                Main2 "$url"
+            done
+            ;;
+        b)
+            Main1 e "$@"
+            Main1 m "$@"
+            ;;
+    esac
+}
+
 Main() {
     local progname=${0##*/}
-    local urls=(
+    local urls_e=(
         https://github.com/endeavouros-team/PKGBUILDS
         https://github.com/endeavouros-team/eos-bash-shared
         https://github.com/endeavouros-team/welcome
@@ -67,6 +88,8 @@ Main() {
         # https://github.com/endeavouros-team/repo
 
         # https://github.com/endeavouros-team/User-contributions
+    )
+    local urls_m=(
         # https://github.com/rogalmic/vscode-bash-debug
 
         https://github.com/manuel-192/m-m
@@ -77,6 +100,7 @@ Main() {
     local show_interesting_urls=yes
     local url
     local br
+    local who=b
 
     while [ "$1" ] ; do
         case "$1" in
@@ -89,15 +113,17 @@ Options:
     --no-show       Don't show interesting URLs.
 EOF
                 ;;
-            -s | --show) show_interesting_urls=yes ;;
-            --no-show) show_interesting_urls=no ;;
+            -s | --show)
+                show_interesting_urls=yes ;;
+            --no-show)
+                show_interesting_urls=no ;;
+            -e | -m | -b)
+                who=${1:1} ;;
         esac
         shift
     done
 
-    for url in "${urls[@]}" "$@" ; do
-        Main2 "$url"
-    done
+    Main1 "$who" "$@"
 
     if [ $show_interesting_urls = yes ] && [ ${#interesting_urls[@]} -gt 0 ] ; then
         # About browser fallbacks:
