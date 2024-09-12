@@ -234,9 +234,26 @@ FetchPkgbuilds() {
 
 FuncnameToPkgname() {     # convert "_name_" to "name"
     local name="$1"       # funcname
-    name=${name:1}        # remove first char
-    name=${name:: -1}     # remove last char
-    echo "$name"
+
+    # assumes: a simple 'pkgname' is found in PKGBUILD (is not an array!)
+    local PKGNAME=()
+    if GetPkgbuildValue PKGBUILD pkgname PKGNAME ; then
+        if [ ${#PKGNAME[@]} -eq 1 ] ; then
+            echo "${PKGNAME[0]}"
+            return 0
+        fi
+    fi
+
+    # assumes: $name = _funcname_
+    if [ "${name::1}${name: -1}" = "__" ] ; then
+        name=${name:1}        # remove first char
+        name=${name:: -1}     # remove last char
+        echo "$name"
+        return 0
+    fi
+
+    echo2 "$FUNCNAME: pkgname not found!"
+    return 1
 }
 
 IsInPkgnames() {
@@ -264,6 +281,7 @@ GetPkgbuildValue() {
     source "$PKGBUILD" || return 1
 
     case "$varname" in
+        pkgname)         _retvar=("${pkgname[@]}") ;;
         depends)         _retvar=("${depends[@]}") ;;
         makedepends)     _retvar=("${makedepends[@]}") ;;
         pkgrel)          _retvar="$pkgrel" ;;
