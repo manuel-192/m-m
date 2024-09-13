@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# Show who needs given package.
+
+# TODO:
+# - explore AUR support
+
+Help() {
+    cat <<EOF
+Usage: $progname option package-name(s)
+Options:
+    -h, --help      Show this help and exit.
+    -S, --sync      Search for all available packages.
+    -Q, --query     Search for the installed packages.
+    -m, --multi     Multiline output.
+    -1, --one       Single line output.
+    -a, --aur       Include AUR packages.
+A package name and either option -Q or -S is mandatory.
+Package names must follow the option.
+EOF
+    exit $1
+}
+
+Parameters() {
+    local opts
+    local long_opts="help,query,sync,multi,one,aur"
+    local short_opts="hQS1ma"
+
+    opts="$(/bin/getopt -o=$short_opts --longoptions $long_opts --name "$progname" -- "$@")" || Help 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -Q | --query | -S | --sync) mode="$1" ;;
+            --multi | --one)            lines=${1:2} ;;
+            -1)                         lines=one ;;
+            -m)                         lines=multi ;;
+            -a | --aur)                 helper=yay ;;
+            -h | --help)                Help 0 ;;
+            --)                         shift ; break ;;
+        esac
+        shift
+    done
+    pkgnames=("$@")
+}
+
+Main2() {
+    if [ "$1" ] ; then
+        case "$mode" in
+            -Q | --query | -S | --sync)
+                local pkg pkgs
+                for pkg in "$@" ; do
+                    pkgs=$(LANG=C $helper ${mode} -ii "$pkg") || continue
+                    pkgs=$(echo "$pkgs" | grep -w "^Required By" | sed -E 's|^Required By[ ]+: ||')
+                    echo "$pkg:"
+                    case "$lines" in
+                        multi) printf "%s\n" $pkgs | sed "s|^|    |" ;;
+                        one)   echo "$pkgs" ;;
+                    esac
+                done
+                ;;
+            *)
+                echo "$progname: sorry, unsupported option '$mode'" >&2
+                Help 1
+                ;;
+        esac
+    else
+        echo "$progname: package name missing" >&2
+        Help 1
+    fi
+}
+
+Main() {
+    local progname=${0##*/}
+    local mode=""
+    local lines=multi      # output is many lines or one line, values: 'multi' 'one'
+    local pkgnames=()
+    local helper=pacman
+
+    Parameters "$@"
+    Main2 "${pkgnames[@]}"
+}
+
+Main "$@"
