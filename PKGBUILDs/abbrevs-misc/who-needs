@@ -51,7 +51,7 @@ Main2() {
                 local pkg pkgs
                 for pkg in "$@" ; do
                     pkgs=$(LANG=C $helper ${mode} -ii "$pkg") || continue
-                    pkgs=$(echo "$pkgs" | grep -w "^Required By" | sed -E 's|^Required By[ ]+: ||')
+                    pkgs=$(echo "$pkgs" | grep -w -m1 "^Required By" | sed -E 's|^Required By[ ]+: ||')
                     echo "$pkg:"
                     case "$lines" in
                         multi) printf "%s\n" $pkgs | sed "s|^|    |" ;;
@@ -79,6 +79,7 @@ Main() {
 
     Parameters "$@"
     Main2 "${pkgnames[@]}"
+    printf ""
 }
 
 Main "$@"
