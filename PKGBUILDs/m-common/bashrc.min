@@ -102,50 +102,51 @@ SettingsCommon()
 
         LANG=C pacman -Ss | grep "^$repo/" | grep -w "\[installed\]" | awk '{print $1}' | sed "s|^$repo/||"
     }
-    who-needs-this-package() {                                                          # who has this dependency package
-        _C_who-needs-this-package() {
-            local cur prev words cword split
-            _init_completion -s || return
-            local -r app=who-needs-this-package
-            case "$cur" in
-                -*) COMPREPLY=($(compgen -W "$($app --dump-options)" -- "$cur")) ;;
-                "") case "$prev" in
-                        "$app") COMPREPLY=($(compgen -W "$($app --dump-options)" -- "$cur")) ;;
-                        *)      COMPREPLY=($(compgen -W "$(expac -S %n)"         -- "$cur")) ;;
-                    esac
-                    ;;
-                *)  COMPREPLY=($(compgen -W "$(expac -S %n)"         -- "$cur")) ;;
-            esac
-        }
 
-        local opt="-S"
-
-        case "$1" in
-            -Q) opt="$1"; shift ;;
-            -S) opt="$1"; shift ;;
-            -h | --help)
-                cat <<EOF >&2
-Usage: $FUNCNAME [options] package-name
-Options:
-    -S           Use package database for search (slower, default).
-    -Q           Use installed packages for search (faster).
-    -h, --help   This help.
-Tip: use bash completion with the TAB key.
-EOF
-                return 0
-                ;;
-            --dump-options) echo "-Q -S -h --help"; return 0 ;;
-            -*) echo "option '$1' not supported"; return 1 ;;
-        esac
-
-        while [ "$1" ] ; do
-            expac $opt "%n: %E" | grep -P " $1 | $1$"
-            shift
-        done
-    }
-    who-owns-this-app()      { pacman -Qo "$1" ; }                                      # which package owns this app
-
-    complete -F _C_who-needs-this-package who-needs-this-package
+#     who-needs-this-package() {                                                          # who has this dependency package
+#         _C_who-needs-this-package() {
+#             local cur prev words cword split
+#             _init_completion -s || return
+#             local -r app=who-needs-this-package
+#             case "$cur" in
+#                 -*) COMPREPLY=($(compgen -W "$($app --dump-options)" -- "$cur")) ;;
+#                 "") case "$prev" in
+#                         "$app") COMPREPLY=($(compgen -W "$($app --dump-options)" -- "$cur")) ;;
+#                         *)      COMPREPLY=($(compgen -W "$(expac -S %n)"         -- "$cur")) ;;
+#                     esac
+#                     ;;
+#                 *)  COMPREPLY=($(compgen -W "$(expac -S %n)"         -- "$cur")) ;;
+#             esac
+#         }
+#
+#         local opt="-S"
+#
+#         case "$1" in
+#             -Q) opt="$1"; shift ;;
+#             -S) opt="$1"; shift ;;
+#             -h | --help)
+#                 cat <<EOF >&2
+# Usage: $FUNCNAME [options] package-name
+# Options:
+#     -S           Use package database for search (slower, default).
+#     -Q           Use installed packages for search (faster).
+#     -h, --help   This help.
+# Tip: use bash completion with the TAB key.
+# EOF
+#                 return 0
+#                 ;;
+#             --dump-options) echo "-Q -S -h --help"; return 0 ;;
+#             -*) echo "option '$1' not supported"; return 1 ;;
+#         esac
+#
+#         while [ "$1" ] ; do
+#             expac $opt "%n: %E" | grep -P " $1 | $1$"
+#             shift
+#         done
+#     }
+#     who-owns-this-app()      { pacman -Qo "$1" ; }                                      # which package owns this app
+#
+#     complete -F _C_who-needs-this-package who-needs-this-package
     
     WaitForConnection() {     # wait at most given seconds (or 10), then return 0=connection OK or 1=connection fail
         local seconds="$1"
@@ -1159,6 +1160,8 @@ EOF
     Alias ua                 "Update --aur"
     #Alias uc                 "time uc-fast -aey --verbose"
     #Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
+    Alias who-needsq         "who-needs --query --multi"
+    Alias who-needss         "who-needs --sync --one"
 
     AliasIfType  grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
     AliasIfWhich pb             pb           "pb -nn -T0"
