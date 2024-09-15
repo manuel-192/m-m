@@ -232,41 +232,40 @@ FetchPkgbuilds() {
     Popd  # "$pkgbuilddir"
 }
 
-FuncnameToPkgname() {     # convert "_name_" to "name"
-    local name="$1"       # funcname
+# FuncnameToPkgname() {     # convert "_name_" to "name"
+#     local name="$1"       # funcname
 
-    # assumes: a simple 'pkgname' is found in PKGBUILD (is not an array!)
-    local PKGNAME=()
-    if GetPkgbuildValue PKGBUILD pkgname PKGNAME ; then
-        if [ ${#PKGNAME[@]} -eq 1 ] ; then
-            echo "${PKGNAME[0]}"
-            return 0
-        fi
-    fi
+#     # assumes: $name = _funcname_
+#     if [ "${name::1}${name: -1}" = "__" ] ; then
+#         name=${name:1}        # remove first char
+#         name=${name:: -1}     # remove last char
+#         echo "$name"
+#         return 0
+#     fi
 
-    # assumes: $name = _funcname_
-    if [ "${name::1}${name: -1}" = "__" ] ; then
-        name=${name:1}        # remove first char
-        name=${name:: -1}     # remove last char
-        echo "$name"
-        return 0
-    fi
-
-    echo2 "$FUNCNAME: pkgname not found!"
-    return 1
-}
+#     echo2 "$FUNCNAME: pkgname not found!"
+#     return 1
+# }
 
 IsInPkgnames() {
     local -r pkgname="$1"
-    printf "%s\n" "${PKGNAMES[@]}" | grep "^$pkgname$" >/dev/null
+    printf "%s\n" "${PKGNAMES[@]}" | grep -P "^$pkgname$|^$pkgname/aur|^$pkgname/local" >/dev/null
 }
 
 Add_BeforeAfter_func() {
-    local -r funcname="$1"
-    local -r pkgname="$(FuncnameToPkgname "$funcname")"
-    IsInPkgnames "$pkgname" && PKG_BEFORE_AFTER[$pkgname]="$funcname"
-
-    true  # do not fail sourceing the config file
+    if [ "$2" ] ; then
+        local -r funcname="$1"
+        local -r pkgname="$2"
+        if IsInPkgnames "$pkgname" ; then
+            PKG_BEFORE_AFTER[$pkgname]="$funcname"
+        else
+            DIELINE "$FUNCNAME: package name '$pkgname' is not supported!"
+        fi
+        return 0       # do not fail sourceing the config file
+    else
+        DIELINE "$FUNCNAME() has changed, it requires the name of the package as a second parameter."
+        return 1
+    fi
 }
 
 PkgverFuncFail() { declare -F pkgver >/dev/null && DIE "$PKGBUILD: sorry, pkgver() not yet supported!" ; }

@@ -98,6 +98,6 @@ _my-test-git_() {
      esac
 }
 
-Add_BeforeAfter_func _my-test-git_                                    # to use the new function, add it to the database
+Add_BeforeAfter_func "_my-test-git_" "my-test-git"                   # to use the new function, add it to the database
 
 ```
