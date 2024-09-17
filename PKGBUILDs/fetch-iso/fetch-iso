@@ -92,6 +92,7 @@ EOF
 
     AskValue "Remote base dir URL"            URLBASE   ""
     AskValue "Remote account"                 ACCOUNT   ""
+    AskValue "Remote password"                PASSWORD  ""
     AskValue "Local download folder$dl"       TARGETDIR "$dldir"
     AskValue "Downloader app (wget)"          APP       "wget"
 
@@ -116,6 +117,10 @@ Main() {
     echo2 "Reading file $configfile ..."
     source "$configfile" || DIE "file $configfile has a problem"
     [ "$URLBASE" ]       || DIE "URLBASE has no value in $configfile"
+    if [ -z "$HELLO" ] ; then
+        [ "$ACCOUNT" ]   || DIE "ACCOUNT has no value in $configfile"
+        [ "$PASSWORD" ]  || DIE "PASSWORD has no value in $configfile"
+    fi
     if [ "$HELLO" ] ; then
         ACCOUNT="${HELLO%:*}"
         PASSWORD="${HELLO#*:}"
