@@ -65,9 +65,42 @@ Tip3: Use bash completion (by pressing the TAB key on the command line)
 EOF
 }
 
+AskValue() {
+    local -r prompt="$1"
+    local -r varname="$2"
+    local -r defaultval="$3"
+    local value=""
+
+    read -p "$prompt : " value >&2
+    case "$value" in
+        "") value="$defaultval" ;;
+        [qQ]) exit 0 ;;
+    esac
+    [ "$value" ] || DIE "$varname needs a value!"
+    values+=("$varname=\"$value\"")
+}
+
+AskConfigValues() {
+    cat <<EOF >&2
+Config file $configfile not found,
+creating it by asking the required values.
+
+EOF
+    local values=()
+    local dldir="$HOME/Downloads" dl=""
+    [ -d "$dldir" ] && dl=" ($dldir)"
+
+    AskValue "Remote base dir URL"            URLBASE   ""
+    AskValue "Remote account"                 ACCOUNT   ""
+    AskValue "Local download folder$dl"       TARGETDIR "$dldir"
+    AskValue "Downloader app (wget)"          APP       "wget"
+
+    printf "%s\n" "${values[@]}" > "$configfile"
+}
+
 Main() {
     local -r progname=${0##*/}
-    local -r config="$HOME/.config/$progname.conf"
+    local -r configfile="$HOME/.config/$progname.conf"
     local URLBASE=""
     local HELLO=""
     local ACCOUNT="" PASSWORD=""
@@ -79,15 +112,17 @@ Main() {
     local getter=wget                   # curl or wget
 
     # config file sets important values
-    source "$config" || DIE "file $config has a problem"
-    [ "$URLBASE" ]   || DIE "URLBASE has no value in $config"
+    [ -e "$configfile" ] || AskConfigValues
+    echo2 "Reading file $configfile ..."
+    source "$configfile" || DIE "file $configfile has a problem"
+    [ "$URLBASE" ]       || DIE "URLBASE has no value in $configfile"
     if [ "$HELLO" ] ; then
         ACCOUNT="${HELLO%:*}"
         PASSWORD="${HELLO#*:}"
     elif [ "$ACCOUNT$PASSWORD" ] ; then
         HELLO="$ACCOUNT:$PASSWORD"
     else
-        DIE "HELLO or ACCOUNT/PASSWORD have no proper value in $config"
+        DIE "HELLO or ACCOUNT/PASSWORD have no proper value in $configfile"
     fi
     [ "$APP" ] && getter="$APP"
     [ "$TARGETDIR" ] || TARGETDIR="."
@@ -96,8 +131,10 @@ Main() {
 
     case "$getter" in
         curl | wget) [ -x /bin/$getter ] || DIE "$getter not installed" ;;
-        *) DIE "value '$getter' for APP in $config is not supported. Use either 'wget' or 'curl'." ;;
+        *) DIE "value '$getter' for APP in $configfile is not supported. Use either 'wget' or 'curl'." ;;
     esac
+
+    echo2 "Download folder: $TARGETDIR"
 
     if [ "$1" ] ; then
         while [ "$1" ] ; do
