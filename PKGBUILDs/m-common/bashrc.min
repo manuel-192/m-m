@@ -1062,7 +1062,7 @@ EOF
 
     sudofuncs umount powertop  # mount
     fstrim() {
-        sudo bash -c "echo 'Please wait...'; /bin/fstrim '$@'"
+        sudo bash -c "echo 'Please wait...'; /bin/fstrim --verbose '$@'"
     }
 
     mount() {
