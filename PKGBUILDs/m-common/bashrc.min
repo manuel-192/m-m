@@ -1060,7 +1060,10 @@ EOF
 
     [ -x /bin/chdirex ] && cd() { builtin cd "$(/bin/chdirex "$@")" ; }
 
-    sudofuncs fstrim umount powertop  # mount
+    sudofuncs umount powertop  # mount
+    fstrim() {
+        sudo bash -c "echo 'Please wait...'; /bin/fstrim '$@'"
+    }
 
     mount() {
         local sudo=""
