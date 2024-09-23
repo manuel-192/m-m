@@ -40,7 +40,7 @@ Main() {
 
     for ((ix=0; ix<count; ix++)) ; do
         echo "${files[$ix]}|${dates[$ix]}|${sizes[$ix]}"
-    done | column -t -s"|"
+    done | column -t -s"|" | sort -k2 -k3
 }
 
 Main "$@"

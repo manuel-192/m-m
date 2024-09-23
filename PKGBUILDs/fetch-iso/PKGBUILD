@@ -5,7 +5,7 @@
 pkgname=fetch-iso
 pkgdesc="Fetch ISO"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.9.1
+pkgver=24.9.2
 pkgrel=1
 
 arch=('any')
@@ -24,7 +24,7 @@ source=(
 sha512sums=('f6070859acea61f879dc44c5f08ab729cdb94b6bb98eb96149948e1ab52d245c087970eafb7fdd44e0072ce2f56cb6d63ab6e8b8474c54f1430411bac6d01164'
             '5b2897dc51353b33446ddefdae6d312b36da825ac505418aea535eacaeef568b1f024db171668878ed499e532bc0dc654d35633a8a9fe6c77e25b43e7288cfca'
             'bbe87775fd414169f9138fd876126b0ac440769ee33544d6148a6bbdd520a37a41b2896eecce2cf607c13a53ac197deda0f65da1e2195da2f6f6b4f45d4d1f16'
-            '912328012dd10abd824c768179467102a6dbfc933adad7d277bdb83acb576bc82ae6785e6eca0e0bb2407b7c0489a49583e1c3eba32a9edc25575678d5915321')
+            '7c1261883df86dbdcb13d778ccc10cdcefb850f48c87561f7b665fd28d8f9bbbf2be8271c5171097383b61d2cb75518bc56aa55a078466420fae4fde1b38a339')
 # backup=(etc/skel/$pkgname.conf)
 
 package() {
