@@ -1,5 +1,5 @@
 #!/bin/bash
 
-# Curl with parallellism and easy file naming.
+# Curl with some ease and speed.
 
-curl --parallel --remote-name-all "$@"
+curl --parallel --location --remote-name-all "$@"
