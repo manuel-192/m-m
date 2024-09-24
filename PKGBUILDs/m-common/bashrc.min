@@ -184,7 +184,7 @@ SettingsCommon()
         local has_postBuffer=yes
 
         case "$url" in
-            "https://"*endeavouros*"/repo.git")
+            "https://"*endeavour*"/repo.git")
                 # $file contains the 'postBuffer' setting
                 oldsize="$(grep postBuffer "$file" | awk '{print $NF}')"
                 if [ -z "$oldsize" ] ; then
