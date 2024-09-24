@@ -30,19 +30,27 @@ ShowFiles() {
 
 FetchIsoFile() {
     # Fetch the given ISO file.
+    local file="$1"
+    local subdir="$2"
+    local url
+
+    case "$subdir" in
+        "") url="$URLBASE/$file" ;;
+        *)  url="$URLBASE/$subdir/$file" ;;
+    esac
+
     echo2 "==> Downloading..."
     local targetopt=""
-    local file="$1"
     case "$getter" in
         curl)
             [ "$TARGETDIR" ] && targetopt="-o$TARGETDIR/$file"
-            /bin/curl --fail -m 300 --remote-name-all "$targetopt" -u "$HELLO" "$URLBASE/$file" || exitcode=$?
-            [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'curl'" "$exitcode"
+            /bin/curl --fail -m 300 --remote-name-all "$targetopt" -u "$HELLO" "$url" || exitcode=$?
+            [ $exitcode = 0 ] || DIE "downloading $url failed, exit code $exitcode from 'curl'" "$exitcode"
             ;;
         wget)
             [ "$TARGETDIR" ] && targetopt="-O$TARGETDIR/$file"
-            /bin/wget -q "$targetopt" --show-progress --user "$ACCOUNT" --password "$PASSWORD" "$URLBASE/$file" || exitcode=$?
-            [ $exitcode = 0 ] || DIE "downloading $URLBASE/$file failed, exit code $exitcode from 'wget'" "$exitcode"
+            /bin/wget -q "$targetopt" --show-progress --user "$ACCOUNT" --password "$PASSWORD" "$url" || exitcode=$?
+            [ $exitcode = 0 ] || DIE "downloading $url failed, exit code $exitcode from 'wget'" "$exitcode"
             ;;
     esac
 }
@@ -160,21 +168,34 @@ Main() {
             fzf --exact +i --tac
             --header="Navigation: Up, Down, PgUp, PgDn; ENTER=accept, ESC=quit"
         )
-        if true ; then
-            local selected=$(${progname}-show-all-info | "${fzf[@]}" )
-            selected=${selected%% *}
-        else
-            local selected=$(ShowFiles -q | "${fzf[@]}" )
-        fi
-        if [ "$selected" ] ; then
-            read -p "Download $selected now (Y/n)? "
-            case "$REPLY" in
-                "" | [Yy]*) FetchIsoFile $selected ;;
-                *) return 1 ;;
+        local selected=""
+        local subdir=""
+        while true ; do
+            selected=$(${progname}-show-all-info "$subdir" | "${fzf[@]}" )
+            selected=${selected%% *}                                 # keep the file name, drop other info
+
+            case "$selected" in
+                *"/") case "$selected" in
+                          "/") subdir=""
+                               ;;
+                          *)   case "$subdir" in
+                                   "") subdir="${selected%/}" ;;
+                                   *)  subdir="$subdir/${selected%/}" ;;
+                               esac
+                               ;;
+                      esac
+                      ;;
+                "")   echo2 "Nothing selected."
+                      exit 1
+                      ;;
+                *)    read -p "Download $selected now (Y/n)? "
+                      case "$REPLY" in
+                          "" | [Yy]*) FetchIsoFile "$selected" "$subdir"; exit 0 ;;
+                          *)          exit 1 ;;
+                      esac
+                      ;;
             esac
-        else
-            DIE "nothing selected"
-        fi
+        done
     fi
 
     # Exit code:
