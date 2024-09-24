@@ -179,17 +179,22 @@ SettingsCommon()
     git-fix-size-issue-for-repo() {
         local -r file=".git/config"
         local -r url=$(grep "url = https://" "$file" | awk '{print $NF}')
+        local newsize=""
+        local oldsize=""
+        local has_postBuffer=yes
 
         case "$url" in
-            "https://"*"/repo.git")
+            "https://"*endeavouros*"/repo.git")
                 # $file contains the 'postBuffer' setting
-                local -r oldsize=$(grep postBuffer "$file" | awk '{print $NF}')
-                if [ "$oldsize" ] ; then
-                    local -r newsize=$((oldsize + oldsize/2))   # 100% --> 150%
-                    git config http.postBuffer $newsize
-                else
-                    return $(Fexit "variable 'postBuffer' not found in file $PWD/$file" 1)
+                oldsize="$(grep postBuffer "$file" | awk '{print $NF}')"
+                if [ -z "$oldsize" ] ; then
+                    oldsize=$((450 * 1000 * 1000))
+                    has_postBuffer=no
                 fi
+                newsize=$((oldsize + oldsize/2))   # 100% --> 150%
+                [ $has_postBuffer = no ] && echo "variable 'postBuffer' not found in file $PWD/$file, setting to $newsize" >&2
+
+                git config http.postBuffer $newsize
                 ;;
             *)
                 return $(Fexit "wrong repo ($url)!" 1)
