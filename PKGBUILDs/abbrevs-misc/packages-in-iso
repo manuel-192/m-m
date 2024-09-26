@@ -1,0 +1,23 @@
+#!/bin/bash
+
+Main() {
+    local iso="$1"
+    local mountpoint=""
+    local cmds=()
+
+    case "$iso" in
+        *.iso) ;;
+        *) echo "filename must end with '.iso'" >&2; return 1 ;;
+    esac
+
+    mountpoint="$(mktemp -d)"
+    cmds=(
+        mount -o loop "$iso" "$mountpoint" \;
+        less "$mountpoint"/arch/pkglist.x86_64.txt \;
+        umount "$mountpoint"
+    )
+    sudo bash -c "${cmds[*]}"
+    rmdir "$mountpoint"
+}
+
+Main "$@"
