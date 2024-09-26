@@ -612,7 +612,7 @@ EOF
     }
 
     git() {        # preparations for doing a git command
-        _logstuff() { which logstuff &>/dev/null && logstuff "$@"; }
+        _logstuff() { IsAvailable --app logstuff && logstuff "$@"; }
 
         local arg
         for arg in "$@" ; do
@@ -714,13 +714,13 @@ EOF
 
     man-eos() {
         local app=eos-apps-info-helper
-        which $app &> /dev/null || { bashrc_min_error "${app%-helper} not installed?"; return 1; }
+        IsAvailable --app $app || { bashrc_min_error "${app%-helper} not installed?"; return 1; }
         bashrc_min_echo2 "==> $app $*"
         $app "$@"
     }
     eos-man() {                                                        # 'man' extended for some external apps
         _man-plain-help() {
-            if which "$1" &> /dev/null ; then
+            if IsAvailable --app "$1" ; then
                 local out ret=0
                 read -p "Want to run '$* --help' (Y/n)? " >&2
                 case "$REPLY" in
@@ -1218,8 +1218,8 @@ EOF
     # [ -x /usr/local/bin/type ] && alias type=/usr/local/bin/type     # in package abbrevs-misc
 
     if true ; then
-        Alias mg         meldgit
-        Alias mr         meldrcs
+        # Alias mg         meldgit
+        # Alias mr         meldrcs
         Alias cp         "cp -i"
         Alias ln         "ln -i"
         Alias mv         "mv -i"
@@ -1265,7 +1265,7 @@ EOF
         POWER() {
             local common_cmds="sync && Power-routines -s"
 
-            which logstuff &> /dev/null && common_cmds="logstuff off && $common_cmds"
+            IsAvailable --app logstuff && common_cmds="logstuff off && $common_cmds"
 
             case "$1" in
                 suspend | ramsleep) _dispatch_my_cmd "$common_cmds suspend" ;;
@@ -1334,6 +1334,60 @@ EOF
 
     [ -r ~/.dircolors ] && eval "$(dircolors ~/.dircolors)"
 
+    # the following are in speed order here (fastest first):
+    IsCmdAvailable() { type       "$1" &> /dev/null ; }     # alias, function, or executable file
+    IsAppInstalled() { which      "$1" &> /dev/null ; }     # executable file
+    IsPkgInstalled() { pacman -Qq "$1"  > /dev/null ; }     # package
+    #IsPkgInstalled() { expac %n   "$1"  > /dev/null ; }     # package
+
+    # ad hoc stuff
+    IsAnyPkgInstalled()       { expac %n "$@" > /dev/null ; }
+    WhichPkgsAreInstalled()   { expac %n "$@" ; }                 # here expac seems faster than pacman
+    AreAllPkgsInstalled()     { pacman -Qq "$@" &> /dev/null ; }
+
+    IsAvailable() {
+        local mode="app"
+        local count=all
+        local args=()
+
+        while [ "$1" ] ; do
+            case "$1" in
+                # one item
+                -c | --cmd)  mode=cmd ;;
+                -a | --app)  mode=app ;;
+                -p | --pkg)  mode=pkg ;;
+
+                # more than one pkg
+                -1 | --any)  count=any ;;
+                -A | --all)  count=all ;;
+                -s | --show) count=show ;;
+                -*)          bashrc_min_echo2 "option '$1' not supported"; return 1 ;;
+            esac
+            shift
+        done
+        [ "$mode" ]  || { bashrc_min_echo2 "usage error, mode is missing"; return 1; }
+        [ "$count" ] || { bashrc_min_echo2 "usage error, count is missing"; return 1; }
+
+        args=("$@")
+
+        case "${#args[@]}" in
+            0)  return 1 ;;
+            1)  case "$mode" in
+                    cmd) IsCmdAvailable "${args[@]}" ;;
+                    app) IsAppInstalled "${args[@]}" ;;
+                    pkg) IsPkgInstalled "${args[@]}" ;;
+                esac
+                ;;
+            *)
+                case "$count" in
+                    any)  IsAnyPkgInstalled     "${args[@]}" ;;
+                    all)  AreAllPkgsInstalled   "${args[@]}" ;;
+                    show) WhichPkgsAreInstalled "${args[@]}" ;;
+                esac
+                ;;
+        esac
+    }
+
     RunSilentlyInBackground() {
         local app="$1"
         local firstpara="$2"
@@ -1353,7 +1407,7 @@ EOF
         esac
     }
 
-    if [ -x /bin/qtcreator ] ; then
+    if IsAvailable --app qtcreator ; then
         Unalias qtcreator
         qtcreator() {
             case "$1" in
@@ -1372,40 +1426,20 @@ EOF
             # chromium
             dolphin
             eog
-            firefox
-            firefox-developer-edition
-            # geany
-            # gedit
-            ghostwriter
-            gitk
-            # gnome-boxes
-            # gnome-builder
-            kate
-            # kdevelop
-            konsole
+            firefox           firefox-developer-edition
+            # geany                                              # gedit
+            ghostwriter       gitk                               # gnome-boxes # gnome-builder
+            kate              konsole                            # kdevelop
             libreoffice
-            # mousepad
-            # notepadqq
-            pamac-manager
-            parole
-            # "qtcreator -client"
-            qterminal
+            parole                                               # pamac-manager
+            qterminal                                            # "qtcreator -client"
             ristretto
             soffice
-            # terminator
-            thunderbird
-            xed
-            xfce4-screenshooter
-            xplayer
-            xreader
-
-            # eclipse
-            # tkdiff
+            thunderbird                                          # terminator
+            xed               xfce4-screenshooter xplayer xreader
         )
         apps+=(        # here for other reasons!
             kaffeine
-            # krusader
-            # vivaldi-stable
         )
 
         if [ ${#apps[@]} -gt 0 ] ; then
@@ -1415,7 +1449,7 @@ EOF
             for pr in "${apps[@]}" ; do
                 pr1=${pr%% *}
                 Unalias $pr1
-                which $pr1 &> /dev/null && echo "$pr1() { RunSilentlyInBackground $pr \"\$@\" ; }"
+                IsAvailable --app $pr1 && echo "$pr1() { RunSilentlyInBackground $pr \"\$@\" ; }"
             done >> $tmpfile
 
             # shellcheck disable=SC1090
