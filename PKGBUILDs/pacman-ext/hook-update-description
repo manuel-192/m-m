@@ -58,9 +58,8 @@ Options:
     --title[=*]        Adds the given title to the banner line surrounding update descriptions.
     --header[=*]       Specfies if a header is shown for the updates (yes or no).
     --separator[=*]    Specified if the banner lines will be displayed or not (yes or no).
-    --include-repo     Includes the repo of the package. Same as -S.
     --include-version  Includes the latest package versions.
-    -S                 Same as --include-repo.
+    -S                 Includes the repo of the package.
     -Q                 Use local database.
 
 Package names are optional, and can be used for avoiding to fetch the updates separately.
@@ -74,9 +73,8 @@ Main() {
     local header=yes
     local separator=yes
     local pkgnames=()
+    local source="-Q"
     local repo=""
-    local source=""
-    local has_repo=yes
     local has_version=no
     local helper=yay                # helper = one of: yay, paru, pacman
 
@@ -86,19 +84,18 @@ Main() {
 
     while [ "$1" ] ; do
         case "$1" in
-            -h | --help)       Usage; return 0 ;;
-            --title=*)         title="${1#*=}" ;;
-            --title)           title="$2" ; shift ;;
-            --header=*)        header="${1#*=}" ;;
-            --header)          header="$2" ; shift ;;
-            --separator=*)     separator="${1#*=}" ;;
-            --separator)       separator="$2" ; shift ;;
-            --include-repo)    has_repo=yes ;;
-            -S)                has_repo=yes ;;
-            -Q)                has_repo=no ;;
-            --include-version) has_version=yes ;;
-            -*)                DIE "unsupported option '$1'" ;;
-            *)                 pkgnames+=("$1") ;;                        # packages as parameters
+            -h | --help)          Usage; return 0 ;;
+            --title=*)            title="${1#*=}" ;;
+            --title)              title="$2" ; shift ;;
+            --header=*)           header="${1#*=}" ;;
+            --header)             header="$2" ; shift ;;
+            --separator=*)        separator="${1#*=}" ;;
+            --separator)          separator="$2" ; shift ;;
+            -S | --include-repo)  source="-S"; repo="%r/" ;;
+            -Q)                   source="-Q"; repo="" ;;
+            --include-version)    has_version=yes ;;
+            -*)                   DIE "unsupported option '$1'" ;;
+            *)                    pkgnames+=("$1") ;;                        # packages as parameters
         esac
         shift
     done
@@ -113,11 +110,6 @@ Main() {
     local out=""
     local SEP=$'\e'
     local data=""
-
-    case "$has_repo" in
-        no)  repo=""; source="-Q" ;;
-        yes) repo="%r/"; source="-S" ;;
-    esac
 
     case "$has_version" in
         no)  data=$(expac $source "$repo%n${SEP}%d" "${pkgnames[@]}"        | sort) ;;
