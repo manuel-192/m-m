@@ -884,8 +884,6 @@ EOF
 
         case "$1" in
             --latest | -n)      forum="$forum/latest" ;;
-            --new)              forum="$forum/new" ;;
-            --unread)           forum="$forum/unread" ;;
             --login | -l | "")  forum="$forum/login" ;;
             -h | --help)
                 cat <<EOF >&2
@@ -894,12 +892,12 @@ Options:
     -h, --help         This help.
     -l, --login        Show the login page (default).
     -n, --latest       Show all latest posts.
-    --new              Show the new posts page.
-    --unread           Show the unread posts page.
 
 Tips:
     <kbd>word</kbd>    Show the 'word' in a button like box.
 EOF
+# <kbd>Right :mouse: Button</kbd> → <kbd>Properties</kbd> → <kbd>Set launch options…</kbd>
+# [details="piilossa on"]  ... [/details]   ???
                 return 0
                 ;;
             *)
