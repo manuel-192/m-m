@@ -25,6 +25,11 @@ _armix_complete() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     #compopt -o nosort
 }
+_armix_complete_url() {
+    COMPREPLY=( $(compgen -P "'" -W "$1" -- "$cur") )
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nospace
+}
 
 _armix_complete_nr() {
     COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
@@ -54,6 +59,9 @@ _armix_()
 
     local options=$(< "$optionsfile")
     case "$prev" in
+        -f | --favorite)
+            _armix_complete_url "https:// http://"
+            ;;
         -d | --distro)
             _armix_complete "arch"
             ;;
