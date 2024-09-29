@@ -285,6 +285,8 @@ Options:
                                         --country de,gb          # adds DE and GB for ranking
                                         --country /de,dk         # sets DE and DK for ranking
     -t, --country-current            Include current country to be ranked.
+    -f, --favorite                   Add a mirror (full path in single quotes) in the beginning of the
+                                     resulting mirrorlist. Can be used many times to append favorites.
     -e, --edit-config                Edit your configuration file.
     -i, --ignore-mirrors <list>      A comma separated list of mirrors to ignore.
                                      A mirror can be a unique part of the mirror address.
@@ -348,6 +350,7 @@ Options() {
             -t | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
             -r | --ranking-data)                    ranking_data=yes ;;
             --full-data)                            full_data=yes ;;
+            -f | --favorite)                        favs+=("$2"); shift ;;
             --no-parallel)                          has_parallel=no ;;
             -u)                                     update_mirrordata_first=yes ;;
             --timeout)                              timeout_distro="$2"; shift ;;
@@ -394,7 +397,7 @@ OptionsPreHandle() {
             -i | --ignore-mirrors)                  IgnoreMirrors "$2";     shift ;;
             --no-config)                            ;;                                  # already handled in OptionsPreHandle0()
             -I | --no-ignore-countries)             prevent_ignoring_countries=yes ;;
-            *) limited_options+=("$1")                         ;;
+            *) limited_options+=("$1")              ;;
         esac
         shift
     done
@@ -456,12 +459,13 @@ Main() {
     local limited_options=() args_orig=("$@")
     local completion_files_updated=no
     local max_nr_of_mirrors=1000
+    local favs=()
 
-    local SOPTS="ACc:d:ehi:k:m:x:lrtu"
+    local SOPTS="ACc:d:ef:hi:k:m:x:lrtu"
     SOPTS+="I"
 
     local LOPTS=""
-    LOPTS+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,full-data,help"
+    LOPTS+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,favorite:,full-data,help"
     LOPTS+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data"
     LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
@@ -536,7 +540,9 @@ SkipIgnoredMirrors() {
 }
 
 CreateMirrorlistFile() {
-    ShowMirrorlist    "\n### ${distro^} mirror list, ranked $mode by command:\n### $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}\n"
+    echo -e "\n### ${distro^} mirror list, ranked $mode by command:\n### $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}"
+    ShowFavorites
+    ShowMirrorlist
     ShowRankingData
     ShowFullData
 }
@@ -548,14 +554,29 @@ ShowFullData()    {
     fi
 }
 ShowMirrorlist()  {
-    echo -e "$1"
-    echo "$ranked" | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|" | head -n $max_nr_of_mirrors
+    local out=$(echo "$ranked" | head -n $max_nr_of_mirrors | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|")
+    if [ "$favs" ] ; then
+        # remove favs (=duplicates) from the actual mirrorlist
+        for xx in "${favs[@]}" ; do
+            out=$(echo "$out" | grep -v "$xx")
+        done
+    fi
+    echo "$out"
 }
 ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         local -r count=$(echo "$ranked" | wc -l)
         echo -e "\n### Ranking data ($count mirrors):"
         echo "$ranked" | sed -E "s|^([^ ]+)|### \1$suffix|" | head -n $max_nr_of_mirrors
+    fi
+}
+ShowFavorites() {
+    if [ "$favs" ] ; then
+        echo -e "\n### >>> user favorites"
+        for mirror in "${favs[@]}"; do
+            [ "$mirror" ] && echo "Server = $mirror"
+        done
+        echo -e "### <<< user favorites\n"
     fi
 }
 
