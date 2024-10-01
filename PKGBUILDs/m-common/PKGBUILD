@@ -5,7 +5,7 @@ pkgname=m-common
 pkgdesc="Some common apps, libs, and settings."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=24.9
-pkgrel=9
+pkgrel=10
 arch=('any')
 license=('GPL')
 
@@ -17,7 +17,7 @@ source=(
 )
 sha512sums=('317efbb580da2e05c2954fb6207b7e7c2469cb32ebd7446702281af2bcb67924a0b1a9c764cdf557fd0737843fa036cc128b5e6bccd4be20eb33fbdfa1dabad2'
             '745bc6d83bc333202eb70904a3daf7cc6f24db5bfecaaff0d9b21d0cfb747e103bdc750dbe516cce2553f2f2a35cebd08b6db1aa142777acb47de52c285db985'
-            '8f6cad29b3aa60f4f9865bf6432a84f156da3557868e5329c274df64624019e53705b6c5ed9f80ef4f8a5c63b6b84593fd40ec5087b2501e8538738010f15e77'
+            '44c215bf44c65386f6d63192d2e9b92aafe2c235d76251fedaa38fc318372cda230bc9238b1e5134878e7faa93b70a5af3e89f7da8eb83d12e01852b062e010a'
             'd8c68d9d15a6e2849489240b783962ce8172ca27e770c089702b9f79cfafd86b66f5da01b5f00526683886673b87a4f3f2d997a8b3bed44a2e1cfbfd9d0d7684')
 
 package() {
