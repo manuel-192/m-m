@@ -350,18 +350,38 @@ Options() {
             -t | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
             -r | --ranking-data)                    ranking_data=yes ;;
             --full-data)                            full_data=yes ;;
-            -f | --favorite)                        favs+=("$2"); shift ;;
+            -f | --favorite)                        favs+=(${2//,/ }); shift ;;
             --no-parallel)                          has_parallel=no ;;
             -u)                                     update_mirrordata_first=yes ;;
             --timeout)                              timeout_distro="$2"; shift ;;
             -k | --timeout-rank)                    timeout_rank="$2"; shift ;;
 
-            # --save)                                 savefile="$2"; shift ;;                 # option --save likely will not be supported
+            --save)                                 save_ml=yes ;;
         esac
         shift
     done
+    ExpandFavs
     RemoveIgnoredFromCountries
     urls+=("$@")
+}
+ExpandFavs() {
+    local full cc fav
+    local favs2=("${favs[@]}")
+    favs=()
+    for cc in "${countries[@]}" ; do
+        for fav in "${favs2[@]}" ; do
+            full="$(armix-status -c"$cc" | grep -w "$fav")"
+            if [ "$full" ] ; then
+                case $(echo "$full" | wc -l) in
+                    0) WARN "cannot expand '$fav' in '$cc'" ;;   # ??
+                    1) favs+=("$full") ;;
+                    *) WARN "'$fav' expands to more than one mirror in $cc, ignored" ;;
+                esac
+            else
+                WARN "'$fav' not found in '$cc'"
+            fi
+        done
+    done
 }
 
 OptionsPreHandle0() { [ "$(printf "%s\n" "$@" | grep "\--no-config")" ] && read_config=no; }
@@ -445,7 +465,7 @@ Main() {
     local cc=""                         # current country
     local countries_continents=""
     local tmp
-    local savefile=""                   # not supported currently, if ever
+    local save_ml=no                   # not supported currently, if ever
     local suffix=""
     local reflector_list_countries=""
     local has_parallel=yes
@@ -471,7 +491,7 @@ Main() {
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
     LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
     LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config,max:"
-    # LOPTS+=",save:"
+    LOPTS+=",save"
 
     [ -x /bin/parallel ] || has_parallel=no
 
@@ -520,15 +540,14 @@ Main() {
     local ranked=$(echo "$result" | column -t -s'|' | LC_ALL=C sort -k2rb,2 -k3V,3)   # sort: age
     local ranked_full=""
 
-    CreateMirrorlistFile
-
-    #if [ -z "$savefile" ] ; then
-    #    CreateMirrorlistFile "${limited_options[@]}"
-    #elif [ -w ${savefile%/*} ] && [ -w "$savefile" ] ; then
-    #    CreateMirrorlistFile "${limited_options[@]}" | tee "$savefile"
-    #else
-    #    CreateMirrorlistFile "${limited_options[@]}" | sudo tee "$savefile"
-    #fi
+    case $save_ml in
+        yes) local -r yymmdd=$(date +%y%m%d)
+             sudo cp -a /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.$yymmdd
+             ShowMirrorlistFile | sudo tee /etc/pacman.d/mirrorlist
+             ;;
+        no)  ShowMirrorlistFile
+             ;;
+    esac
 }
 
 SkipIgnoredMirrors() {
@@ -539,7 +558,7 @@ SkipIgnoredMirrors() {
     fi
 }
 
-CreateMirrorlistFile() {
+ShowMirrorlistFile() {
     echo -e "\n### ${distro^} mirror list, ranked $mode by command:\n### $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}"
     ShowFavorites
     ShowMirrorlist
