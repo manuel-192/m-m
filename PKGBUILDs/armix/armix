@@ -542,8 +542,11 @@ Main() {
 
     case $save_ml in
         yes) local -r yymmdd=$(date +%y%m%d)
-             sudo cp -a /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.$yymmdd
-             ShowMirrorlistFile | sudo tee /etc/pacman.d/mirrorlist
+             local -r ml=/etc/pacman.d/mirrorlist
+             local -r mlt=/tmp=mirrorlist
+             ShowMirrorlistFile | tee $mlt
+             sudo bash -c "cp -a $ml $ml.$yymmdd; cp $mlt $ml"
+             rm -f $mlt
              ;;
         no)  ShowMirrorlistFile
              ;;
