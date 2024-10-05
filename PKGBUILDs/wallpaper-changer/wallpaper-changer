@@ -14,16 +14,53 @@ FindFiles() {
     fd $opt_depth $opt_name ".*$suffix" "$folder"
 }
 
+CheckHour() {
+    if [ -z "$1" ] || [ "$1" -gt 23 ] || [ "$1" -lt 0 ] ; then
+        DIE "value for hour ($1) must be 0..23"
+    fi
+}
+CheckMinSec() {
+    if [ -z "$1" ] || [ "$1" -gt 59 ] || [ "$1" -lt 0 ] ; then
+        DIE "value for $2 ($1) must be 0..59"
+    fi
+}
+
+SetTimePeriod() {
+    # $val = XY, where X=integer Y=unit (s=sec,m=min,h=hour)
+    local val="$1"            # e.g. 23s
+    local int="${val:: -1}"   # e.g. 23
+
+    # [ "${int//[0-9]/}" ] && DIE "the number part in '$val' is broken"
+
+    case "${val: -1}" in
+        [Hh]) val="00/$int:00:00"; CheckHour "$int" ;;
+        [Mm]) val="*:00/$int:00";  CheckMinSec "$int" minute ;;
+        [Ss]) val="*:*:00/$int";   CheckMinSec "$int" second ;;
+        *)
+            # DIE "the unit part in '$val' is broken"
+            ;;
+    esac
+    sed -i ~/.config/systemd/user/wallpaper-changer.timer \
+        -e "s|^OnCalendar=.*|OnCalendar=$val|"
+    systemctl --user daemon-reload
+}
+
 Main() {
     local progname="wallpaper-changer"    # don't use: local progname="$(basename "$0")"
 
-    case "$1" in
-        -h | --help)
-            local helpurl="https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/$progname/README.md"
-            xdg-open "$helpurl" &>/dev/null
-            return
-            ;;
-    esac
+    while [ "$1" ] ; do
+        case "$1" in
+            -h | --help)
+                local helpurl="https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/$progname/README.md"
+                xdg-open "$helpurl" &>/dev/null
+                exit 0
+                ;;
+
+            -t=* | --timer=*) SetTimePeriod "${1#*=}"; exit 0 ;;
+            -t | --timer)     SetTimePeriod "$2";      exit 0 ;;
+            -t*)              SetTimePeriod "${1:2}";  exit 0 ;;
+        esac
+    done
     local log="/tmp/$progname.log"
     local RECURSE_SUBFOLDERS="no"
     local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
