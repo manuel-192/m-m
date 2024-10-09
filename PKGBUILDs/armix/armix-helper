@@ -5,13 +5,16 @@ DIE()         { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
 WARN()        { echo2 -e "==> $progname: warning: $1"; }
 
 RankOneMirror() {
-    local url="$1"
+    local url="$1"                        # may contain suffix ",countryname"
     local timeout_rank="$2"
     local distro="$3"
     local time_as_datetime="$4"
     local -r progname=${0##*/}
 
     [ "$url" ] || DIE "no URL to test"
+
+    local countryname="${url##*,}"
+    [ "$countryname" ] && url=${url%,*}
 
     local curl_exitcode=0
     local syncnr
@@ -38,7 +41,7 @@ RankOneMirror() {
                 arch) [ "$time_as_datetime" = "yes" ] && syncnr=$(date --date="@$syncnr" "+%Y%m%d-%H%M%S") ;;
             esac
 
-            echo "${url%/*}|$syncnr|$time"
+            echo "${url%/*}|$syncnr|$time|$countryname"
             ;;
         *)
             if [ -x /bin/curl-exit-code-to-string ] ; then

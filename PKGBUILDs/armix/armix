@@ -1,10 +1,8 @@
 #!/bin/bash
 
 # TODO:
-# - favorite mirrors
 # - long time statistics?
 # - less failure output
-# - add country to ranking data
 
 echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage 1; }
@@ -287,6 +285,7 @@ Options:
     -t, --country-current            Include current country to be ranked.
     -f, --favorite                   Add a mirror (full path in single quotes) in the beginning of the
                                      resulting mirrorlist. Can be used many times to append favorites.
+                                     A special value 'none' disables adding favorites.
     -e, --edit-config                Edit your configuration file.
     -i, --ignore-mirrors <list>      A comma separated list of mirrors to ignore.
                                      A mirror can be a unique part of the mirror address.
@@ -350,7 +349,7 @@ Options() {
             -t | --country-current)                 GetCurrentCountry && countries+=($cc) ;;
             -r | --ranking-data)                    ranking_data=yes ;;
             --full-data)                            full_data=yes ;;
-            -f | --favorite)                        favs+=(${2//,/ }); shift ;;
+            -f | --favorite)                        AddFavs "$2"; shift ;;
             --no-parallel)                          has_parallel=no ;;
             -u)                                     update_mirrordata_first=yes ;;
             --timeout)                              timeout_distro="$2"; shift ;;
@@ -364,24 +363,39 @@ Options() {
     RemoveIgnoredFromCountries
     urls+=("$@")
 }
+
+AddFavs() {
+    if [ "$can_add_favs" = yes ] ; then
+        local -r fav="$1"
+        case "$fav" in
+            none) can_add_favs=no ;;
+            *)    favs+=(${fav//,/ }) ;;
+        esac
+    else
+        favs=()
+    fi
+}
 ExpandFavs() {
-    local full cc fav
-    local favs2=("${favs[@]}")
-    favs=()
-    for cc in "${countries[@]}" ; do
-        for fav in "${favs2[@]}" ; do
-            full="$(armix-status -c"$cc" | grep -w "$fav")"
-            if [ "$full" ] ; then
-                case $(echo "$full" | wc -l) in
-                    0) WARN "cannot expand '$fav' in '$cc'" ;;   # ??
-                    1) favs+=("$full") ;;
-                    *) WARN "'$fav' expands to more than one mirror in $cc, ignored" ;;
-                esac
-            else
-                WARN "'$fav' not found in '$cc'"
-            fi
+    if [ "$favs" ] ; then
+        echo2 "==> Expanding names of favorite mirrors..."
+        local full cc fav
+        local favs2=("${favs[@]}")
+        favs=()
+        for cc in "${countries[@]}" ; do
+            for fav in "${favs2[@]}" ; do
+                full="$(armix-status -c"$cc" | grep -w "$fav")"
+                if [ "$full" ] ; then
+                    case $(echo "$full" | wc -l) in
+                        0) WARN "cannot expand '$fav' in '$cc'" ;;   # ??
+                        1) favs+=("$full") ;;
+                        *) WARN "'$fav' expands to more than one mirror in $cc, ignored" ;;
+                    esac
+                else
+                    : # WARN "'$fav' not found in '$cc'"
+                fi
+            done
         done
-    done
+    fi
 }
 
 OptionsPreHandle0() { [ "$(printf "%s\n" "$@" | grep "\--no-config")" ] && read_config=no; }
@@ -508,7 +522,8 @@ Main() {
         arch)
             if [ ${#countries[@]} -eq 0 ] ; then
                 echo2 "==> option --country not used -> automatically adding the current country for ranking, if possible"
-                GetCurrentCountry && countries+=($cc) && echo2 "==> added: $cc" || DIE "no countries given for ranking."
+                GetCurrentCountry && countries+=($cc) || DIE "no countries set for ranking."
+                echo2 "==> added: $cc"
             fi
             syncfile=lastupdate
             time_as_datetime=yes
@@ -516,7 +531,7 @@ Main() {
             local countries2="${countries[*]}"
             local update=""
             [ $update_mirrordata_first = yes ] && update="-u"
-            mirrors=$(${progname}-status -c ${countries2// /,} -t $timeout_distro $update) || exit 1
+            mirrors=$(${progname}-status -n -c ${countries2// /,} -t $timeout_distro $update) || exit 1
             ;;
         endeavouros)
             DIE "sorry, support for EndeavourOS not yet implemented."
