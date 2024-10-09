@@ -566,7 +566,7 @@ Main() {
         no)  result=$(TraverseMirrors-sequential); mode="sequentially" ;;
     esac
 
-    local ranked=$(echo "$result" | column -t -s'|' | LC_ALL=C sort -k2rb,2 -k3V,3)   # sort: age
+    local ranked=$(echo "$result" | LC_ALL=C sort -t'|' -k2rb,2 -k3V,3)   # sort: age
     local ranked_full=""
 
     case $save_ml in
@@ -605,6 +605,8 @@ EOF
     ShowFullData
 }
 
+Columns() { column -t -s'|' ; }
+
 ShowFullData()    {
     if [ $full_data = yes ] ; then
         echo -e "\n### Full data:"
@@ -612,7 +614,7 @@ ShowFullData()    {
     fi
 }
 ShowMirrorlist()  {
-    local out=$(echo "$ranked" | head -n $max_nr_of_mirrors | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|")
+    local out=$(echo "$ranked" | head -n $max_nr_of_mirrors | Columns | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|")
     if [ "$favs" ] ; then
         # remove favs (=duplicates) from the actual mirrorlist
         for xx in "${favs[@]}" ; do
@@ -625,7 +627,10 @@ ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         local -r count=$(echo "$ranked" | wc -l)
         echo -e "\n### Ranking data ($count mirrors):"
-        echo "$ranked" | sed -E "s|^([^ ]+)|### \1$suffix|" | head -n $max_nr_of_mirrors
+        local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | sed -E "s|^([^ ]+)|### \1|")
+        local rankheader="### MIRROR|TIME OF UPDATE|FETCH TIME|COUNTRY"
+
+        { echo "$rankheader"; echo "$data"; } | Columns
     fi
 }
 ShowFavorites() {
