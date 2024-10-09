@@ -299,6 +299,7 @@ Options:
     -r, --ranking-data               Show ranking data too.
     -u                               Update mirror info first.
     -k, --timeout-rank               Max timeout in seconds for ranking a mirror.
+    --save                           Save the mirrorlist to $ml.
     --timeout                        Max timeout in seconds for other than ranking.
     -h, --help                       This help.
 
@@ -457,6 +458,7 @@ RemoveIgnoredFromCountries() {
 }
 Main() {
     local -r progname=${0##*/}
+    local -r ml=/etc/pacman.d/mirrorlist
 
     case "$1" in
         --time) shift
@@ -569,7 +571,6 @@ Main() {
 
     case $save_ml in
         yes) local -r yymmdd=$(date +%y%m%d)
-             local -r ml=/etc/pacman.d/mirrorlist
              local -r mlt=$(mktemp /tmp/ml.XXXXX)
              ShowMirrorlistFile | tee $mlt
              sudo bash -c "cp -a $ml $ml.$yymmdd; cp $mlt $ml"
