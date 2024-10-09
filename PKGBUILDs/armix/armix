@@ -383,7 +383,7 @@ ExpandFavs() {
         favs=()
         for cc in "${countries[@]}" ; do
             for fav in "${favs2[@]}" ; do
-                full="$(armix-status -c"$cc" | grep -w "$fav")"
+                full="$(armix-status -c"$cc" | grep "$fav")"
                 if [ "$full" ] ; then
                     case $(echo "$full" | wc -l) in
                         0) WARN "cannot expand '$fav' in '$cc'" ;;   # ??
@@ -468,6 +468,7 @@ Main() {
     local urls=() url
     local timeout_distro=30
     local timeout_rank=20
+    local can_add_favs=yes
     local syncfile=""
     local mirrors
     local time_as_datetime=no
@@ -494,6 +495,7 @@ Main() {
     local completion_files_updated=no
     local max_nr_of_mirrors=1000
     local favs=()
+    local time_of_ranking=$(date +%x-%X)
 
     local SOPTS="ACc:d:ef:hi:k:m:x:lrtu"
     SOPTS+="I"
@@ -577,7 +579,15 @@ SkipIgnoredMirrors() {
 }
 
 ShowMirrorlistFile() {
-    echo -e "\n### ${distro^} mirror list, ranked $mode by command:\n### $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}"
+    cat <<EOF
+
+### Ranked list of ${distro^} mirrors.
+### Rank preference : age, speed
+### Rank time       : $time_of_ranking
+### Rank mode       : $mode
+### Command         : $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}"
+
+EOF
     ShowFavorites
     ShowMirrorlist
     ShowRankingData
