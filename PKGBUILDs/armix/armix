@@ -596,7 +596,7 @@ ShowMirrorlistFile() {
 ### Rank preference : age, speed
 ### Rank time       : $time_of_ranking
 ### Rank mode       : $mode
-### Command         : $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}"
+### Command         : $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}
 
 EOF
     ShowFavorites
