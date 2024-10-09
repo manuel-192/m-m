@@ -285,6 +285,9 @@ Options:
     -t, --country-current            Include current country to be ranked.
     -f, --favorite                   Add a mirror (full path in single quotes) in the beginning of the
                                      resulting mirrorlist. Can be used many times to append favorites.
+                                     Favorite's format is: 'CC:st' where
+                                        'CC' is a two-letter country code (see 'reflector --list-countries')
+                                        'st' is a (unique) partial string of the mirror URL
                                      A special value 'none' disables adding favorites.
     -e, --edit-config                Edit your configuration file.
     -i, --ignore-mirrors <list>      A comma separated list of mirrors to ignore.
@@ -301,7 +304,7 @@ Options:
 
 Configuration file $config_file can include all supported options in variable CONFIG_OPTIONS.
 Examples:
-    CONFIG_OPTIONS=(--country DE,US --country-current --ranking-data)
+    CONFIG_OPTIONS=(--country DE,US --country-current --ranking-data --favorite 'DE:rwth-aachen')
     CONFIG_OPTIONS=(--continent --ranking-data)
     CONFIG_OPTIONS=(--country-current)
 Command line options override configuration file options.
@@ -377,23 +380,30 @@ AddFavs() {
 }
 ExpandFavs() {
     if [ "$favs" ] ; then
-        echo2 "==> Expanding names of favorite mirrors..."
+        local informed=no
         local full cc fav
         local favs2=("${favs[@]}")
+
         favs=()
-        for cc in "${countries[@]}" ; do
-            for fav in "${favs2[@]}" ; do
-                full="$(armix-status -c"$cc" | grep "$fav")"
-                if [ "$full" ] ; then
-                    case $(echo "$full" | wc -l) in
-                        0) WARN "cannot expand '$fav' in '$cc'" ;;   # ??
-                        1) favs+=("$full") ;;
-                        *) WARN "'$fav' expands to more than one mirror in $cc, ignored" ;;
-                    esac
-                else
-                    : # WARN "'$fav' not found in '$cc'"
-                fi
-            done
+        for fav in "${favs2[@]}" ; do
+            if [ "${fav:2:1}" != ":" ] ; then                             # is fav CC:url ?
+                WARN "value '$fav' for option --favorite is invalid, should be 'CC:url'"
+                continue
+            fi
+            [ "$informed" = yes ] || echo2 "==> Expanding option --favorite values..."
+            informed=yes
+            cc=${fav::2}
+            fav=${fav:3}
+            full="$(armix-status -c"$cc" | grep "$fav")"
+            if [ "$full" ] ; then
+                case $(echo "$full" | wc -l) in
+                    0) WARN "cannot expand '$fav' in '$cc'" ;;   # ??
+                    1) favs+=("$full") ;;
+                    *) WARN "'$fav' expands to more than one mirror in $cc, ignored" ;;
+                esac
+            else
+                WARN "'$fav' not found in '$cc'"
+            fi
         done
     fi
 }
@@ -560,7 +570,7 @@ Main() {
     case $save_ml in
         yes) local -r yymmdd=$(date +%y%m%d)
              local -r ml=/etc/pacman.d/mirrorlist
-             local -r mlt=/tmp/mirrorlist
+             local -r mlt=$(mktemp /tmp/ml.XXXXX)
              ShowMirrorlistFile | tee $mlt
              sudo bash -c "cp -a $ml $ml.$yymmdd; cp $mlt $ml"
              rm -f $mlt
