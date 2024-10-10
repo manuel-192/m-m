@@ -283,12 +283,18 @@ Options:
                                         --country de,gb          # adds DE and GB for ranking
                                         --country /de,dk         # sets DE and DK for ranking
     -t, --country-current            Include current country to be ranked.
-    -f, --favorite                   Add a mirror (full path in single quotes) in the beginning of the
-                                     resulting mirrorlist. Can be used many times to append favorites.
-                                     Favorite's format is: 'CC:st' where
+    --prefer-local-rank              If no countries are requested, prefer ranking mirrors in current country only.
+                                     Default: rank all available mirrors everywhere.
+    -f, --favorite                   Add a favorite mirror to be added in the beginning of the ranked mirrorlist.
+                                     This option can be used many times to append favorites.
+                                     A mirror can be added
+                                       - as a full path in single quotes, or
+                                       - in a special format 'CC:st', see below.
+                                     A special value 'none' disables favorites (useful in testing).
+                                     The special 'CC:st' has components:
                                         'CC' is a two-letter country code (see 'reflector --list-countries')
                                         'st' is a (unique) partial string of the mirror URL
-                                     A special value 'none' disables adding favorites.
+                                     See also the examples below.
     -e, --edit-config                Edit your configuration file.
     -i, --ignore-mirrors <list>      A comma separated list of mirrors to ignore.
                                      A mirror can be a unique part of the mirror address.
@@ -355,6 +361,7 @@ Options() {
             -r | --ranking-data)                    ranking_data=yes ;;
             --full-data)                            full_data=yes ;;
             -f | --favorite)                        AddFavs "$2"; shift ;;
+            --prefer-local-rank)                    prefer_local_rank=yes ;;
             --no-parallel)                          has_parallel=no ;;
             -u)                                     update_mirrordata_first=yes ;;
             --timeout)                              timeout_distro="$2"; shift ;;
@@ -458,6 +465,19 @@ RemoveIgnoredFromCountries() {
         printf "%s\n" "${ignored_country_codes[@]}" | grep "^$code$" >/dev/null || countries+=("$code")
     done
 }
+AllOrLocalMirrors() {
+    case "$prefer_local_rank" in
+        yes) if GetCurrentCountry ; then
+                 countries+=("$cc")
+                 echo2 "==> ranking mirrors in: $cc"
+                 return
+             fi
+             ;;
+    esac
+    echo2 "==> ranking mirrors in all countries, please wait..."
+    AllContinents
+}
+
 Main() {
     local -r progname=${0##*/}
     local -r ml=/etc/pacman.d/mirrorlist
@@ -497,6 +517,7 @@ Main() {
     local cc=""                         # current country
     local countries_continents=""
     local tmp
+    local prefer_local_rank=no
     local save_ml=no                   # not supported currently, if ever
     local suffix=""
     local reflector_list_countries=""
@@ -523,7 +544,7 @@ Main() {
     LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
     LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
-    LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config,max:"
+    LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config,max:,prefer-local-rank"
     LOPTS+=",save"
 
     [ -x /bin/parallel ] || has_parallel=no
@@ -539,11 +560,9 @@ Main() {
 
     case "$distro" in
         arch)
-            if [ ${#countries[@]} -eq 0 ] ; then
-                echo2 "==> option --country not used -> automatically adding the current country for ranking, if possible"
-                GetCurrentCountry && countries+=($cc) || DIE "no countries set for ranking."
-                echo2 "==> added: $cc"
-            fi
+            case "${#countries[@]}" in
+                0) AllOrLocalMirrors ;;
+            esac
             syncfile=lastupdate
             time_as_datetime=yes
             suffix='/$repo/os/$arch'
