@@ -440,6 +440,7 @@ OptionsPreHandle() {
             --dump-completion-files)                ShowCompletionFiles;    exit 0 ;;
             -l | --list-country-codes-names)        ListCountryCodesNames;  exit 0 ;;
             --dump-options)                         DumpOptions;            exit 0 ;;
+            --dump-options-all)                     echo "${opts[*]}" | sed 's| --$||'; exit 0 ;;
             -i | --ignore-mirrors)                  IgnoreMirrors "$2";     shift ;;
             --no-config)                            ;;                                  # already handled in OptionsPreHandle0()
             -I | --no-ignore-countries)             prevent_ignoring_countries=yes ;;
@@ -517,7 +518,7 @@ Main() {
     SOPTS+="I"
 
     local LOPTS=""
-    LOPTS+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,favorite:,full-data,help"
+    LOPTS+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,dump-options-all,favorite:,full-data,help"
     LOPTS+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data"
     LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
