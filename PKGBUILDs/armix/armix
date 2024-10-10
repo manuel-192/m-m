@@ -301,6 +301,7 @@ Options:
     -k, --timeout-rank               Max timeout in seconds for ranking a mirror.
     --save                           Save the mirrorlist to $ml.
     --timeout                        Max timeout in seconds for other than ranking.
+    --time                           Show the elapsed time of the measurement.
     -h, --help                       This help.
 
 Configuration file $config_file can include all supported options in variable CONFIG_OPTIONS.
@@ -459,14 +460,17 @@ RemoveIgnoredFromCountries() {
 Main() {
     local -r progname=${0##*/}
     local -r ml=/etc/pacman.d/mirrorlist
+    local -r comment3="### "
+    local -r comment4="#${comment3} "
+    local -r comment4i="$comment4  "
 
     case "$1" in
         --time) shift
                 if [ -x /bin/time ] ; then
                     local tmpfile=$(mktemp)
                     /bin/time --output=$tmpfile -p $progname "$@"
-                    echo -e "\n#### Total measurement time (seconds):"
-                    sed 's|^|####   |' < $tmpfile
+                    echo -e "\n${comment4}Total measurement time (seconds):"
+                    sed "s|^|$comment4i|" < $tmpfile
                     rm -f $tmpfile
                     exit
                 else
@@ -592,11 +596,11 @@ SkipIgnoredMirrors() {
 ShowMirrorlistFile() {
     cat <<EOF
 
-### Ranked list of ${distro^} mirrors.
-### Rank preference : age, speed
-### Rank time       : $time_of_ranking
-### Rank mode       : $mode
-### Command         : $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}
+${comment3}Ranked list of ${distro^} mirrors.
+${comment3}Rank preference : age > speed
+${comment3}Rank time       : $time_of_ranking
+${comment3}Rank mode       : $mode
+${comment3}Command         : $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}
 
 EOF
     ShowFavorites
@@ -609,7 +613,7 @@ Columns() { column -t -s'|' ; }
 
 ShowFullData()    {
     if [ $full_data = yes ] ; then
-        echo -e "\n### Full data:"
+        echo -e "\n${comment3}Full data:"
         echo "$ranked"
     fi
 }
@@ -626,20 +630,21 @@ ShowMirrorlist()  {
 ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         local -r count=$(echo "$ranked" | wc -l)
-        echo -e "\n### Ranking data ($count mirrors):"
-        local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | sed -E "s|^([^ ]+)|### \1|")
-        local rankheader="### MIRROR|TIME OF UPDATE|FETCH TIME|COUNTRY"
+        echo -e "\n${comment3}Ranking data ($count mirrors):"
+        local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | sed -E "s|^([^ ]+)|${comment3}\1|")
+        local -r rankheader="MIRROR|TIME OF UPDATE|FETCH TIME|COUNTRY"
+        local -r rankul="${rankheader//[A-Za-z ]/\~}"
 
-        { echo "$rankheader"; echo "$data"; } | Columns
+        echo -e "${comment3}$rankheader\n${comment3}$rankul\n$data" | Columns
     fi
 }
 ShowFavorites() {
     if [ "$favs" ] ; then
-        echo -e "\n### >>> user favorites"
+        echo -e "\n${comment3}>>> user favorites"
         for mirror in "${favs[@]}"; do
             [ "$mirror" ] && echo "Server = $mirror"
         done
-        echo -e "### <<< user favorites\n"
+        echo -e "${comment3}<<< user favorites\n"
     fi
 }
 
