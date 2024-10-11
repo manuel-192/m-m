@@ -478,15 +478,17 @@ PagerOut() {
     local updates="$1"
     local title="$2"
     local options=""    # "--include-version --include-repo"
-    local -r max=40                                         # over 20 gets slow ...
+    local -r max=400
     local max_descriptions_to_show=$max
     local count=$(echo "$updates" | wc -l)
 
-    # Limit max number of descriptions to show because it gets slower if many updates.
-    if [ -x /bin/bc ] ; then
-        max_descriptions_to_show=$(echo "scale=0; $LINES*5/10" | bc -l)
-    else
-        max_descriptions_to_show=$((LINES*5/10))
+    if false ; then
+        # Limit max number of descriptions to show because it gets slower with many updates.
+        if [ -x /bin/bc ] ; then
+            max_descriptions_to_show=$(echo "scale=0; $LINES*5/10" | bc -l)
+        else
+            max_descriptions_to_show=$((LINES*5/10))
+        fi
     fi
     [ $max_descriptions_to_show -gt $max ] && max_descriptions_to_show=$max
 
