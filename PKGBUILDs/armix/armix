@@ -220,19 +220,18 @@ ResetCompletionFiles() {
 }
 
 TraverseMirrors-parallel() {
-    echo2 "==> $progname: ranking mirrors in parallel"
-    echo "$mirrors_with_statefiles" | parallel "$progname_helper {} '$timeout_rank' '$distro' '$time_as_datetime'"
+    echo2 "==> $progname: $mode ranking"
+    echo "$mirrors_with_statefiles" | parallel "$progname_helper {} '$timeout_rank' '$distro' '$time_as_datetime' '$mirror_count'"
 }
 
 TraverseMirrors-sequential() {
-    echo2 "==> $progname: ranking mirrors in sequence"
+    echo2 "==> $progname: $mode ranking"
     local mirror
     local ix=1
-    local count=$(echo "$mirrors_with_statefiles" | wc -l)
 
     for mirror in $mirrors_with_statefiles ; do
-        printf "\r==> ranking %s/$count" $((ix++)) >&2
-        $progname_helper "$mirror" $timeout_rank $distro $time_as_datetime
+        printf "\r==> ranking %s/$mirror_count" $((ix++)) >&2
+        $progname_helper "$mirror" "$timeout_rank" "$distro" "$time_as_datetime" "$mirror_count"
     done
     echo2 ""
 }
@@ -584,11 +583,16 @@ Main() {
     local mirrors_with_statefiles=$(echo "$mirrors" | sed "s|/\$repo/os/\$arch|/$syncfile|")
     SkipIgnoredMirrors
 
+    # Now we have the final list of mirrors.
+
+    local -r mirror_count=$(echo "$mirrors_with_statefiles" | wc -l)
     local mode=""
+
     case "$has_parallel" in
-        yes) result=$(TraverseMirrors-parallel); mode="in parallel" ;;
-        no)  result=$(TraverseMirrors-sequential); mode="sequentially" ;;
+        yes)  mode=parallel ;;
+        no|*) mode=sequential ;; 
     esac
+    result=$(TraverseMirrors-$mode)
 
     local ranked=$(echo "$result" | LC_ALL=C sort -t'|' -k2rb,2 -k3V,3)   # sort: age
     local ranked_full=""
@@ -649,8 +653,7 @@ ShowMirrorlist()  {
 }
 ShowRankingData() {
     if [ $ranking_data = yes ] ; then
-        local -r count=$(echo "$ranked" | wc -l)
-        echo -e "\n${comment3}Ranking data ($count mirrors):"
+        echo -e "\n${comment3}Ranking data ($mirror_count mirrors):"
         local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | sed -E "s|^([^ ]+)|${comment3}\1|")
         local -r rankheader="MIRROR|TIME OF UPDATE|FETCH TIME|COUNTRY"
         local -r rankul="${rankheader//[A-Za-z ]/\~}"

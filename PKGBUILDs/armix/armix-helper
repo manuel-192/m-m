@@ -3,12 +3,14 @@
 echo2()       { echo "$@" >&2; }
 DIE()         { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
 WARN()        { echo2 -e "==> $progname: warning: $1"; }
+SUBINFO()     { echo2 -e "    -> info: $1"; }
 
 RankOneMirror() {
     local url="$1"                        # may contain suffix ",countryname"
     local timeout_rank="$2"
     local distro="$3"
     local time_as_datetime="$4"
+    local mirror_count="$5"
     local -r progname=${0##*/}
 
     [ "$url" ] || DIE "no URL to test"
@@ -42,15 +44,16 @@ RankOneMirror() {
             esac
 
             echo "${url%/*}|$syncnr|$time|$countryname"
+            return
             ;;
-        *)
-            if [ -x /bin/curl-exit-code-to-string ] ; then
-                WARN "$url fetching failed\n      -> (curl: $(curl-exit-code-to-string $curl_exitcode))"
-            else
-                WARN "$url fetching failed\n      -> (curl: exit code $curl_exitcode)"
-            fi
+        [1-9])
+            curl_exitcode="  $curl_exitcode"
+            ;;
+        [1-9][0-9])
+            curl_exitcode=" $curl_exitcode"
             ;;
     esac
+    SUBINFO "curl code $curl_exitcode with ${url%/*}"
 }
 
 RankOneMirror "$@"
