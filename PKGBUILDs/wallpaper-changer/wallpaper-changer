@@ -47,12 +47,49 @@ SetTimePeriod() {
 
 Main() {
     local progname="wallpaper-changer"    # don't use: local progname="$(basename "$0")"
+    local -r myconf="$HOME/.config/$progname.conf"
+    local -r myconf2='~'/.config/"$progname".conf
+    local -r commonconf="/etc/$progname.conf"
+
+    local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
+    local SUPPORTED_SUFFIXES=(jpg png)
+    local RECURSE_SUBFOLDERS="no"
+    local SEARCH_CASE_SENSITIVE="no"
 
     while [ "$1" ] ; do
         case "$1" in
             -h | --help)
-                local helpurl="https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/$progname/README.md"
-                xdg-open "$helpurl" &>/dev/null
+                if false ; then
+                    local helpurl="https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/$progname/README.md"
+                    xdg-open "$helpurl" &>/dev/null
+                else
+                    cat <<EOF >&2
+Usage:     $progname [options]
+Options:
+           -h, --help          This help.
+           -t, --timer         Configures the time to wait before showing the next picture.
+                               The value is an integer with one of suffixes
+                                   h  (hours)
+                                   m  (minutes)
+                                   s  (seconds)
+                               or an 'OnCalendar' value described in 'man systemd.time'.
+Configuration
+           If file $myconf2 exists, it will be read.
+           Otherwise file $commonconf will be read.
+
+           They are bash files, and the supported settings are:
+           SUPPORTED_FOLDERS       An array of absolute folder paths.
+                                   Default: (${SUPPORTED_FOLDERS[*]})
+           SUPPORTED_SUFFIXES      An array of file name endings as strings.
+                                   Default: (${SUPPORTED_SUFFIXES[*]})
+                                   Note: a string can be longer than just e.g. "jpg".
+           RECURSE_SUFFIXES        "yes" or "no". Default: "$RECURSE_SUBFOLDERS"
+           SEARCH_CASE_SENSITIVE   "yes" or "no". Default: "$SEARCH_CASE_SENSITIVE"
+Examples:
+           $progname -t 10m           # sets the interval to 10 minutes
+           $progname -t '*:00/15:00'  # sets the interval to 15 minutes
+EOF
+                fi
                 exit 0
                 ;;
 
@@ -62,16 +99,11 @@ Main() {
         esac
     done
     local log="/tmp/$progname.log"
-    local RECURSE_SUBFOLDERS="no"
-    local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
-    local SUPPORTED_SUFFIXES=(jpg png)
-    local SEARCH_CASE_SENSITIVE="no"
-    local -r myconf="$HOME/.config/$progname.conf"
 
     if [ -e "$myconf" ] ; then
         source "$myconf" || return 1
     else
-        source "/etc/$progname.conf" || return 1
+        source "$commonconf" || return 1
     fi
 
     local opt_name=""
