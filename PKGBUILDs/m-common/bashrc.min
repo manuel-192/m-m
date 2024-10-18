@@ -1064,8 +1064,18 @@ EOF
     [ -x /bin/chdirex ] && cd() { builtin cd "$(/bin/chdirex "$@")" ; }
 
     sudofuncs umount powertop  # mount
+
     fstrim() {
-        sudo bash -c "echo 'Please wait...'; /bin/fstrim --verbose '$@'"
+        local -r cmdfile=$(mktemp "$HOME/.tmp-XXXXXX")
+        cat <<EOF > "$cmdfile"
+#!/bin/bash
+echo "sudo /bin/fstrim --verbose $*" >&2
+echo "Please wait..." >&2
+sudo /bin/fstrim --verbose $@
+EOF
+        sudo bash "$cmdfile"
+        echo "Done." >&2
+        rm -f "$cmdfile"
     }
 
     mount() {
