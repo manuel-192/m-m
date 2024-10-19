@@ -1524,7 +1524,7 @@ TODO
 
 EOF
 
-bashrc_min_echo2 "==> Running on $XDG_CURRENT_DESKTOP $XDG_SESSION_TYPE"
+bashrc_min_echo2 "==> Running on $XDG_CURRENT_DESKTOP $XDG_SESSION_TYPE, kernel $(uname -r)"
 
 _Nvidia_driver() {
     local driver=$(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use" | awk '{print $NF}')
