@@ -585,7 +585,7 @@ Main() {
 
     # Now we have the final list of mirrors.
 
-    local -r mirror_count=$(echo "$mirrors_with_statefiles" | wc -l)
+    local mirror_count=$(echo "$mirrors_with_statefiles" | wc -l)
     local mode=""
 
     case "$has_parallel" in
@@ -595,7 +595,8 @@ Main() {
     result=$(TraverseMirrors-$mode)
 
     local ranked=$(echo "$result" | LC_ALL=C sort -t'|' -k2rb,2 -k3V,3)   # sort: age
-    local ranked_full=""
+
+    mirror_count=$(echo "$ranked" | wc -l)               # ranking may have dropped some mirrors!
 
     case $save_ml in
         yes) local -r yymmdd=$(date +%y%m%d)
@@ -654,8 +655,8 @@ ShowMirrorlist()  {
 ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         echo -e "\n${comment3}Ranking data ($mirror_count mirrors):"
-        local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | sed -E "s|^([^ ]+)|${comment3}\1|")
-        local -r rankheader="MIRROR|TIME OF UPDATE|FETCH TIME|COUNTRY"
+        local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | cat -n | sed -E 's/[ \t]+([0-9]+)[ \t]+(.*)/\2|\1/' | sed -E "s|^([^ ]+)|${comment3}\1|")
+        local -r rankheader="MIRROR|TIME OF UPDATE|FETCH TIME|COUNTRY|ORDINAL"
         local -r rankul="${rankheader//[A-Za-z ]/\~}"
 
         echo -e "${comment3}$rankheader\n${comment3}$rankul\n$data" | Columns
@@ -663,11 +664,12 @@ ShowRankingData() {
 }
 ShowFavorites() {
     if [ "$favs" ] ; then
-        echo -e "\n${comment3}>>> user favorites"
+        local -r title="FAVORITE MIRRORS BY USER"
+        echo -e "\n${comment3}$title >>>"
         for mirror in "${favs[@]}"; do
             [ "$mirror" ] && echo "Server = $mirror"
         done
-        echo -e "${comment3}<<< user favorites\n"
+        echo -e "${comment3}$title <<<\n"
     fi
 }
 
