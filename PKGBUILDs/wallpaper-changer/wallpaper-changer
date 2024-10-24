@@ -42,7 +42,84 @@ SetTimePeriod() {
     esac
     sed -i ~/.config/systemd/user/wallpaper-changer.timer \
         -e "s|^OnCalendar=.*|OnCalendar=$val|"
+    ReloadTimer
+}
+
+ReloadTimer() {
+    echo "$progname: reloading the timer."
     systemctl --user daemon-reload
+}
+
+EditTimer() {
+    while true ; do
+        /bin/emacs --reverse-video $HOME/.config/systemd/user/$progname.timer
+        TimerIsValid && break
+    done
+    ReloadTimer
+}
+
+TimerIsValid() {
+    local oncal=$(grep "OnCalendar=" $HOME/.config/systemd/user/$progname.timer)
+    local oncal_orig="$oncal"
+    oncal="${oncal##*=}"
+    local h="${oncal%%:*}"
+    oncal="${oncal#*:}"
+    local m="${oncal%%:*}"
+    oncal="${oncal#*:}"
+    local s="${oncal%%:*}"
+    local msg="'$oncal_orig' is invalid"
+
+    case "$h" in
+        */*)
+            case "$m$s" in
+                [0-5][0-9][0-5][0-9]) ;;
+                *) DIE "'$msg" ;;
+            esac
+            ;;
+        "*")
+            case "$m" in
+                */*)
+                    case "$s" in
+                        [0-5][0-9]) ;;
+                        *) DIE "'$msg" ;;
+                    esac
+                    ;;
+                "*")
+                    case "$s" in
+                        */*) ;;
+                        [0-5][0-9]) ;;
+                        *) DIE "'$msg" ;;
+                    esac
+                    ;;
+                *)
+                    DIE "'$msg"
+                    ;;
+            esac
+            ;;
+        *)
+            DIE "'$msg"
+            ;;
+    esac
+}
+
+ShowTimer() {
+    local oncal=$(grep "OnCalendar=" $HOME/.config/systemd/user/$progname.timer)
+    oncal=${oncal##*=}
+    local h=${oncal%%:*}
+    oncal=${oncal#*:}
+    local m=${oncal%%:*}
+    oncal=${oncal#*:}
+    local s=${oncal%%:*}
+
+    if [[ "$h" =~ / ]] ; then
+        echo "every ${h#*/} hours"
+    elif [[ "$m" =~ / ]] ; then
+        echo "every ${m#*/} mimutes"
+    elif [[ "$s" =~ / ]] ; then
+        echo "every ${s#*/} seconds"
+    else
+        echo "$h:$m:$s"
+    fi
 }
 
 Main() {
@@ -73,6 +150,9 @@ Options:
                                    m  (minutes)
                                    s  (seconds)
                                or an 'OnCalendar' value described in 'man systemd.time'.
+           -s, --show-timer    Show the currently configured value of the timer.
+           -r, --reload        Reload the timer settings.
+           -e, --edit          Edit the timer service definition file.
 Configuration
            If file $myconf2 exists, it will be read.
            Otherwise file $commonconf will be read.
@@ -93,9 +173,13 @@ EOF
                 exit 0
                 ;;
 
-            -t=* | --timer=*) SetTimePeriod "${1#*=}"; exit 0 ;;
-            -t | --timer)     SetTimePeriod "$2";      exit 0 ;;
-            -t*)              SetTimePeriod "${1:2}";  exit 0 ;;
+            -t=* | --timer=*)  SetTimePeriod "${1#*=}"; exit 0 ;;
+            -t | --timer)      SetTimePeriod "$2";      exit 0 ;;
+            -t*)               SetTimePeriod "${1:2}";  exit 0 ;;
+            -s | --show-timer) ShowTimer;               exit 0 ;;
+            -r | --reload)     ReloadTimer;             exit 0 ;;
+            -e | --edit)       EditTimer;               exit 0 ;;
+            --status)          RunInTerminal "systemctl --user status $progname.timer";    exit 0 ;;
         esac
     done
     local log="/tmp/$progname.log"
