@@ -2,7 +2,8 @@
 
 DIE() {
     echo "$progname: error: $1" >&2
-    exit 1
+    Usage 1
+    # exit 1
 }
 
 FindFiles() {
@@ -122,25 +123,8 @@ ShowTimer() {
     fi
 }
 
-Main() {
-    local progname="wallpaper-changer"    # don't use: local progname="$(basename "$0")"
-    local -r myconf="$HOME/.config/$progname.conf"
-    local -r myconf2='~'/.config/"$progname".conf
-    local -r commonconf="/etc/$progname.conf"
-
-    local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
-    local SUPPORTED_SUFFIXES=(jpg png)
-    local RECURSE_SUBFOLDERS="no"
-    local SEARCH_CASE_SENSITIVE="no"
-
-    while [ "$1" ] ; do
-        case "$1" in
-            -h | --help)
-                if false ; then
-                    local helpurl="https://github.com/manuel-192/m-m/blob/master/PKGBUILDs/$progname/README.md"
-                    xdg-open "$helpurl" &>/dev/null
-                else
-                    cat <<EOF >&2
+Usage() {
+    cat <<EOF >&2
 Usage:     $progname [options]
 Options:
            -h, --help          This help.
@@ -169,17 +153,32 @@ Examples:
            $progname -t 10m           # sets the interval to 10 minutes
            $progname -t '*:00/15:00'  # sets the interval to 15 minutes
 EOF
-                fi
-                exit 0
-                ;;
+    
+    [ "$1" ] && exit $1
+}
 
+Main() {
+    local progname="wallpaper-changer"    # don't use: local progname="$(basename "$0")"
+    local -r myconf="$HOME/.config/$progname.conf"
+    local -r myconf2='~'/.config/"$progname".conf
+    local -r commonconf="/etc/$progname.conf"
+
+    local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
+    local SUPPORTED_SUFFIXES=(jpg png)
+    local RECURSE_SUBFOLDERS="no"
+    local SEARCH_CASE_SENSITIVE="no"
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -h | --help)       Usage 0 ;;
             -t=* | --timer=*)  SetTimePeriod "${1#*=}"; exit 0 ;;
             -t | --timer)      SetTimePeriod "$2";      exit 0 ;;
             -t*)               SetTimePeriod "${1:2}";  exit 0 ;;
             -s | --show-timer) ShowTimer;               exit 0 ;;
             -r | --reload)     ReloadTimer;             exit 0 ;;
             -e | --edit)       EditTimer;               exit 0 ;;
-            --status)          RunInTerminal "systemctl --user status $progname.timer";    exit 0 ;;
+            --status)          RunInTerminal "systemctl --user status $progname.timer"; exit 0 ;;
+            *)                 DIE "unsupported parameter '$1'" ;;
         esac
     done
     local log="/tmp/$progname.log"
