@@ -47,13 +47,14 @@ SetTimePeriod() {
 }
 
 ReloadTimer() {
-    echo "$progname: reloading the timer."
+    # echo "$progname: reloading the timer."
     systemctl --user daemon-reload
 }
 
 EditTimer() {
+    local timerfile="$HOME/.config/systemd/user/$progname.timer"
     while true ; do
-        /bin/emacs --reverse-video $HOME/.config/systemd/user/$progname.timer
+        /bin/emacs --reverse-video "$timerfile"
         TimerIsValid && break
     done
     ReloadTimer
@@ -68,39 +69,59 @@ TimerIsValid() {
     local m="${oncal%%:*}"
     oncal="${oncal#*:}"
     local s="${oncal%%:*}"
-    local msg="'$oncal_orig' is invalid"
+    local msg="changed from $omcal_orig to "
+    local changed=no
 
     case "$h" in
-        */*)
-            case "$m$s" in
-                [0-5][0-9][0-5][0-9]) ;;
-                *) DIE "'$msg" ;;
-            esac
-            ;;
-        "*")
-            case "$m" in
-                */*)
-                    case "$s" in
-                        [0-5][0-9]) ;;
-                        *) DIE "'$msg" ;;
-                    esac
-                    ;;
-                "*")
-                    case "$s" in
-                        */*) ;;
-                        [0-5][0-9]) ;;
-                        *) DIE "'$msg" ;;
-                    esac
-                    ;;
-                *)
-                    DIE "'$msg"
-                    ;;
-            esac
-            ;;
-        *)
-            DIE "'$msg"
-            ;;
+        */* | "*" | [0-1][0-9] | 2[0-3]) ;;
+        *) h="00"; changed=yes ;;
     esac
+    case "$m" in
+        */* | "*" | [0-5][0-9]) ;;
+        *) m="00"; changed=yes ;;
+    esac
+    case "$s" in
+        */* | "*" | [0-5][0-9]) ;;
+        *) s="00"; changed=yes ;;
+    esac
+
+    if [ $changed = yes ] ; then
+        oncal="OnCalendar=$h:$m:$s"
+        echo "==> Info: changed from $oncal_orig to $oncal" >&2
+        sed -i "$timerfile" -e "s|^OnCalendar=.*|$oncal|"
+    fi
+
+    # case "$h" in
+    #     */*)
+    #         case "$m$s" in
+    #             [0-5][0-9][0-5][0-9]) ;;
+    #             *) DIE "'$msg" ;;
+    #         esac
+    #         ;;
+    #     "*")
+    #         case "$m" in
+    #             */*)
+    #                 case "$s" in
+    #                     [0-5][0-9]) ;;
+    #                     *) DIE "'$msg" ;;
+    #                 esac
+    #                 ;;
+    #             "*")
+    #                 case "$s" in
+    #                     */*) ;;
+    #                     [0-5][0-9]) ;;
+    #                     *) DIE "'$msg" ;;
+    #                 esac
+    #                 ;;
+    #             *)
+    #                 DIE "'$msg"
+    #                 ;;
+    #         esac
+    #         ;;
+    #     *)
+    #         DIE "'$msg"
+    #         ;;
+    # esac
 }
 
 ShowTimer() {
@@ -115,7 +136,7 @@ ShowTimer() {
     if [[ "$h" =~ / ]] ; then
         echo "every ${h#*/} hours"
     elif [[ "$m" =~ / ]] ; then
-        echo "every ${m#*/} minutes"
+        echo "every ${m#*/} mimutes"
     elif [[ "$s" =~ / ]] ; then
         echo "every ${s#*/} seconds"
     else
@@ -127,16 +148,18 @@ Usage() {
     cat <<EOF >&2
 Usage:     $progname [options]
 Options:
-           -h, --help          This help.
-           -t, --timer         Configures the time to wait before showing the next picture.
-                               The value is an integer with one of suffixes
-                                   h  (hours)
-                                   m  (minutes)
-                                   s  (seconds)
-                               or an 'OnCalendar' value described in 'man systemd.time'.
-           -s, --show-timer    Show the currently configured value of the timer.
-           -r, --reload        Reload the timer settings.
-           -e, --edit          Edit the timer service definition file.
+           -h, --help            This help.
+           -t, --timer           Configures the time to wait before showing the next picture.
+                                 The value is an integer with one of suffixes
+                                     h  (hours)
+                                     m  (minutes)
+                                     s  (seconds)
+                                 or an 'OnCalendar' value described in 'man systemd.time'.
+           -s, --show-interval   Show the currently configured value of the time interval
+                                 between wallpaper changes.
+           -r, --reload          Reload the services, including this timer.
+           -e, --edit            (Advanced) Edit the timer service definition file.
+                                 See also: 'man systemd.time'.
 Configuration
            If file $myconf2 exists, it will be read.
            Otherwise file $commonconf will be read.
@@ -150,8 +173,10 @@ Configuration
            RECURSE_SUFFIXES        "yes" or "no". Default: "$RECURSE_SUBFOLDERS"
            SEARCH_CASE_SENSITIVE   "yes" or "no". Default: "$SEARCH_CASE_SENSITIVE"
 Examples:
-           $progname -t 10m           # sets the interval to 10 minutes
-           $progname -t '*:00/15:00'  # sets the interval to 15 minutes
+           \$ $progname -t 10m           # sets the interval to 10 minutes
+           \$ $progname -s
+                every 10 minutes
+           \$ $progname -t '*:00/15:00'  # sets the interval to 15 minutes
 EOF
     
     [ "$1" ] && exit $1
