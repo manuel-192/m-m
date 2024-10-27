@@ -115,7 +115,7 @@ ShowTimer() {
     if [[ "$h" =~ / ]] ; then
         echo "every ${h#*/} hours"
     elif [[ "$m" =~ / ]] ; then
-        echo "every ${m#*/} mimutes"
+        echo "every ${m#*/} minutes"
     elif [[ "$s" =~ / ]] ; then
         echo "every ${s#*/} seconds"
     else
