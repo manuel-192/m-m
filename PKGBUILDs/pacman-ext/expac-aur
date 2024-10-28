@@ -17,11 +17,13 @@ GetListField() {
     format=${format:2}
 }
 
+OptDepsFormat() { sed -E 's/([a-zA-Z0-9\.-]+:)/\n\1|/g' | column -t -s'|' ; }   # show as a nice table
+
 OptionalDeps() {
     local out=""
     GetListField "Optional Deps"
     case "$1" in
-        full) ;;
+        full) out=$(echo "$out" | OptDepsFormat) ;;
         *)    out=$(echo "$out" | sed 's|:[^:]*$||') ;;  # remove descriptions
     esac
     line+="$(echo $out)"
@@ -175,6 +177,7 @@ Main()
     local targets_installed=() targets_notinstalled=()
     local pkg
     local info_found=no
+    local out2=""
 
     #MakeAurPkgList "$@"
 
@@ -182,7 +185,12 @@ Main()
 
     Options "$@"
 
-    [ ${#targets_installed[@]} -gt 0 ] && expac ${op} "$format" "${targets_installed[@]}"
+    [ ${#targets_installed[@]} -gt 0 ] && out2=$(expac ${op} "$format" "${targets_installed[@]}")
+
+    case "$format" in
+        *"%O"*) echo "$out2" | OptDepsFormat ;;
+        *)      echo "$out2" ;;
+    esac
 
     if [ ${#targets_notinstalled[@]} -gt 0 ] ; then
         case "$op" in
