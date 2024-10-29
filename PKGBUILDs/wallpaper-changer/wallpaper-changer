@@ -22,6 +22,7 @@ SetTimeInterval() {
     local mode="$1"
     local interval="$2"
 
+    SaveTimer
     case "$mode" in
         h) CheckHour   "$interval"; interval="00/$interval:00:00" ;;
         m) CheckMinSec "$interval"; interval="*:00/$interval:00" ;;
@@ -41,12 +42,19 @@ CheckMinSec() {
     fi
 }
 
+SaveTimer() {
+    cp "$timerfile" "$timerfiletmp"
+}
 ReloadTimer() {
-    # echo "$progname: reloading the timer."
-    systemctl --user daemon-reload
+    diff "$timerfile" "$timerfiletmp" >/dev/null || {
+        echo "$progname: reloading the timer." >&2
+        systemctl --user daemon-reload
+    }
+    rm -f "$timerfiletmp"
 }
 
 EditTimer() {
+    SaveTimer
     while true ; do
         /bin/emacs --reverse-video "$timerfile"
         TimerIsValid && break
@@ -227,6 +235,7 @@ Main() {
     local SEARCH_CASE_SENSITIVE="no"
     local -r timerfile="$HOME/.config/systemd/user/$progname.timer"
     local -r servicefile="$HOME/.config/systemd/user/$progname.service"
+    local -r timerfiletmp="/tmp/${timerfile##*/}.tmp"
 
     local LOPTS="default-setup,dump-options,edit,help,show-interval,status,th:,tm:,ts:"
     local SOPTS="dehis"

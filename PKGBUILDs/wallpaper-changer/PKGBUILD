@@ -5,7 +5,7 @@
 pkgname=wallpaper-changer
 pkgdesc="Change the wallpaper periodically"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.10.10
+pkgver=24.10.11
 pkgrel=1
 
 arch=('any')
@@ -18,7 +18,7 @@ source=(
     $url/$pkgname.completion
     $url/$pkgname.conf
 )
-sha512sums=('c14f2eca6b9bb3e0b53a25a8692d7948f7a7c8a0b4228c62debe9afff4d0890c7e9017cf7df668790aa603b30c818f9eee800f465501d8ae08eaefff0ebc99b6'
+sha512sums=('01651b51c0beeb856010b47770446819d43e413e7514882770a6ec73f073cd24465c77341bddf4e57e5e68cd937ed5cd44e8a31894bce05ef5596a866248eb55'
             '5639fb432d253d564f4b2109d846610ec3f6f491cd4f1bfd9168e25774ca50331f2d66f415378eb26d67940d4f7b66f1778a1b9ecb0a32dbb1b839727d436643'
             '0c602430d390c5eb22db2d6eecb1223a4e540970bf8da2b6bef3a06194059031b22307698a9c2c9ead9ac53a792cba89f160a37220f3f79140a381421d01ab84')
 
