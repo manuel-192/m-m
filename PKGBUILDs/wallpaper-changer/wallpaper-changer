@@ -96,11 +96,11 @@ ShowTimer() {
     local s=${oncal%%:*}
 
     if [[ "$h" =~ / ]] ; then
-        echo "every ${h#*/} hours"
+        echo "${h#*/} hours"
     elif [[ "$m" =~ / ]] ; then
-        echo "every ${m#*/} minutes"
+        echo "${m#*/} minutes"
     elif [[ "$s" =~ / ]] ; then
-        echo "every ${s#*/} seconds"
+        echo "${s#*/} seconds"
     else
         echo "$h:$m:$s"
     fi
@@ -109,38 +109,55 @@ ShowTimer() {
 ShowStatus() { RunInTerminal "systemctl --user status $progname.timer"; }
 
 SetupUserService() {
-    local -r srvdir="$HOME/.config/systemd/user"
-    local -r skeldir="/etc/skel/$progname"
-    local -r timer="$srvdir/$progname.timer"
-
-    if [ ! -f "$timer" ] ; then
-        echo "==> Info: enabling service timer $timer" >&2 
-        mkdir -p "$srvdir"
-        cp "$skeldir/$progname".{service,timer}  "$srvdir"
-        systemctl --user enable "$progname".timer
-        systemctl --user start  "$progname".timer
-        systemctl --user daemon-reload
+    local -r force="$1"
+    if [ -z "$force" ] && [ -f "$timerfile" ] && [ -f "$servicefile" ] ; then
+        return 0   # skip setup because systemd files exist & force is disabled
     fi
+
+    echo "==> Info: enabling service timer $timerfile" >&2 
+
+    mkdir -p "${timerfile%/*}"
+
+    cat <<EOF > "$timerfile"
+[Unit]
+Description=Change wallpaper at configured intervals
+
+[Timer]
+OnCalendar=*:00/5:00
+AccuracySec=1s
+ 
+[Install]
+WantedBy=timers.target
+EOF
+
+    cat <<EOF > "$servicefile"
+[Unit]
+Description=Change wallpaper at configured intervals
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/$progname
+
+[Install]
+WantedBy=$progname.timer
+EOF
+
+    systemctl --user enable "$progname".timer
+    systemctl --user start  "$progname".timer
+    systemctl --user daemon-reload
 }
 
 Usage() {
-    # -t, --timer           Configures the time to wait before showing the next picture.
-    #                       The value is an integer with one of suffixes
-    #                           h  (hours)
-    #                           m  (minutes)
-    #                           s  (seconds)
-    #                       or an 'OnCalendar' value described in 'man systemd.time'.
-
     cat <<EOF >&2
 Usage:     $progname [options]
 Options:
            -h, --help            This help.
+           -d, --default-setup   Re-create (overwrite) $progname's systemd files.
            -e, --edit            (Advanced) Edit the timer service definition file.
                                  See also: 'man systemd.time'.
            -i, --show-interval   Show the currently configured value of the time interval
                                  between wallpaper changes.
-           -r, --reload          Reload the services, including this timer.
-           --status              Show the status of the related systemd timer.
+           -s, --status          Show the status of the related systemd timer.
            --th *                Set the time interval to * hours.
            --tm *                Set the time interval to * minutes.
            --ts *                Set the time interval to * seconds.
@@ -186,12 +203,12 @@ Options() {
     while true ; do
         case "$1" in
             --) shift; break ;;
-            -h | --help)           Usage 0 ;;
+            -d | --default-setup)  SetupUserService force;      exit 0 ;;
             --dump-options)        DumpOptions;                 exit 0 ;;
             -e | --edit)           EditTimer;                   exit 0 ;;
-            -r | --reload)         ReloadTimer;                 exit 0 ;;
+            -h | --help)           Usage 0 ;;
             -i | --show-interval)  ShowTimer;                   exit 0 ;;
-            --status)              ShowStatus;                  exit 0 ;;
+            -s | --status)         ShowStatus;                  exit 0 ;;
             --th | --tm | --ts)    SetTimeInterval ${1:3} "$2"; exit 0 ;;
         esac
         shift
@@ -209,9 +226,10 @@ Main() {
     local RECURSE_SUBFOLDERS="no"
     local SEARCH_CASE_SENSITIVE="no"
     local -r timerfile="$HOME/.config/systemd/user/$progname.timer"
+    local -r servicefile="$HOME/.config/systemd/user/$progname.service"
 
-    local LOPTS="dump-options,edit,help,reload,show-interval,status,th:,tm:,ts:"
-    local SOPTS="ehir"
+    local LOPTS="default-setup,dump-options,edit,help,show-interval,status,th:,tm:,ts:"
+    local SOPTS="dehis"
 
     SetupUserService
     Options "$@"

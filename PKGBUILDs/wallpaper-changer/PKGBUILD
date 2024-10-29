@@ -5,27 +5,22 @@
 pkgname=wallpaper-changer
 pkgdesc="Change the wallpaper periodically"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.10.9
+pkgver=24.10.10
 pkgrel=1
 
 arch=('any')
 license=('GPL')
 backup=(etc/$pkgname.conf)
 depends=(eos-bash-shared fd)
-install=${pkgname}-info.install
 
 source=(
     $url/$pkgname
     $url/$pkgname.completion
     $url/$pkgname.conf
-    $url/$pkgname.service
-    $url/$pkgname.timer
 )
-sha512sums=('00a82f160c84cc4d47629fc1016f74e1330776cd6dd0b2f501c81f49210d53bbdd3ba1ab86cd5ed78f94abf6b7b58974fde3715e007e0e775a37927d4926d28f'
+sha512sums=('c14f2eca6b9bb3e0b53a25a8692d7948f7a7c8a0b4228c62debe9afff4d0890c7e9017cf7df668790aa603b30c818f9eee800f465501d8ae08eaefff0ebc99b6'
             '5639fb432d253d564f4b2109d846610ec3f6f491cd4f1bfd9168e25774ca50331f2d66f415378eb26d67940d4f7b66f1778a1b9ecb0a32dbb1b839727d436643'
-            '0c602430d390c5eb22db2d6eecb1223a4e540970bf8da2b6bef3a06194059031b22307698a9c2c9ead9ac53a792cba89f160a37220f3f79140a381421d01ab84'
-            'baef544f92e62410083a9ea4f410c949500843d306a2a7e2d61d8b4fe4414d2395c8dc6a946f5d9a98e5693dd97aa8495c13a2ec09f365bda0708d288132a3f5'
-            '64ba8f7b9dd1f10e766e280694d433232b658af5d09ec43deabdb0ce3ab1abab2fc9d309ac3022146acdbe79ebfed53843c8e9eccac972b3a090b05db8090708')
+            '0c602430d390c5eb22db2d6eecb1223a4e540970bf8da2b6bef3a06194059031b22307698a9c2c9ead9ac53a792cba89f160a37220f3f79140a381421d01ab84')
 
 package() {
     local file urlpath
@@ -35,7 +30,6 @@ package() {
         case "$file" in
             *.completion)           install -Dm644 $file   "$pkgdir/usr/share/bash-completion/completions/${file%.completion}" ;;
             *.conf)                 install -Dm644 $file   "$pkgdir/etc/$file" ;;
-            *.service | *.timer)    install -Dm644 $file   "$pkgdir/etc/skel/$pkgname/$file" ;;
             *)                      install -Dm755 $file   "$pkgdir/usr/bin/$file" ;;
         esac
     done
