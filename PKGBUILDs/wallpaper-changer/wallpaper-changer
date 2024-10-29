@@ -157,7 +157,7 @@ Configuration
            RECURSE_SUFFIXES        "yes" or "no". Default: "$RECURSE_SUBFOLDERS"
            SEARCH_CASE_SENSITIVE   "yes" or "no". Default: "$SEARCH_CASE_SENSITIVE"
 Examples:
-           \$ $progname -tm 10     # sets the interval to 10 minutes
+           \$ $progname --tm 10    # sets the interval to 10 minutes
            \$ $progname -i
                 every 10 minutes
 EOF
