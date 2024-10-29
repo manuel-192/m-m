@@ -5,35 +5,38 @@
 pkgname=wallpaper-changer
 pkgdesc="Change the wallpaper periodically"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.10.7
+pkgver=24.10.8
 pkgrel=1
 
 arch=('any')
 license=('GPL')
 backup=(etc/$pkgname.conf)
 depends=(eos-bash-shared fd)
-install=wallpaper-changer-info.install
+install=${pkgname}-info.install
 
 source=(
     $url/$pkgname
+    $url/$pkgname.completion
     $url/$pkgname.conf
-    $url/$pkgname.timer
     $url/$pkgname.service
-    $url/install-$pkgname
-    $url/${pkgname}-info.install
+    $url/$pkgname.timer
 )
-sha512sums=('900bc2f785008f96c33c1b7dd6597f9a4f94f79c5c1d282889ea0b21a95b0535757bfc1dddb6f41ffb7fcfb46078c453e1abea07498a8693a62a9b4507f2ad18'
+sha512sums=('bd274cfb1231238818b98fc5ed812cbe4ff5fbad8bc85468e5bc3b89aa49a866076467060118286151ed3b715f3c1c82680c40c660d614c46289d42d08fae565'
+            '5639fb432d253d564f4b2109d846610ec3f6f491cd4f1bfd9168e25774ca50331f2d66f415378eb26d67940d4f7b66f1778a1b9ecb0a32dbb1b839727d436643'
             '0c602430d390c5eb22db2d6eecb1223a4e540970bf8da2b6bef3a06194059031b22307698a9c2c9ead9ac53a792cba89f160a37220f3f79140a381421d01ab84'
-            '64ba8f7b9dd1f10e766e280694d433232b658af5d09ec43deabdb0ce3ab1abab2fc9d309ac3022146acdbe79ebfed53843c8e9eccac972b3a090b05db8090708'
             'baef544f92e62410083a9ea4f410c949500843d306a2a7e2d61d8b4fe4414d2395c8dc6a946f5d9a98e5693dd97aa8495c13a2ec09f365bda0708d288132a3f5'
-            '19462a14f80adbdb18773aa31798f39d4e9bcd7003a4c991ed54128e7712ec4bb96e49740a84131718cd3a1b47aa219b9557d2632b4b2475a3ef2c7510598433'
-            '4de8a725cf2d5ede648db168cc87183821bb3afc14d8ee5bde779228fe752b9ba26f09a376a844dea5090cbe0bdf25186c92bdaa388846276e81bd43798f97c3')
+            '64ba8f7b9dd1f10e766e280694d433232b658af5d09ec43deabdb0ce3ab1abab2fc9d309ac3022146acdbe79ebfed53843c8e9eccac972b3a090b05db8090708')
 
 package() {
-    local skel=/etc/skel/$pkgname
-    install -Dm755 "$pkgname"         "$pkgdir/usr/bin/$pkgname"
-    install -Dm755 install-"$pkgname" "$pkgdir/usr/bin/install-$pkgname"
-    install -Dm644 "$pkgname".timer   "$pkgdir/$skel/$pkgname".timer
-    install -Dm644 "$pkgname".service "$pkgdir/$skel/$pkgname".service
-    install -Dm644 "$pkgname".conf    "$pkgdir/etc/$pkgname".conf
+    local file urlpath
+
+    for urlpath in "${source[@]}" ; do
+        file=${urlpath##*/}
+        case "$file" in
+            *.completion)           install -Dm644 $file   "$pkgdir/usr/share/bash-completion/completions/${file%.completion}" ;;
+            *.conf)                 install -Dm644 $file   "$pkgdir/etc/$file" ;;
+            *.service | *.timer)    install -Dm644 $file   "$pkgdir/etc/skel/$pkgname/$file" ;;
+            *)                      install -Dm755 $file   "$pkgdir/usr/bin/$file" ;;
+        esac
+    done
 }

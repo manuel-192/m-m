@@ -1,0 +1,32 @@
+# bash completion for wallpaper-changer        -*- shell-script -*-
+
+_wallpaper-changer_complete() {
+    COMPREPLY=( $(compgen -W "$1" -- "$cur") )
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_wallpaper-changer_timespec() {
+    COMPREPLY=( $(compgen -P "$cur" -W "$1") )
+    compopt -o nospace
+    #compopt -o nosort
+}
+
+_wallpaper-changer_() 
+{
+    local cur prev #words cword split
+    _init_completion -s || return
+
+    case "$prev" in
+        --th)
+            _wallpaper-changer_complete "{1..23}"
+            ;;
+        --t[ms])
+            _wallpaper-changer_complete "{1..59}"
+            ;;
+        *)
+            _wallpaper-changer_complete "$(wallpaper-changer --dump-options)"
+            ;;
+    esac
+}
+complete -F _wallpaper-changer_    wallpaper-changer 

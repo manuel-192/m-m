@@ -1,9 +1,12 @@
 #!/bin/bash
 
 DIE() {
-    echo "$progname: error: $1" >&2
-    Usage 1
-    # exit 1
+    local msg="$1"
+    local code="$2"
+    echo "$progname: error: $msg" >&2
+    [ "$code" ] || code=1
+    Usage $code
+    exit 1    # fallback
 }
 
 FindFiles() {
@@ -15,6 +18,18 @@ FindFiles() {
     fd $opt_depth $opt_name ".*$suffix" "$folder"
 }
 
+SetTimeInterval() {
+    local mode="$1"
+    local interval="$2"
+
+    case "$mode" in
+        h) CheckHour   "$interval"; interval="00/$interval:00:00" ;;
+        m) CheckMinSec "$interval"; interval="*:00/$interval:00" ;;
+        s) CheckMinSec "$interval"; interval="*:*:00/$interval" ;;
+    esac
+    sed -i "$timerfile" -e "s|^OnCalendar=.*|OnCalendar=$interval|"
+    ReloadTimer
+}
 CheckHour() {
     if [ -z "$1" ] || [ "$1" -gt 23 ] || [ "$1" -lt 0 ] ; then
         DIE "value for hour ($1) must be 0..23"
@@ -26,33 +41,12 @@ CheckMinSec() {
     fi
 }
 
-SetTimePeriod() {
-    # $val = XY, where X=integer Y=unit (s=sec,m=min,h=hour)
-    local val="$1"            # e.g. 23s
-    local int="${val:: -1}"   # e.g. 23
-
-    # [ "${int//[0-9]/}" ] && DIE "the number part in '$val' is broken"
-
-    case "${val: -1}" in
-        [Hh]) val="00/$int:00:00"; CheckHour "$int" ;;
-        [Mm]) val="*:00/$int:00";  CheckMinSec "$int" minute ;;
-        [Ss]) val="*:*:00/$int";   CheckMinSec "$int" second ;;
-        *)
-            # DIE "the unit part in '$val' is broken"
-            ;;
-    esac
-    sed -i ~/.config/systemd/user/wallpaper-changer.timer \
-        -e "s|^OnCalendar=.*|OnCalendar=$val|"
-    ReloadTimer
-}
-
 ReloadTimer() {
     # echo "$progname: reloading the timer."
     systemctl --user daemon-reload
 }
 
 EditTimer() {
-    local timerfile="$HOME/.config/systemd/user/$progname.timer"
     while true ; do
         /bin/emacs --reverse-video "$timerfile"
         TimerIsValid && break
@@ -74,11 +68,11 @@ TimerIsValid() {
 
     case "$h" in
         */* | "*" | [0-1][0-9] | 2[0-3]) ;;
-        *) h="00"; changed=yes ;;
+        *) h="*"; changed=yes ;;
     esac
     case "$m" in
         */* | "*" | [0-5][0-9]) ;;
-        *) m="00"; changed=yes ;;
+        *) m="*"; changed=yes ;;
     esac
     case "$s" in
         */* | "*" | [0-5][0-9]) ;;
@@ -90,38 +84,6 @@ TimerIsValid() {
         echo "==> Info: changed from $oncal_orig to $oncal" >&2
         sed -i "$timerfile" -e "s|^OnCalendar=.*|$oncal|"
     fi
-
-    # case "$h" in
-    #     */*)
-    #         case "$m$s" in
-    #             [0-5][0-9][0-5][0-9]) ;;
-    #             *) DIE "'$msg" ;;
-    #         esac
-    #         ;;
-    #     "*")
-    #         case "$m" in
-    #             */*)
-    #                 case "$s" in
-    #                     [0-5][0-9]) ;;
-    #                     *) DIE "'$msg" ;;
-    #                 esac
-    #                 ;;
-    #             "*")
-    #                 case "$s" in
-    #                     */*) ;;
-    #                     [0-5][0-9]) ;;
-    #                     *) DIE "'$msg" ;;
-    #                 esac
-    #                 ;;
-    #             *)
-    #                 DIE "'$msg"
-    #                 ;;
-    #         esac
-    #         ;;
-    #     *)
-    #         DIE "'$msg"
-    #         ;;
-    # esac
 }
 
 ShowTimer() {
@@ -136,7 +98,7 @@ ShowTimer() {
     if [[ "$h" =~ / ]] ; then
         echo "every ${h#*/} hours"
     elif [[ "$m" =~ / ]] ; then
-        echo "every ${m#*/} mimutes"
+        echo "every ${m#*/} minutes"
     elif [[ "$s" =~ / ]] ; then
         echo "every ${s#*/} seconds"
     else
@@ -144,22 +106,44 @@ ShowTimer() {
     fi
 }
 
+ShowStatus() { RunInTerminal "systemctl --user status $progname.timer"; }
+
+SetupUserService() {
+    local -r srvdir="$HOME/.config/systemd/user"
+    local -r skeldir="/etc/skel/$progname"
+    local -r timer="$srvdir/$progname.timer"
+
+    if [ ! -f "$timer" ] ; then
+        echo "==> Info: enabling service timer $timer" >&2 
+        mkdir -p "$srvdir"
+        cp "$skeldir/$progname".{service,timer}  "$srvdir"
+        systemctl --user enable "$progname".timer
+        systemctl --user start  "$progname".timer
+        systemctl --user daemon-reload
+    fi
+}
+
 Usage() {
+    # -t, --timer           Configures the time to wait before showing the next picture.
+    #                       The value is an integer with one of suffixes
+    #                           h  (hours)
+    #                           m  (minutes)
+    #                           s  (seconds)
+    #                       or an 'OnCalendar' value described in 'man systemd.time'.
+
     cat <<EOF >&2
 Usage:     $progname [options]
 Options:
            -h, --help            This help.
-           -t, --timer           Configures the time to wait before showing the next picture.
-                                 The value is an integer with one of suffixes
-                                     h  (hours)
-                                     m  (minutes)
-                                     s  (seconds)
-                                 or an 'OnCalendar' value described in 'man systemd.time'.
-           -s, --show-interval   Show the currently configured value of the time interval
-                                 between wallpaper changes.
-           -r, --reload          Reload the services, including this timer.
            -e, --edit            (Advanced) Edit the timer service definition file.
                                  See also: 'man systemd.time'.
+           -i, --show-interval   Show the currently configured value of the time interval
+                                 between wallpaper changes.
+           -r, --reload          Reload the services, including this timer.
+           --status              Show the status of the related systemd timer.
+           --th *                Set the time interval to * hours.
+           --tm *                Set the time interval to * minutes.
+           --ts *                Set the time interval to * seconds.
 Configuration
            If file $myconf2 exists, it will be read.
            Otherwise file $commonconf will be read.
@@ -173,13 +157,45 @@ Configuration
            RECURSE_SUFFIXES        "yes" or "no". Default: "$RECURSE_SUBFOLDERS"
            SEARCH_CASE_SENSITIVE   "yes" or "no". Default: "$SEARCH_CASE_SENSITIVE"
 Examples:
-           \$ $progname -t 10m           # sets the interval to 10 minutes
-           \$ $progname -s
+           \$ $progname -tm 10     # sets the interval to 10 minutes
+           \$ $progname -i
                 every 10 minutes
-           \$ $progname -t '*:00/15:00'  # sets the interval to 15 minutes
 EOF
     
     [ "$1" ] && exit $1
+}
+
+DumpOptions() {
+    if [ "$LOPTS" ] ; then
+        LOPTS=${LOPTS//:/}          # remove all : chars
+        LOPTS="--${LOPTS//,/ --}"   # make all words as options with prefix "--"
+    fi
+    if [ "$SOPTS" ] ; then
+        SOPTS=${SOPTS//:/}          # remove all : chars
+        SOPTS=${SOPTS//?/ -&}       # make all letters as options with prefix "-"
+        SOPTS=${SOPTS:1}            # remove the first space
+    fi
+    [ "$LOPTS$SOPTS" ] && echo $SOPTS $LOPTS
+}
+
+Options() {
+    local opts
+    opts="$(/bin/getopt -a -o=$SOPTS --longoptions $LOPTS --name "$progname" -- "$@")" || DIE "getopt error"
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --) shift; break ;;
+            -h | --help)           Usage 0 ;;
+            --dump-options)        DumpOptions;                 exit 0 ;;
+            -e | --edit)           EditTimer;                   exit 0 ;;
+            -r | --reload)         ReloadTimer;                 exit 0 ;;
+            -i | --show-interval)  ShowTimer;                   exit 0 ;;
+            --status)              ShowStatus;                  exit 0 ;;
+            --th | --tm | --ts)    SetTimeInterval ${1:3} "$2"; exit 0 ;;
+        esac
+        shift
+    done
 }
 
 Main() {
@@ -192,20 +208,14 @@ Main() {
     local SUPPORTED_SUFFIXES=(jpg png)
     local RECURSE_SUBFOLDERS="no"
     local SEARCH_CASE_SENSITIVE="no"
+    local -r timerfile="$HOME/.config/systemd/user/$progname.timer"
 
-    while [ "$1" ] ; do
-        case "$1" in
-            -h | --help)       Usage 0 ;;
-            -t=* | --timer=*)  SetTimePeriod "${1#*=}"; exit 0 ;;
-            -t | --timer)      SetTimePeriod "$2";      exit 0 ;;
-            -t*)               SetTimePeriod "${1:2}";  exit 0 ;;
-            -s | --show-timer) ShowTimer;               exit 0 ;;
-            -r | --reload)     ReloadTimer;             exit 0 ;;
-            -e | --edit)       EditTimer;               exit 0 ;;
-            --status)          RunInTerminal "systemctl --user status $progname.timer"; exit 0 ;;
-            *)                 DIE "unsupported parameter '$1'" ;;
-        esac
-    done
+    local LOPTS="dump-options,edit,help,reload,show-interval,status,th:,tm:,ts:"
+    local SOPTS="ehir"
+
+    SetupUserService
+    Options "$@"
+
     local log="/tmp/$progname.log"
 
     if [ -e "$myconf" ] ; then
