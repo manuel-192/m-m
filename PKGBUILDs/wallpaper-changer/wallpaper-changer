@@ -56,10 +56,14 @@ ReloadTimer() {
 EditTimer() {
     SaveTimer
     while true ; do
-        /bin/emacs --reverse-video "$timerfile"
+        $editor "$timerfile"
         TimerIsValid && break
     done
     ReloadTimer
+}
+
+EditConfig() {
+    $editor "$myconf"
 }
 
 TimerIsValid() {
@@ -161,30 +165,30 @@ Usage:     $progname [options]
 Options:
            -h, --help            This help.
            -d, --default-setup   Re-create (overwrite) $progname's systemd files.
-           -e, --edit            (Advanced) Edit the timer service definition file.
+           --et, --edit-timer    (Advanced) Edit the timer service definition file
+                                 $timerfile2.
                                  See also: 'man systemd.time'.
+           --ec, --edit-config   Edit user's config file $myconf2.
            -i, --show-interval   Show the currently configured value of the time interval
                                  between wallpaper changes.
            -s, --status          Show the status of the related systemd timer.
            --th *                Set the time interval to * hours.
            --tm *                Set the time interval to * minutes.
            --ts *                Set the time interval to * seconds.
-Configuration
+           --cs                  Make search case sensitively.
+           -r, --recurse         Search for files in subfolders too.
+           --folder-add          Add a folder to a list of folders where wallpaper files are searched.
+                                 Use absolute paths.
+           --suffix-add          Add a filename suffix; search files using the added suffixes.
+           --editor              Sets the editor command for options --edit-* above.
+                                 Default: xdg-open.
+Configuration:
            If file $myconf2 exists, it will be read.
            Otherwise file $commonconf will be read.
-
-           They are bash files, and the supported settings are:
-           SUPPORTED_FOLDERS       An array of absolute folder paths.
-                                   Default: (${SUPPORTED_FOLDERS[*]})
-           SUPPORTED_SUFFIXES      An array of file name endings as strings.
-                                   Default: (${SUPPORTED_SUFFIXES[*]})
-                                   Note: a string can be longer than just e.g. "jpg".
-           RECURSE_SUFFIXES        "yes" or "no". Default: "$RECURSE_SUBFOLDERS"
-           SEARCH_CASE_SENSITIVE   "yes" or "no". Default: "$SEARCH_CASE_SENSITIVE"
 Examples:
            \$ $progname --tm 10    # sets the interval to 10 minutes
            \$ $progname -i
-                every 10 minutes
+           10 minutes
 EOF
     
     [ "$1" ] && exit $1
@@ -211,39 +215,44 @@ Options() {
     while true ; do
         case "$1" in
             --) shift; break ;;
+            --cs)                  opt_name="--case-sensitive"         ;;
             -d | --default-setup)  SetupUserService force;      exit 0 ;;
             --dump-options)        DumpOptions;                 exit 0 ;;
-            -e | --edit)           EditTimer;                   exit 0 ;;
+            --et | --edit-timer)   EditTimer;                   exit 0 ;;
+            --ec | --edit-config)  EditConfig;                  exit 0 ;;
             -h | --help)           Usage 0 ;;
             -i | --show-interval)  ShowTimer;                   exit 0 ;;
+            -r | --recurse)        opt_depth=""                        ;;
             -s | --status)         ShowStatus;                  exit 0 ;;
             --th | --tm | --ts)    SetTimeInterval ${1:3} "$2"; exit 0 ;;
+            --suffix-add)          SUPPORTED_SUFFIXES+=("$2");  shift  ;;
+            --folder-add)          SUPPORTED_FOLDERS+=("$2");   shift  ;;
+            --editor)              editor="$2";                 shift  ;;
         esac
         shift
     done
 }
 
 Main() {
-    local progname="wallpaper-changer"    # don't use: local progname="$(basename "$0")"
+    local progname=${0##*/}    # "wallpaper-changer"    # don't use: local progname="$(basename "$0")"
     local -r myconf="$HOME/.config/$progname.conf"
     local -r myconf2='~'/.config/"$progname".conf
     local -r commonconf="/etc/$progname.conf"
 
-    local SUPPORTED_FOLDERS=(/usr/share/endeavouros/backgrounds)
-    local SUPPORTED_SUFFIXES=(jpg png)
-    local RECURSE_SUBFOLDERS="no"
-    local SEARCH_CASE_SENSITIVE="no"
+    local SUPPORTED_FOLDERS=()
+    local SUPPORTED_SUFFIXES=()
     local -r timerfile="$HOME/.config/systemd/user/$progname.timer"
+    local -r timerfile2='~'/.config/systemd/user/"$progname".timer
     local -r servicefile="$HOME/.config/systemd/user/$progname.service"
     local -r timerfiletmp="/tmp/${timerfile##*/}.tmp"
 
-    local LOPTS="default-setup,dump-options,edit,help,show-interval,status,th:,tm:,ts:"
-    local SOPTS="dehis"
-
-    SetupUserService
-    Options "$@"
-
+    local LOPTS="cs,default-setup,dump-options,ec,et,edit-config,edit-timer,editor:,help,recurse,show-interval,status"
+    LOPTS+=",folder-add:,suffix-add:,th:,tm:,ts:"
+    local SOPTS="dhirs"
+    local opt_name=""                  # option for 'fd'
+    local opt_depth="--maxdepth 1"     # option for 'fd'
     local log="/tmp/$progname.log"
+    local editor=xdg-open
 
     if [ -e "$myconf" ] ; then
         source "$myconf" || return 1
@@ -251,13 +260,15 @@ Main() {
         source "$commonconf" || return 1
     fi
 
-    local opt_name=""
-    local opt_depth="--maxdepth 1"
-    [ "$SEARCH_CASE_SENSITIVE" = "yes" ] && opt_name="--case-sensitive"
-    [ "$RECURSE_SUBFOLDERS"    = "yes" ] && opt_depth=""
+    SetupUserService
+
+    Options "${COMMAND_OPTIONS[@]}" "$@"
 
     local folder suffix
     local filelist=() tmp=()
+
+    [ "${SUPPORTED_FOLDERS[0]}" ]  || DIE "probably option --folder-add is missing"
+    [ "${SUPPORTED_SUFFIXES[0]}" ] || SUPPORTED_SUFFIXES=("")                        # "" means support any suffix
 
     for folder in "${SUPPORTED_FOLDERS[@]}" ; do
         for suffix in "${SUPPORTED_SUFFIXES[@]}" ; do
