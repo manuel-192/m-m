@@ -282,7 +282,7 @@ Main() {
     if [ $count -gt 0 ] ; then
         local nr=$(shuf -i 0-$((count-1)) -n1)
         local file="${filelist[$nr]}"            # $(echo "$filelist" | sed -n "${nr}p")
-        if [ -r "$file" ] ; then
+        if [ -f "$file" ] && [ -r "$file" ] ; then
             echo "$(date +%Y%m%d-%H%M): $file" >> $log
             eos-wallpaper-set "$file"
         else
