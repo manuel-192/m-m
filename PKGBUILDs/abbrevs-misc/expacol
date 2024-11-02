@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Try to make expac format usage easier:
+# use format: %n-%m-%d, it will be converted to %n§%m§%d       (for 'column')
+# User can change the default input separator (-) and the output separator (§).
+
+Usage() {
+    /bin/expac -h
+
+    cat <<EOF
+
+Additions to expac by $PROGNAME:
+- columnar output
+- format can be specified using field separator '-' or a user defined separator
+- new options:
+     --is SEP      Set the new separator for the format part. Default: '$sepi'
+     --os SEP      Set the output separator if the columnar output is not valid. Default: '$sepo'
+Example:
+   $PROGNAME -S %r/%n-%d firefox linux welcome
+
+EOF
+    [ "$1" ] && exit $1
+}
+
+expacol() {
+    local -r PROGNAME=${0##*/}
+    local format=""
+    local args1=() args2=()
+    local -r sepi='-'
+    local -r sepo='§'
+    local sep_for_input="$sepi"         # user can change this
+    local sep_for_output="$sepo"        # user can change this; for use by 'column'
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -h | --help)       Usage 0 ;;
+            --is)              sep_for_input="$2"; shift ;;
+            --os)              sep_for_output="$2"; shift ;;
+            %*)                [ "$format" ] && args2+=("$1") || format="$1"   ;;
+            *)                 [ "$format" ] && args2+=("$1") || args1+=("$1") ;;
+        esac
+        shift
+    done
+    format="${format//$sep_for_input/$sep_for_output}"    # change '-' to '§' for 'column'
+
+    /bin/expac "${args1[@]}" "$format" "${args2[@]}" | column -t -s "$sep_for_output"
+}
+
+expacol "$@"
