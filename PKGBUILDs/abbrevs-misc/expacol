@@ -30,6 +30,7 @@ expacol() {
     local -r sepo='§'
     local sep_for_input="$sepi"         # user can change this
     local sep_for_output="$sepo"        # user can change this; for use by 'column'
+    local out ret=0
 
     while [ "$1" ] ; do
         case "$1" in
@@ -43,7 +44,9 @@ expacol() {
     done
     format="${format//$sep_for_input/$sep_for_output}"    # change '-' to '§' for 'column'
 
-    /bin/expac "${args1[@]}" "$format" "${args2[@]}" | column -t -s "$sep_for_output"
+    out=$(/bin/expac "${args1[@]}" "$format" "${args2[@]}") || ret=$?
+    [ "$out" ] && echo "$out" | column -t -s "$sep_for_output"
+    return $ret
 }
 
 expacol "$@"
