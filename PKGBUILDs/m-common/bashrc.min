@@ -1253,45 +1253,84 @@ EOF
     _VisualStudioSet_
     unset -f _VisualStudioSet_
 
-    if [ "$(device-info --vm)" ] ; then
-        _boot_stuff() {
-            local -r app="${FUNCNAME[1]}"
-            echo "==> sync && $app" >&2
-            sleep 1
-            sync && /bin/${app##*/}
-        }
-        reboot()   { _boot_stuff ; }
-        poweroff() { _boot_stuff ; }
-    else
-        _dispatch_my_cmd() {
-            local cmd="$1"
-            bashrc_min_echo2 "==> $cmd"
-            sleep 1
-            bash -c "$cmd"
-        }
+    # if [ "$(device-info --vm)" ] ; then
+    #     _boot_stuff() {
+    #         local -r app="${FUNCNAME[1]}"
+    #         echo "==> sync && $app" >&2
+    #         sleep 1
+    #         sync && /bin/${app##*/}
+    #     }
+    #     reboot()   { _boot_stuff ; }
+    #     poweroff() { _boot_stuff ; }
+    # else
+    #     _dispatch_my_cmd() {
+    #         local cmd="$1"
+    #         bashrc_min_echo2 "==> $cmd"
+    #         sleep 1
+    #         bash -c "$cmd"
+    #     }
 
-        POWER() {
-            local common_cmds="sync && Power-routines -s"
+    #     POWER() {
+    #         local common_cmds="sync && Power-routines -s"
 
-            IsAvailable --app logstuff && common_cmds="logstuff off && $common_cmds"
+    #         IsAvailable --app logstuff && common_cmds="logstuff off && $common_cmds"
 
-            case "$1" in
-                suspend | ramsleep) _dispatch_my_cmd "$common_cmds suspend" ;;
-                reboot | restart)   _dispatch_my_cmd "$common_cmds reboot" ;;
-                poweroff | bye)
-                                    common_cmds="history-del && $common_cmds"
-                                    _dispatch_my_cmd "$common_cmds poweroff"
-                                    ;;
-                *)  echo "sorry, $FUNCNAME does not support $1" ;;
-            esac
-        }
-        reboot()   { POWER $FUNCNAME ; }
-        poweroff() { POWER $FUNCNAME ; }
+    #         case "$1" in
+    #             suspend | ramsleep) _dispatch_my_cmd "$common_cmds suspend" ;;
+    #             reboot | restart)   _dispatch_my_cmd "$common_cmds reboot" ;;
+    #             poweroff | bye)
+    #                                 common_cmds="history-del && $common_cmds"
+    #                                 _dispatch_my_cmd "$common_cmds poweroff"
+    #                                 ;;
+    #             *)  echo "sorry, $FUNCNAME does not support $1" ;;
+    #         esac
+    #     }
+    #     reboot()   { POWER $FUNCNAME ; }
+    #     poweroff() { POWER $FUNCNAME ; }
 
-        ramsleep() { POWER suspend ; }
-    fi
-    Alias bye      poweroff
-    Alias restart  reboot
+    #     ramsleep() { POWER suspend ; }
+    # fi
+    # Alias bye      poweroff
+    # Alias restart  reboot
+
+    STOP() {
+        case "$1" in
+            hibernate)
+                if [ -z "$(lsblk -o FSTYPE | grep -w swap)" ] ; then
+                    echo "swap is unavailable for '$mode'." >&2
+                    return 1
+                else
+                    sync && /bin/systemctl $mode
+                fi
+                ;;
+            logoff | logout)
+                if [ -x /bin/xfce4-session-logout ] ; then
+                    sync && xfce4-session-logout --logout
+                else
+                    echo "sorry, $FUNCNAME needs package xfce4-session" >&2
+                    return 1
+                fi
+                ;;
+            poweroff)
+                which logstuff &> /dev/null && logstuff off
+                sync && /bin/systemctl $1
+                ;;
+            reboot | suspend | ramsleep)
+                sync && /bin/systemctl $1
+                ;;
+            *)
+                echo "==> $FUNCNAME: give one of: hibernate, logout, logoff, poweroff, reboot, suspend" >&2
+                return 1
+                ;;
+        esac
+    }
+
+    Alias logoff   'STOP logoff'
+    Alias poweroff 'STOP poweroff'
+    Alias reboot   'STOP reboot'
+    Alias suspend  'STOP suspend'
+    Alias bye       poweroff
+
 
     #############################################################
     # bash completions
