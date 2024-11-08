@@ -1,50 +1,67 @@
 #!/bin/bash
 
-# Wrapper for some power related commands.
+# Wrapper for some power and session related commands.
 # Adds:
 #   - sync
 #   - warning about missing swap for hibernate
 
-DIE() {
-    local msg="$1"
-    echo "$progname: error: $msg" >&2
-    exit 1
+MSG() {
+    local -r msg="$1"
+    local type="$2"
+    [ "$type" ] || type=error
+    echo "$progname: $type: $msg" >&2
 }
+DIE() { MSG "$1" error; exit 1; }
 
-_power_routines() {
-    local progname="${0##*/}"
-    local mode="$1"
-    local silent=no
-
-    case "$1" in
-        -s | --silent)
-            silent=yes
-            mode="$2"
-            ;;
-    esac
-
-    case "$mode" in
-        poweroff | reboot | suspend) ;;
-        hibernate)
-            [ -z "$(lsblk -o FSTYPE | grep -w swap)" ] && DIE "swap is unavailable for '$mode'." ;;
-        *)
-            cat <<EOF >&2
-Usage: $FUNCNAME <mode>
+Usage() {
+    cat <<EOF >&2
+Usage: $progname  <mode>
 <mode>:
+    logout     Logout current session.
     suspend    Suspend system.
     hibernate  Hibernate system.
     reboot     Restart system.
     poweroff   Power off system.
 EOF
-            return 1
+    [ "$1" ] && exit $1
+}
+
+_power_routines() {
+    local progname="${0##*/}"
+    local mode
+    # local silent=no
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -*)            MSG "option $1 not supported"; Usage 1 ;;
+            *)             mode="$1" ;;
+        esac
+        shift
+    done
+
+    local cmd="/bin/systemctl $mode"
+
+    case "$mode" in
+        logout | logoff)
+            [ -x /bin/xfce4-session-logout ] || DIE "logout needs package xfce4-session"
+            sync && xfce4-session-logout --logout
+            ;;
+        poweroff | reboot | suspend)
+            sync && sleep 0.5 && echo "==> $cmd" >&2 && sleep 0.5 && /bin/systemctl $mode
+            ;;
+        hibernate)
+            [ -z "$(lsblk -o FSTYPE | grep -w swap)" ] && DIE "swap is unavailable for '$mode'."
+            sync && sleep 0.5 && echo "==> $cmd" >&2 && sleep 0.5 && /bin/systemctl $mode
+            ;;
+        *)
+            Usage 1
             ;;
     esac
 
-    local cmd="/usr/bin/systemctl $mode"
-    case "$silent" in
-        yes) sync && sleep 0.5 && $cmd ;;
-        *)   sync && sleep 0.5 && echo "==> $cmd" >&2 && sleep 0.5 && $cmd ;;
-    esac
+    # case "$silent" in
+    #     yes) sync && sleep 0.5 && $cmd ;;
+    #     *)   sync && sleep 0.5 && echo "==> $cmd" >&2 && sleep 0.5 && $cmd ;;
+    # esac
 }
 
 _power_routines "$@"
