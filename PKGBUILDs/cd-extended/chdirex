@@ -5,7 +5,7 @@
 
 AddUniqueMatch() {
     local d="$1"
-    local m n
+    local m
     for m in "${matches[@]}" ; do
         [ "$d" -ef "$m" ] && return
     done
@@ -14,7 +14,7 @@ AddUniqueMatch() {
 
 HandleCdpathMatches() {
     local newdir="$1"
-    local dir matches=() ix count
+    local dir matches=() count
 
     for dir in ${CDPATH//:/ } ; do
         [ -d "$dir/$newdir" ] && AddUniqueMatch "$dir/$newdir"
@@ -25,30 +25,20 @@ HandleCdpathMatches() {
         1)  dir="${matches[0]}" ;;   # one match in CDPATH
         *)  # many matches in CDPATH, select with fzf
             dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
-            [ -n "$dir" ] || dir=.   # nothing was selected, so stay here
+            [ "$dir" ] || dir=.      # nothing was selected, so stay here
             ;;
     esac
     echo "$dir"
 }
 
 Main() {
-    local prefer_direct_subdir=no    # yes or no
-    case "$1" in
-        --prefer-direct-subdir) prefer_direct_subdir=yes; shift ;;
-    esac
     case "$1" in
         --) shift ;;
     esac
-
     case "$1" in
         .* | /* | -*) echo "$@" ;;                    # handled by builtin cd
         "")           echo "$HOME" ;;
-        *)            if [ $prefer_direct_subdir = yes ] && [ -d "./$1" ] ; then
-                          echo "./$1"
-                          return
-                      fi
-                      HandleCdpathMatches "$1"
-                      ;;
+        *)            HandleCdpathMatches "$1" ;;
     esac
 }
 

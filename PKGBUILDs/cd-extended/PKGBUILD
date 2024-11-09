@@ -5,7 +5,7 @@
 pkgname=cd-extended
 pkgdesc="cd extended"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24
+pkgver=24.11
 pkgrel=1
 
 arch=('any')
@@ -16,7 +16,7 @@ source=(
     # $url/$pkgname
     $url/chdirex
 )
-sha512sums=('b5f57711a9c9719fe21ae8b2a491f518b4947b08560197a006efc57d579ccd596b6726142d4c484c9db79d8252c301a9dc7eaa6321d9bc97b13d02ae45461d42')
+sha512sums=('7971a6e62db623d80e503ce2212f4492fd072bf0b2546bd62a520916ce1475685311660794c1732959332429f1238bf265d7c206e9a89e603af32ffb27bf671e')
 
 package() {
     # source /usr/share/endeavouros/scripts/PackageFunc || return 1
