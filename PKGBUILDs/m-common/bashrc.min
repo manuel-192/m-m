@@ -809,18 +809,9 @@ EOF
 
         for dir in "${CDPATH_ARR[@]}" ; do
             for added in "${arrout[@]}" ; do
-                if true ; then
-                    if [ "$dir" -ef "$added" ] ; then
+                if [ "$dir" -ef "$added" ] ; then
+                    if [ "$added" != "." ] && [ "$dir" != "." ] ; then
                         bashrc_min_warning "'$dir' was already added as '$added'"
-                        continue 2
-                    fi
-                else
-                    if [ "$dir" = "$added" ] ; then
-                        bashrc_min_warning "already added '$dir = $added'"
-                        continue 2
-                    fi
-                    if [ "$added" != "." ] && [ "$dir" != "." ] && [ "$dir" -ef "$added" ] ; then
-                        bashrc_min_warning "already added '$dir -ef $added'"
                         continue 2
                     fi
                 fi
