@@ -39,7 +39,7 @@ GetPowerDevice() {
             _file_ret="$f"
             return 0
             ;;
-        -*) DIE "option --power-device without a device"
+        -*) DIE "option --power-device-info without a device path"
             ;;
         *)
             _file_ret="$2"
@@ -51,13 +51,13 @@ GetPowerDevice() {
 Options() {
     while [ "$1" ] ; do
         case "$1" in
-            --charge-sleep)     sleeptime_charging="$2";    shift ;;
-            --discharge-sleep)  sleeptime_discharging="$2"; shift ;;
-            --min)              min="$2";                   shift ;;
-            --power-device)     GetPowerDevice power_device "$2" || shift ;;
-            --sound-file)       GetSoundFile   sound_file   "$2" || shift ;;
-            --max)              max="$2";                   shift ;;
-            --keep-showing-max) max_show_always=yes ;;
+            --charge-sleep)       sleeptime_charging="$2";    shift ;;
+            --discharge-sleep)    sleeptime_discharging="$2"; shift ;;
+            --min)                min="$2";                   shift ;;
+            --power-device-info)  GetPowerDevice power_device "$2" || shift ;;
+            --sound-file)         GetSoundFile   sound_file   "$2" || shift ;;
+            --max)                max="$2";                   shift ;;
+            --keep-showing-max)   max_show_always=yes ;;
 
             --no-reread-conf)   ;;
             --dump-options)     ;;                                   # handled already
@@ -81,7 +81,7 @@ Flags: --charge-sleep      Sets sleep time (seconds) between checks when chargin
        --max               Start notifications when battery reaches this percentage while charging.
        --min               Start notifications when battery reaches this percentage while discharging.
        --no-reread-conf    Read the config file only at start.
-       --power-device      File path for the power device info.
+       --power-device-info File path for the power device info.
        --keep-showing-max  Keep notifying after reaching the max charge.
        --sound-file        Set the sound file path for the notification.
 EOF
@@ -97,12 +97,13 @@ CreateConfigIfNeeded() {
 ## Tip: to re-create the config file, remove file $conf2.
 #
 BATTNOT_CONFIG_CMDS=(
-    --max             90
-    --min             22
-    --power-device    /sys/class/power_supply/BAT1/uevent
-    --sound-file      /usr/share/sounds/Oxygen-Sys-Question.ogg
-    --charge-sleep    60
-    --discharge-sleep 120
+    --max                  90     # %
+    --min                  22     # %
+    --charge-sleep         60     # seconds
+    --discharge-sleep      120    # seconds
+    --power-device-info    /sys/class/power_supply/BAT1/uevent
+    --sound-file           /usr/share/sounds/Oxygen-Sys-Question.ogg
+    # --keep-showing-max
 )
 
 ## BATTNOT_EDITORS sets the editor command for editing the config file.
@@ -191,7 +192,7 @@ Main() {
                     --max
                     --min
                     --no-reread-conf
-                    --power-device
+                    --power-device-info
                     --sound-file
                 )
                 printf "%s\n" "${FLAGS[@]}"
