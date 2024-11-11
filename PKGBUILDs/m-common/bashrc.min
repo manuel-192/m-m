@@ -1194,22 +1194,25 @@ EOF
     Alias package-sizes      "expac -HM -Q '%m|%n' | column -t -s'|' | sort -nr | less"
                              # M is reasonable now, later G might be too
     # Alias pacdiff            "eos-pacdiff"
-    Alias pacdiff            "DIFFPROG=/bin/meld /bin/pacdiff --sudo"
+    # Alias pacdiff            "DIFFPROG=/bin/meld /bin/pacdiff --sudo"
     Alias pacdiff            "eos-pacmerge"
-    Alias paq                "sudo paq"
-    Alias I                  "paf -i"
-    Alias Install            "paf -i"
-    Alias Update             "upd --instant --verbose"
+    # Alias paq                "sudo paq"
+    # Alias I                  "paf -i"
+    # Alias Install            "paf -i"
+    # Alias Update             "upd --instant --verbose"
     Alias u                  "Update"
-    Alias ua                 "Update --aur"
-    #Alias uc                 "time uc-fast -aey --verbose"
-    #Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
+    # Alias ua                 "Update --aur"
+    # Alias uc                 "time uc-fast -aey --verbose"
+    # Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
     Alias who-needsq         "who-needs --query --multi"
     Alias who-needss         "who-needs --sync --one"
 
     AliasIfType  grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
     AliasIfWhich pb             pb           "pb -nn -T0"
     AliasIfWhich pb             pp           "pb"
+
+    Alias ppe 'logstuff on; pp EOS endeavouros-testing-dev endeavouros; echo ""; pp --pulls-e;              echo ""; pp --assets.conf-e'
+    Alias ppm 'logstuff on; pp MAN m-m m-aur2 m-more2 local-repo;       echo ""; pp --pulls-m; echo ""; pp --extras; echo ""; pp --assets.conf-m'
 
     Unalias l
     AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
