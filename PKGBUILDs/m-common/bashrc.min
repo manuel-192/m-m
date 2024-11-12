@@ -915,7 +915,7 @@ EOF
 
     upd() {
         local opt="-dopv"
-        [ "$(lspci -k | grep " VGA .* NVIDIA ")" ] && opt+="n"
+        [ "$(lspci -k | grep " VGA .* NVIDIA ")" ] && opt+=" -n"
         LANG=C /bin/upd $opt "$@"
     }
 
@@ -1200,7 +1200,7 @@ EOF
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
     # Alias Update             "upd --instant --verbose"
-    Alias u                  "Update"
+    Alias u                  "upd --instant --verbose"
     # Alias ua                 "Update --aur"
     # Alias uc                 "time uc-fast -aey --verbose"
     # Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
