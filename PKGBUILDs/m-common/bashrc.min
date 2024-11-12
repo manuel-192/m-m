@@ -93,7 +93,21 @@ SettingsCommon()
     }
     AliasIfWhich() { AliasIfCommon which "$@" ; }
     AliasIfType()  { AliasIfCommon type  "$@" ; }
-    Unalias()      { unalias "$1" 2>/dev/null ; }
+    Unalias()      {
+        local args=() verbose=no
+        while [ "$1" ] ; do            # needs getopt for combined options...
+            case "$1" in
+                -v) verbose=yes ;;
+                -q) verbose=no ;;
+                *) args+=("$1") ;;
+            esac
+            shift
+        done
+        case "$verbose" in
+            no)  unalias "${args[@]}" 2>/dev/null ;;
+            yes) unalias "${args[@]}" ;;
+        esac
+    }
 
     packagesof() {       # show packages installed from a given repo
         local repo="$1"
