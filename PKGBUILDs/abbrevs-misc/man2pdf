@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Convert a man page of the given app to a pdf file.
+# The pdf file is written to the current folder.
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main() {
+    local appname="$1"
+    local progname=${0##*/}
+    [ "$appname" ] || DIE "give an app name (that has a man page)"
+    local files=(/usr/share/man/man*/"$appname".*.gz)
+    local file="${files[0]}"
+    case "$file" in
+        *."*.gz") DIE "man file for '$appname' not found" ;;
+    esac
+    local fname=""
+    local engine=ms  # 'ms' or 'typst' should work, typst has problems?
+
+    [ "${files[1]}" ] && file=$(printf "%s\n" "${files[0]}" | fzf)
+    [ "$file" ]       || DIE "no man file set"
+
+    fname=${file##*/}
+    fname=${fname%%.*}
+
+    local tmpfile=$(mktemp /tmp/${fname}_XXXXX.1)
+    local targetfile="$fname.pdf"
+
+    [ -e "$targetfile" ] && DIE "'$targetfile' already exists."
+
+    gunzip -c "$file" > "$tmpfile"
+    pandoc -fman "$tmpfile" -t$engine -o "$fname.pdf"
+
+    rm -f "$tmpfile"
+}
+
+Main "$@"

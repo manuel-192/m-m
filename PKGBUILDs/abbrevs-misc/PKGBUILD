@@ -5,7 +5,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.11.2
+pkgver=24.11.3
 pkgrel=1
 
 arch=('any')
@@ -32,6 +32,7 @@ source=(
     $url/home-cache-clear
     $url/kde-open
     $url/lines
+    $url/man2pdf
     $url/ncdu
     $url/open
     $url/paccache-maintainer
@@ -56,6 +57,7 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             'd4f9533bd2d4bf5ff1209610ce3457a1015d1674e1e7ba7951901a2d9a49a4cc41e8a7b97c112cfb3786cbcc7df0346a26898a17d9d3c23c461201a16415a770'
             '684c0e594c8638f29727e7c92fd4d60027fca678868ee608da5c19d262fc30ba3575d46db8da606269310a9d58d50bcfea7ed53650eb33c959f2df5fdaeed2cc'
             'a11555f730b27ed040102ef2408e64ae5212f479f58c89ea54f91b6bd14b9cce9d56541904022d6dd3613334808f0bd1de87fb54edb402446a65e2e8078e1b20'
+            'bd0f4bb10c8acae3ebb9be9a620940fc46cf9f6f12798f12f5c8b0682396617efed4b88aba2bd036dd4e6d72f3cde6a2754e2ca61bcac9f926e24137af88a789'
             'be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
             '008ab9be9e3c6d8f0227a3889faa50d904696beec351a4a07d738959d2f204bf301b64249bf357e8c87d36cd4cfbd7c88df88be74bf3d2a36ab00c6084ed0bd6'
             '263548655423b34dc3af7dde44bbe2fe167ce7e256f12138cd4438dd091e35e5ce3f4de969d02b876ef7ff09957cc9056b6f7e698acf82c59e2a67098a8ebac7'
