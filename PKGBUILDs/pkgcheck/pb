@@ -151,7 +151,7 @@ CheckHardLink() {
 RunIfExists() {
     local app
     for app in "$@" ; do
-        which "${app## *}" >/dev/null && { echo2 "==> $app:"; "$app"; }
+        which "${app## *}" &>/dev/null && { echo2 "==> $app:"; "$app"; }
     done
 }
 
