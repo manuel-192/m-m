@@ -221,7 +221,7 @@ ResetCompletionFiles() {
 
 TraverseMirrors-parallel() {
     echo2 "==> $progname: $mode ranking"
-    echo "$mirrors_with_statefiles" | parallel --bar "$progname_helper {} '$timeout_rank' '$distro' '$time_as_datetime' '$mirror_count'"
+    echo "$mirrors_with_statefiles" | parallel --bar "$progname_helper {} '$timeout_rank' '$distro' '$time_as_datetime' '$mirror_count' '$errlogfile'"
 }
 
 TraverseMirrors-sequential() {
@@ -231,7 +231,7 @@ TraverseMirrors-sequential() {
 
     for mirror in $mirrors_with_statefiles ; do
         printf "\r==> ranking %s/$mirror_count" $((ix++)) >&2
-        $progname_helper "$mirror" "$timeout_rank" "$distro" "$time_as_datetime" "$mirror_count"
+        $progname_helper "$mirror" "$timeout_rank" "$distro" "$time_as_datetime" "$mirror_count" "$errlogfile"
     done
     echo2 ""
 }
@@ -589,14 +589,13 @@ Main() {
     local mirror_count=$(echo "$mirrors_with_statefiles" | wc -l)
     local mode=""
 
+    rm -f "$errlogfile"
+
     case "$has_parallel" in
         yes)  mode=parallel ;;
         no|*) mode=sequential ;; 
     esac
     result=$(TraverseMirrors-$mode)
-
-    [ -e "$errlogfile" ] && cat "$errlogfile" >&2
-    # rm -f "$errlogfile"
 
     local ranked=$(echo "$result" | LC_ALL=C sort -t'|' -k2rb,2 -k3V,3)   # sort: age
 
@@ -612,6 +611,12 @@ Main() {
         no)  ShowMirrorlistFile
              ;;
     esac
+
+    if [ -e "$errlogfile" ] ; then
+        echo2 -e "\n==> ERRLOG ($errlogfile):"
+        cat "$errlogfile" | sort -u -k5n >&2
+        # rm -f "$errlogfile"
+    fi
 }
 
 SkipIgnoredMirrors() {

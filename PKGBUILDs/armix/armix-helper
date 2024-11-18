@@ -1,10 +1,10 @@
 #!/bin/bash
 
-echo2()       { echo   "$@" >&2; }
-printf2()     { printf "$@" >&2; }
-DIE()         { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
-WARN()        { echo2 -e "==> $progname: warning: $1"; }
-SUBINFO()     { echo2 -e "    -> info: $1"; }
+# echo2()       { echo   "$@" >&2; }
+# printf2()     { printf "$@" >&2; }
+DIE()         { echo -e "==> $progname: error:\n    $1" >> "$errlogfile"; exit 1; }
+WARN()        { echo -e "==> $progname: warning: $1"    >> "$errlogfile"; }
+SUBINFO()     { echo -e "    -> info: $1"               >> "$errlogfile"; }
 
 RankOneMirror() {
     local url="$1"                        # may contain suffix ",countryname"
@@ -12,6 +12,7 @@ RankOneMirror() {
     local distro="$3"
     local time_as_datetime="$4"
     local mirror_count="$5"
+    local errlogfile="$6"
     local -r progname=${0##*/}
 
     [ "$url" ] || DIE "no URL to test"
