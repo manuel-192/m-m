@@ -1,18 +1,17 @@
 #!/bin/bash
 
-# echo2()       { echo   "$@" >&2; }
-# printf2()     { printf "$@" >&2; }
-DIE()         { echo -e "==> $progname: error:\n    $1" >> "$errlogfile"; exit 1; }
-WARN()        { echo -e "==> $progname: warning: $1"    >> "$errlogfile"; }
-SUBINFO()     { echo -e "    -> info: $1"               >> "$errlogfile"; }
+echo2()       { echo -e "$@" >&2; }
+# printf2()     { printf  "$@" >&2; }
+DIE()         { echo2 "==> $progname: error:\n    $1" ; exit 1; }
+WARN()        { echo2 "==> $progname: warning: $1"    ; }
+SUBINFO()     { echo2 "    -> info: $1"               ; }
 
 RankOneMirror() {
     local url="$1"                        # may contain suffix ",countryname"
-    local timeout_rank="$2"
-    local distro="$3"
-    local time_as_datetime="$4"
-    local mirror_count="$5"
-    local errlogfile="$6"
+    local -r timeout_rank="$2"
+    local -r distro="$3"
+    local -r time_as_datetime="$4"
+    local -r mirror_count="$5"
     local -r progname=${0##*/}
 
     [ "$url" ] || DIE "no URL to test"
