@@ -402,7 +402,7 @@ ExpandFavs() {
                 WARN "value '$fav' for option --favorite is invalid, should be 'CC:url'"
                 continue
             fi
-            [ "$informed" = yes ] || echo2 "==> Expanding option --favorite values..."
+            # [ "$informed" = yes ] || echo2 "==> Expanding option --favorite values..."
             informed=yes
             cc=${fav::2}
             fav=${fav:3}
