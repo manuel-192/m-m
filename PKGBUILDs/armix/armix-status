@@ -27,6 +27,29 @@ HandleCountryCodes() {
     fi
 }
 
+Options() {
+    local lopts="help"
+    local sopts="c:hnt:u"
+    local opts=""
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
+
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -c)          country_codes="$2"; shift; HandleCountryCodes ;;
+            -h | --help) Usage 0 ;;
+            -n)          show_country_names=yes ;;
+            -t)          timeout="$2"; shift ;;
+            -u)          update_first=yes ;;
+
+            --)          shift; break ;;
+        esac
+        shift
+    done
+}
+
 Main()
 {
     local -r progname=${0##*/}
@@ -40,20 +63,7 @@ Main()
     local url="https://archlinux.org/mirrorlist/?protocol=https&ip_version=4&use_mirror_status=on"
     local mirrors
 
-    while [ "$1" ] ; do
-        case "$1" in
-            -c=*) country_codes=${1#*=};     HandleCountryCodes ;;
-            -c)   country_codes=${2}; shift; HandleCountryCodes ;;
-            -c*)  country_codes=${1:2};      HandleCountryCodes ;;
-            -t=*) timeout=${1#*=} ;;
-            -t)   timeout=${2}; shift ;;
-            -t*)  timeout=${1:2} ;;
-            -u)   update_first=yes ;;
-            -n)   show_country_names=yes ;;
-            -h | --help) Usage 0 ;;
-        esac
-        shift
-    done
+    Options "$@"
 
     if [ "$country_codes" ] ; then
         for countrycode in $country_codes ; do

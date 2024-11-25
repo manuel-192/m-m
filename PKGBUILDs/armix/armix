@@ -141,8 +141,8 @@ IgnoreCountries() {
         local code="$1"
         code="${code//,/ }"
         case "$code" in
-            /*) ignored_country_codes=(${code:1}) ;;    # overwrite the ignore list if $code has a leading /
-            *)  ignored_country_codes+=($code) ;;       # append $code the ignore list
+            %*) ignored_country_codes=(${code:1}) ;;    # leading % replaces the existing list
+            *)  ignored_country_codes+=($code) ;;       # append to the existing list
         esac
     fi
 }
@@ -150,16 +150,16 @@ IgnoreMirrors() {
     local codes="$1"
     codes="${codes//,/ }"
     case "$codes" in
-        /*) ignored_mirrors=(${codes:1}) ;;
-        *)  ignored_mirrors+=($codes) ;;
+        %*) ignored_mirrors=(${codes:1}) ;;        # leading % replaces the existing list
+        *)  ignored_mirrors+=($codes) ;;           # append to the existing list
     esac
 }
 AddCountries() {
     local list="${1^^}"                     # make country codes uppercase
     list=${list//,/ }                       # change commas to spaces
     case "$list" in
-        /*) countries=(${list:1}) ;;        # leading / replaces the country list
-        *)  countries+=($list) ;;           # append to the country list
+        %*) countries=(${list:1}) ;;        # leading % replaces the existing list
+        *)  countries+=($list) ;;           # append to the existing list
     esac
 }
 
@@ -274,17 +274,16 @@ Rank Arch mirrors and display them.
 Usage: $progname [options]
 
 Options:
-    -A, --all                        Rank all available mirrors on all continents.
-    -C, --continent                  Rank all available countries of the current continent.
-    -c, --country <list>             A comma separated list of country code(s) for ranking their mirrors.
-                                     Codes are case insensitive. Leading / in the value replaces the existing list.
+    --all, -A                        Rank all available mirrors on all continents.
+    --continent, -C                  Rank all available countries of the current continent.
+    --country <list>, -c             A comma separated list of country code(s) for ranking their mirrors.
+                                     Codes are case insensitive.
                                      Examples:
                                         --country de,gb          # adds DE and GB for ranking
-                                        --country /de,dk         # sets DE and DK for ranking
-    -t, --country-current            Include current country to be ranked.
-    --prefer-local-rank              If no countries are requested, prefer ranking mirrors in current country only.
-                                     Default: rank all available mirrors everywhere.
-    -f, --favorite                   Add a favorite mirror to be added in the beginning of the ranked mirrorlist.
+                                        --country %de,dk         # sets DE and DK for ranking
+    --country-current, -t            Include current country to be ranked.
+    --edit-config, -e                Edit your configuration file.
+    --favorite, -f                   Add a favorite mirror to be added in the beginning of the ranked mirrorlist.
                                      This option can be used many times to append favorites.
                                      A mirror can be added
                                        - as a full path in single quotes, or
@@ -294,30 +293,33 @@ Options:
                                         'CC' is a two-letter country code (see 'reflector --list-countries')
                                         'st' is a (unique) partial string of the mirror URL
                                      See also the examples below.
-    -e, --edit-config                Edit your configuration file.
-    -i, --ignore-mirrors <list>      A comma separated list of mirrors to ignore.
+    --ignore-continents <list>, -X   A comma separated list of continent codes to ignore.
+    --ignore-countries <list>, -x    A comma separated list of country codes to ignore.
+    --ignore-mirrors <list>, -i      A comma separated list of mirrors to ignore.
                                      A mirror can be a unique part of the mirror address.
-    -x, --ignore-countries <list>    A comma separated list of country codes to ignore.
-    -X, --ignore-continents <list>   A comma separated list of continent codes to ignore.
-    -l, --list-country-codes-names   List all available country codes and names.
     --list-continent-codes           List all available continent codes.
-    -r, --ranking-data               Show ranking data too.
-    -u                               Update mirror info first.
-    -k, --timeout-rank               Max timeout in seconds for ranking a mirror.
+    --list-country-codes-names, -l   List all available country codes and names.
+    --prefer-local-rank              If no countries are requested, prefer ranking mirrors in current country only.
+                                     Default: rank all available mirrors everywhere.
+    --ranking-data, -r               Show ranking data too.
     --save                           Save the mirrorlist to $ml.
-    --timeout                        Max timeout in seconds for other than ranking.
     --time                           Show the elapsed time of the measurement.
-    -h, --help                       This help.
+    --timeout                        Max timeout in seconds for other than ranking.
+    --timeout-rank, -k               Max timeout in seconds for ranking a mirror.
+    -u                               Update mirror info first.
+    --help, -h                       This help.
 
-Configuration file $config_file can include all supported options in variable CONFIG_OPTIONS.
+Configuration file $config_file2 can include all supported options in variable CONFIG_OPTIONS.
 Examples:
     CONFIG_OPTIONS=(--country DE,US --country-current --ranking-data --favorite 'DE:rwth-aachen')
     CONFIG_OPTIONS=(--continent --ranking-data)
     CONFIG_OPTIONS=(--country-current)
-Command line options override configuration file options.
 
-Note: there are additional options available, see them with option --dump-options
-      and the source code at $(which $progname).
+Notes:
+  - Command line options override configuration file options.
+  - Leading % in the <list> value replaces the existing list.
+  - There are additional options available, see them with option --dump-options
+    and the source code at $(which $progname).
 EOF
     [ "$1" ] && exit $1
 }
@@ -527,6 +529,7 @@ Main() {
     local CONFIG_OPTIONS=()
     local ecode=0
     local -r config_file="$HOME/.config/$progname.conf"
+    local -r config_file2='~/.config/$progname.conf'
     local -r all_continents="AF AN AS EU NA OC SA"
     local limited_options=() args_orig=("$@")
     local completion_files_updated=no
@@ -580,8 +583,9 @@ Main() {
         *)  DIE "sorry, distro '$distro' not supported." ;;
     esac
 
-    local mirrors_with_statefiles=$(echo "$mirrors" | sed "s|/\$repo/os/\$arch|/$syncfile|")
     SkipIgnoredMirrors
+
+    local mirrors_with_statefiles=$(echo "$mirrors" | sed "s|/\$repo/os/\$arch|/$syncfile|")
 
     # Now we have the final list of mirrors.
 
@@ -620,10 +624,10 @@ Main() {
 }
 
 SkipIgnoredMirrors() {
-    if [ ${#ignored_mirrors[@]} -gt 0 ] ; then
+    if [ "$ignored_mirrors" ] ; then
         local ign=${ignored_mirrors[*]}
         ign=${ign// /|}
-        mirrors_with_statefiles=$(echo "$mirrors_with_statefiles" | grep -Pv "$ign")
+        mirrors=$(echo "$mirrors" | grep -Pv "$ign")
     fi
 }
 
@@ -665,7 +669,7 @@ ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         echo -e "\n${comment3}Ranking data ($mirror_count mirrors):"
         local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | cat -n | sed -E 's/[ \t]+([0-9]+)[ \t]+(.*)/\2|\1/' | sed -E "s|^([^ ]+)|${comment3}\1|")
-        local -r rankheader="MIRROR|TIME OF UPDATE|FETCH TIME|COUNTRY|ORDINAL"
+        local -r rankheader="MIRROR|UPDATES AT|FETCH TIME|COUNTRY|ORDINAL"
         local -r rankul="${rankheader//[A-Za-z ]/\~}"
 
         echo -e "${comment3}$rankheader\n${comment3}$rankul\n$data" | Columns
