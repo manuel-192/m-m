@@ -47,14 +47,12 @@ RankOneMirror() {
             echo "${url%/*}|$syncnr|$time|$countryname"
             return
             ;;
-        [1-9])
-            curl_exitcode="  $curl_exitcode"
-            ;;
-        [1-9][0-9])
-            curl_exitcode=" $curl_exitcode"
-            ;;
+        #[1-9])       curl_exitcode="  $curl_exitcode" ;;
+        #[1-9][0-9])  curl_exitcode=" $curl_exitcode"  ;;
     esac
-    SUBINFO "curl code $curl_exitcode with ${url%/*}"
+    local msg
+    printf -v msg "curl code %3s with %s" "$curl_exitcode" "${url%/*}"
+    SUBINFO "$msg"
 }
 
 RankOneMirror "$@"

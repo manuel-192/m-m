@@ -220,7 +220,7 @@ ResetCompletionFiles() {
 }
 
 TraverseMirrors-parallel() {
-    echo2 "==> $progname: $mode ranking"
+    echo2 "==> $progname: ranking mirrors in $mode mode"
     echo "$mirrors_with_statefiles" | parallel --bar "$progname_helper {} '$timeout_rank' '$distro' '$time_as_datetime' '$mirror_count' '$errlogfile'"
 }
 
@@ -228,9 +228,11 @@ TraverseMirrors-sequential() {
     echo2 "==> $progname: $mode ranking"
     local mirror
     local ix=1
+    local mirs
+    readarray -t mirs <<< $(echo "$mirrors_with_statefiles")
 
-    for mirror in $mirrors_with_statefiles ; do
-        printf "\r==> ranking %s/$mirror_count" $((ix++)) >&2
+    for mirror in "${mirs[@]}" ; do
+        printf "\r==> ranking %3s/$mirror_count" $((ix++)) >&2
         $progname_helper "$mirror" "$timeout_rank" "$distro" "$time_as_datetime" "$mirror_count" "$errlogfile"
     done
     echo2 ""
