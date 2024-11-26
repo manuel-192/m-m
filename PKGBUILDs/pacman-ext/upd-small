@@ -1,0 +1,184 @@
+#!/bin/bash
+
+echo2() { echo -e "$@" >&2 ; }
+DIE()   { echo2 "==> $progname: error: $1" ; exit 1 ; }
+STOP()  { echo2 "$1" ; exit $2 ; }
+
+Main() {
+    # Update all packages, also do some extra checks.
+    # Needs:
+    #    - eos-connection-checker
+    #    - eos-kernel-nvidia-update-check (optional)
+    #    - eos-pacdiff or eos-pacmerge
+    #    - hook-update-description (optional)
+    #    - uc-fast (optional)
+    #
+    # TODO:
+    #   - virtualbox?
+
+    local -r progname=${0##*/}
+    local AUR=no
+    local CONNECTION=no
+    local THOROUGH=no                 # use uc-fast
+    local updates_native=""
+    local updates_aur=""
+    local paru=/bin/paru
+    local yay=/bin/yay
+
+    [ -x /bin/paru ] || paru=$yay     # is paru installed?
+
+    Options "$@"
+    CheckApps
+    UpdatePackages
+}
+
+Usage() {
+    [ "$1" = "1" ] && echo2 ""
+    echo2 "Purpose:  Updates packages including extra checks."
+    echo2 "Usage:    $progname [options]"
+    echo2 "Options:  --aur,        -a  Include AUR packages too."
+    echo2 "          --connection, -c  Check internet connection first."
+    echo2 "          --thorough,   -t  Check availability of updates more thoroughly."
+    echo2 "          --help,       -h  This help."
+    echo2 "Note: internet connection is required."
+    [ "$1" ] && exit $1 || exit 0
+}
+
+Options() {
+    # manage options
+    local sopts="acth"
+    local lopts="aur,connection,thorough,help"
+    local opts
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --aur        | -a) AUR=yes ;;
+            --connection | -c) CONNECTION=yes ;;
+            --thorough   | -t) THOROUGH=yes ;;
+            --help       | -h) Usage ;;
+            --) shift; break ;;
+        esac
+        shift
+    done
+}
+CheckApps() {
+    # we must have the required apps
+    local app
+    for app in eos-connection-checker eos-kernel-nvidia-update-check yay ; do
+        [ -x /bin/$app ] || DIE "program '$app' is missing"
+    done
+}
+
+UpdatePackages() {
+    Connection
+    GetAurUpdates
+    FastCheck
+    PacmanLock
+    PacmanDbUpdate
+    GetNativeUpdates
+    StopIfNoUpdates
+    Nvidia
+    Descriptions
+    Keyrings
+    ActualUpdate
+    Pacdiff
+}
+
+Connection() {
+    if [ $CONNECTION = yes ] ; then
+        # we need internet connection
+        eos-connection-checker || DIE "no connection!"
+    fi
+}
+GetAurUpdates() {
+    # check AUR if needed
+    [ $AUR = yes ] && updates_aur=$($paru -Quaq)
+}
+FastCheck() {
+    if [ $THOROUGH = no ] ; then
+        # stop if no updated packages (with uc-fast)
+        if [ -x /bin/uc-fast ] ; then
+            if ! uc-fast -ae --verbose ; then                              # this line needs internet connection!
+                case $AUR in
+                    yes) [ -z "$updates_aur" ] && STOP "==> No updates (fast check)" 0 ;;
+                    no)  STOP "==> No native updates (fast check)" 0 ;;
+                esac
+            fi
+        fi
+    fi
+}
+PacmanLock() {
+    # remove pacman lock if possible
+    local -r lockfile=/var/lib/pacman/db.lck
+    if [ -e $lockfile ] ; then
+        fuser $lockfile &> /dev/null && DIE "$lockfile is in use"
+        sudo rm -f $lockfile
+        echo2 "==> INFO: $lockfile removed"
+    fi
+}
+PacmanDbUpdate() {
+    # update pacman database
+    sudo pacman -Sy
+}
+GetNativeUpdates() {
+    # find names of updated packages
+    updates_native=$(pacman -Quq)
+}
+StopIfNoUpdates() {
+    # stop if no updated packages
+    if [ -z "$updates_native$updates_aur" ] ; then
+        case $AUR in
+            yes) STOP "==> No native nor AUR updates (thorough check)" 0 ;;
+            no)  STOP "==> No native updates (thorough check)" 0 ;;
+        esac
+    fi
+}
+Nvidia() {
+    if [ -x /bin/eos-kernel-nvidia-update-check ] ; then
+        # check Nvidia
+        printf "==> INFO: Nvidia & kernel check: " >&2
+        eos-kernel-nvidia-update-check $updates_native 2>/dev/null || STOP "FAIL" 1
+        echo2 "OK"
+    fi
+}
+Descriptions() {
+    if [ -x /bin/hook-update-description ] ; then
+        # show the description for each updated package
+        [ "$updates_native" ] && hook-update-description --title="native updates" $updates_native
+        [ "$updates_aur" ]    && hook-update-description --title="AUR updates"    $updates_aur
+    fi
+}
+Keyrings() {
+    # update keyrings if needed
+    local pkg keyr=()
+    for pkg in archlinux-keyring endeavouros-keyring ; do
+        printf "%s\n" $updates_native | grep "^$pkg$" >/dev/null && keyr+=($pkg)
+    done
+    [ "$keyr" ] && sudo pacman -S --noconfirm "${keyr[@]}"
+}
+ActualUpdate() {
+    # update packages
+    if [ "$updates_native" ] ; then
+        echo2 "==> Native updates"
+        sudo pacman -Su
+    fi
+    if [ $AUR = yes ] && [ "$updates_aur" ] ; then
+        echo2 "==> AUR updates"
+        $yay -Sua
+    fi
+}
+Pacdiff() {
+    if [ "$updates_native" ] ; then
+        # check .pacnew files
+        if [ -x /bin/eos-pacmerge ] ; then
+            eos-pacmerge --quiet
+        else
+            eos-pacdiff --quiet
+        fi
+    fi
+}
+
+Main "$@"
