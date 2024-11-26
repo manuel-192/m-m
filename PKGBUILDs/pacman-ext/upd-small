@@ -19,7 +19,7 @@ Main() {
     local -r progname=${0##*/}
     local AUR=no
     local CONNECTION=no
-    local THOROUGH=no                 # use uc-fast
+    local DEEP=no                 # use uc-fast
     local updates_native=""
     local updates_aur=""
     local paru=/bin/paru
@@ -38,7 +38,7 @@ Usage() {
     echo2 "Usage:    $progname [options]"
     echo2 "Options:  --aur,        -a  Include AUR packages too."
     echo2 "          --connection, -c  Check internet connection first."
-    echo2 "          --thorough,   -t  Check availability of updates more thoroughly."
+    echo2 "          --deep,       -d  Check availability of updates more thoroughly."
     echo2 "          --help,       -h  This help."
     echo2 "Note: internet connection is required."
     [ "$1" ] && exit $1 || exit 0
@@ -46,8 +46,8 @@ Usage() {
 
 Options() {
     # manage options
-    local sopts="acth"
-    local lopts="aur,connection,thorough,help"
+    local sopts="acdh"
+    local lopts="aur,connection,deep,help"
     local opts
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -57,7 +57,7 @@ Options() {
         case "$1" in
             --aur        | -a) AUR=yes ;;
             --connection | -c) CONNECTION=yes ;;
-            --thorough   | -t) THOROUGH=yes ;;
+            --deep       | -d) DEEP=yes ;;
             --help       | -h) Usage ;;
             --) shift; break ;;
         esac
@@ -98,7 +98,7 @@ GetAurUpdates() {
     [ $AUR = yes ] && updates_aur=$($paru -Quaq)
 }
 FastCheck() {
-    if [ $THOROUGH = no ] ; then
+    if [ $DEEP = no ] ; then
         # stop if no updated packages (with uc-fast)
         if [ -x /bin/uc-fast ] ; then
             if ! uc-fast -ae --verbose ; then                              # this line needs internet connection!
@@ -131,8 +131,8 @@ StopIfNoUpdates() {
     # stop if no updated packages
     if [ -z "$updates_native$updates_aur" ] ; then
         case $AUR in
-            yes) STOP "==> No native nor AUR updates (thorough check)" 0 ;;
-            no)  STOP "==> No native updates (thorough check)" 0 ;;
+            yes) STOP "==> No native nor AUR updates (deep check)" 0 ;;
+            no)  STOP "==> No native updates (deep check)" 0 ;;
         esac
     fi
 }
