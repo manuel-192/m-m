@@ -4,7 +4,7 @@
 pkgname=m-common
 pkgdesc="Some common apps, libs, and settings."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.11.5
+pkgver=24.11.6
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -20,7 +20,7 @@ sha512sums=('317efbb580da2e05c2954fb6207b7e7c2469cb32ebd7446702281af2bcb67924a0b
             '745bc6d83bc333202eb70904a3daf7cc6f24db5bfecaaff0d9b21d0cfb747e103bdc750dbe516cce2553f2f2a35cebd08b6db1aa142777acb47de52c285db985'
             '587cba285223dc51889ea84ca5109206f3d09412c172300f7bdfc526d7051dc5e8a0770bbf8cb48303619832cfe702a7f9ac48682deaed5fb9bff9da6f6e2463'
             'd8c68d9d15a6e2849489240b783962ce8172ca27e770c089702b9f79cfafd86b66f5da01b5f00526683886673b87a4f3f2d997a8b3bed44a2e1cfbfd9d0d7684'
-            'bf0b6e6dc15f7456f364c19af2535659acb593b26a5a27362f42e53eaf3a026a45987a249fc4a779d5c65a8787218843f410596a8bce0da4c76f7c7e026ced5d')
+            'f1cd438b089b35dfe82baf3663982e1323b57bcf441720156cc0ac4db338ef648046522f5206b107c75b0fd1527a3ffdb5594b9f16d62cf5d75da19e2f43ce68')
 
 package() {
     local src file
@@ -33,7 +33,7 @@ package() {
         esac
     done
     pushd "$pkgdir/usr/local/bin"
-    for file in bye disksleep hibernate logoff logout poweroff reboot restart suspend ramsleep
+    for file in bye disksleep hibernate logoff poweroff reboot restart ramsleep
     do
         ln -s STOP $file
     done

@@ -12,7 +12,7 @@ Main() {
                 return 1
             fi
             ;;
-        logoff | logout)
+        logoff)   # logout
             if [ -x /bin/xfce4-session-logout ] ; then
                 sync && xfce4-session-logout --logout
             else
@@ -27,7 +27,7 @@ Main() {
         reboot | restart)
             sync && systemctl reboot
             ;;
-        suspend | ramsleep)
+        ramsleep)    # suspend
             sync && systemctl suspend
             ;;
         # *)
