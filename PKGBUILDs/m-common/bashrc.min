@@ -1301,43 +1301,13 @@ EOF
     # Alias bye      poweroff
     # Alias restart  reboot
 
-    STOP() {
-        case "$1" in
-            hibernate)
-                if [ -z "$(lsblk -o FSTYPE | grep -w swap)" ] ; then
-                    echo "swap is unavailable for '$mode'." >&2
-                    return 1
-                else
-                    sync && /bin/systemctl $mode
-                fi
-                ;;
-            logoff | logout)
-                if [ -x /bin/xfce4-session-logout ] ; then
-                    sync && xfce4-session-logout --logout
-                else
-                    echo "sorry, $FUNCNAME needs package xfce4-session" >&2
-                    return 1
-                fi
-                ;;
-            poweroff)
-                which logstuff &> /dev/null && logstuff off
-                sync && /bin/systemctl $1
-                ;;
-            reboot | suspend | ramsleep)
-                sync && /bin/systemctl $1
-                ;;
-            *)
-                echo "==> $FUNCNAME: give one of: hibernate, logout, logoff, poweroff, reboot, suspend" >&2
-                return 1
-                ;;
-        esac
-    }
+    # Alias logoff   'STOP logoff'
+    # Alias poweroff 'STOP poweroff'
+    # Alias reboot   'STOP reboot'
+    # Alias bye       poweroff
 
-    Alias logoff   'STOP logoff'
-    Alias poweroff 'STOP poweroff'
-    Alias reboot   'STOP reboot'
-    Alias suspend  'STOP suspend'
-    Alias bye       poweroff
+    Alias logout   /usr/local/bin/logout
+    Alias suspend  /usr/local/bin/suspend
 
 
     #############################################################

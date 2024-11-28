@@ -1,0 +1,40 @@
+#!/bin/bash
+
+Main() {
+    local -r cmd=${0##*/}
+
+    case "$cmd" in
+        hibernate | disksleep)
+            if [ "$(lsblk -o FSTYPE | grep -w swap)" ] ; then
+                sync && systemctl hibernate
+            else
+                echo "swap is unavailable for '$cmd'." >&2
+                return 1
+            fi
+            ;;
+        logoff | logout)
+            if [ -x /bin/xfce4-session-logout ] ; then
+                sync && xfce4-session-logout --logout
+            else
+                echo "sorry, $cmd needs package xfce4-session" >&2
+                return 1
+            fi
+            ;;
+        poweroff | bye)
+            which logstuff &> /dev/null && logstuff off
+            sync && systemctl poweroff
+            ;;
+        reboot | restart)
+            sync && systemctl reboot
+            ;;
+        suspend | ramsleep)
+            sync && systemctl suspend
+            ;;
+        # *)
+        #     echo "==> $cmd: give one of: hibernate, logout, logoff, poweroff, reboot, suspend" >&2
+        #     return 1
+        #     ;;
+    esac
+}
+
+Main "$@"
