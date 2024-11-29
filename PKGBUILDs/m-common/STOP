@@ -1,40 +1,46 @@
 #!/bin/bash
 
-Main() {
-    local -r cmd=${0##*/}
+Run() {
+    if [ "$1" ] ; then
+        echo "==> $*" >&2
+        sleep 1
+        bash -c "$*"
+    fi
+}
 
-    case "$cmd" in
+Main() {
+    local -r mode=${0##*/}
+    local cmd=""
+
+    case "$mode" in
         hibernate | disksleep)
             if [ "$(lsblk -o FSTYPE | grep -w swap)" ] ; then
-                sync && systemctl hibernate
+                cmd="sync && systemctl hibernate"
             else
-                echo "swap is unavailable for '$cmd'." >&2
+                echo "swap is unavailable for '$mode'." >&2
                 return 1
             fi
             ;;
         logoff)   # logout
             if [ -x /bin/xfce4-session-logout ] ; then
-                sync && xfce4-session-logout --logout
+                cmd="sync && xfce4-session-logout --logout"
             else
-                echo "sorry, $cmd needs package xfce4-session" >&2
+                echo "sorry, $mode needs package xfce4-session" >&2
                 return 1
             fi
             ;;
         poweroff | bye)
-            which logstuff &> /dev/null && logstuff off
-            sync && systemctl poweroff
+            which logstuff &> /dev/null && cmd="logstuff off && "
+            cmd+="sync && systemctl poweroff"
             ;;
         reboot | restart)
-            sync && systemctl reboot
+            cmd="sync && systemctl reboot"
             ;;
         ramsleep)    # suspend
-            sync && systemctl suspend
+            cmd="sync && systemctl suspend"
             ;;
-        # *)
-        #     echo "==> $cmd: give one of: hibernate, logout, logoff, poweroff, reboot, suspend" >&2
-        #     return 1
-        #     ;;
     esac
+    Run "$cmd"
 }
 
 Main "$@"
