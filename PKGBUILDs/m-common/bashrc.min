@@ -22,9 +22,21 @@ SetVarToFirstApp() {
     return 1
 }
 
+_PackageCheck() {
+    local required_packages=(abbrevs-ls abbrevs-misc m-common pacman-ext)
+    local pkg
+
+    pacman -Qq "${required_packages[@]}" &> /dev/null && return 0
+    for pkg in "${required_packages[@]}" ; do
+        pacman -Qq "$pkg" &> /dev/null || echo "==> warning: package '$pkg' needs to be installed!" >&2
+    done
+    return 1
+}
+
 SettingsCommon()
 {
-    PATH_USR_BIN=/usr/bin
+    _PackageCheck || return 1
+    unset -f _PackageCheck
 
     [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME"
     case "$-" in
