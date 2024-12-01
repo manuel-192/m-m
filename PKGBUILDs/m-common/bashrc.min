@@ -1355,7 +1355,9 @@ EOF
     LoadCompletion pacman-sudo-internal pacman           _pacman
     LoadCompletion p                    pacman-ext       _pacman-ext_
     LoadCompletion u                    upd              _pe_upd_                upd
-    LoadCompletion pp                   pb               _pb_                    pb
+    if [ -x /bin/pb ] ; then
+        LoadCompletion pp                   pb               _pb_                    pb
+    fi
 
     [ -r ~/.dircolors ] && eval "$(dircolors ~/.dircolors)"
 
