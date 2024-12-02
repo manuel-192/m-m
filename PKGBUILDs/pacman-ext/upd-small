@@ -3,6 +3,7 @@
 echo2() { echo -e "$@" >&2 ; }
 DIE()   { echo2 "==> $progname: error: $1" ; exit 1 ; }
 STOP()  { echo2 "$1" ; exit $2 ; }
+NoneInstalled() { ! expac %n "$@" >/dev/null ; }
 
 Main() {
     # Update all packages, also do some extra checks.
@@ -67,7 +68,7 @@ Options() {
 CheckApps() {
     # we must have the required apps
     local app
-    for app in eos-connection-checker eos-kernel-nvidia-update-check yay ; do
+    for app in eos-connection-checker yay expac ; do
         [ -x /bin/$app ] || DIE "program '$app' is missing"
     done
 }
@@ -75,15 +76,14 @@ CheckApps() {
 UpdatePackages() {
     Connection
     GetAurUpdates
-    FastCheck
+    FastCheck             # stops here if no updates by "fast check"
     PacmanLock
-    PacmanDbUpdate
     GetNativeUpdates
     StopIfNoUpdates
     Nvidia
     Descriptions
     Keyrings
-    ActualUpdate
+    RealUpdate            # update packages here
     Pacdiff
 }
 
@@ -94,7 +94,7 @@ Connection() {
     fi
 }
 GetAurUpdates() {
-    # check AUR if needed
+    # check AUR for updates if needed
     [ $AUR = yes ] && updates_aur=$($paru -Quaq)
 }
 FastCheck() {
@@ -119,13 +119,9 @@ PacmanLock() {
         echo2 "==> INFO: $lockfile removed"
     fi
 }
-PacmanDbUpdate() {
-    # update pacman database
-    sudo pacman -Sy
-}
 GetNativeUpdates() {
-    # find names of updated packages
-    updates_native=$(pacman -Quq)
+    sudo pacman -Sy                  # update pacman database
+    updates_native=$(pacman -Quq)    # find names of updated packages
 }
 StopIfNoUpdates() {
     # stop if no updated packages
@@ -137,11 +133,14 @@ StopIfNoUpdates() {
     fi
 }
 Nvidia() {
+    NoneInstalled nvidia nvidia-lts && return 0
     if [ -x /bin/eos-kernel-nvidia-update-check ] ; then
         # check Nvidia
         printf "==> INFO: Nvidia & kernel check: " >&2
         eos-kernel-nvidia-update-check $updates_native 2>/dev/null || STOP "FAIL" 1
         echo2 "OK"
+    else
+        echo2 "==> WARNING: no Nvidia check done because eos-bash-shared is not installed"
     fi
 }
 Descriptions() {
@@ -153,13 +152,15 @@ Descriptions() {
 }
 Keyrings() {
     # update keyrings if needed
+    local keyring_packages=(archlinux-keyring
+                            endeavouros-keyring)
     local pkg keyr=()
-    for pkg in archlinux-keyring endeavouros-keyring ; do
+    for pkg in "${keyring_packages[@]}" ; do
         printf "%s\n" $updates_native | grep "^$pkg$" >/dev/null && keyr+=($pkg)
     done
     [ "$keyr" ] && sudo pacman -S --noconfirm "${keyr[@]}"
 }
-ActualUpdate() {
+RealUpdate() {
     # update packages
     if [ "$updates_native" ] ; then
         echo2 "==> Native updates"
