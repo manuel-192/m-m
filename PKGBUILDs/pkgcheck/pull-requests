@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DIE() { echo "$progname: error: $1" >&2; exit 1; }
+echo2() { echo -e "$@" >&2; }
+DIE()   { echo2 "$progname: error: $1"; exit 1; }
 
 Result() {
     local first="$1"
@@ -19,7 +20,7 @@ Main3()
 
     pagedata=$(curl --fail -Lsm 10 -o- "$url")
     retval=$?
-    [ $retval -ne 0 ] && DIE "curl '$url' failed with code $retval"
+    [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
     local issue_numbers=$(echo "$pagedata" | grep -E '^<div id="issue_[0-9]+' | sed -E 's|^<div id="issue_([0-9]+)".*|\1|')
     local issue_text
     local nr
