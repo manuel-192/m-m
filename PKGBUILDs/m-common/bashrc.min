@@ -370,6 +370,23 @@ EOF
         esac
     }
 
+    systemctl() {
+        # Adds sudo to the most used commands that want it.
+        local arg sudo=""
+
+        for arg in "$@" ; do
+            case "$arg" in
+                enable|disable|start|stop|reload|daemon-reload|restart) sudo=sudo; break ;;
+            esac
+        done
+        for arg in "$@" ; do
+            case "$arg" in
+                --user) sudo=""; break ;;
+            esac
+        done
+        $sudo /bin/systemctl "$@"
+    }
+
     sou() {                            # allow parameters to ~/.bashrc
         while true ; do
             case "$1" in
@@ -1456,48 +1473,103 @@ EOF
         }
     fi
 
+    MakeGuiAppsAsFuncs() {
+        # Usage: $FUNCNAME [options] list-of-commands
+        # list-of-commands contains one or more commands; a command with options must be quoted.
+        # options: [-v | --verbose]
 
-    AppsToFuncsMaker() {
-        local apps=(
-            adie                             # lightning fast editor
-            # audacity
-            # bluefish
-            # chromium
-            dolphin
-            eog
-            firefox           firefox-developer-edition
-            # geany                                              # gedit
-            ghostwriter       gitk                               # gnome-boxes # gnome-builder
-            kate              konsole                            # kdevelop
-            libreoffice
-            parole                                               # pamac-manager
-            qterminal                                            # "qtcreator -client"
-            ristretto
-            soffice
-            thunderbird                                          # terminator
-            xed               xfce4-screenshooter xplayer xreader
-        )
-        apps+=(        # here for other reasons!
-            kaffeine
-        )
-
-        if [ ${#apps[@]} -gt 0 ] ; then
-            local pr pr1
+        local cmd app
+        local count=0
+        local functions=()
+        local verbose=no
+        local arg args=()
+        for arg in "$@" ; do
+            case "$arg" in
+                -v | --verbose) verbose=yes ;;
+                -h | --help)
+                    cat <<EOF
+Usage:     $FUNCNAME [options] <commands>
+Commands:  The list of commands one or more commands; a command with its options must be quoted.
+Options:   -h, --help       This help.
+           -v, --verbose    Give more warnings about potential issues.
+EOF
+                    return 0
+                    ;;
+                *) args+=("$arg") ;;
+            esac
+        done
+        if [ -z "$args" ] ; then
+            local -r Apps2Funcs=(
+                adie
+                dolphin
+                # "emacs --reverse-video"    # handled by /usr/local/bin/emacs
+                eog
+                firefox
+                firefox-developer-edition
+                gitk
+                kaffeine
+                kate
+                konsole
+                libreoffice soffice
+                parole
+                "qtcreator -client"
+                ristretto
+                thunderbird
+                xed
+                xfce4-screenshooter
+                xplayer
+                xreader
+            )
+            args=("${Apps2Funcs[@]}")
+        else
+            verbose=yes                 # user given commands --> be verbose with issues
+        fi
+        for cmd in "${args[@]}" ; do
+            app=${cmd%% *}     # "$cmd" == "$app" [options]
+            declare -F "$app" >/dev/null && {
+                [ $verbose = yes ] && echo "==> warning: $app is already a function" >&2
+                continue
+            }
+            alias "$app" &>/dev/null && {
+                echo "==> warning: $app is an alias" >&2
+                continue
+            }
+            if [ -x "/bin/$app" ] ; then
+                functions+=("$app() { setsid /bin/$cmd \"\$@\" &>/dev/null ; }")      # this is the resulting function for the $cmd/$app
+                ((count++))
+            else
+                [ $verbose = yes ] && echo "==> warning: $app not installed" >&2
+            fi
+        done
+        if [ $count -gt 0 ] ; then
+            [ $verbose = yes ] && echo "$count functions created" >&2
             local tmpfile=$(mktemp)
-
-            for pr in "${apps[@]}" ; do
-                pr1=${pr%% *}
-                Unalias $pr1
-                IsAvailable --app $pr1 && echo "$pr1() { RunSilentlyInBackground $pr \"\$@\" ; }"
-            done >> $tmpfile
-
+            printf "%s\n" "${functions[@]}" > $tmpfile
             # shellcheck disable=SC1090
             source $tmpfile
             rm -f $tmpfile
         fi
     }
-    AppsToFuncsMaker
-    unset -f AppsToFuncsMaker
+    MakeGuiAppsAsFuncs
+
+    # AppsToFuncsMaker() {
+    #     local apps=(
+    #     )
+    #     if [ ${#apps[@]} -gt 0 ] ; then
+    #         local pr pr1
+    #         local tmpfile=$(mktemp)
+    #         for pr in "${apps[@]}" ; do
+    #             pr1=${pr%% *}
+    #             Unalias $pr1
+    #             IsAvailable --app $pr1 && echo "$pr1() { RunSilentlyInBackground $pr \"\$@\" ; }"
+    #         done >> $tmpfile
+    #         # shellcheck disable=SC1090
+    #         source $tmpfile
+    #         rm -f $tmpfile
+    #     fi
+    # }
+    # # AppsToFuncsMaker
+    # unset -f AppsToFuncsMaker
 
     [ -f ~/unison.log ] && rm -i ~/unison.log
 }
