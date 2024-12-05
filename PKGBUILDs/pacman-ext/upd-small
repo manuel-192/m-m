@@ -120,8 +120,8 @@ PacmanLock() {
     fi
 }
 GetNativeUpdates() {
-    sudo pacman -Sy                  # update pacman database
-    updates_native=$(pacman -Quq)    # find names of updated packages
+    sudo pacman -Syuw --noconfirm >/dev/null    # update pacman database and download possible updates
+    updates_native=$(pacman -Quq)               # find names of updated packages
 }
 StopIfNoUpdates() {
     # stop if no updated packages
