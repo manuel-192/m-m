@@ -177,6 +177,8 @@ Options:
            --ts *                Set the time interval to * seconds.
            --cs                  Make search case sensitively.
            -r, --recurse         Search for files in subfolders too.
+           -n, --number          The index number (1..n) of the picture to show.
+           -c, --show-count      Show the number of available pictures.
            --folder-add          Add a folder to a list of folders where wallpaper files are searched.
                                  Use absolute paths.
            --suffix-add          Add a filename suffix; search files using the added suffixes.
@@ -228,9 +230,49 @@ Options() {
             --suffix-add)          SUPPORTED_SUFFIXES+=("$2");  shift  ;;
             --folder-add)          SUPPORTED_FOLDERS+=("$2");   shift  ;;
             --editor)              editor="$2";                 shift  ;;
+            -c | --show-count)                                         ;;  # handled later!
+            -n | --number)
+                number="$2"
+                [ "$number" ] || DIE "number is empty"
+                [ "${number//[0-9]/}" ] && DIE "'$number' is not a number"
+                shift
+                ;;
         esac
         shift
     done
+}
+
+OptionsShowCount() {
+    local arg
+    for arg in "$@" ; do
+        case "$arg" in
+            -c | --show-count) echo "$count"; exit 0 ;;
+        esac
+    done
+}
+
+NextNr() {
+    local -r mode=a
+    local -r storefile="$HOME/.$progname.nr"
+
+    if [ -z "$number" ] ; then
+        case "$mode" in
+            a)
+                # next ordinal number
+                local n="$(cat "$storefile" 2>/dev/null)"
+                [ "$n" ] || n=1 && ((n++))
+                [ $n -gt $count ] && n=1
+                number="$n"
+                ;;
+            b | *)
+                # a random number
+                number=$(shuf -i 1-$count -n1)
+                ;;
+        esac
+    fi
+    # [ $number -gt $count ] && number=$count
+    # [ $number -lt 1 ]      && number=1
+    echo "$number" > "$storefile"
 }
 
 Main() {
@@ -246,13 +288,14 @@ Main() {
     local -r servicefile="$HOME/.config/systemd/user/$progname.service"
     local -r timerfiletmp="/tmp/${timerfile##*/}.tmp"
 
-    local LOPTS="cs,default-setup,dump-options,ec,et,edit-config,edit-timer,editor:,help,recurse,show-interval,status"
-    LOPTS+=",folder-add:,suffix-add:,th:,tm:,ts:"
-    local SOPTS="dhirs"
+    local LOPTS="count,cs,default-setup,dump-options,ec,et,edit-config,edit-timer,editor:,help,number:"
+    LOPTS+=",recurse,show-interval,status,folder-add:,suffix-add:,th:,tm:,ts:"
+    local SOPTS="cdhin:rs"
     local opt_name=""                  # option for 'fd'
     local opt_depth="--maxdepth 1"     # option for 'fd'
     local log="/tmp/$progname.log"
     local editor=xdg-open
+    local number=""                    # 1..$count
 
     if [ -e "$myconf" ] ; then
         source "$myconf" || return 1
@@ -279,9 +322,12 @@ Main() {
 
     local count=${#filelist[@]}
 
+    OptionsShowCount "$@"
+
     if [ $count -gt 0 ] ; then
-        local nr=$(shuf -i 0-$((count-1)) -n1)
-        local file="${filelist[$nr]}"            # $(echo "$filelist" | sed -n "${nr}p")
+        NextNr
+        local file="${filelist[$((number-1))]}"
+        echo "  picture $number/$count" >&2
         if [ -f "$file" ] && [ -r "$file" ] ; then
             echo "$(date +%Y%m%d-%H%M): $file" >> $log
             eos-wallpaper-set "$file"
