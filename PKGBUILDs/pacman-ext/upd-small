@@ -21,7 +21,7 @@ Main() {
     local AUR=no
     local CONNECTION=no
     local DEEP=no                 # use uc-fast
-    local SHOW_FETCH=no
+    local SHOW_FETCH=yes
     local updates_native=""
     local updates_aur=""
     local paru=/bin/paru
@@ -41,7 +41,7 @@ Usage() {
     echo2 "Options:  --aur,        -a  Include AUR packages too."
     echo2 "          --connection, -c  Check internet connection first."
     echo2 "          --deep,       -d  Check availability of updates more thoroughly."
-    echo2 "          --show-fetch, -s  Show the package download (is hidden by default)."
+    echo2 "          --hide-fetch, -f  Don't show the package download."
     echo2 "          --help,       -h  This help."
     echo2 "Note: internet connection is required."
     [ "$1" ] && exit $1 || exit 0
@@ -61,7 +61,7 @@ Options() {
             --aur        | -a) AUR=yes ;;
             --connection | -c) CONNECTION=yes ;;
             --deep       | -d) DEEP=yes ;;
-            --show-fetch | -s) SHOW_FETCH=yes ;;
+            --hide-fetch | -f) SHOW_FETCH=no ;;
             --help       | -h) Usage ;;
             --) shift; break ;;
         esac
