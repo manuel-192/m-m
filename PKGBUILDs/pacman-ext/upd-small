@@ -21,6 +21,7 @@ Main() {
     local AUR=no
     local CONNECTION=no
     local DEEP=no                 # use uc-fast
+    local SHOW_FETCH=no
     local updates_native=""
     local updates_aur=""
     local paru=/bin/paru
@@ -40,6 +41,7 @@ Usage() {
     echo2 "Options:  --aur,        -a  Include AUR packages too."
     echo2 "          --connection, -c  Check internet connection first."
     echo2 "          --deep,       -d  Check availability of updates more thoroughly."
+    echo2 "          --show-fetch, -s  Show the package download (is hidden by default)."
     echo2 "          --help,       -h  This help."
     echo2 "Note: internet connection is required."
     [ "$1" ] && exit $1 || exit 0
@@ -47,8 +49,8 @@ Usage() {
 
 Options() {
     # manage options
-    local sopts="acdh"
-    local lopts="aur,connection,deep,help"
+    local sopts="acdfh"
+    local lopts="aur,connection,deep,help,hide-fetch"
     local opts
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -59,6 +61,7 @@ Options() {
             --aur        | -a) AUR=yes ;;
             --connection | -c) CONNECTION=yes ;;
             --deep       | -d) DEEP=yes ;;
+            --show-fetch | -s) SHOW_FETCH=yes ;;
             --help       | -h) Usage ;;
             --) shift; break ;;
         esac
@@ -120,7 +123,11 @@ PacmanLock() {
     fi
 }
 GetNativeUpdates() {
-    sudo pacman -Syuw --noconfirm >/dev/null    # update pacman database and download possible updates
+    local -r cmd="sudo pacman -Syuw --noconfirm"    # update pacman database and download possible updates
+    case "$SHOW_FETCH" in
+        yes) $cmd             ;;
+        no)  $cmd  >/dev/null ;;
+    esac
     updates_native=$(pacman -Quq)               # find names of updated packages
 }
 StopIfNoUpdates() {
