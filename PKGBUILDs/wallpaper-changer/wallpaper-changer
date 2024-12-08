@@ -9,15 +9,6 @@ DIE() {
     exit 1    # fallback
 }
 
-FindFiles() {
-    local opt_depth="$1"
-    local opt_name="$2"
-    local suffix="$3"
-    local folder="$4"
-
-    fd $opt_depth $opt_name ".*$suffix" "$folder"
-}
-
 SetTimeInterval() {
     local mode="$1"
     local interval="$2"
@@ -275,6 +266,19 @@ NextNr() {
     echo "$number" > "$storefile"
 }
 
+FindFiles() {
+    local opt_depth="$1"
+    local opt_name="$2"
+    local suffix="$3"
+    local folder="$4"
+
+    if true ; then
+        find "$folder" ${opt_name:1} -iname \*"$suffix" | sort
+    else
+        fd $opt_depth $opt_name ".*$suffix" "$folder"
+    fi
+}
+
 Main() {
     local progname=${0##*/}    # "wallpaper-changer"    # don't use: local progname="$(basename "$0")"
     local -r myconf="$HOME/.config/$progname.conf"
@@ -316,7 +320,7 @@ Main() {
     for folder in "${SUPPORTED_FOLDERS[@]}" ; do
         for suffix in "${SUPPORTED_SUFFIXES[@]}" ; do
             readarray -t tmp <<< $(FindFiles "$opt_depth" "$opt_name" "$suffix" "$folder")
-            [ ${#tmp[@]} -gt 0 ] && filelist+=("${tmp[@]}")
+            [ "$tmp" ] && filelist+=("${tmp[@]}")
         done
     done
 
