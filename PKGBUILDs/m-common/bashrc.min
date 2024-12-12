@@ -1185,7 +1185,7 @@ EOF
     # Alias history-del        "$(cat /usr/local/bin/history-del | grep ^history)"
 
     Unalias history-del
-    history-del() { history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp; }
+    history-del() { history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp; clear; }
     export -f history-del
 
 
