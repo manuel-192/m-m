@@ -1504,8 +1504,8 @@ EOF
                 dolphin
                 # "emacs --reverse-video"    # handled by /usr/local/bin/emacs
                 eog
-                firefox
-                firefox-developer-edition
+                # firefox
+                # firefox-developer-edition
                 gitk
                 kaffeine
                 kate
