@@ -1242,11 +1242,17 @@ EOF
     # Alias paq                "sudo paq"
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
+
     # Alias Update             "upd --instant --verbose"
-    Alias u                  "upd --instant --verbose"
+    # Alias u                  "upd --instant --verbose"
     # Alias ua                 "Update --aur"
     # Alias uc                 "time uc-fast -aey --verbose"
     # Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
+    Alias u                  "u1"
+    Alias u1                 "uc-fast -a && upd-small || echo '==> no Arch updates'"
+    Alias u2                 "upd-small"
+    Alias u3                 "upd-small -a"
+    Alias u4                 "upd-small -ad"
     Alias who-needsq         "who-needs --query --multi"
     Alias who-needss         "who-needs --sync --one"
 
