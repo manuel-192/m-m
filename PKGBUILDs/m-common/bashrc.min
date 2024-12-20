@@ -1260,7 +1260,7 @@ EOF
     AliasIfWhich pb             pb           "pb -nn -T0"
     AliasIfWhich pb             pp           "pb"
 
-    Alias ppe 'logstuff on; pp EOS endeavouros-testing-dev endeavouros; echo ""; pp --pulls-e;              echo ""; pp --assets.conf-e'
+    Alias ppe 'logstuff on; pp EOS endeavouros-testing-dev endeavouros; pp --pulls-e;              echo ""; pp --assets.conf-e'
     Alias ppm 'logstuff on; pp MAN m-m m-aur2 m-more2 local-repo;       echo ""; pp --pulls-m; echo ""; pp --extras; echo ""; pp --assets.conf-m'
 
     Unalias l
