@@ -55,12 +55,10 @@ Meld() {
     # - plain 'meld' means 'meld .'
     # - compare two files when one parameter is a folder
 
-    # Counting $lines does not work on a single line ???
-    local lines=$(/bin/ps -C meld)
-    lines=$(echo "$lines" | grep -w meld)
-    lines=$(echo "$lines" | wc -l)             # this instance counts...
+    # Limit instances to $max_meld_instances
     local -r max_meld_instances=2
-    [ $lines -gt $max_meld_instances ] && DIE "sorry, no more 'meld' instances are allowed to run."
+    local linecount=$(/bin/ps -C meld | tail -n+2 | wc -l)
+    [ $linecount -gt $((max_meld_instances+1)) ] && DIE "sorry, only $max_meld_instances 'meld' instances are allowed to run."
 
     local -r meldgit=/bin/meldgit
     local -r meldrcs=/bin/meldrcs
