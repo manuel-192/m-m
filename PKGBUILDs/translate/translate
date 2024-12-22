@@ -1,0 +1,73 @@
+#!/bin/bash
+
+DIE() { echo "==> $progname: error: $1" >&2; exit 1; }
+
+Usage() {
+    cat <<EOF >&2
+Usage:    $progname [options] "string"
+Options:  --from, -f        The source language acronym (see option: --list-languages).
+          --to, -t          The target language acronym (see option: --list-languages).
+          --engine, -e      Translation engine to use   (see option: --list-engines).
+          --list-languages  List supported languages.
+          --list-engines    List available translation engines.
+          --dump-options    List all supported options.
+          --help, -h        This help.
+Other:    "String" is any string inside quotes.
+EOF
+    [ "$1" ] && exit $1
+}
+
+Parameters() {
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -e | --engine)    engine="$2"; shift ;;
+            -f | --from)      lang_from="$2"; shift ;;
+            -t | --to)        lang_to="$2";   shift ;;
+            --list-engines)   trans -list-engines; exit 0 ;;
+            --list-languages) trans -list-all; exit 0 ;;
+            --dump-options)   echo "-e -f -t -h --engine --from --to --list-engines --list-languages --help --dump-options"; exit 0 ;;
+            -v | --verbose)   verbose=yes ;;
+            -h | --help)      Usage 0 ;;
+            --) shift; break ;;
+        esac
+        shift
+    done
+    in_str="$1"
+
+    [ "$in_str" ]    || DIE "no string to translate!"
+    # [ "$lang_to" ]   || lang_to=${LANG%%_*}
+    # [ "$lang_to" ]   || DIE "translate to what language? See option --list-languages"
+    # [ "$lang_from" ] || lang_from=en
+    [ "$engine" ]    || DIE "empty translation engine!"
+}
+
+translate() {
+    local -r progname=${0##*/}
+    local -r sopts="e:f:t:h"
+    local -r lopts="engine:,from:,to:,list-engines,list-languages,dump-options,help"
+
+    local in_str=""
+    local lang_to=""            # default from $LANG
+    local lang_from=""          # default: en
+    local engine=bing
+    local verbose=no
+    local options=()
+
+    [ -e /bin/trans ] || DIE "package translate-shell must be installed."
+
+    Parameters "$@"
+
+    case "$engine" in
+        bing) options=( -engine bing -no-autocorrect -brief ) ;;
+        *) DIE "engine '$engine' is not supported" ;;
+    esac
+    [ "$lang_from" ] && options+=(--from "$lang_from")
+    [ "$lang_to" ]   && options+=(--to   "$lang_to")
+
+    /bin/trans "${options[@]}" "$in_str"
+}
+
+translate "$@"

@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=translate
+pkgdesc="Simple translator using translate-shell"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=24
+pkgrel=1
+arch=(any)
+license=(GPL)
+depends=(translate-shell)
+source=(
+    $url/$pkgname
+    $url/$pkgname.completion
+)
+sha512sums=('5bf9f64dc6ff7296489f686010e5a9f52c2ddc328fcb025a230576db1a3230f61a4c7a41f20d468ddea914968bca06b2fe946515dfcfd10f83353d7acf03e152'
+            '0e2e052e6fc7d7b729ce052c0d4e2e34be1a1c637c2411bcd5282f8191482ff7b0004d92ceba01c9e9a04281658e685c03e406a787b607f0e796f6e0671ed212')
+
+package() {
+    local item src
+
+    for src in "${source[@]}" ; do
+        item="${src##*/}"
+        case "$item" in
+            *.completion)
+                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)"
+                ;;
+            *.conf)
+                install -Dm644 "$item"   "$pkgdir/etc/$item"
+                ;;
+            *)
+                install -Dm755 "$item"   "$pkgdir/usr/bin/$item"
+                ;;
+        esac
+    done
+}
