@@ -56,7 +56,7 @@ Meld() {
     # - compare two files when one parameter is a folder
 
     # Limit instances to $max_meld_instances
-    local -r max_meld_instances=2
+    local -r max_meld_instances=3
     local linecount=$(/bin/ps -C meld | tail -n+2 | wc -l)
     [ $linecount -gt $((max_meld_instances+1)) ] && DIE "sorry, only $max_meld_instances 'meld' instances are allowed to run."
 
