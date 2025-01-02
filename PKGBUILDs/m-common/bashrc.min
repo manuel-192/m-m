@@ -1215,7 +1215,7 @@ EOF
     [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME: aliases"
 
     Alias akm                "akm --no-progress --quiet"
-    Alias Build-asdeps       "Build --pacman='--asdeps'"
+    # Alias Build-asdeps       "Build --pacman='--asdeps'"
     Alias bat                "bat --style=number"
     Alias ci                 "ci -u"
     Alias cls                "clear"
@@ -1258,9 +1258,6 @@ EOF
     AliasIfWhich pb             pb           "pb -nn -T0"
     AliasIfWhich pb             pp           "pb"
 
-    Alias ppe 'logstuff on; pp EOS endeavouros-testing-dev endeavouros; pp --pulls-e;              echo ""; pp --assets.conf-e'
-    Alias ppm 'logstuff on; pp MAN m-m m-aur2 m-more2 local-repo;       echo ""; pp --pulls-m; echo ""; pp --extras; echo ""; pp --assets.conf-m'
-
     Unalias l
     AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
 
@@ -1274,6 +1271,27 @@ EOF
         Alias mv         "mv -i"
         Alias rm         "rm -i"
     fi
+
+    Unalias ppe ppm
+    ppe() {
+        which logstuff pb >/dev/null || return 1
+        logstuff on
+        pp EOS endeavouros-testing-dev endeavouros
+        pp --pulls-e
+        echo ""
+        pp --assets.conf-e
+    }
+    ppm() {
+        which logstuff pb >/dev/null || return 1
+        logstuff on
+        pp MAN m-m m-aur2 m-more2 local-repo
+        echo ""
+        pp --pulls-m
+        echo ""
+        pp --extras
+        echo ""
+        pp --assets.conf-m
+    }
     
     shellcheck() {
         /bin/shellcheck "$@"
