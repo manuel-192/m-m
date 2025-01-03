@@ -1272,25 +1272,25 @@ EOF
         Alias rm         "rm -i"
     fi
 
-    Unalias ppe ppm
+    # Unalias ppe ppm
     ppe() {
         which logstuff pb >/dev/null || return 1
         logstuff on
-        pp EOS endeavouros-testing-dev endeavouros
-        pp --pulls-e
+        pb -nn -T0 EOS endeavouros-testing-dev endeavouros
+        pb -nn -T0 --pulls-e
         echo ""
-        pp --assets.conf-e
+        pb -nn -T0 --assets.conf-e
     }
     ppm() {
         which logstuff pb >/dev/null || return 1
         logstuff on
-        pp MAN m-m m-aur2 m-more2 local-repo
+        pb -nn -T0 MAN m-m m-aur2 m-more2 local-repo
         echo ""
-        pp --pulls-m
+        pb -nn -T0 --pulls-m
         echo ""
-        pp --extras
+        pb -nn -T0 --extras
         echo ""
-        pp --assets.conf-m
+        pb -nn -T0 --assets.conf-m
     }
     
     shellcheck() {
