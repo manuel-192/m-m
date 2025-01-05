@@ -130,7 +130,8 @@ EOF
         # About browser fallbacks:
         # - kde-open will open only the first url
         # - xdg-open fails with 2 or more urls
-        for br in firefox-developer-edition firefox exo-open kde-open xdg-open
+        # for br in firefox-developer-edition firefox exo-open kde-open xdg-open
+        for br in exo-open kde-open xdg-open
         do
             if [ -x /bin/$br ] ; then
                 $br "${interesting_urls[@]}"
