@@ -1,0 +1,13 @@
+#!/bin/bash
+
+REPONAME=m-aur2
+
+PKG_CHANGELOGS=(
+    aurutils                    "https://github.com/AladW/aurutils/commits"
+    brother-dcp-l2537dw-printer "https://support.brother.com/g/b/downloadlist.aspx?c=fi&lang=fi&prod=dcpl2537dw_eu&os=128&flang=English"
+    brscan4                     "https://support.brother.com/g/b/downloadlist.aspx?c=fi&lang=fi&prod=dcpl2537dw_eu&os=128&flang=English"
+    ccrypt                      "https://ccrypt.sourceforge.net/ChangeLog"
+    menulibre-git               "https://github.com/bluesabre/menulibre/commits"
+    notify-send.sh              "https://github.com/vlevit/notify-send.sh/commits"
+    yad-git                     "https://github.com/v1cont/yad/commits"
+)

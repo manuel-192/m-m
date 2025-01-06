@@ -1,0 +1,207 @@
+#!/bin/bash
+
+# assets.make definitions for the m-more repo
+
+# note: all variables are made 'local'
+
+local REPONAME="m-m"
+local RELEASE_TAGS=(x86_64)
+local SIGNER="manuel@endeavouros.com"
+local REPO_OWNER=manuel-192
+
+local USE_GENERATED_FILELIST="yes"
+local USE_RELEASE_ASSETS=yes
+local RELEASE_ASSETS_REMOTE_BASE="https://github.com/manuel-192/m-m/releases/download/x86_64"   # download remote release asset files from here
+
+local ASSETSDIR="$(realpath "$PWD")"                #  .../_BUILD_/m-m
+local PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"       #  .../_BUILD_/m-m/PKGBUILDs
+local GITDIR="$ASSETSDIR/../../$REPONAME"           #  .../m-m
+local PREFER_GIT_OVER_RELEASE=yes
+
+#if [ "$USE_RELEASE_ASSETS" = "no" ] ; then
+local GITREPOURL=https://github.com/manuel-192/$REPONAME.git
+#local GITREPODIR="$(basename "$GITREPOURL" .git)/repo"
+local GITREPODIR="$REPONAME/repo"
+#fi
+local ARCHIVE_GIT="$ASSETSDIR/.git"
+local ARCHIVE_TAG=archive
+
+if true ; then
+# new way with absolute paths:
+source /etc/${PROGNAME}-extra.conf
+#ASSETSDIR="$EOS_ROOT/_BUILD_/$REPONAME"
+PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"
+GITDIR="$EOS_ROOT/$REPONAME"
+ARCHIVE_GIT="$ASSETSDIR/.git"
+fi
+
+local PKGNAMES=(
+    abbrevs-ls
+    abbrevs-misc
+    appdoc
+    arch-rankmirrors
+    archive-trim
+    # archlinux-appstream-data-pamac-fix
+    armix
+    bide
+    burn2dev
+    c-runner
+    # cd-path
+    cd-extended
+    charge-notifier
+    cp-completion
+    # curl-error-string
+    customcfg
+    dvb-mn88473
+    # eat
+    emacs-tweaks
+    eos-driver-db
+    eos-repocheck
+    expac-completion
+    fetch-iso
+    fzf-stuff
+    git-meta
+    GitUpdate
+    glone
+    gpg-stuff
+    great-mirrors
+    grub-mkconfig-reminder-after-kernel
+    grub_os-prober_fix
+    grub-tweaks
+    hlp
+    hook-for-grub-update
+    hook-update-description
+    hwinfo-completion
+    local-repo-manager
+    m-brightness
+    # m-hooks
+    m-common
+    md
+    meld-rcs
+    meta-bash
+    meta-completions
+    meta-cpp
+    meta-games
+    meta-general
+    meta-install
+    metamgr
+    mirrorlist-m
+    mouse-stuff
+    pachandle
+    paclist-bash-completion
+    pacman-ext
+    pactree-bash-completion
+    pkexec2
+    # pkg-name-components
+    pkgapps
+    pkgcheck
+    # pkgcheck-gui
+    pkgurl
+    reflectorext
+    safe
+    skel
+    stickburn
+    sudo-like-for-all
+    theme-kde-eos
+    UserManager
+    vb-notif
+    wallpaper-changer
+    wget-tiny
+    yaygg
+)
+# PKGNAMES=( meta-games yaygg )
+
+declare -A PKG_MAKEPKG_OPTIONS=(
+    git-meta      "--nodeps"
+    meta-games    "--nodeps"
+)
+
+# local CHANGELOG_ROOT="https://github.com/manuel-192/m-m/commits/master/PKGBUILDs"
+# declare -A PKG_CHANGELOGS=(
+#     cd-extended          "$CHANGELOG_ROOT/cd-extended"
+#     emacs-tweaks         "$CHANGELOG_ROOT/emacs-tweaks"
+#     eos-brightness       "$CHANGELOG_ROOT/eos-brightness"
+#     GitUpdate            "$CHANGELOG_ROOT/GitUpdate"
+#     hlp                  "$CHANGELOG_ROOT/hlp"
+#     local-repo-manager   "$CHANGELOG_ROOT/local-repo-manager"
+#     m-common             "$CHANGELOG_ROOT/m-common"
+#     meld-rcs             "$CHANGELOG_ROOT/meld-rcs"
+#     pacman-ext           "$CHANGELOG_ROOT/pacman-ext"
+#     pkgcheck             "$CHANGELOG_ROOT/pkgcheck"
+# )
+
+_update_m_m_repo() {
+    cd "$GITDIR"
+    ./GitUpdate
+}
+
+local ASSET_POST_HOOKS=(
+#    _update_m_m_repo
+)
+
+_pkgbuilds_m_hook_old()
+{
+    # A hook function to make sure local PKGBUILDS from AUR are up to date.
+
+    local dir_above_pkgbuilds="$PKGBUILD_ROOTDIR"/..
+    local conf=assets.conf
+    local url=https://github.com/manuel-192/"$REPONAME".git
+
+    pushd "$dir_above_pkgbuilds" >/dev/null || {
+        echo "Error: $conf: cannot cd to '$dir_above_pkgbuilds'." >&2
+        exit 1
+    }
+    rm -rf "$PKGBUILD_ROOTDIR"
+    mkdir -p "$PKGBUILD_ROOTDIR"
+    pushd "$PKGBUILD_ROOTDIR" >/dev/null
+    git clone "$url" >& /dev/null || {
+        echo "Error: $conf: git clone $url failed." >&2
+        popd >/dev/null
+        popd >/dev/null
+        exit 1
+    }
+    mv "$PKGBUILD_ROOTDIR"/$REPONAME/PKGBUILDs/* "$PKGBUILD_ROOTDIR"/ || {
+        echo "Error: $conf: $FUNCNAME: mv $PKGBUILD_ROOTDIR/PKGBUILDs subdirs failed." >&2
+        popd >/dev/null
+        popd >/dev/null
+        exit 1
+    }
+    rm -rf "$PKGBUILD_ROOTDIR/$REPONAME"
+    touch "$PKGBUILD_ROOTDIR"/NOTE-THIS-IS-A-TEMPORARY-FOLDER
+    popd >/dev/null
+    popd >/dev/null
+}
+
+_ASSERT_() {
+    local ret=0
+    "$@" &> /dev/null || ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "'$*' failed" >&2
+       exit $ret
+    fi
+}
+
+_pkgbuilds_m_hook() {
+    if [ -d "$ASSETSDIR/.$REPONAME/.git" ] ; then
+        _ASSERT_ pushd "$ASSETSDIR/.$REPONAME"
+        #printf "git pull... " >&2
+        _ASSERT_ git pull
+        _ASSERT_ popd
+    else
+        _ASSERT_ pushd "$ASSETSDIR"
+        _ASSERT_ rmdir "$PKGBUILD_ROOTDIR"            # assets.make created it...
+        _ASSERT_ rm -f ${PKGBUILD_ROOTDIR##*/}        # removed possible symlink
+        printf "git clone... " >&2
+        _ASSERT_ git clone "$GITREPOURL" ".$REPONAME"
+        ln -s ".$REPONAME"/${PKGBUILD_ROOTDIR##*/}
+        _ASSERT_ popd
+    fi
+
+    # Now in $ASSETSDIR:
+    #   - ".$REPONAME" contains a copy of the latest m-m source
+    #   - PKGBUILDs symlinked to ".$REPONAME/PKGBUILDs"
+}
+
+local ASSET_HOOKS=(
+    _pkgbuilds_m_hook
+)

@@ -1,0 +1,316 @@
+#!/bin/bash
+
+# definitions for the m-more repo
+
+# note: all variables are made 'local'
+
+local REPONAME="m-more2"                             # originally was m-more
+local RELEASE_TAGS=(x86_64)
+local SIGNER="manuel@endeavouros.com"
+local REPO_OWNER=manuel-192
+
+local ASSETSDIR="$(realpath "$PWD")"
+local PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"        # temporary copy, will be overwritten
+local GITDIR="$ASSETSDIR/../../$REPONAME"            # may not be $REPONAME ...
+local USE_RELEASE_ASSETS=yes                         # yes because here we may have very large packages!
+local PREFER_GIT_OVER_RELEASE=no                     # no git repo because it would be too large
+
+local GITREPOURL=https://github.com/manuel-192/$REPONAME.git
+
+local ARCHIVE_GIT="$ASSETSDIR/.git"
+local ARCHIVE_TAG=archive
+
+
+if true ; then
+    # new way with absolute paths:
+    source /etc/${PROGNAME}-extra.conf
+    # ASSETSDIR="$EOS_ROOT/_BUILD_/$REPONAME"
+    PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"
+    GITDIR="$EOS_ROOT/$REPONAME"
+    ARCHIVE_GIT="$ASSETSDIR/.git"
+fi
+
+local PKGNAMES=(
+    # Supported markings:
+    #    pkgname          local package
+    #    ./pkgname        (same as above)
+    #    pkgname/aur      AUR package
+
+    # gnome-hearts
+
+    minizip-ng-ex
+
+    # pacseek-bin/aur
+    pandoc-bin/aur
+
+    qogir-icon-theme/aur
+    qogir-icon-theme-git    # is orphaned in AUR
+
+    samsung-unified-driver/aur
+    sddm-git/aur
+    shellcheck-bin/aur
+    # shellcheck-min
+
+    # penguins-eggs/aur
+
+    # lib32-nvidia-470xx-utils/aur
+    # nvidia-470xx-settings/aur    # needs gtk2
+    # nvidia-470xx-utils/aur
+
+    vscodium-bin/aur
+
+    # pamac stuff
+    # archlinux-appstream-data-pamac/aur    # 1st to build and install      # moved to local-repo because of epoch/github issue
+    # libpamac-aur/aur                      # 2nd to build and install
+    # pamac-aur/aur                         # 3rd to build and install
+)
+
+if false ; then                             # true when debugging
+    PKGNAMES=(
+        sddm-git/aur
+    )
+fi
+
+if true ; then
+    PKGNAMES_WAIT=(                         # remember quotes in entries !!!
+        # "sddm-git/aur|0.21.0.14.gae072f9-3"
+    )
+fi
+
+declare -A PKG_MAKEPKG_OPTIONS=(
+    nvidia-470xx-settings "--nodeps"
+    sddm-git "--cleanbuild"
+)
+
+
+_Updpkgsums() {
+    local Pkgbuild="$1"
+    pushd "$(dirname "$Pkgbuild")" >/dev/null
+    updpkgsums 2>/dev/null
+    popd >/dev/null
+}
+
+_is_this_pkgname_included() {
+    local Pkgname="$1"
+    test -z "$Pkgname" && Pkgname="$(__generic_get_pkgname "${FUNCNAME[1]}")"
+    if [ -z "$Pkgname" ] ; then
+        echo "${FUNCNAME[0]}: no pkgname!" >&2
+        return 1
+    fi
+    local xx
+    for xx in "${PKGNAMES[@]}" ; do
+        case "$xx" in
+            "$Pkgname" | "aur/$Pkgname" | "./$Pkgname") return 0 ;;  # accepted formats
+        esac
+    done
+    return 1     # not in $PKGNAMES
+}
+__generic_get_pkgname() { local funcname="$1" ; echo "$funcname" | cut -d '_' -f 2 ; }
+__generic_fix_https() {
+    local Pkgname="$1"
+    if [ -z "$Pkgname" ] ; then
+        echo "${FUNCNAME[0]}: no pkgname!" >&2
+        return 1
+    fi
+    _is_this_pkgname_included $Pkgname && {
+        sed -i "$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD \
+            -e 's|http://|https://|'
+    }
+}
+_Get_item_value() {
+    local Pkgbuild="$1"
+    local item="$2"
+    /usr/bin/grep "^$item=" "$Pkgbuild" | cut -d= -f2 | sed "s|^[\"']\(.*\)[\"']$|\1|"   # remove possible surrounding quotes
+}
+
+# _Get_pkgver() { _Get_item_value "$1" pkgver ; }
+_pkgver_to_github_latest_tag_release() {
+    # Change pkgver in PKGBUILD to the latest available.
+    # A changed pkgver *should* fail the build.
+
+    local page="$1"
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname ${FUNCNAME[1]})"/PKGBUILD
+    local old_pkgver=$(_Get_item_value "$PKGBUILD" pkgver)
+    local new_pkgver=$(curl -Lsm 20 -o- "$page" | grep pandoc/releases/tag/ | head -n1 | sed -e 's|.*/releases/tag/\([^\"]*\).*|\1|' -e 's|^[^0-9]*||')
+
+    if [ $(vercmp "$new_pkgver" "$old_pkgver") -gt 0 ] ; then
+        # printf "==> auto-updating PKGBUILD, " >&2
+        # printf "# " >&2
+        sed -i "$PKGBUILD" \
+            -e "/^pkgver=/a \pkgver=$new_pkgver   # latest available"
+        updpkgsums "$PKGBUILD" 2>/dev/null
+        return 11        # return value 1 indicates: pkgver was changed
+    fi
+}
+
+#pkgver() {
+#    grep '"version":' WidevineCdm/manifest.json | sed -e 's|^.*"version": "\([0-9\.]*\)",$|\1|'
+#}
+_pandoc-bin_hook() {
+    _pkgver_to_github_latest_tag_release https://github.com/jgm/pandoc/releases/latest
+}
+
+_qogir-icon-theme_hook() {
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    sed -i "$PKGBUILD" -E \
+        -e 's|(\./install\.sh.*)|\1 --theme default|' \
+        -e 's|^(pkgrel=.*)|\1.1|'
+
+    sed -i "$PKGBUILD" \
+        -e '/^depends=/a \provides=(eos-qogir-icons)'
+}
+
+_vivaldi-widevine_now_hook() {
+    pushd "$PKGBUILD_ROOTDIR"/vivaldi-widevine-now >/dev/null
+    ./fix-pkgbuild
+    popd >/dev/null
+}
+
+_vivaldi-widevine-now_epoch_hook() {
+    # Change pkg name from "...now-1.4.10...." to "...now-1:4.10..."
+    # i.e. separate the epoch value with a colon.
+
+    local pkgname="$1"
+    pkgname="$(echo "$pkgname" | sed "s|\(vivaldi-widevine-now-[0-9]*\)\.\(.*\)|\1:\2|")"
+    echo "$pkgname"
+}
+
+_plasma-meta-m_hook() {
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+    local pkgver=$(grep ^pkgver= $Pkgbuild | cut -d '=' -f 2)
+    local pkgrel=$(grep ^pkgrel= $Pkgbuild | cut -d '=' -f 2)
+
+    local reftool=plasma-meta
+    local tmpdir=$(mktemp -d)
+    local Pkgver Pkgrel
+    local has_new=no
+
+    pushd $tmpdir >/dev/null
+    yay -G $reftool >/dev/null || {
+        echo "$Pkgname: error: yay failed" >&2
+        popd >/dev/null
+        return 1
+    }
+    Pkgver=$(grep ^pkgver= $reftool/PKGBUILD | cut -d '=' -f 2)
+    Pkgrel=$(grep ^pkgrel= $reftool/PKGBUILD | cut -d '=' -f 2)
+    local Refpkgname=$(grep ^pkgname= $reftool/PKGBUILD | cut -d '=' -f 2)
+
+    if [ "$Pkgver" != "$pkgver" ] || [ "$Pkgrel" != "$pkgrel" ] ; then
+        has_new=yes
+    fi
+    popd >/dev/null
+    rm -rf $tmpdir
+    if [ "$has_new" = "yes" ] ; then
+        printf "warning: $Refpkgname ${Pkgver}-$Pkgrel is available. " >&2
+        return 1
+    fi
+}
+
+# These hooks provide the opportunity to change AUR package files if needed.
+declare -A ASSET_PACKAGE_HOOKS                                  # functions: use package name like _"pkgname"_hook_do_something
+
+ASSET_PACKAGE_HOOKS["vivaldi-widevine-now"]=_vivaldi-widevine_now_hook
+ASSET_PACKAGE_HOOKS["plasma-meta-m"]=_plasma-meta-m_hook
+ASSET_PACKAGE_HOOKS["pandoc-bin"]=_pandoc-bin_hook
+
+ASSET_PACKAGE_HOOKS[qogir-icon-theme]=_qogir-icon-theme_hook
+
+# Epoch hooks: PKGBUILD may contain an epoch value, then rename pkg
+declare -A ASSET_PACKAGE_EPOCH_HOOKS
+
+ASSET_PACKAGE_EPOCH_HOOKS["vivaldi-widevine-now"]=_vivaldi-widevine-now_epoch_hook
+
+# Hook functions are run after RationalityTests and initial PKGBUILDs setup in assets.make.
+# There may be several hook functions.
+
+_pkgbuilds_m_hook_old()
+{
+    # A hook function to make sure local PKGBUILDS from AUR are up to date.
+
+    local dir_above_pkgbuilds="$PKGBUILD_ROOTDIR"/..
+    local conf=assets.conf
+    local url=https://github.com/manuel-192/"$REPONAME".git
+
+    pushd "$dir_above_pkgbuilds" >/dev/null || {
+        echo "Error: $conf: cannot cd to '$dir_above_pkgbuilds'." >&2
+        exit 1
+    }
+    rm -rf "$PKGBUILD_ROOTDIR"
+    mkdir -p "$PKGBUILD_ROOTDIR"
+    pushd "$PKGBUILD_ROOTDIR" >/dev/null
+    git clone "$url" >& /dev/null || {
+        echo "Error: $conf: git clone $url failed." >&2
+        popd >/dev/null
+        popd >/dev/null
+        exit 1
+    }
+    mv "$PKGBUILD_ROOTDIR"/$REPONAME/PKGBUILDs/* "$PKGBUILD_ROOTDIR"/ || {
+        echo "Error: $conf: $FUNCNAME: mv $PKGBUILD_ROOTDIR/PKGBUILDs subdirs failed." >&2
+        popd >/dev/null
+        popd >/dev/null
+        exit 1
+    }
+    rm -rf "$PKGBUILD_ROOTDIR/$REPONAME"
+    touch "$PKGBUILD_ROOTDIR"/NOTE-THIS-IS-A-TEMPORARY-FOLDER
+    popd >/dev/null
+    popd >/dev/null
+}
+
+_ASSERT_() {
+    local ret=0
+    "$@" &> /dev/null || ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "'$*' failed" >&2
+       exit $ret
+    fi
+}
+
+_pkgbuilds_m_hook() {
+    if [ -d "$ASSETSDIR/.$REPONAME/.git" ] ; then
+        _ASSERT_ pushd "$ASSETSDIR/.$REPONAME"
+        #printf "git pull... " >&2
+        _ASSERT_ git pull
+        _ASSERT_ popd
+    else
+        _ASSERT_ pushd "$ASSETSDIR"
+        _ASSERT_ rmdir "$PKGBUILD_ROOTDIR"            # assets.make created it...
+        _ASSERT_ rm -f ${PKGBUILD_ROOTDIR##*/}        # removed possible symlink
+        printf "git clone... " >&2
+        _ASSERT_ git clone "$GITREPOURL" ".$REPONAME"
+        _ASSERT_ ln -s ".$REPONAME/${PKGBUILD_ROOTDIR##*/}"
+        _ASSERT_ popd
+    fi
+}
+
+local ASSET_HOOKS=(
+    _pkgbuilds_m_hook
+)
+
+
+_update_m_more_repo() {
+    cd "$GITDIR"
+    ./GitUpdate
+}
+
+_remove_unneeded_build_deps() {
+    local pkgs=(
+        flatpak
+    )
+    local msgs=(
+        "Removing flatpak (pamac-aur dependency)"
+    )
+    local ix
+
+    for ((ix=0; ix < ${#pkgs[@]}; ix++)) ; do
+        pacman -Q "${pkgs[$ix]}" >& /dev/null && {
+            echo "${msgs[$ix]}: " >&2
+            su-c_wrapper pacman -Rsn "${pkgs[$ix]}"
+        }
+    done
+}
+
+local ASSET_POST_HOOKS=(
+    _remove_unneeded_build_deps
+    # _update_m_more_repo
+)

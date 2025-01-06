@@ -1,0 +1,19 @@
+#!/bin/bash
+
+REPONAME=m-m
+
+local CHANGELOG_ROOT="https://github.com/manuel-192/m-m/commits/master/PKGBUILDs"
+
+PKG_CHANGELOGS=(
+    cd-extended          "$CHANGELOG_ROOT/cd-extended"
+    emacs-tweaks         "$CHANGELOG_ROOT/emacs-tweaks"
+    eos-brightness       "$CHANGELOG_ROOT/eos-brightness"
+    GitUpdate            "$CHANGELOG_ROOT/GitUpdate"
+    hlp                  "$CHANGELOG_ROOT/hlp"
+    local-repo-manager   "$CHANGELOG_ROOT/local-repo-manager"
+    m-common             "$CHANGELOG_ROOT/m-common"
+    meld-rcs             "$CHANGELOG_ROOT/meld-rcs"
+    meta-general         "$CHANGELOG_ROOT/meta-general"
+    pacman-ext           "$CHANGELOG_ROOT/pacman-ext"
+    pkgcheck             "$CHANGELOG_ROOT/pkgcheck"
+)

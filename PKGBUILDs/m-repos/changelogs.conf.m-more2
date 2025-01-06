@@ -1,0 +1,19 @@
+#!/bin/bash
+
+REPONAME=m-more2
+
+PKG_CHANGELOGS=(
+    gnome-hearts             "https://directory.fsf.org/wiki?title=Gnome-hearts&action=history"
+    lib32-nvidia-470xx-utils "https://aur.archlinux.org/cgit/aur.git/log/?h=lib32-nvidia-470xx-utils"
+    nvidia-470xx-settings    "https://aur.archlinux.org/cgit/aur.git/log/?h=nvidia-470xx-settings"
+    nvidia-470xx-utils       "https://aur.archlinux.org/cgit/aur.git/log/?h=nvidia-470xx-utils"
+    pacseek-bin              "https://github.com/moson-mo/pacseek/commits"
+    pandoc-bin               "https://pandoc.org/releases.html#revision-history-for-pandoc"
+    qogir-icon-theme         "https://github.com/vinceliuice/Qogir-icon-theme/releases"
+    qogir-icon-theme-git     "https://github.com/vinceliuice/Qogir-icon-theme/commits"
+    samsung-unified-driver   "https://aur.archlinux.org/cgit/aur.git/log/?h=samsung-unified-driver"
+    sddm-git                 "https://github.com/sddm/sddm/commits/develop"
+    shellcheck-bin           "https://github.com/koalaman/shellcheck/commits"
+    shellcheck-min           "https://github.com/koalaman/shellcheck/commits"
+    vscodium-bin             "https://github.com/VSCodium/vscodium/releases"
+)

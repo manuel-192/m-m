@@ -1,0 +1,665 @@
+#!/bin/bash
+
+# definitions for the m-aur repo
+
+# note: all variables are made 'local'
+
+local REPONAME="m-aur2"
+local RELEASE_TAGS=(x86_64)
+local SIGNER="manuel@endeavouros.com"
+local REPO_OWNER=manuel-192
+
+local REPO_COMPRESSOR=zst
+
+local ASSETSDIR="$(realpath "$PWD")"
+local PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"        # temporary copy, will be overwritten
+local GITDIR="$ASSETSDIR/../../$REPONAME"            # may not be $REPONAME ...
+local USE_RELEASE_ASSETS=yes
+local PREFER_GIT_OVER_RELEASE=yes
+
+#if [ "$USE_RELEASE_ASSETS" = "no" ] ; then
+local GITREPOURL=https://github.com/manuel-192/$REPONAME.git
+#local GITREPODIR="$(basename "$GITREPOURL" .git)/repo"
+local GITREPODIR="$REPONAME/repo"
+#fi
+
+local ARCHIVE_GIT="$ASSETSDIR/.git"
+local ARCHIVE_TAG=archive
+
+if true ; then
+# new way with absolute paths:
+source /etc/${PROGNAME}-extra.conf
+# ASSETSDIR="$EOS_ROOT/_BUILD_/$REPONAME"
+PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"
+GITDIR="$EOS_ROOT/$REPONAME"
+ARCHIVE_GIT="$ASSETSDIR/.git"        # pkg archive
+fi
+
+# SKIP_UNACCEPTABLE_PKGBUILD=(yad-git)
+
+local PKGNAMES=(
+    # Supported markings:
+    #    pkgname          local package
+    #    ./pkgname        (same as above)
+    #    pkgname/aur      AUR package (alternative to aur/pkgname)
+
+    brother-dcp-l2537dw-printer    # Brother multifunction printer drivers (printer)
+    brscan4                        # Brother multifunction printer drivers (scanner)
+    notify-send.sh/aur
+    pacseek/aur
+    upd72020x-fw/aur
+    w_scan2/aur
+    yad-git/aur
+
+    # aurutils/aur
+    # menulibre-git/aur      # not working currently?
+    # pacman-static/aur      # download from https://pkgbuild.com/~morganamilo/pacman-static/x86_64/bin/pacman-static
+    # upp/aur
+)
+# PKGNAMES=(upd72020x-fw/aur)
+
+PKGNAMES_WAIT=(
+    # 'yad-git/aur|v13.0.r7.g92a7978-1'  # skip this version
+)
+
+# Additional options for makepkg usage.
+
+declare -A PKG_MAKEPKG_OPTIONS
+
+PKG_MAKEPKG_OPTIONS[menulibre-git]="--nodeps"
+
+
+declare -A HAS_GIT_PKGVER            # allow any pkgver value if "yes"
+#HAS_GIT_PKGVER[yad-git]=yes
+
+_pkgver_to_github_latest_tag_release() {
+    # Change pkgver in PKGBUILD to the latest available.
+    # A changed pkgver *should* fail the build.
+
+    local page="$1"
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname ${FUNCNAME[1]})"/PKGBUILD
+    local old_pkgver=$(_Get_item_value "$PKGBUILD" pkgver)
+    local new_pkgver=$(curl -Lsm 20 -o- "$page" | grep /releases/tag/ | head -n1 | sed -e 's|.*/releases/tag/\([^\"]*\).*|\1|' -e 's|^[^0-9]*||')
+
+    if [ $(vercmp "$new_pkgver" "$old_pkgver") -gt 0 ] ; then
+        # printf "==> auto-updating PKGBUILD, " >&2
+        # printf "# " >&2
+        sed -i "$PKGBUILD" \
+            -e "/^pkgver=/a \pkgver=$new_pkgver   # latest available"
+        updpkgsums "$PKGBUILD" 2>/dev/null
+        return 11        # return value 1 indicates: pkgver was changed
+    fi
+}
+
+
+_shellcheck-bin_hook() {
+    _pkgver_to_github_latest_tag_release https://github.com/koalaman/shellcheck/releases/latest
+}
+
+_upp_hook() {
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    sed -i "$PKGBUILD" -e "s|http://|https://|"
+}
+
+_rate-mirrors_hook() {
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    sed -i "$PKGBUILD" \
+        -e "s|^\(pkgrel=.*\)|\1.4|" \
+        -e "/^depends=/a \ \nreplaces=(rate-mirrors-bin)"
+}
+
+InstallNeededPackages() {
+    local pkg install=()
+
+    for pkg in "$@" ; do
+        pacman -Qq "$pkg" >& /dev/null || install+=("$pkg")
+    done
+    if [ ${#install[@]} -gt 0 ] ; then
+        printf "\n==> Installing packages: %s\n" "${install[*]}" >&2
+        su-c_wrapper pacman -S "${install[@]}"
+    fi
+}
+
+_budgie-control-center_hook() {
+    local build_opts="${PKG_MAKEPKG_OPTIONS[budgie-control-center]}"
+    local pkgs=(
+        modemmanager gnome-online-accounts
+        gsound
+        budgie-desktop libcheese colord-gtk
+    )
+
+    InstallNeededPackages "${pkgs[@]}"
+}
+
+_menulibre-git_hook() {
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    sed -i "$PKGBUILD" \
+        -e 's|"python-xdg"|"python-pyxdg"|' \
+        -e 's| cd | builtin cd |'
+}
+
+_yad-git_hook() {
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+
+    if false ; then
+        pushd "${PKGBUILD%/PKGBUILD}" >/dev/null
+        local nrcommits=$(git rev-list --count HEAD)
+        local lastcommit=$(git rev-parse --short HEAD)
+        popd >/dev/null
+    else
+        local url=https://github.com/v1cont/yad
+        local nrcommits=$( curl -Lsm 10 "$url" | grep -EB2 "^[ ]+commits$" | head -n1 | sed -E 's|^[ ]+<strong>([0-9]+)</strong>$|\1|')
+        local lastcommit=$(curl -Lsm 10 "$url/commits/master" | grep '/commits_list_item' | head -n1 | sed -E 's|.*/commits/([0-9a-f]{7,7}).*|\1|')
+    fi
+
+    sed -i "$PKGBUILD" \
+        -e "s| 'i686'||" \
+        -e 's|http://|https://|' \
+        -e 's|--with-gtk=gtk3|--enable-gio --enable-spell --enable-sourceview|' \
+        -e "s|^pkgver=.*|pkgver=1.$nrcommits.$lastcommit|" \
+        -e "s|^pkgrel=.*|pkgrel=1|"
+
+    local apply_patch=no   # yes = test to see if the latest yad release would need the patch
+
+    case "$apply_patch" in
+        yes)
+            printf "applied the window height patch"
+            local url_patch=https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/yad/yad-github-issue-107.patch
+            local file=../../$(basename $url_patch)
+
+            sed -i "$PKGBUILD" \
+                -e "s|^source=(\(.*\))$|source=(\1 '$url_patch')|" \
+                -e "/autoreconf -ivf/i \    # patch for the dialog height issue\n    patch -u src/main.c -i $file\n"
+
+            updpkgsums "$PKGBUILD" 2>/dev/null
+            ;;
+        no | *)
+            printf "no patch"
+            ;;
+    esac
+}
+
+_is_this_pkgname_included() {
+    local Pkgname="$1"
+    test -z "$Pkgname" && Pkgname="$(__generic_get_pkgname "${FUNCNAME[1]}")"
+    if [ -z "$Pkgname" ] ; then
+        echo "${FUNCNAME[0]}: no pkgname!" >&2
+        return 1
+    fi
+    local xx
+    for xx in "${PKGNAMES[@]}" ; do
+        case "$xx" in
+            "$Pkgname" | "aur/$Pkgname" | "$Pkgname/aur" | "./$Pkgname") return 0 ;;  # accepted formats
+        esac
+    done
+    return 1     # not in $PKGNAMES
+}
+__generic_get_pkgname() { local funcname="$1" ; echo "$funcname" | cut -d '_' -f 2 ; }
+__generic_fix_https() {
+    local Pkgname="$1"
+    if [ -z "$Pkgname" ] ; then
+        if [ -r PKGBUILD ] ; then
+            Pkgname="$(_Get_item_value PKGBUILD pkgname)"
+        fi
+        if [ -z "$Pkgname" ] ; then
+            echo "${FUNCNAME[0]}: no pkgname!" >&2
+            return 1
+        fi
+    fi
+    _is_this_pkgname_included $Pkgname && {
+        sed -i "$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD \
+            -e 's|http://|https://|'
+    }
+}
+
+__generic_version_check() {
+    # Check for a version change.
+    # If version has changed, inform user and stop building.
+
+    local Pkgname="$(__generic_get_pkgname ${FUNCNAME[1]})"
+    local Pkgbuild="$PKGBUILD_ROOTDIR/$Pkgname/PKGBUILD"
+
+    _is_this_pkgname_included "$Pkgname" || {
+        echo "Error: $FUNCNAME: cannot read file '$Pkgbuild'." >&2
+        exit 1
+    }
+    if [ -r "$Pkgbuild" ] ; then
+        local version_check="$PKGBUILD_ROOTDIR/$Pkgname/version-check"
+        if [ -r "$version_check" ] ; then
+            local Pkgver=$(_Get_item_value "$Pkgbuild" pkgver)
+            "$version_check" $Pkgname $Pkgver || exit 1
+        else
+            if [ -n "$(grep -w "^_version_check" "$Pkgbuild")" ] ; then
+                source "$Pkgbuild"
+                _version_check || exit 1
+            fi
+        fi
+    fi
+}
+
+_Get_item_value() {
+    local Pkgbuild="$1"
+    local item="$2"
+    /usr/bin/grep "^$item=" "$Pkgbuild" | cut -d= -f2 | sed "s|^[\"']\(.*\)[\"']$|\1|"   # remove possible surrounding quotes
+}
+
+_Get_pkgver() { _Get_item_value "$1" pkgver ; }
+
+_archlinux-appstream-data-pamac_destruct() {
+    :
+    # Rename a package including epoch.
+    # Github release assets will convert "epoch:pkgver" into "epoch.pkgver"
+    # Here we rename the package name back to original.
+}
+_archlinux-appstream-data-pamac_hook() {
+    # Get rid of epoch!
+    # Change epoch and pkgver to one pkgver: $epoch$pkgver
+
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    local Epoch="$(_Get_item_value "$Pkgbuild" epoch)"
+    if [ -n "$Epoch" ] ; then
+        local Pkgver=$(_Get_item_value "$Pkgbuild" pkgver)
+        if true ; then
+            sed -i "$Pkgbuild" \
+                -e "/^pkgver=/a \ _pkgver_orig=$Pkgver" \
+                -e 's|^epoch=|# epoch=|' \
+                -e 's|$pkgver|$_pkgver_orig|g' \
+                -e 's|${pkgver}|$_pkgver_orig|g' \
+                -e "s|^pkgver=|pkgver=${Epoch}|"
+            if true ; then
+                sed -i "$Pkgbuild" \
+                    -e 's|^\(pkgrel=[0-9]*\)$|\1.1|'
+            fi
+        fi
+    fi
+}
+
+_yay-bin_hook_test() {
+    # change pkgname from yay-bin to yay
+    local pkgbuild="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    _is_this_pkgname_included || {
+        echo "Error: $FUNCNAME: cannot read file '$pkgbuild'." >&2
+        exit 1
+    }
+    if [ -r "$pkgbuild" ] ; then
+        sed -i "$pkgbuild" \
+            -e 's|^pkgname=yay-bin|pkgname=yay|'
+    fi
+}
+
+_brscan4_hook() {
+    __generic_version_check
+}
+
+_brother-dcp-l2537dw-printer_hook() {
+    __generic_version_check
+}
+
+_pamac-aur_hook() {
+    :  # nothing to do?
+}
+
+_pamac-aur_hook_for_8.0.4() {
+    return
+    
+    local pkgbuild="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    _is_this_pkgname_included || {
+        echo "Error: $FUNCNAME: cannot read file '$pkgbuild'." >&2
+        exit 1
+    }
+
+    if [ -r "$pkgbuild" ] ; then
+        if [ "$(grep MaxParallelDownloads "$pkgbuild")" = "" ] ; then
+            local linetoadd="sed -i data/config/pamac.conf -e 's|^MaxParallelDownloads = .*\$|MaxParallelDownloads = 0|'"
+            local ver="$(_Get_item_value "$pkgbuild" pkgver)"
+            ver+="_m"
+            sed -i "$pkgbuild" \
+                -e '/  \# adjust version string/i \  '"$linetoadd"''
+            #   -e 's|^pkgver=.*$|pkgver='"$ver"'         # suffix "_m" because config changed in prepare()|'  # NOT WORKING!
+        fi
+    fi
+}
+
+_pamac-gtk_hook() {
+    # This package extracts to folder 'pamac' instead of 'pamac-gtk'!
+    # Let's change it back.
+
+    local folder_expected="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"
+    local folder_extracted="$PKGBUILD_ROOTDIR"/pamac
+
+    if [ -d "$folder_extracted" ] && [ ! -d "$folder_expected" ] ; then
+        mv "$folder_extracted" "$folder_expected"
+    fi
+}
+
+_bashdb_hook() {
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+    local ver=$(_Get_item_value "$Pkgbuild" _ver)
+
+    if [ "$ver" = "5.0-1.1.2" ] ; then
+        # support also bash version 5.1
+
+        local line="s/'5.0')/'5.0' | '5.1')/"
+
+        sed -i "$Pkgbuild" \
+            -e "/^[ ]*#sed /a \  sed -i configure -e \"$line\""
+
+        # use a better sourceforge link:
+        sed -i "$Pkgbuild" \
+            -e "/^source=/a \ source=(bashdb-$ver.tar.bz2::https://sourceforge.net/projects/bashdb/files/bashdb/$_ver/bashdb-$ver.tar.bz2/download)"
+
+        # show in pkgrel we changed this package
+        if [ "$(_Get_item_value "$Pkgbuild" pkgrel | cut -d'=' -f2)" = "'1'" ] ; then
+            sed -i "$Pkgbuild" \
+                -e 's|^pkgrel=.*|pkgrel=1.1|'
+        fi
+    fi
+}
+
+_bashdb_hook_temp() {
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+
+    source "$Pkgbuild"
+
+    if [ "$pkgver" = "5.0_1.1.0" ] ; then
+        if [ "$pkgrel" = "1" ] ; then
+            sed -i "$Pkgbuild" \
+                -e 's|^pkgrel=.*$|pkgrel=1.1|'
+        fi
+    fi
+}
+
+_ccrypt_hook() {
+    return    # no more needed (?)
+
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+
+    pushd "$PKGBUILD_ROOTDIR"/$Pkgname >/dev/null || return 1
+    __generic_fix_https  # $Pkgname   # uses PKGBUILD
+    source PKGBUILD || return 1
+    local src="${source[0]}"
+    curl -Lfsm 10 -o $(basename "$src") "$src" || return 1
+    local sum=$(sha512sum $(basename "$src") | awk '{print $1}')
+    echo "sha512sums=($sum)" >> PKGBUILD
+    popd >/dev/null
+}
+
+_paper-icon-theme-git_hook() {
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+    local cleanup=""
+    local commits commit
+    local data=$(curl -s https://github.com/snwh/paper-icon-theme)
+
+    commits=$(echo "$data" | grep -B2 " commits$"   | head -n1 | sed 's|[ ]*<strong>\([0-9]*\)</strong>$|\1|')  # 832
+    commit=$( echo "$data" | grep ">Permalink<" | sed 's|.*/tree/\([0-9a-f]*\)".*|\1|')                         # aa3e8af7a1f0831a51fd7e638a4acb077a1e5188
+    commit=${commit::7}                                                                                         # aa3e8af
+
+    cleanup+='    local dir="$srcdir/../$pkgname"\n'
+    cleanup+='    [ -d "$dir" ] && rm -rf "$dir"'
+
+    # Changes:
+    # - remove reference to $srcdir
+    # - get pkgver from github info
+    # - remove pkgver()
+    # - conflicts with paper-icon-theme
+    # - add some cleanup
+
+    sed -i "$Pkgbuild" \
+        -e 's|cd "$srcdir/$pkgname"$|cd "$pkgname"|' \
+        -e "s|^pkgver=.*|pkgver=$commits.$commit|" \
+        -e 's|^pkgver()|_pkgver_not_used()|' \
+        -e "/^provides=(/a \conflicts=(paper-icon-theme)" \
+        -e "/ ninja -C /a \    # cleanup\n$cleanup"
+    return 11 # pkgver was changed
+}
+
+_xfe_hook_temp() {
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+
+    source "$Pkgbuild"
+
+    if [ "$pkgver" = "1.43.2" ] ; then
+        if [ "$pkgrel" = "2" ] ; then
+            sed -i "$Pkgbuild" \
+                -e 's|^pkgrel=.*$|pkgrel=2.1|'
+        fi
+    fi
+}
+_virtualbox-ext-oracle_hook() {
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+    local Pkgver=$(_Get_item_value "$Pkgbuild" pkgver)
+
+    # add a version check, virtualbox must be at least the same version
+    #sed -i "$Pkgbuild" -e '/^noextract=/'a'depends=("virtualbox>=$pkgver")'
+    sed -i "$Pkgbuild" \
+        -e "s|^depends=('virtualbox'|depends=('virtualbox>=$Pkgver'|"
+}
+
+_pamac-aur-git_hook() {
+    # Find the (bleeding edge) real pkgver from gitlab source code.
+
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgdir="$PKGBUILD_ROOTDIR"/$Pkgname
+    local Pkgbuild="$Pkgdir"/PKGBUILD
+    local Pkgver
+    local pamacdir=pamac
+    local url=https://gitlab.manjaro.org/applications/$pamacdir
+
+    pushd "$Pkgdir" >/dev/null
+
+    git clone $url 2>/dev/null || {
+        popd >/dev/null
+        echo "Sorry, '$url' is not responding." >&2
+        return 1
+    }
+
+    pushd $pamacdir >/dev/null
+
+    Pkgver="$(git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g' | cut -c2-48)"
+
+    popd >/dev/null
+
+    rm -rf $pamacdir
+    local currpkgver="$(_Get_item_value "$Pkgbuild" pkgver)"
+    if [ "$Pkgver" != "$currpkgver" ] ; then
+        sed -i "$Pkgbuild" \
+            -e 's|^pkgver=.*$|pkgver='"$Pkgver"'|'
+        return 11  # pkgver was changed
+        # echo -n "# " >&2                               # show user we have changed pkgver!
+    fi
+
+    popd >/dev/null
+}
+
+_vivaldi_hook_have_latest() {
+    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    _is_this_pkgname_included $Pkgname || {
+        echo "Error: $Pkgname: $FUNCNAME: not included in the list!" >&2
+        return 1
+    }
+
+    local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
+    local Url="$(_Get_item_value "$Pkgbuild" url)"                            # here is the official code
+    local Pkgver="$(_Get_item_value "$Pkgbuild" pkgver)"                      # package version info from AUR PKGBUILD
+    local Pkgrel="$(_Get_item_value "$Pkgbuild" pkgrel)"                      # package release info from AUR PKGBUILD
+    local tmpfile=$(mktemp)
+    local latest built File sum
+
+    wget -q --timeout=10 -O $tmpfile $Url/download || {
+        echo "Error: $Pkgname: $FUNCNAME: info download failed." >&2
+        rm -f $tmpfile
+        return 1
+    }
+
+    latest="$(grep '\.x86_64\.rpm' $tmpfile | sed -e 's|^.*/stable/vivaldi-stable-||' -e 's|\.x86_64.*$||')"
+    rm -f $tmpfile
+    built="$(pkghlp --pkgver $Pkgname)"
+
+    sed -i "$Pkgbuild" \
+        -e 's|^pkgver=.*$|pkgver='"${latest:: -2}"'|' \
+        -e 's|^_rpmversion=.*$|_rpmversion='"${latest}"'|'
+
+    if [ $(vercmp "$latest" "$built") -gt 0 ] ; then
+        test $(vercmp "$latest" "${Pkgver}-$Pkgrel") -gt 0 && \
+            echo "Warning: $Pkgname: AUR PKGBUILD is outdated ($Pkgver-${Pkgrel} < $latest), check '$Url'." >&2
+        echo "Info: $Pkgname: adjusting version to $latest." >&2
+
+        File=vivaldi-stable-${latest}.x86_64.rpm
+        pkghlp --cacheget $File
+        test -r $File || wget -q --timeout=20 -O $File https://downloads.vivaldi.com/stable/$File || \
+            { echo "ERROR: wget $File failed." >&2 ; return 1 ; }
+        pkghlp --cacheput $File
+        sum="$(sha512sum $File | awk '{print $1}')"
+        sed -i "$Pkgbuild" \
+            -e 's|^sha512sums=.*$|sha512sums=('$sum')|'
+        return 11 # pkgver was changed
+    fi
+}
+
+# These hooks provide the opportunity to change AUR package files if needed.
+declare -A ASSET_PACKAGE_HOOKS                                  # functions: use package name like _"pkgname"_hook_do_something
+
+#ASSET_PACKAGE_HOOKS["tkpacman"]="__generic_fix_https tkpacman"
+#ASSET_PACKAGE_HOOKS["firefox-beta"]="__generic_fix_https firefox-beta"
+#ASSET_PACKAGE_HOOKS["pamac-gtk"]="_pamac-gtk_hook"
+#ASSET_PACKAGE_HOOKS["vivaldi"]="_vivaldi_hook_have_latest"
+#ASSET_PACKAGE_HOOKS["voikko-libreoffice"]="__generic_fix_https voikko-libreoffice"
+#ASSET_PACKAGE_HOOKS["voikko-fi"]="__generic_fix_https voikko-fi"
+#ASSET_PACKAGE_HOOKS["termcap"]="__generic_fix_https termcap"
+
+#ASSET_PACKAGE_HOOKS["opera-beta"]="__generic_fix_https opera-beta"
+#ASSET_PACKAGE_HOOKS["opera-developer"]="__generic_fix_https opera-developer"
+
+#ASSET_PACKAGE_HOOKS["pamac-aur"]=_pamac-aur_hook
+#ASSET_PACKAGE_HOOKS["pamac-aur-git"]=_pamac-aur-git_hook
+ASSET_PACKAGE_HOOKS["virtualbox-ext-oracle"]=_virtualbox-ext-oracle_hook
+#ASSET_PACKAGE_HOOKS["xfe"]=_xfe_hook_temp
+#ASSET_PACKAGE_HOOKS["bashdb"]=_bashdb_hook
+# ASSET_PACKAGE_HOOKS["ccrypt"]="_ccrypt_hook"
+
+#ASSET_PACKAGE_HOOKS[yad-git]=_yad-git_hook
+ASSET_PACKAGE_HOOKS["shellcheck-bin"]=_shellcheck-bin_hook
+ASSET_PACKAGE_HOOKS["budgie-control-center"]=_budgie-control-center_hook
+
+ASSET_PACKAGE_HOOKS["yay-bin"]=_yay-bin_hook_test
+ASSET_PACKAGE_HOOKS["brscan4"]=_brscan4_hook
+ASSET_PACKAGE_HOOKS["brother-dcp-l2537dw-printer"]=_brother-dcp-l2537dw-printer_hook
+#ASSET_PACKAGE_HOOKS["paper-icon-theme-git"]=_paper-icon-theme-git_hook
+
+#ASSET_PACKAGE_HOOKS["archlinux-appstream-data-pamac"]=_archlinux-appstream-data-pamac_hook
+
+ASSET_PACKAGE_HOOKS["rate-mirrors"]=_rate-mirrors_hook
+
+ASSET_PACKAGE_HOOKS["upp"]=_upp_hook
+ASSET_PACKAGE_HOOKS[menulibre-git]=_menulibre-git_hook
+
+
+# Run these after makepkg
+declare -A ASSET_DESTRUCTORS
+
+#ASSET_DESTRUCTORS[archlinux-appstream-data-pamac]=_archlinux-appstream-data-pamac_destruct
+
+# Hook functions are run after RationalityTests and initial PKGBUILDs setup in assets.make.
+# There may be several hook functions.
+
+_pkgbuilds_m_hook_old()
+{
+    # A hook function to make sure local PKGBUILDS from AUR are up to date.
+
+    local dir_above_pkgbuilds="$PKGBUILD_ROOTDIR"/..
+    local conf=assets.conf
+    local url=https://github.com/manuel-192/"$REPONAME".git
+
+    pushd "$dir_above_pkgbuilds" >/dev/null || {
+        echo "Error: $conf: cannot cd to '$dir_above_pkgbuilds'." >&2
+        exit 1
+    }
+    rm -rf "$PKGBUILD_ROOTDIR"
+    mkdir -p "$PKGBUILD_ROOTDIR"
+    pushd "$PKGBUILD_ROOTDIR" >/dev/null
+    git clone "$url" >& /dev/null || {
+        echo "Error: $conf: git clone $url failed." >&2
+        popd >/dev/null
+        popd >/dev/null
+        exit 1
+    }
+    if [ -d "$PKGBUILD_ROOTDIR"/$REPONAME/PKGBUILDs ] ; then
+        mv "$PKGBUILD_ROOTDIR"/$REPONAME/PKGBUILDs/* "$PKGBUILD_ROOTDIR"/ || {
+            echo "Error: $conf: $FUNCNAME: mv $PKGBUILD_ROOTDIR/PKGBUILDs subdirs failed." >&2
+            popd >/dev/null
+            popd >/dev/null
+            exit 1
+        }
+    fi
+    rm -rf "$PKGBUILD_ROOTDIR/$REPONAME"
+    touch "$PKGBUILD_ROOTDIR"/NOTE-THIS-IS-A-TEMPORARY-FOLDER
+    popd >/dev/null
+    popd >/dev/null
+}
+
+_ASSERT_() {
+    local ret=0
+    "$@" &> /dev/null || ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "'$*' failed" >&2
+       exit $ret
+    fi
+}
+
+_pkgbuilds_m_hook() {
+    # keep up a copy of $REPONAME in $ASSETSDIR/.$REPONAME
+    # note that it cannot be used for anything else!
+
+    if [ -d "$ASSETSDIR/.$REPONAME/.git" ] ; then
+        _ASSERT_ pushd "$ASSETSDIR/.$REPONAME"
+        #printf "git pull... " >&2
+        _ASSERT_ git pull
+        _ASSERT_ popd
+    else
+        _ASSERT_ pushd "$ASSETSDIR"
+        _ASSERT_ rmdir "$PKGBUILD_ROOTDIR"                        # assets.make created it...
+        _ASSERT_ rm -f "${PKGBUILD_ROOTDIR##*/}"                  # remove possible symlink
+        printf "git clone... " >&2
+        _ASSERT_ git clone "$GITREPOURL" ".$REPONAME"             # example: clone to .m-aur
+        _ASSERT_ ln -s ".$REPONAME/${PKGBUILD_ROOTDIR##*/}"
+        _ASSERT_ popd
+    fi
+}
+
+local ASSET_HOOKS=(
+    _pkgbuilds_m_hook     # currently no local PKGBUILDs exist !!
+)
+
+
+_update_m_more_repo() {
+    cd "$GITDIR"
+    ./GitUpdate
+}
+
+_remove_unneeded_build_deps() {
+    local pkgs=(
+        flatpak
+    )
+    local msgs=(
+        "Removing flatpak (pamac-aur dependency)"
+    )
+    local ix
+
+    for ((ix=0; ix < ${#pkgs[@]}; ix++)) ; do
+        pacman -Q "${pkgs[$ix]}" >& /dev/null && {
+            echo "${msgs[$ix]}: " >&2
+            su-c_wrapper pacman -Rsn "${pkgs[$ix]}"
+        }
+    done
+}
+
+local ASSET_POST_HOOKS=(
+    _remove_unneeded_build_deps
+    # _update_m_more_repo
+)
