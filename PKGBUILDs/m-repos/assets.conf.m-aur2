@@ -14,7 +14,7 @@ local REPO_COMPRESSOR=zst
 local ASSETSDIR="$(realpath "$PWD")"
 local PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"        # temporary copy, will be overwritten
 local GITDIR="$ASSETSDIR/../../$REPONAME"            # may not be $REPONAME ...
-local USE_RELEASE_ASSETS=yes
+local USE_RELEASE_ASSETS=no                          # github's release asset name does not support a colon ':' !!!
 local PREFER_GIT_OVER_RELEASE=yes
 
 #if [ "$USE_RELEASE_ASSETS" = "no" ] ; then
