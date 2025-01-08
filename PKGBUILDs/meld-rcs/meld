@@ -9,8 +9,11 @@ DIE() {
     exit 1
 }
 
+#MELD() {
+#    /bin/meld "$@" &  # &> /dev/null &
+#}
 MELD() {
-    /bin/meld "$@" &  # &> /dev/null &
+    /bin/meld "$@"  &> /dev/null &
 }
 
 Modify2para() {
@@ -60,16 +63,16 @@ Meld() {
     local linecount=$(/bin/ps -C meld | tail -n+2 | wc -l)
     [ $linecount -gt $((max_meld_instances+1)) ] && DIE "sorry, only $max_meld_instances 'meld' instances are allowed to run."
 
-    local -r meldgit=/bin/meldgit
-    local -r meldrcs=/bin/meldrcs
+    # local -r meldgit=/bin/meldgit
+    # local -r meldrcs=/bin/meldrcs
 
     case "$1" in
-        -R) shift; $meldrcs "$@" ;;
-        -G) shift; $meldgit "$@" ;;
+        -R) shift; meldrcs "$@" ;;
+        -G) shift; meldgit "$@" ;;
         "") if InGitTree ; then
-                $meldgit
+                meldgit
             elif [ -d RCS ] ; then
-                $meldrcs
+                meldrcs
             else
                 MELD
             fi

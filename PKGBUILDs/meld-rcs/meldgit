@@ -10,7 +10,7 @@ DIE() {
 }
 
 MELD() {
-    /bin/meld "$@" & #&> /dev/null &
+    /bin/meld "$@"  &> /dev/null &
 }
 
 Meld() {

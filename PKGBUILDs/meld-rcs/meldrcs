@@ -20,13 +20,16 @@ RevFix() {
     local head="${HEAD##*.}"   # get the rightmost digit after dot
 }
 
+MELD() {
+    /bin/meld "$@"  &> /dev/null &
+}
+
 Main()
 {
     local progname=${0##*/}
     local arg args=()
     local revs=() rev1 rev2
     local filepath rcsdir filename
-    local realmeld=/usr/bin/meld
 
     case "$1" in
         "") [ -d RCS ] && args=($(fzf)) ;;
@@ -66,14 +69,14 @@ Main()
                     0)  # FORM: meld file
                         co "$filename" 2>/dev/null                      # RCS head
                         mv "$filename" "$filename".head
-                        $realmeld "$filepath" "$filename".head
+                        MELD "$filepath" "$filename".head
                         ;;
                     1)  # FORM: meld -rX file
                         # HEAD1=$(head -n1 "$rcsdir/$filename" | awk '{print $2}' | sed 's|;$||')
                         rev1="${revs[0]}"
                         co -r"$rev1" "$filename" 2>/dev/null
                         mv "$filename" "$filename"."$rev1"
-                        $realmeld "$filepath" "$filename"."$rev1"
+                        MELD "$filepath" "$filename"."$rev1"
                         ;;
                     2)  # FORM: meld -rX -rY file
                         rev1="${revs[0]}"
@@ -82,7 +85,7 @@ Main()
                         mv "$filename" "$filename"."$rev1"
                         co -r"$rev2" "$filename" 2>/dev/null
                         mv "$filename" "$filename"."$rev2"
-                        $realmeld "$filename"."$rev1" "$filename"."$rev2"
+                        MELD "$filename"."$rev1" "$filename"."$rev2"
                         ;;
                     *) DIE "there can be zero, one or two -r options" ;;
                 esac
@@ -95,7 +98,7 @@ Main()
     fi
 
     # no RCS stuff, so continue as normal meld
-    $realmeld "$@"
+    MELD "$@"
 }
 
 Main "$@"
