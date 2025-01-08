@@ -9,9 +9,6 @@ DIE() {
     exit 1
 }
 
-#MELD() {
-#    /bin/meld "$@" &  # &> /dev/null &
-#}
 MELD() {
     /bin/meld "$@"  &> /dev/null &
 }
@@ -59,12 +56,9 @@ Meld() {
     # - compare two files when one parameter is a folder
 
     # Limit instances to $max_meld_instances
-    local -r max_meld_instances=3
+    local -r max_meld_instances=4
     local linecount=$(/bin/ps -C meld | tail -n+2 | wc -l)
     [ $linecount -gt $((max_meld_instances+1)) ] && DIE "sorry, only $max_meld_instances 'meld' instances are allowed to run."
-
-    # local -r meldgit=/bin/meldgit
-    # local -r meldrcs=/bin/meldrcs
 
     case "$1" in
         -R) shift; meldrcs "$@" ;;
