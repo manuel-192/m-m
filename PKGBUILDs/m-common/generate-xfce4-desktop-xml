@@ -1,9 +1,6 @@
 #!/bin/bash
 
-DIE() {
-    echo "$progname: error: $1"
-    exit 1
-}
+DIE() { echo "$progname: error: $1" >&2; exit 1; }
 
 Start() {
     cat <<EOF
@@ -12,7 +9,6 @@ Start() {
 <channel name="xfce4-desktop" version="1.0">
 EOF
 }
-
 End() {
     cat <<EOF
   <property name="last" type="empty">
@@ -50,6 +46,7 @@ Monitors() {
 
 Usage() {
     cat <<EOF >&2
+Purpose: generate the contents of file xfce4-desktop.xml to standard output.
 Usage:   $progname [options]
 Options: --wall=X           X = full path to the desired wallpaper file.
          --width=X          X = window width property.
@@ -63,6 +60,9 @@ Main() {
     local wallpaper="/usr/share/endeavouros/backgrounds/endeavouros-wallpaper.png"   # png -> avif  ??
     local win_width="1229"
     local win_height="1011"
+    local monitors=""
+
+    monitors=$(Monitors) || return 1
 
     while [ "$1" ] ; do
         case "$1" in
@@ -78,7 +78,7 @@ Main() {
 
     echo '  <property name="backdrop" type="empty">'
     echo '    <property name="screen0" type="empty">'
-    for monitor in $(Monitors) ; do
+    for monitor in $monitors ; do
         echo "      <property name=\"$monitor\" type=\"empty\">"
         for workspace in workspace{0..5} ; do
             echo "        <property name=\"$workspace\" type=\"empty\">"
@@ -92,7 +92,7 @@ Main() {
     echo '    </property>'
     echo '  </property>'
 
-    End 1229 1011
+    End
 }
 
 Main "$@"
