@@ -37,7 +37,21 @@ EOF
 }
 
 Monitors() {
-    local monitors=$(xrandr | grep connected | awk '{print $1}')
+    local monitors=""
+
+    case "$XDG_SESSION_TYPE" in
+        wayland)
+            [ -x /bin/wlr-randr ] || DIE "package wlr-randr is required but not installed"
+            monitors=$(/bin/wlr-randr | grep "^[A-Za-z]" | awk '{print $1}')
+            ;;
+        x11)
+            [ -x /bin/xrandr ] || DIE "package xorg-xrandr is required but not installed"
+            monitors=$(/bin/xrandr | grep connected | awk '{print $1}')
+            ;;
+        *)
+            DIE "sorry, cannot determine system's monitors"
+            ;;
+    esac
     [ "$monitors" ] || DIE "no monitors found!"
     monitors=$(echo "$monitors" | sed 's|^|monitor|' )
     monitors=(monitor0 monitor1 $monitors)
