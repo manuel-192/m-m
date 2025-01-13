@@ -1,5 +1,5 @@
-# arch-cl
-Show changelogs of Arch packages (not AUR though).
+# arch-changelog
+Show changelogs of Arch packages (not AUR though).<br>
+Note that only a very small number of Arch packages are supported currently.
 ## Help
-- Usage: arch-cl "package-name"
-- Use your favorite browser, for example: <b>export BROWSER_ARCH_CL=falkon</b> in your ~/.bashrc
+- Usage: arch-changelog "package-name"
