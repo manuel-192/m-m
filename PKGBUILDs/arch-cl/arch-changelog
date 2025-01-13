@@ -65,8 +65,8 @@ Parameters() {
                 ;;
             --parameters)
                 DetectClFile
-                DumpPkgnames
                 DumpOptions
+                DumpPkgnames
                 exit 0
                 ;;
             --github | --gitlab) preferred_site=${1:2} ;;
