@@ -5,7 +5,7 @@ pkgname=arch-cl
 pkgdesc="Arch packages changelog."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=4
+pkgrel=5
 arch=('any')
 license=('GPL')
 depends=('bash')
@@ -16,7 +16,7 @@ source=(
     $url/arch-changelog.conf
 )
 sha512sums=('9bda393d97702268eddb4e205d2556388c760c10a15a3bdf0fafd4d11a4a3b3985e139383c03c9b1c441563658770450162fc446d70349a173b9c82606c053ae'
-            '93b9312cd860025ae9117fd297e3813280442b0dece4a49b438f2a72061e8200fd2664fbc109833cfc36723ce4286224f7babedc63a04c27d842960160996d52'
+            'f5a7e219152f6baa22117eb65cbc16d3a9a975e46411ecd35a10d3cdd5ff2e3cbdbe514a2ca42052624b3ac50e2fd14594f3a96c3b5061682be869cbc2d16231'
             '74486a11653350f302905cc2a80b38220489b324905d72ae48c50d39fe2fcfdb5aaef934259160404724dc306c4b650e122479d088292bf48fac5a06fe6dffea')
 
 package() {

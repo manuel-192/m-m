@@ -1,12 +1,12 @@
-# bash completion for pe_arch-changelog        -*- shell-script -*-
+# bash completion for arch-changelog        -*- shell-script -*-
 
-_pe_arch-changelog_complete() {
+_arch-changelog_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     compopt -o nosort
 }
 
-_pe_arch-changelog_() 
+_arch-changelog_() 
 {
     local cur prev words #cword split
     _init_completion -s || return
@@ -21,8 +21,8 @@ _pe_arch-changelog_()
         *)
             # Handle all top-level parameters.
             case "$cur" in
-                *) _pe_arch-changelog_complete "$(/bin/arch-changelog --parameters)" ;;
+                *) _arch-changelog_complete "$(/bin/arch-changelog --parameters)" ;;
             esac
     esac
 } &&
-complete -F _pe_arch-changelog_ arch-changelog
+complete -F _arch-changelog_ arch-changelog
