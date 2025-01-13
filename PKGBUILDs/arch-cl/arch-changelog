@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# Show the changelog of the given Arch package-name.
+
+echo2() { echo -e "$@" >&2; }
+INFO() { [ $quiet = no ] && echo2 "==> $progname: info: $1"; }
+WARN() { echo2 "==> $progname: warning: $1"; }
+DIE()  { echo2 "\n==> $progname: error: $1\n"; Usage 1; }
+
+Usage() {
+    cat <<EOF >&2
+Usage:   $progname [options] package-name(s)
+Options: --help, -h            This help.
+         --github              Uses github for showing the changelog.
+         --gitlab              Uses gitlab for showing the changelog.
+         --parameters          Show supported package names and options. Implies option -d.
+         --clfile=X, -c=X      Replace PKG_CHANGELOGS array with a new one in (bash) file 'X'.
+         --detect-clfile, -d   Detects possible changelog file at '$clfile_def'.
+         --url, -u             Simply print the changelog URL instead of opening it in a browser.
+         --quiet               Don't show purely informational messages (but show errors and warnings).
+EOF
+    [ "$1" ] && exit $1
+}
+
+DumpPkgnames() {
+    # Show only pkgnames that have a non-empty URL.
+    declare -p PKG_CHANGELOGS | sed -e 's|\[|\n\[|g' -e 's|[ ]*)$||' | grep "^\[" | grep -v '""' | sed -E 's|^\[([^]]*).*|\1|' | sort
+}
+DumpOptions() {
+    local sopts2=${sopts//:/}
+    local lopts2=${lopts//:/}
+    printf "%s\n" ${sopts2//?/-& }--${lopts2//,/ --}
+}
+DetectClFile() {
+    local mode="$1"
+    clfile="$clfile_def"
+    if [ -e "$clfile" ] ; then
+        [ "$mode" = verbose ] && INFO "reading $clfile..."
+        source "$clfile" || DIE "reading $clfile failed"
+    else
+        case "$REPONAME" in
+            core | extra | "") ;;             # $clfile not found
+            *) DIE "$clfile not found" ;;
+        esac
+    fi
+}
+
+Parameters() {
+    local sopts="c:dhu"
+    local lopts="help,github,gitlab,parameters,clfile:,detect-clfile,quiet,url"
+    local opts=""
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
+    eval set -- "$opts"
+
+    while [ "$1" ] ; do
+        case "$1" in
+            --clfile | -c)
+                clfile="$2"
+                shift
+                source "$clfile" || DIE "reading $clfile failed"      # get new PKG_CHANGELOGS and REPONAME
+                ;;
+            --detect-clfile | -d)
+                DetectClFile verbose
+                ;;
+            --parameters)
+                DetectClFile
+                DumpPkgnames
+                DumpOptions
+                exit 0
+                ;;
+            --github | --gitlab) preferred_site=${1:2} ;;
+            --url | -u)          return_url=yes ;;
+            --quiet)             quiet=yes ;;
+            --help | -h)         Usage 0 ;;
+            --) shift; break ;;
+        esac
+        shift
+    done
+    pkgnames=("$@")
+    # [ "$REPONAME" ] || REPONAME=??
+}
+
+Changelog() {
+    local -r progname=${0##*/}
+    local -r progpath=${0}
+    local pkgnames=()
+    local preferred_site=gitlab                 # github or gitlab
+    local clfile=""                             # for option -c; if given, the file contains PKG_CHANGELOGS and REPONAME
+    local -r clfile_def="./changelogs.conf"     # for option -d
+    local REPONAME=""
+    local return_url=no                         # no=open URL, yes=return URL
+    local quiet=no
+    local changelogfile=/etc/$progname.conf
+
+    # Known package-names:
+    declare -A PKG_CHANGELOGS=()
+
+    source "$changelogfile" || DIE "no changelog file in $changelogfile"
+    [ "$PKG_CHANGELOGS[*]" ] || DIE "no changelog definitions in $changelogfile"
+
+    Parameters "$@"
+
+    HandlePkgnames
+}
+
+HandlePkgnames() {
+    [ "$pkgnames" ] || DIE "please give package-name(s), for example: $progname glances"
+    local pkgname
+    local changelog_url=""
+    local urls_line=""
+    local URLS=()
+    local tmp=()
+
+    for pkgname in "${pkgnames[@]}" ; do
+        changelog_url="${PKG_CHANGELOGS[$pkgname]}"
+        if [ -z "$changelog_url" ] ; then
+            [ "$quiet" = no ] && DIE "package name '$pkgname' is not supported" || exit 1
+        fi
+
+        if [ $return_url = yes ] ; then
+            [ "$urls_line" ] && urls_line+="|$changelog_url" || urls_line="$changelog_url"
+        else
+            readarray -t tmp <<< $(echo "${changelog_url//|/$'\n'}")
+            URLS+=("${tmp[@]}")
+        fi
+    done
+    if [ "$urls_line" ] ; then
+        echo "$urls_line"            # show the URL(s) separated by '|'
+    elif [ "$URLS" ] ; then
+        OPEN_URLS "${URLS[@]}"       # open the URL(s)
+    fi
+}
+
+OPEN_URLS() {
+    # use mime binding to open the URL(s) with a browser; if needed, fallback to firefox
+    local xx
+    if [ -x /bin/exo-open ] ; then
+        exo-open "$@"
+    elif [ -x /bin/kde-open ] ; then
+        for xx in "$@" ; do
+            kde-open "$xx"
+        done
+    elif [ -x /bin/xdg-open ] ; then
+        for xx in "$@" ; do
+            xdg-open "$xx"
+        done
+    elif [ -x /bin/firefox ] ; then
+        setsid firefox "$@"
+    fi
+}
+
+Changelog "$@"
