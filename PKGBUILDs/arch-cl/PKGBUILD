@@ -5,16 +5,18 @@ pkgname=arch-cl
 pkgdesc="Arch packages changelog."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=2
+pkgrel=3
 arch=('any')
 license=('GPL')
 depends=('bash')
 
 source=(
     $url/arch-changelog
+    $url/arch-changelog.completion
     $url/arch-changelog.conf
 )
 sha512sums=('451b8f059c510b800100a268965d88d33970a445bea6cfe31a6974688695000e8cef26cdecfbe15131beaba91f6ac40c648f45fe57d8c060c7073b780e94234c'
+            '93b9312cd860025ae9117fd297e3813280442b0dece4a49b438f2a72061e8200fd2664fbc109833cfc36723ce4286224f7babedc63a04c27d842960160996d52'
             '74486a11653350f302905cc2a80b38220489b324905d72ae48c50d39fe2fcfdb5aaef934259160404724dc306c4b650e122479d088292bf48fac5a06fe6dffea')
 
 package() {
@@ -22,8 +24,9 @@ package() {
     for src in "${source[@]}" ; do
         file=${src##*/}
         case "$file" in
-            *.conf) install -Dm644 $file    "$pkgdir"/etc/$file ;;
-            *)      install -Dm755 $file    "$pkgdir"/usr/bin/$file ;;
+            *.completion) install -Dm644 $file    "$pkgdir"/usr/share/bash-completion/completions/${file%.*} ;;
+            *.conf)       install -Dm644 $file    "$pkgdir"/etc/$file ;;
+            *)            install -Dm755 $file    "$pkgdir"/usr/bin/$file ;;
         esac
     done
 }
