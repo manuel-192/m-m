@@ -1,0 +1,41 @@
+#!/bin/bash
+
+Open() {
+    echo "$@" >&2
+    exo-open "$@"
+}
+
+GetUrl() {
+    local url=$(expac -Q %u "$1")
+    [ "$url" ] || url=$(expac -S %u "$1")
+    echo "$url"
+}
+
+Main()
+{
+    local pkgname="$1"
+    local base1="https://gitlab.archlinux.org/archlinux/packaging/packages"
+    local url=""
+    local PKGBUILD_URL=$(GetUrl $pkgname)
+
+    case "$PKGBUILD_URL" in
+        https://gitlab.archlinux.org/*)
+            url="$base1/$pkgname/commits" ;;
+        https://*.gnu.org/*)
+            url="https://git.savannah.gnu.org/cgit/$pkgname.git/log" ;;
+        https://*.nongnu.org/*)
+            url="https://git.savannah.nongnu.org/cgit/$pkgname.git/log/" ;;
+        https://gitlab.com/kernel-firmware/linux-firmware)
+            url="https://gitlab.com/kernel-firmware/linux-firmware/commits" ;;
+        *) ;;
+    esac
+
+    # case "$pkgname" in
+    #     amd-ucode) url=https://gitlab.com/kernel-firmware/linux-firmware ;;
+    #     autoconf)  url="https://ftp.gnu.org/pub/gnu/autoconf" ;;
+    #     *)         url="$base1/$pkgname/commits" ;;
+    # esac
+    Open "$url"
+}
+
+Main "$@"
