@@ -81,6 +81,34 @@ Parameters() {
     # [ "$REPONAME" ] || REPONAME=??
 }
 
+GetUrl() {
+    local pkgname="$1"
+    local url=$(expac -Q %u "$pkgname")
+    [ "$url" ] || url=$(expac -S %u "$pkgname")
+    echo "$url"
+}
+
+HandlePkgbuildUrl() {
+    local -r pkgname="$1"
+    local -n _clurl="$2"
+    local -r PKGBUILD_URL=$(GetUrl $pkgname)
+    local url=""
+
+    case "$PKGBUILD_URL" in
+        https://gitlab.archlinux.org/*)
+            url="https://gitlab.archlinux.org/archlinux/packaging/packages/$pkgname/commits" ;;
+        https://*.gnu.org/*)
+            url="https://git.savannah.gnu.org/cgit/$pkgname.git/log" ;;
+        https://*.nongnu.org/*)
+            url="https://git.savannah.nongnu.org/cgit/$pkgname.git/log" ;;
+        https://gitlab.com/kernel-firmware/linux-firmware)
+            url="https://gitlab.com/kernel-firmware/linux-firmware/commits" ;;
+        https://*freedesktop.org/*)
+            url="https://gitlab.freedesktop.org/$pkgname/$pkgname/commits" ;;
+    esac
+    _clurl="$url"
+}
+
 Changelog() {
     local -r progname=${0##*/}
     local -r progpath=${0}
@@ -122,7 +150,12 @@ HandlePkgnames() {
     for pkgname in "${pkgnames[@]}" ; do
         changelog_url="${PKG_CHANGELOGS[$pkgname]}"
         if [ -z "$changelog_url" ] ; then
-            [ "$quiet" = no ] && DIE "package name '$pkgname' is not supported" || exit 1
+            HandlePkgbuildUrl "$pkgname" changelog_url
+            [ "$changelog_url" ] || changelog_url=$(eos-apps-info-helper --return-url "$pkgname" 2>/dev/null)
+            if [ -z "$changelog_url" ] ; then
+                [ "$quiet" = no ] && WARN "sorry, package name '$pkgname' is not supported"
+                continue
+            fi
         fi
 
         if [ $return_url = yes ] ; then
@@ -142,6 +175,7 @@ HandlePkgnames() {
 OPEN_URLS() {
     # use mime binding to open the URL(s) with a browser; if needed, fallback to firefox
     local xx
+    printf "%s\n" "$@" >&2
     if [ -x /bin/exo-open ] ; then
         exo-open "$@"
     elif [ -x /bin/kde-open ] ; then
