@@ -1,0 +1,59 @@
+#!/bin/bash
+
+WARN()     { echo -e "warning: $1" >&2; }
+DIE()      { echo -e "error: $1" >&2; Cleanup; exit 1; }
+DIE2()     { echo -e "error: $1" >&2; Cleanup2; exit 1; }
+Cleanup()  { cd "$origdir"; [ "$workdir" ] && rm -rf "$workdir"; }
+Cleanup2() { cd "$origdir"; }
+
+Main()
+{
+    local pkgname=""
+    local pkgnames=()
+    local install=no
+    local pkgs=()
+    local builds=()
+    local workdir=""
+    local origdir="$PWD"
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -i | --install) install=yes ;;            # implies Cleanup too
+            -*) DIE "option '$1' not supported" ;;
+            *) pkgnames+=("$1") ;;
+        esac
+        shift
+    done
+
+    [ "$pkgnames" ] || DIE "no pkgname"
+    pkgnames=($(printf "%s\n" "${pkgnames[@]}" | sort -u))   # remove duplicates
+
+    workdir=$(mktemp -d) || DIE2 "failed creating a temporary folder '$workdir'"
+    [ -d "$workdir" ] || DIE2 "failed creating a temporary folder '$workdir'"
+
+    for pkgname in "${pkgnames[@]}" ; do
+        echo -n " -> $pkgname ... "
+        cd "$workdir" >/dev/null || DIE "'cd $workdir' failed"
+        yay -Ga "$pkgname" &> /dev/null || { WARN "$pkgname not found"; continue; }
+        cd "$pkgname" >/dev/null
+        makepkg -cf &> /dev/null || DIE "building $pkgname failed"
+
+        readarray -t pkgs <<< $(/bin/ls -1 *.pkg.tar.zst)
+        [ "$pkgs" ] && builds+=("${pkgs[@]}")
+        mv "${pkgs[@]}" "$workdir" || DIE "moving pkgs to $workdir failed"
+        cd "$workdir"
+        [ -d "$workdir/$pkgname" ] && rm -rf "$workdir/$pkgname"
+        echo "OK"
+    done
+
+    if [ "$install" = yes ] ; then
+        cd "$workdir"
+        [ "$builds" ] && sudo pacman -U "${builds[@]}"
+        Cleanup
+    else
+        echo "Built packages are in folder '$workdir'."
+        /bin/ls -l "$workdir" | grep zst$
+    fi
+}
+
+Main "$@"
