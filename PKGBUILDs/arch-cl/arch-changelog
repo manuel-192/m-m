@@ -92,9 +92,16 @@ Changelog() {
     local return_url=no                         # no=open URL, yes=return URL
     local quiet=no
     local changelogfile=/etc/$progname.conf
+    local clfile_url="https://raw.githubusercontent.com/manuel-192/m-m/refs/heads/master/PKGBUILDs/arch-cl/arch-changelog.conf"
+
+    changelogfile="$HOME/.config/$progname.conf"
 
     # Known package-names:
     declare -A PKG_CHANGELOGS=()
+
+    if [ ! -e "$changelogfile" ] ; then
+        curl --fail -Lsm 30 -o"$changelogfile" "$clfile_url" || DIE "failed fetching $changelogfile"
+    fi
 
     source "$changelogfile" || DIE "no changelog file in $changelogfile"
     [ "$PKG_CHANGELOGS[*]" ] || DIE "no changelog definitions in $changelogfile"
