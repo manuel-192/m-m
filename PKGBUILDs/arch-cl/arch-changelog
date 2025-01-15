@@ -151,7 +151,7 @@ HandlePkgnames() {
         changelog_url="${PKG_CHANGELOGS[$pkgname]}"
         if [ -z "$changelog_url" ] ; then
             HandlePkgbuildUrl "$pkgname" changelog_url
-            [ "$changelog_url" ] || changelog_url=$(eos-apps-info-helper --return-url "$pkgname" 2>/dev/null)
+            [ "$changelog_url" ] || changelog_url=$(eos-pkg-changelog --url "$pkgname" 2>/dev/null)
             if [ -z "$changelog_url" ] ; then
                 [ "$quiet" = no ] && WARN "sorry, package name '$pkgname' is not supported"
                 continue
@@ -175,7 +175,7 @@ HandlePkgnames() {
 OPEN_URLS() {
     # use mime binding to open the URL(s) with a browser; if needed, fallback to firefox
     local xx
-    printf "%s\n" "$@" >&2
+    printf " -> %s\n" "$@" >&2
     if [ -x /bin/exo-open ] ; then
         exo-open "$@"
     elif [ -x /bin/kde-open ] ; then
