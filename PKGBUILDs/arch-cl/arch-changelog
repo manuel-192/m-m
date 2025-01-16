@@ -9,6 +9,7 @@ DIE()  { echo2 "\n==> $progname: error: $1\n"; Usage 1; }
 
 Usage() {
     cat <<EOF >&2
+Purpose: Show changelog of a set of Arch and EndeavourOS packages.
 Usage:   $progname [options] package-name(s)
 Options: --help, -h            This help.
          --github              Uses github for showing the changelog.
@@ -18,6 +19,9 @@ Options: --help, -h            This help.
          --detect-clfile, -d   Detects possible changelog file at '$clfile_def'.
          --url, -u             Simply print the changelog URL instead of opening it in a browser.
          --quiet               Don't show purely informational messages (but show errors and warnings).
+Notes:
+         - Currently only a small number of Arch packages is supported. We are working on it.
+         - Bash completion does not display all supported packages.
 EOF
     [ "$1" ] && exit $1
 }
@@ -105,6 +109,8 @@ HandlePkgbuildUrl() {
             url="https://gitlab.com/kernel-firmware/linux-firmware/commits" ;;
         https://*freedesktop.org/*)
             url="https://gitlab.freedesktop.org/$pkgname/$pkgname/commits" ;;
+        https://launchpad.net/*)
+            url="https://launchpad.net/$pkgname" ;;
     esac
     _clurl="$url"
 }
