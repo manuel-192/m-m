@@ -39,6 +39,7 @@ local PKGNAMES=(
     abbrevs-ls
     abbrevs-misc
     appdoc
+    arch-cl
     arch-rankmirrors
     archive-trim
     # archlinux-appstream-data-pamac-fix
