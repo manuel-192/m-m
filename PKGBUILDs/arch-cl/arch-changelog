@@ -127,9 +127,9 @@ Changelog() {
     # Known package-names:
     declare -A PKG_CHANGELOGS=()
 
-    if [ ! -e "$changelogfile" ] ; then
+    #if [ ! -e "$changelogfile" ] ; then
         curl --fail -Lsm 30 -o"$changelogfile" "$clfile_url" || DIE "failed fetching $changelogfile"
-    fi
+    #fi
 
     source "$changelogfile" || DIE "no changelog file in $changelogfile"
     [ "$PKG_CHANGELOGS[*]" ] || DIE "no changelog definitions in $changelogfile"
