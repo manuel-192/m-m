@@ -271,57 +271,104 @@ Edit() {
 Usage() {
     cat <<EOF
 
-Rank Arch mirrors and display them.
-
+Purpose: Rank Arch mirrors and display them.
 Usage: $progname [options]
-
 Options:
-    --all, -A                        Rank all available mirrors on all continents.
-    --continent, -C                  Rank all available countries of the current continent.
-    --country <list>, -c             A comma separated list of country code(s) for ranking their mirrors.
-                                     Codes are case insensitive.
-                                     Examples:
-                                        --country de,gb          # adds DE and GB for ranking
-                                        --country %de,dk         # sets DE and DK for ranking
-    --country-current, -t            Include current country to be ranked.
-    --edit-config, -e                Edit your configuration file.
-    --favorite, -f                   Add a favorite mirror to be added in the beginning of the ranked mirrorlist.
-                                     This option can be used many times to append favorites.
-                                     A mirror can be added
-                                       - as a full path in single quotes, or
-                                       - in a special format 'CC:st', see below.
-                                     A special value 'none' disables favorites (useful in testing).
-                                     The special 'CC:st' has components:
-                                        'CC' is a two-letter country code (see 'reflector --list-countries')
-                                        'st' is a (unique) partial string of the mirror URL
-                                     See also the examples below.
-    --ignore-continents <list>, -X   A comma separated list of continent codes to ignore.
-    --ignore-countries <list>, -x    A comma separated list of country codes to ignore.
-    --ignore-mirrors <list>, -i      A comma separated list of mirrors to ignore.
-                                     A mirror can be a unique part of the mirror address.
-    --list-continent-codes           List all available continent codes.
-    --list-country-codes-names, -l   List all available country codes and names.
-    --prefer-local-rank              If no countries are requested, prefer ranking mirrors in current country only.
-                                     Default: rank all available mirrors everywhere.
-    --ranking-data, -r               Show ranking data too.
-    --save                           Save the mirrorlist to $ml.
-    --time                           Show the elapsed time of the measurement.
-    --timeout                        Max timeout in seconds for other than ranking.
-    --timeout-rank, -k               Max timeout in seconds for ranking a mirror.
-    -u                               Update mirror info first.
-    --help, -h                       This help.
+    --all
+    -A
+        Rank all available mirrors on all continents.
+
+    --continent
+    -C
+        Rank all available countries of the current continent.
+
+    --country <list>
+    -c <list>
+        Include a comma separated list of country code(s) for ranking their mirrors.
+        Codes are case insensitive.
+        Examples:
+            --country de,gb          # adds DE and GB for ranking
+            --country %de,dk         # sets DE and DK for ranking (see Notes below)
+
+    --country-current, -t
+        Include current country to be ranked.
+
+    --edit-config
+    -e
+        Edit your configuration file.
+
+    --favorite
+    -f
+        Add a favorite mirror to be added in the beginning of the ranked mirrorlist.
+        This option can be used many times to append favorites.
+        A mirror can be added
+            - as a full path in single quotes, or
+            - in a special format 'CC:st'
+        The special 'CC:st' has components:
+            'CC' is a two-letter country code (see 'reflector --list-countries')
+            'st' is a (unique) partial string of the mirror URL
+        A special value 'none' disables favorites (useful in testing).
+        See also the examples below.
+
+    --ignore-continents <list>
+    -X <list>
+        A comma separated list of continent codes to ignore.
+
+    --ignore-countries <list>
+    -x <list>
+        A comma separated list of country codes to ignore.
+
+    --ignore-mirrors <list>
+    -i <list>
+        A comma separated list of mirrors to ignore.
+        A mirror can be a unique part of the mirror address.
+
+    --list-continent-codes
+        List all available continent codes.
+
+    --list-country-codes-names
+    -l
+        List all available country codes and names.
+
+    --prefer-local-rank
+        If no countries are requested, prefer ranking mirrors in current country only.
+        Default: rank all available mirrors everywhere.
+
+    --ranking-data
+    -r
+        Show ranking data too.
+
+    --save
+        Save the mirrorlist to $ml.
+
+    --time
+        Show the elapsed time of the measurement.
+
+    --timeout <value>
+        Max timeout in seconds for other than ranking.
+
+    --timeout-rank
+    -k
+        Max timeout in seconds for ranking a mirror.
+
+    -u
+        Update mirror info first.
+
+    --help
+    -h
+        This help.
 
 Configuration file $config_file2 can include all supported options in variable CONFIG_OPTIONS.
 Examples:
-    CONFIG_OPTIONS=(--country DE,US --country-current --ranking-data --favorite 'DE:rwth-aachen')
     CONFIG_OPTIONS=(--continent --ranking-data)
+    CONFIG_OPTIONS=(--country DE,US --country-current --ranking-data --favorite 'DE:rwth-aachen')
     CONFIG_OPTIONS=(--country-current)
 
 Notes:
-  - Command line options override configuration file options.
-  - Leading % in the <list> value replaces the existing list.
-  - There are additional options available, see them with option --dump-options
-    and the source code at $(which $progname).
+    - Command line options override the configuration file options.
+    - Leading % in the <list> value replaces the existing list (instead of adding to it).
+    - There are additional options available, see them with
+      option --dump-options and the source code at $(which $progname).
 EOF
     [ "$1" ] && exit $1
 }
@@ -531,7 +578,7 @@ Main() {
     local CONFIG_OPTIONS=()
     local ecode=0
     local -r config_file="$HOME/.config/$progname.conf"
-    local -r config_file2='~/.config/$progname.conf'
+    local -r config_file2="~/.config/$progname.conf"
     local -r all_continents="AF AN AS EU NA OC SA"
     local limited_options=() args_orig=("$@")
     local completion_files_updated=no
@@ -671,7 +718,7 @@ ShowRankingData() {
     if [ $ranking_data = yes ] ; then
         echo -e "\n${comment3}Ranking data ($mirror_count mirrors):"
         local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | cat -n | sed -E 's/[ \t]+([0-9]+)[ \t]+(.*)/\2|\1/' | sed -E "s|^([^ ]+)|${comment3}\1|")
-        local -r rankheader="MIRROR|UPDATES AT|FETCH TIME|COUNTRY|ORDINAL"
+        local -r rankheader="MIRROR|UPDATE LEVEL|FETCH TIME|COUNTRY|ORDINAL"
         local -r rankul="${rankheader//[A-Za-z ]/\~}"
 
         echo -e "${comment3}$rankheader\n${comment3}$rankul\n$data" | Columns

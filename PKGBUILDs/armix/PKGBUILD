@@ -5,8 +5,8 @@
 pkgname=armix
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=24.11
-pkgrel=1.4
+pkgver=25
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -30,7 +30,7 @@ source=(
     $url/${pkgname}-helper
     $url/${pkgname}-status
 )
-sha512sums=('88fce67cdea181594ccc0189c6a9012bb0d6d7097d606bc745ad6301c3d4bc242a6b99377a83d7e96afacf4d7a5d8ed22f45f65ca55471fbf2efec284da4f684'
+sha512sums=('e5c857dd2684123861325e11cbd9efb2e5b78d9117fe31343c7200af4fba175007ea22391687a376408fcbf7eee541b54cc514924884abb923b47768e01a177f'
             '27daa9b5d5e755b57f11b8fe12522e4cae2191d9aeaebb23a467379608a9e7ba0eb1e7abcccb5d96b6cdf8ff6706893b6bce105e038865ee04d972027f094f32'
             '83776883286035573888178dbf837b1f56d0c69d16b97b1d4259cef0eda22de9d7f9811d051d54c854895e7da79f6baf3a203fc98e263893e146b4001b7c1aef'
             'ffb0d3326196137b21415b27f47c20e8a8d35081b1d7e618ee6324c618e0ca948bc6b19de98e7acc803830dd64764d0f8d2f6793c5fba1586aea55b8f1da6606'
