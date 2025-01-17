@@ -6,18 +6,18 @@ pkgname=armix
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
 depends=(
     bash
     curl
+    parallel                # for parallel operations
     python-location         # for finding continent info
     reflector               # for listing available Arch mirrors
 )
 optdepends=(
-    'parallel: for parallel operations'
     'eos-bash-shared: curl exit code as string'
     'time: for option --time'
 )
