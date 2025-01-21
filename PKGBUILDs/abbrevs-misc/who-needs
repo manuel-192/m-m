@@ -72,7 +72,7 @@ Main2() {
 
 Main() {
     local progname=${0##*/}
-    local mode=""
+    local mode="-S"
     local lines=multi      # output is many lines or one line, values: 'multi' 'one'
     local pkgnames=()
     local helper=pacman
