@@ -3,13 +3,13 @@
 # Find package names and versions from file <repo>.db.tar.{xz,zst}.
 
 DIE() {
+    local -r progname=${0##*/}
     echo "$progname: error: $1" >&2
     exit 1
 }
 
 Main()
 {
-    local -r progname=${0##*/}
     local db=$(/bin/ls -1 *.db.tar.* 2>/dev/null)
     [ "$db" ] || DIE "no package db found in '$PWD'"
     local PKG_NAME_VERSION=(
