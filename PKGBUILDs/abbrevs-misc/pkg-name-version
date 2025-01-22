@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Find package names and versions from file <repo>.db.tar.{xz,zst}.
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+Main()
+{
+    local -r progname=${0##*/}
+    local db=$(/bin/ls -1 *.db.tar.* 2>/dev/null)
+    [ "$db" ] || DIE "no package db found in '$PWD'"
+    local PKG_NAME_VERSION=(
+        $(tar --list -f "$db" | grep -v /desc$ | sed -E 's/(.+)-([^-]+)-([^-]+)\//\1|\2-\3/' | column -t -s'|')
+    )
+    local count=${#PKG_NAME_VERSION[@]}
+
+    [ $count -gt 0 ] || DIE "no packages found in '$db'"
+
+    for ((ix=0; ix<count; ix+=2)) ; do
+        printf "%s %s\n" "${PKG_NAME_VERSION[$ix]}" "${PKG_NAME_VERSION[$((ix+1))]}"
+    done
+}
+
+Main "$@"
