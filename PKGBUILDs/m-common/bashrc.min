@@ -1187,6 +1187,7 @@ EOF
     Unalias history-del
     history-del() { history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp; clear; }
     export -f history-del
+    Alias hc history-del
 
 
     #############################################################
@@ -1208,6 +1209,8 @@ EOF
     CDPATH=${CDPATH%:}
     export CDPATH
 
+    LoadCompletion cl arch-changelog
+
     #############################################################
     # aliases
     #############################################################
@@ -1218,12 +1221,14 @@ EOF
     # Alias Build-asdeps       "Build --pacman='--asdeps'"
     Alias bat                "bat --style=number"
     Alias ci                 "ci -u"
+    Alias cl                 "arch-changelog"
     Alias cls                "clear"
     Alias codium             "codium -n"
     Alias complete-packages  "complete -F _complete-packages_"
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
     # Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
+    Alias eos-update         "eos-update --pacdiff --nvidia"                       # --nvidia doesn't hurt
     Alias glances            "glances --disable-check-update --disable-bg"
     Alias history-fuzzy      "history | fzf --tac --no-sort"
     Alias history-select     "history | fzf --tac --no-separator --no-info"
@@ -1240,6 +1245,7 @@ EOF
     # Alias pacdiff            "eos-pacdiff"
     # Alias pacdiff            "DIFFPROG=/bin/meld /bin/pacdiff --sudo"
     Alias pacdiff            "eos-pacmerge"
+    Alias pacneeds           "who-needs --sync --multi --aur"
     # Alias paq                "sudo paq"
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
@@ -1252,10 +1258,13 @@ EOF
     Alias u                  "upd-small"
     Alias u1                 "upd-small --aur"
     Alias u2                 "upd-small --aur --deep"
-    Alias who-needsq         "who-needs --query --multi"
-    Alias who-needss         "who-needs --sync --one"
+    Alias u                  "eos-update --fast"
+    Alias who-needsq         "who-needs --query --multi --aur"
+    Alias who-needss         "who-needs --sync --one --aur"
 
     AliasIfType  grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
+
+    AliasIfWhich expacol        expac        expacol
     AliasIfWhich pb             pb           "pb -nn -T0"
     AliasIfWhich pb             pp           "pb"
 
