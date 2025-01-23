@@ -1209,8 +1209,6 @@ EOF
     CDPATH=${CDPATH%:}
     export CDPATH
 
-    LoadCompletion cl arch-changelog
-
     #############################################################
     # aliases
     #############################################################
@@ -1419,6 +1417,8 @@ EOF
     if [ -x /bin/pb ] ; then
         LoadCompletion pp                   pb               _pb_                    pb
     fi
+    LoadCompletion cl arch-changelog
+
 
     [ -r ~/.dircolors ] && eval "$(dircolors ~/.dircolors)"
 

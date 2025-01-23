@@ -49,8 +49,10 @@ Monitors() {
                            )
             monitors="${monitors[*]}"
             ;;
-        detected)
+        detected | tiny)
             local monitors=""
+            local grepstr="connected"
+            [ $mode = tiny ] && grepstr=" connected"
 
             case "$XDG_SESSION_TYPE" in
                 wayland)
@@ -59,7 +61,7 @@ Monitors() {
                     ;;
                 x11)
                     [ -x /bin/xrandr ] || DIE "package xorg-xrandr is required but not installed"
-                    monitors=$(echo $(/bin/xrandr | grep connected | awk '{print $1}'))
+                    monitors=$(echo $(/bin/xrandr | grep "$grepstr" | awk '{print $1}'))
                     ;;
                 *)
                     DIE "sorry, cannot determine system's monitors"
@@ -80,6 +82,9 @@ Usage:   $progname [options]
 Options: --wall=X           X = full path to the desired wallpaper file.
          --width=X          X = window width property.
          --height=X         X = window height property.
+         --monster, -m      Created xml file includes a large set of interface types.
+         --detected, -d     (x11) Created xml file is based on connected and disconnected interface types.
+         --tiny, -d         (x11) Created xml file is based on connected interface types.
 EOF
     [ "$1" ] && exit $1
 }
@@ -91,13 +96,14 @@ Main() {
     local win_height="1011"
     local monitors=""
 
-    local mode="monster"     # "monster" (=default) or "detected"
+    local mode="monster"     # "monster" (=default) or "detected" or "tiny"
 
     for arg in "$@" ; do
         case "$arg" in
             --help     | -h) Usage 0 ;;
             --detected | -d) mode=detected ;;
             --monster  | -m) mode=monster ;;
+            --tiny     | -t) mode=tiny ;;
             --wall=*)        wallpaper=${arg#*=} ;;
             --width=*)       win_width=${arg#*=} ;;
             --height=*)      win_height=${arg#*=} ;;
