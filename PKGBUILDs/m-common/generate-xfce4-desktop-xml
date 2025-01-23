@@ -37,35 +37,38 @@ EOF
 }
 
 Monitors() {
-    if true ; then
-        local monitors=(0 1
-                        HDMI{1..5} HDMI-{0..5} HDMI-A-{1..5} HDMI-1-{1..3}
-                        DP-{1..5}
-                        eDP-{1..5} eDP-1-{1..2}
-                        LVDS-{1..5}
-                        DVI-D-{0..5} DVI-D-1-{0..1}
-                        VGA-{1..5} VGA-1-{1..2}
-                       )
-        monitors="${monitors[*]}"
-    else
-        local monitors=""
+    case "$mode" in
+        monster)
+            local monitors=(0 1
+                            HDMI{0..5} HDMI-{0..5} HDMI-A-{0..5} HDMI-1-{0..5}
+                            DP-{0..5}
+                            eDP-{0..5} eDP-1-{0..5}
+                            LVDS-{0..5}
+                            DVI-D-{0..5} DVI-D-1-{0..5} DVI-1-{0..5}
+                            VGA-{0..5} VGA-1-{0..5}
+                           )
+            monitors="${monitors[*]}"
+            ;;
+        detected)
+            local monitors=""
 
-        case "$XDG_SESSION_TYPE" in
-            wayland)
-                [ -x /bin/wlr-randr ] || DIE "package wlr-randr is required but not installed"
-                monitors=$(echo $(/bin/wlr-randr | grep "^[A-Za-z]" | awk '{print $1}'))
-                ;;
-            x11)
-                [ -x /bin/xrandr ] || DIE "package xorg-xrandr is required but not installed"
-                monitors=$(echo $(/bin/xrandr | grep connected | awk '{print $1}'))
-                ;;
-            *)
-                DIE "sorry, cannot determine system's monitors"
-                ;;
-        esac
-        [ "$monitors" ] || DIE "no monitors found!"
-        monitors="0 1 $monitors"
-    fi
+            case "$XDG_SESSION_TYPE" in
+                wayland)
+                    [ -x /bin/wlr-randr ] || DIE "package wlr-randr is required but not installed"
+                    monitors=$(echo $(/bin/wlr-randr | grep "^[A-Za-z]" | awk '{print $1}'))
+                    ;;
+                x11)
+                    [ -x /bin/xrandr ] || DIE "package xorg-xrandr is required but not installed"
+                    monitors=$(echo $(/bin/xrandr | grep connected | awk '{print $1}'))
+                    ;;
+                *)
+                    DIE "sorry, cannot determine system's monitors"
+                    ;;
+            esac
+            [ "$monitors" ] || DIE "no monitors found!"
+            monitors="0 1 $monitors"
+            ;;
+    esac
     monitors=monitor${monitors// / monitor}
     echo $monitors
 }
@@ -88,17 +91,22 @@ Main() {
     local win_height="1011"
     local monitors=""
 
-    monitors=$(Monitors) || return 1
+    local mode="monster"     # "monster" (=default) or "detected"
 
-    while [ "$1" ] ; do
-        case "$1" in
-            --wall=*)   wallpaper=${1#*=} ;;
-            --width=*)  win_width=${1#*=} ;;
-            --height=*) win_height=${1#*=} ;;
-            -h | --help) Usage 0 ;;
+    for arg in "$@" ; do
+        case "$arg" in
+            --help     | -h) Usage 0 ;;
+            --detected | -d) mode=detected ;;
+            --monster  | -m) mode=monster ;;
+            --wall=*)        wallpaper=${arg#*=} ;;
+            --width=*)       win_width=${arg#*=} ;;
+            --height=*)      win_height=${arg#*=} ;;
+            -*) DIE "unsupported option '$arg'" ;;
+            *)  DIE "unsupported parameter '$arg'" ;;
         esac
-        shift
     done
+
+    monitors=$(Monitors) || return 1
 
     Start
 
