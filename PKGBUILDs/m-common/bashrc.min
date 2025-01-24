@@ -1226,7 +1226,6 @@ EOF
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
     # Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
-    Alias eos-update         "eos-update --pacdiff --nvidia"                       # --nvidia doesn't hurt
     Alias glances            "glances --disable-check-update --disable-bg"
     Alias history-fuzzy      "history | fzf --tac --no-sort"
     Alias history-select     "history | fzf --tac --no-separator --no-info"
@@ -1253,10 +1252,11 @@ EOF
     # Alias ua                 "Update --aur"
     # Alias uc                 "time uc-fast -aey --verbose"
     # Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
-    Alias u                  "upd-small"
+    # Alias u                  "upd-small"
     Alias u1                 "upd-small --aur"
     Alias u2                 "upd-small --aur --deep"
-    Alias u                  "eos-update --fast"
+    Alias eos-update         "eos-update --pacdiff --nvidia"                       # --nvidia doesn't hurt
+    Alias u                  "eos-update --fast --descriptions"
     Alias who-needsq         "who-needs --query --multi --aur"
     Alias who-needss         "who-needs --sync --one --aur"
 
