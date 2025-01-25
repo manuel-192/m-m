@@ -37,52 +37,60 @@ EOF
 }
 
 Monitors() {
+    local -n _monitors="$1"
+
     case "$mode" in
         monster)
-            local monitors=(0 1
-                            {Composite,Composite-,composite,composite-}{0..4}
-                            {CRT,CRT-,crt,crt-}{0..4}
-                            {Display,Display-,display,display-}{0..4}
-                            {DP,dp,DP-,dp-}{0..4}
-                            {DVI,dvi,DVI-,dvi-}{0..4}
-                            {DVI,dvi}-{i,I,d,D}{0..4} {DVI,dvi}-{1,i,I,d,D}-{0..4}
-                            {DVI,dvi}-{i,I,d,D}-1-{0..4}
-                            {eDP,edp,eDP-,edp-}{0..4} {eDP,edp}-1-{0..4}
-                            {HDMI,hdmi,HDMI-,hdmi-}-{0..4}
-                            {HDMI,hdmi}-{A,a,B,b,1,A-,a-,B-,b-,1-}{0..4}
-                            {LVDS,lvds,LVDS-,lvds-}{0..4}
-                            {Thunderbolt,Thunderbolt-,thunderbolt,thunderbolt-}{0..4}
-                            {TV,TV-,tv,tv-}{0..4}
-                            {USB,usb}-{c,C}-{0..4}
-                            {VGA,vga}-{0..4} {VGA,vga}-1-{0..4} {VGA,vga}{0..4}
-                            {Virtual,Virtual-,virtual,virtual-}{0..4}
-                           )
-            monitors="${monitors[*]}"
+            local mons=()
+            if [ $minimal = no ] ; then
+                mons=(0 1)
+            fi
+            mons+=(
+                {Composite,Composite-,composite,composite-}{0..4}
+                {CRT,CRT-,crt,crt-}{0..4}
+                {Display,Display-,display,display-}{0..4}
+                {DP,dp,DP-,dp-}{0..4}
+                {DVI,dvi,DVI-,dvi-}{0..4}
+                {DVI,dvi}-{i,I,d,D}{0..4} {DVI,dvi}-{1,i,I,d,D}-{0..4}
+                {DVI,dvi}-{i,I,d,D}-1-{0..4}
+                {eDP,edp,eDP-,edp-}{0..4} {eDP,edp}-1-{0..4}
+                {HDMI,hdmi,HDMI-,hdmi-}-{0..4}
+                {HDMI,hdmi}-{A,a,B,b,1,A-,a-,B-,b-,1-}{0..4}
+                {LVDS,lvds,LVDS-,lvds-}{0..4}
+                {Thunderbolt,Thunderbolt-,thunderbolt,thunderbolt-}{0..4}
+                {TV,TV-,tv,tv-}{0..4}
+                {USB,usb}-{c,C}-{0..4}
+                {VGA,vga}-{0..4} {VGA,vga}-1-{0..4} {VGA,vga}{0..4}
+                {Virtual,Virtual-,virtual,virtual-}{0..4}
+            )
+            mons="${mons[*]}"   # convert to a string
             ;;
         detected | tiny)
-            local monitors=""
+            local mons=""
             local grepstr="connected"
             [ $mode = tiny ] && grepstr=" connected"
 
             case "$XDG_SESSION_TYPE" in
                 wayland)
                     [ -x /bin/wlr-randr ] || DIE "package wlr-randr is required but not installed"
-                    monitors=$(echo $(/bin/wlr-randr | grep "^[A-Za-z]" | awk '{print $1}'))
+                    mons=$(echo $(/bin/wlr-randr | grep "^[A-Za-z]" | awk '{print $1}'))
                     ;;
                 x11)
                     [ -x /bin/xrandr ] || DIE "package xorg-xrandr is required but not installed"
-                    monitors=$(echo $(/bin/xrandr | grep "$grepstr" | awk '{print $1}'))
+                    mons=$(echo $(/bin/xrandr | grep "$grepstr" | awk '{print $1}'))
                     ;;
                 *)
                     DIE "sorry, cannot determine system's monitors"
                     ;;
             esac
-            [ "$monitors" ] || DIE "no monitors found!"
-            monitors="0 1 $monitors"
+            [ "$mons" ] || DIE "no monitors found!"
+            if [ $minimal = no ] ; then
+                mons="0 1 $mons"
+            fi
             ;;
     esac
-    monitors=monitor${monitors// / monitor}
-    echo $monitors
+    mons=monitor${mons// / monitor}
+    _monitors="$mons"
 }
 
 Usage() {
@@ -95,6 +103,7 @@ Options: --wall=X           X = full path to the desired wallpaper file.
          --monster, -m      Created xml file includes a large set of interface types.
          --detected, -d     (x11) Created xml file is based on connected and disconnected interface types.
          --tiny, -d         (x11) Created xml file is based on connected interface types.
+         --minimal          Provide much less details in the generated entries.
 EOF
     [ "$1" ] && exit $1
 }
@@ -104,6 +113,7 @@ Main() {
     local wallpaper="/usr/share/endeavouros/backgrounds/endeavouros-wallpaper.png"   # png -> avif  ??
     local win_width="1229"
     local win_height="1011"
+    local minimal=no
     local monitors=""
 
     local mode="monster"     # "monster" (=default) or "detected" or "tiny"
@@ -114,6 +124,7 @@ Main() {
             --detected | -d) mode=detected ;;
             --monster  | -m) mode=monster ;;
             --tiny     | -t) mode=tiny ;;
+            --minimal)       minimal=yes ;;
             --wall=*)        wallpaper=${arg#*=} ;;
             --width=*)       win_width=${arg#*=} ;;
             --height=*)      win_height=${arg#*=} ;;
@@ -122,7 +133,7 @@ Main() {
         esac
     done
 
-    monitors=$(Monitors) || return 1
+    Monitors monitors
 
     Start
 
@@ -132,8 +143,10 @@ Main() {
         echo "      <property name=\"$monitor\" type=\"empty\">"
         for workspace in workspace{0..4} ; do
             echo "        <property name=\"$workspace\" type=\"empty\">"
-            echo '          <property name="color-style" type="int" value="0"/>'
-            echo '          <property name="image-style" type="int" value="5"/>'
+            if [ $minimal = no ] ; then
+                echo '          <property name="color-style" type="int" value="0"/>'
+                echo '          <property name="image-style" type="int" value="5"/>'
+            fi
             echo "          <property name=\"last-image\" type=\"string\" value=\"$wallpaper\"/>"
             echo "        </property>"
         done
@@ -142,7 +155,9 @@ Main() {
     echo '    </property>'
     echo '  </property>'
 
-    End
+    if [ $minimal = no ] ; then
+        End
+    fi
 }
 
 Main "$@"
