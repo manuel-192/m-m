@@ -131,8 +131,9 @@ Main() {
     local win_height="1011"
     local minimal=no
     local monitors=""
-    local outfilepath=""
+    local outfilepath="" outfilepath_by_user=""
     local outfileis=""
+    local rcs=no
     local datetime=""
     local mode="monster"     # "monster" (=default) or "detected" or "tiny"
 
@@ -146,8 +147,10 @@ Main() {
             --monster  | -m) mode=monster ;;
             --tiny     | -t) mode=tiny ;;
             --minimal)       minimal=yes ;;
+            --rcs)           rcs=yes ;;
             -*)              DIE "unsupported option '$arg'" ;;
             *)               outfilepath="$arg"
+                             outfilepath_by_user="$arg"
                              ;;
         esac
     done
@@ -159,17 +162,30 @@ Main() {
     }
     outfilepath=$(realpath "$outfilepath")
 
+    local tmp
+
     case "$outfilepath" in
         /home/*)
             if [ -e "$outfilepath" ] ; then
-                datetime=$(date +%Y%m%d-%H%M%S)
-                echo "$progname: backup to $outfilepath.bak.$datetime" >&2
-                mv "$outfilepath" "$outfilepath.bak.$datetime"
+                if [ $rcs = yes ] ; then
+                    if [ -d "${outfilepath%/*}"/RCS ] ; then
+                        if expac -Q %n rcs >/dev/null ; then
+                            pushd ${outfilepath%/*} >/dev/null
+                            echo "$progname: backup current $outfilepath_by_user" >&2
+                            ci -l -i -m. ${outfilepath##*/}
+                            popd >/dev/null
+                        fi
+                    fi
+                else
+                    datetime=$(date +%Y%m%d-%H%M%S)
+                    echo "$progname: backup to $outfilepath.bak.$datetime" >&2
+                    mv "$outfilepath" "$outfilepath.bak.$datetime"
+                fi
             fi
             ;;
     esac
 
-    rm -f "$outfilepath"
+    [ "$outfileis" = "tmp" ] || rm -f "$outfilepath"
 
     Start
 
@@ -198,7 +214,7 @@ Main() {
         rm -f "$outfilepath"
         echo "$progname: file generated to standard output" >&2
     else
-        echo "$progname: file generated to '$outfilepath'" >&2
+        echo "$progname: file generated to '$outfilepath_by_user'" >&2
     fi
 }
 
