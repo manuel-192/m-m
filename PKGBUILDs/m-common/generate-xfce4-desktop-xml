@@ -172,7 +172,11 @@ Main() {
                         if expac -Q %n rcs >/dev/null ; then
                             pushd ${outfilepath%/*} >/dev/null
                             echo "$progname: backup current $outfilepath_by_user" >&2
-                            ci -l -i -m. ${outfilepath##*/}
+                            if [ -e RCS/${outfilepath##*/},v ] ; then
+                                ci -l -m. ${outfilepath##*/}
+                            else
+                                ci -l -t-. ${outfilepath##*/}
+                            fi
                             popd >/dev/null
                         fi
                     fi
