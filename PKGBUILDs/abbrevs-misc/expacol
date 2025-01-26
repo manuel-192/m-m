@@ -5,16 +5,18 @@
 # User can change the default input separator (-) and the output separator (§).
 
 Usage() {
-    /bin/expac -h
+    # Show 'expac' help but remove the first line (i.e. "expac <version>").
+    /bin/expac -h | grep -Ev "^expac [0-9]+$"
 
+    # Show expacol additions.
     cat <<EOF
 
 Additions to expac by $PROGNAME:
 - columnar output
-- format can be specified using field separator '-' or a user defined separator
+- format can be specified using field separator '$sepi_def' or a user defined separator
 - new options:
-     --is SEP      Set the new separator for the format part. Default: '$sepi'
-     --os SEP      Set the output separator if the columnar output is not valid. Default: '$sepo'
+     --is SEP      Set the new separator for the format part. Default: '$sepi_def'
+     --os SEP      Set the output separator if the columnar output is not valid. Default: '$sepo_def'
 Example:
    $PROGNAME -S %r/%n-%d firefox linux welcome
 
@@ -26,10 +28,10 @@ expacol() {
     local -r PROGNAME=${0##*/}
     local format=""
     local args1=() args2=()
-    local -r sepi='-'
-    local -r sepo='§'
-    local sep_for_input="$sepi"         # user can change this
-    local sep_for_output="$sepo"        # user can change this; for use by 'column'
+    local -r sepi_def='§'
+    local -r sepo_def='§'
+    local sep_for_input="$sepi_def"         # user can change this
+    local sep_for_output="$sepo_def"        # user can change this; for use by 'column'
     local out ret=0
 
     while [ "$1" ] ; do
