@@ -71,7 +71,14 @@ Meld() {
                 MELD
             fi
             ;;
-        *)  if [ "$2" ] && [ "$1 $2" = "$*" ] ; then
+        *)
+            local arg
+            for arg in "$@" ; do
+                case "$arg" in
+                    -r*) meldrcs "$@"; return ;;
+                esac
+            done
+            if [ "$2" ] && [ "$1 $2" = "$*" ] ; then
                 MELD2PARA "$@"           # 2 parameters, may have a file and a folder
             else
                 MELD "$@"                # other cases
