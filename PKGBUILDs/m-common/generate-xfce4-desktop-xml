@@ -40,6 +40,26 @@ EOF
 EOF
 }
 
+SessionType() {
+    # These will not work always:
+    # 1)
+    # echo "$XDG_SESSION_TYPE"
+    # 2)
+    # local id=$(loginctl | grep seat | head -n1 | awk '{print $1}')
+    # [ "$id" ] && loginctl show-session "$id" -p Type | cut -d'=' -f2
+
+    # echo "DISPLAY = '$DISPLAY'" >&2
+    # echo "WAYLAND_DISPLAY = '$WAYLAND_DISPLAY'" >&2
+
+    if [ "$WAYLAND_DISPLAY" ] ; then
+        echo wayland
+    elif [ "$DISPLAY" ] ; then
+        echo x11
+    else
+        echo "tty"
+    fi
+}
+
 Monitors() {
     local -n _monitors="$1"
 
@@ -74,7 +94,7 @@ Monitors() {
             local grepstr="connected"
             [ $mode = tiny ] && grepstr=" connected"
 
-            case "$XDG_SESSION_TYPE" in
+            case "$(SessionType)" in
                 wayland)
                     if [ -x /bin/wlr-randr ] ; then
                         mons=$(echo $(/bin/wlr-randr | grep "^[A-Za-z]" | awk '{print $1}'))
@@ -89,7 +109,7 @@ Monitors() {
                     mons=$(echo $(/bin/xrandr | grep "$grepstr" | awk '{print $1}'))
                     ;;
                 *)
-                    DIE "sorry, cannot determine system's monitors"
+                    DIE "monitors not found because no wayland nor x11 detected"
                     ;;
             esac
             [ "$mons" ] || DIE "no monitors found!"
