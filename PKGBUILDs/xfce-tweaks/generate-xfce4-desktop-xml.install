@@ -3,7 +3,11 @@
 post_install() {
     local -r xml="/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
     local -r wall="/usr/share/endeavouros/backgrounds/endeavouros-wallpaper.png"
-    generate-xfce4-desktop-xml --detected --minimal --wall=${wall} ${xml}
+    local -r options=(--detected --minimal --wall=${wall})
+
+    if [ ! -e "$xml" ] ; then
+        mkdir -p ${xml%/*} && generate-xfce4-desktop-xml "${options[@]}" ${xml}
+    fi
 }
 post_upgrade() {
     post_install "$1"
