@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# 'echoc' enables colors in 'echo'.
+# - bold with uppercase: ${marker}r = red ${marker}R = RED etc.
+# - supported colors: wyrb
+# - special: ${marker}¤ = reset
+# Examples:
+#   echocol "§rfoobar§¤"
+#   echocol -m% "%rfoobar%¤" "%rfoobaz%¤"
+# Note1: parameters including a $marker must be added as two marker characters.
+# Note2: marker can be changed more than once (with -m), and each marker is applied to remaining strings on the line.
+
+ConvertColorCodes() {
+    # convert color codes (if they exist) in one string
+    item=${1//${marker}${marker}/$MARKER}       # convert double markers
+
+    item=${item//${marker}r/${red}}
+    item=${item//${marker}y/${yellow}}
+    item=${item//${marker}b/${blue}}
+    item=${item//${marker}w/${white}}
+    item=${item//${marker}R/${RED}}
+    item=${item//${marker}Y/${YELLOW}}
+    item=${item//${marker}B/${BLUE}}
+    item=${item//${marker}W/${WHITE}}
+
+    item=${item//${marker}${rchar}/${reset}}    # reset colors
+
+    item=${item//$MARKER/${marker}${marker}}    # convert double markers back
+}
+
+Echoc() {
+    local -r  white=$'\e[0;37m'
+    local -r  WHITE=$'\e[1;37m'
+    local -r    red=$'\e[0;31m'
+    local -r    RED=$'\e[1;31m'
+    local -r yellow=$'\e[0;93m'
+    local -r YELLOW=$'\e[1;93m'
+    local -r   blue=$'\e[0;94m'
+    local -r   BLUE=$'\e[1;94m'
+    local -r  reset=$'\e[0m'
+
+    local marker="§"                                            # default marker character, can be changed with option -m
+    local MARKER="$(mktemp -u /marker/XXXXXXXXXXXXXXXXXXXX)"    # "random" string to help dealing with doubled markers
+    local rchar="¤"
+    local args=() item
+
+    # gather args and consume option -m
+    while [ "$1" ] ; do
+        case "$1" in
+            -m=?) marker="${1#*=}" ;;
+            -m?)  marker="${1:2}" ;;
+            -m)   marker="$2"; shift ;;
+            *)    ConvertColorCodes "$1"
+                  args+=(${item})
+                  ;;
+        esac
+        shift
+    done
+
+    echo "${args[@]}"
+}
+
+Echoc "$@"
