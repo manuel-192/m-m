@@ -14,11 +14,13 @@ Result() {
 Main3()
 {
     local url="$1"
+    local file="$2"
     local pagedata retval
     local item=$(echo "$url" | sed 's|https://github\.com/||')
     local -r space="-45"
 
-    pagedata=$(curl --fail -Lsm 10 -o- "$url")
+    # pagedata=$(curl  --fail -Lsm 10 -o- "$url")
+    pagedata=$(< "$file")
     retval=$?
     [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
     local issue_numbers=$(echo "$pagedata" | grep -E '^<div id="issue_[0-9]+' | sed -E 's|^<div id="issue_([0-9]+)".*|\1|')
@@ -49,9 +51,20 @@ Main3()
 Main2() {
     local urlbase="$1"
     local last
+    local urls=()
+    local targetdir="/tmp/$progname"
+    local ix=0
+
+    mkdir -p "$targetdir"
 
     for last in issues pulls ; do
-        Main3 "$urlbase/$last"
+        urls+=(-o "$targetdir/$((ix++))" "$urlbase/$last")
+    done
+    curl --parallel --fail -Lsm 60 "${urls[@]}"
+
+    ix=0
+    for last in issues pulls ; do
+        Main3 "$urlbase/$last" "$targetdir/$((ix++))"
     done
 }
 
