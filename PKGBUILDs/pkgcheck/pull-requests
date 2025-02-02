@@ -49,38 +49,36 @@ Main3()
 }
 
 Main2() {
-    local urlbase="$1"
-    local last
-    local urls=()
-    local targetdir="/tmp/$progname"
     local ix=0
+    local urls=() url
+    local targetdir="/tmp/$progname"
 
     mkdir -p "$targetdir"
 
-    for last in issues pulls ; do
-        urls+=(-o "$targetdir/$((ix++))" "$urlbase/$last")
+    for url in "$@" ; do
+        urls+=(-o "$targetdir/$((ix++))" "$url/issues")
+        urls+=(-o "$targetdir/$((ix++))" "$url/pulls")
     done
     curl --parallel --fail -Lsm 60 "${urls[@]}"
-
     ix=0
-    for last in issues pulls ; do
-        Main3 "$urlbase/$last" "$targetdir/$((ix++))"
+    for url in "$@" ; do
+        Main3 "$url/issues" "$targetdir/$((ix++))"
+        Main3 "$url/pulls"  "$targetdir/$((ix++))"
     done
+
+    rm -rf "$targetdir"
 }
 
 Main1() {
     local who="$1"
     shift
+
     case "$who" in
         e)
-            for url in "${urls_e[@]}" "$@" ; do
-                Main2 "$url"
-            done
+            Main2 "${urls_e[@]}" "$@"
             ;;
         m)
-            for url in "${urls_m[@]}" "$@" ; do
-                Main2 "$url"
-            done
+            Main2 "${urls_m[@]}" "$@"
             ;;
         b)
             Main1 e "$@"
