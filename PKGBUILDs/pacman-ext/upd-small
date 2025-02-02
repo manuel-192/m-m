@@ -2,8 +2,11 @@
 
 echo2() { echo -e "$@" >&2 ; }
 DIE()   { echo2 "==> $progname: error: $1" ; exit 1 ; }
+WARN()  { echo2 "==> $progname: warning: $1" ; }
 STOP()  { echo2 "$1" ; exit $2 ; }
+
 NoneInstalled() { ! expac %n "$@" >/dev/null ; }
+IsInstalled() { expac %n "$1" >/dev/null ; }
 
 Main() {
     # Update all packages, also do some extra checks.
@@ -13,6 +16,7 @@ Main() {
     #    - eos-pacdiff or eos-pacmerge
     #    - hook-update-description (optional)
     #    - uc-fast (optional)
+    #    - clamav (optional)
     #
     # TODO:
     #   - virtualbox?
@@ -25,10 +29,14 @@ Main() {
     local ucfast_options="-ae --verbose"
     local updates_native=""
     local updates_aur=""
+    local clamav=no
+    local clamav_ref=""
+    local clamav_ref_file="$HOME/.local/$progname.clamav_ref_file"
+    local pkgdir=/var/cache/pacman/pkg
     local paru=/bin/paru
     local yay=/bin/yay
 
-    [ -x /bin/paru ] || paru=$yay     # is paru installed?
+    [ -x $paru ] || paru=$yay     # is paru installed?
 
     Options "$@"
     CheckApps
@@ -44,6 +52,7 @@ Usage() {
     echo2 "          --deep,       -d  Check availability of updates more thoroughly."
     echo2 "          --hide-fetch, -f  Don't show the package download."
     echo2 "          --quiet,      -q  Be more quiet."
+    echo2 "          --clamav          Scan updates for viruses with clamav."
     echo2 "          --help,       -h  This help."
     echo2 "Note: internet connection is required."
     [ "$1" ] && exit $1 || exit 0
@@ -52,7 +61,7 @@ Usage() {
 Options() {
     # manage options
     local sopts="acdfhq"
-    local lopts="aur,connection,deep,help,hide-fetch,quiet"
+    local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet"
     local opts
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -66,6 +75,7 @@ Options() {
             --hide-fetch | -f) SHOW_FETCH=no ;;
             --help       | -h) Usage ;;
             --quiet      | -q) ucfast_options="-ae" ;;
+            --clamav)          clamav=yes ;;
             --) shift; break ;;
         esac
         shift
@@ -73,24 +83,69 @@ Options() {
 }
 CheckApps() {
     # we must have the required apps
-    local app
-    for app in eos-connection-checker yay expac ; do
-        [ -x /bin/$app ] || DIE "program '$app' is missing"
+    local pkgs=(
+        eos-bash-shared    # needed: eos-connection-checker
+        yay
+    )
+    local pkg
+
+    for pkg in "${pkgs[@]}" ; do
+        IsInstalled $pkg || DIE "package '$pkg' is required but missing"
     done
+    if [ $clamav = yes ] ; then
+        IsInstalled clamav || DIE "package 'clamav' is needed by option --clamav"
+    fi
+    if [ $DEEP = no ] ; then
+        IsInstalled pacman-ext || WARN "package 'pacman-ext' is needed by the fast check"
+    fi
 }
 
 UpdatePackages() {
     Connection
+    Clamav --init
     GetAurUpdates
     FastCheck             # stops here if no updates by "fast check"
     PacmanLock
     GetNativeUpdates
     StopIfNoUpdates
     Nvidia
+    Clamav --check
     Descriptions
     Keyrings
     RealUpdate            # update packages here
+    Clamav --save
     Pacdiff
+}
+
+Clamav() {
+    [ $clamav = no ] && return
+
+    case "$1" in
+        --init) 
+            # Find clamav_ref, preferably from file.
+            if [ -e "$clamav_ref_file" ] ; then
+                clamav_ref=$(< "$clamav_ref_file")
+            else
+                $FUNCNAME --save
+            fi
+            ;;
+        --check)
+            local newfiles=""
+            if [ "$clamav_ref" ] ; then
+                newfiles=$(find $pkgdir -type f -newer "$clamav_ref")
+            else
+                newfiles=$(find $pkgdir -type f)
+            fi
+            [ "$newfiles" ] && clamscan $newfiles
+            ;;
+        --save)
+            clamav_ref=$(/bin/ls -ltr $pkgdir | tail -n1 | awk '{print $NF}')
+            if [ "$clamav_ref" ] ; then
+                clamav_ref="$pkgdir/$clamav_ref"
+                echo "$clamav_ref" > "$clamav_ref_file"
+            fi
+            ;;
+    esac
 }
 
 Connection() {
@@ -150,7 +205,7 @@ Nvidia() {
         eos-kernel-nvidia-update-check $updates_native 2>/dev/null || STOP "FAIL" 1
         echo2 "OK"
     else
-        echo2 "==> WARNING: no Nvidia check done because eos-bash-shared is not installed"
+        WARN "no Nvidia check done because eos-bash-shared is not installed"
     fi
 }
 Descriptions() {
