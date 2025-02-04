@@ -18,7 +18,7 @@ Additions to expac by $PROGNAME:
      --is SEP      Set the new separator for the format part. Default: '$sepi_def'
      --os SEP      Set the output separator if the columnar output is not valid. Default: '$sepo_def'
 Example:
-   $PROGNAME -S %r/%n-%d firefox linux welcome
+   $PROGNAME -S %r/%n${sepi_def}%d firefox linux welcome
 
 EOF
     [ "$1" ] && exit $1
