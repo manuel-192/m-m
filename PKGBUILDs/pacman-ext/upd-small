@@ -1,8 +1,9 @@
 #!/bin/bash
 
 echo2() { echo -e "$@" >&2 ; }
-DIE()   { echo2 "==> $progname: error: $1" ; exit 1 ; }
-WARN()  { echo2 "==> $progname: warning: $1" ; }
+DIE()   { echo2 "==> $progname: error:"   "$1" ; exit 1 ; }
+WARN()  { echo2 "==> $progname: warning:" "$1" ; }
+INFO()  { echo2 "==> $progname: info:"    "$1" ; }
 STOP()  { echo2 "$1" ; exit $2 ; }
 
 NoneInstalled() { ! expac %n "$@" >/dev/null ; }
@@ -109,8 +110,8 @@ UpdatePackages() {
     GetNativeUpdates
     StopIfNoUpdates
     Nvidia
-    Clamav --check
     Descriptions
+    Clamav --check
     Keyrings
     RealUpdate            # update packages here
     Clamav --save
@@ -136,7 +137,11 @@ Clamav() {
             else
                 newfiles=$(find $pkgdir -type f)
             fi
-            [ "$newfiles" ] && clamscan $newfiles
+            if [ "$newfiles" ] ; then
+                clamscan $newfiles
+            else
+                INFO "all package files checked with clamav already!"
+            fi
             ;;
         --save)
             clamav_ref=$(/bin/ls -ltr $pkgdir | tail -n1 | awk '{print $NF}')
@@ -211,8 +216,8 @@ Nvidia() {
 Descriptions() {
     if [ -x /bin/hook-update-description ] ; then
         # show the description for each updated package
-        [ "$updates_native" ] && hook-update-description --title="native updates" $updates_native
-        [ "$updates_aur" ]    && hook-update-description --title="AUR updates"    $updates_aur
+        [ "$updates_native" ] && hook-update-description --title="native updates" --header=no $updates_native
+        [ "$updates_aur" ]    && hook-update-description --title="AUR updates"    --header=no $updates_aur
     fi
 }
 Keyrings() {
