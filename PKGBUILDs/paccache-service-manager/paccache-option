@@ -1,104 +1,81 @@
 #!/bin/bash
 
-DIE() {
-    echo "$progname: error: $1"
-    exit 1
-}
+DIE()  { echo "$progname: error:"   "$1"; exit 1; }
+WARN() { echo "$progname: warning:" "$1"; }
 
+HasPara() {
+    local -r optname="$1"
+    if [ ${#optname} -eq 1 ] ; then
+        [ "${SOPTS/${optname}:/}" != "$SOPTS" ] && return 0
+    else
+        [ "${LOPTS/${optname}:/}" != "$LOPTS" ] && return 0
+    fi
+    return 1
+}
 Paccache_option_value() {
     local progname=${0##*/}
     local opts=""
-    local lopts="dryrun,move:,remove,arch:,cachedir:,force,help,ignore:,keep:,min-atime:,min-mtime:,nocolor,null,quiet,uninstalled,verbose,version"
-    local sopts="dm:ra:c:i:fhk:zquvV"
 
-    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
+    opts="$(/usr/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || {
         $OptFunc -h
         return 1
     }
     eval set -- "$opts"
 
-    local option=""
+    local option_name=""
 
     while true ; do
+        option_name=${1//-/}
         case "$1" in
             --) shift; break ;;
-
-            -d|--dryrun)      values[dryrun]=yes ;;
-            -f|--force)       values[force]=yes ;;
-            -h|--help)        values[help]=yes ;;
-            --nocolor)        values[nocolor]=yes ;;
-            -z|--null)        values[null]=yes ;;
-            -q|--quiet)       values[quiet]=yes ;;
-            -u|--uninstalled) values[uninstalled]=yes ;;
-            -v|--verbose)     values[verbose]=yes ;;
-            -V|--version)     values[version]=yes ;;
-            -m|--move)        values[move]=yes ;;
-            -a|--arch)        values[arch]=yes ;;
-            -r|--remove)      values[remove]=yes ;;
-
-#            -d|--dryrun|-f|--force|-h|--help|--nocolor|-z|--null|-q|--quiet|-u|--uninstalled|-v|--verbose|-V|--version|-m|--move|-a|--arch|-r|--remove)
-#                values[$option]=yes ;;
-                
-            -c|--cachedir)    values[cachedir]=yes; shift ;;
-            -i|--ignore)      values[ignore]=yes; shift ;;
-            --min-atime)      values[min-atime]="$2"; shift ;;
-            --min-mtime)      values[min-mtime]="$2"; shift ;;
-            -k|--keep)
-                [ "${2//[0-9]/}" ] && DIE "option '$1': value '$2' is invalid"
-                values[keep]="$2"
-                shift
+            -*) if HasPara "$option_name" ; then
+                    case "$2" in
+                        -*) WARN "option '$1' with option-like parameter '$2' looks suspicious" ;;
+                    esac
+                    VALUES[$option_name]="$2"
+                    shift
+                else
+                    VALUES[$option_name]=yes
+                fi
                 ;;
         esac
         shift
     done
 }
 
-Main() {
-    local items="$1" item item1
-    shift
+DoKeys() {
+    lo=${LOPTS//,/ }
+    lo=${lo//:/}
+    so=${SOPTS//:/}
+    so=${so//?/ &}
+    [ "${so:0:1}" = " " ] && so=${so:1}
+}
+GenerateValues() {
+    local item lo so
+    DoKeys
+    for item in $lo $so ; do
+        echo $item '""'
+    done
+}
+ShowValues() {
+    local item lo so
+    DoKeys
+    for item in $lo $so ; do
+        [ "${VALUES[$item]}" ] && echo "$item=${VALUES[$item]}"
+    done
+}
 
-    declare -A values=(
-        dryrun ""
-        force ""
-        help ""
-        nocolor ""
-        null ""
-        quiet ""
-        uninstalled ""
-        verbose ""
-        version ""
-        move ""
-        arch ""
-        cachedir ""
-        ignore ""
-        min-atime ""
-        min-mtime ""
-        keep "3"
-        remove ""
+Main() {
+    local -r LOPTS="dryrun,move:,remove,arch:,cachedir:,force,help,ignore:,keep:,min-atime:,min-mtime:,nocolor,null,quiet,uninstalled,verbose,version"
+    local -r SOPTS="dm:ra:c:i:fhk:zquvV"
+    declare -A VALUES=(
+        $(GenerateValues)
     )
+    VALUES[k]=3
+    VALUES[keep]=3
 
     Paccache_option_value "$@"
-
-    for item in ${items//,/ } ; do
-        item1="$item"
-        case "$item" in
-            d) item=dryrun;;
-            f) item=force;;
-            h) item=help;;
-            z) item=null;;
-            q) item=quiet;;
-            u) item=uninstalled;;
-            v) item=verbose;;
-            V) item=version;;
-            m) item=move;;
-            a) item=arch;;
-            c) item=cachedir;;
-            i) item=ignore;;
-            k) item=keep;;
-            r) item=remove;;
-        esac
-        echo "$item1:|${values[$item]}"
-    done | column -t -s'|'
+    ShowValues
 }
 
 Main "$@"
