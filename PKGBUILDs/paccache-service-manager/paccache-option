@@ -1,0 +1,104 @@
+#!/bin/bash
+
+DIE() {
+    echo "$progname: error: $1"
+    exit 1
+}
+
+Paccache_option_value() {
+    local progname=${0##*/}
+    local opts=""
+    local lopts="dryrun,move:,remove,arch:,cachedir:,force,help,ignore:,keep:,min-atime:,min-mtime:,nocolor,null,quiet,uninstalled,verbose,version"
+    local sopts="dm:ra:c:i:fhk:zquvV"
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
+        $OptFunc -h
+        return 1
+    }
+    eval set -- "$opts"
+
+    local option=""
+
+    while true ; do
+        case "$1" in
+            --) shift; break ;;
+
+            -d|--dryrun)      values[dryrun]=yes ;;
+            -f|--force)       values[force]=yes ;;
+            -h|--help)        values[help]=yes ;;
+            --nocolor)        values[nocolor]=yes ;;
+            -z|--null)        values[null]=yes ;;
+            -q|--quiet)       values[quiet]=yes ;;
+            -u|--uninstalled) values[uninstalled]=yes ;;
+            -v|--verbose)     values[verbose]=yes ;;
+            -V|--version)     values[version]=yes ;;
+            -m|--move)        values[move]=yes ;;
+            -a|--arch)        values[arch]=yes ;;
+            -r|--remove)      values[remove]=yes ;;
+
+#            -d|--dryrun|-f|--force|-h|--help|--nocolor|-z|--null|-q|--quiet|-u|--uninstalled|-v|--verbose|-V|--version|-m|--move|-a|--arch|-r|--remove)
+#                values[$option]=yes ;;
+                
+            -c|--cachedir)    values[cachedir]=yes; shift ;;
+            -i|--ignore)      values[ignore]=yes; shift ;;
+            --min-atime)      values[min-atime]="$2"; shift ;;
+            --min-mtime)      values[min-mtime]="$2"; shift ;;
+            -k|--keep)
+                [ "${2//[0-9]/}" ] && DIE "option '$1': value '$2' is invalid"
+                values[keep]="$2"
+                shift
+                ;;
+        esac
+        shift
+    done
+}
+
+Main() {
+    local items="$1" item item1
+    shift
+
+    declare -A values=(
+        dryrun ""
+        force ""
+        help ""
+        nocolor ""
+        null ""
+        quiet ""
+        uninstalled ""
+        verbose ""
+        version ""
+        move ""
+        arch ""
+        cachedir ""
+        ignore ""
+        min-atime ""
+        min-mtime ""
+        keep "3"
+        remove ""
+    )
+
+    Paccache_option_value "$@"
+
+    for item in ${items//,/ } ; do
+        item1="$item"
+        case "$item" in
+            d) item=dryrun;;
+            f) item=force;;
+            h) item=help;;
+            z) item=null;;
+            q) item=quiet;;
+            u) item=uninstalled;;
+            v) item=verbose;;
+            V) item=version;;
+            m) item=move;;
+            a) item=arch;;
+            c) item=cachedir;;
+            i) item=ignore;;
+            k) item=keep;;
+            r) item=remove;;
+        esac
+        echo "$item1:|${values[$item]}"
+    done | column -t -s'|'
+}
+
+Main "$@"
