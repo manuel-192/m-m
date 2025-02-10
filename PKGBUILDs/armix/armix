@@ -287,8 +287,8 @@ Options:
         Include a comma separated list of country code(s) for ranking their mirrors.
         Codes are case insensitive.
         Examples:
-            --country de,gb          # adds DE and GB for ranking
-            --country %de,dk         # sets DE and DK for ranking (see Notes below)
+            --country  de,gb         # adds DE and GB mirrors for ranking
+            --country %de,dk         # sets DE and DK mirrors for ranking (see Notes below)
 
     --country-current, -t
         Include current country to be ranked.
@@ -365,10 +365,9 @@ Examples:
     CONFIG_OPTIONS=(--country-current)
 
 Notes:
-    - Command line options override the configuration file options.
+    - Command line option overrides the corresponding configuration file option.
     - Leading % in the <list> value replaces the existing list (instead of adding to it).
-    - There are additional options available, see them with
-      option --dump-options and the source code at $(which $progname).
+    - More options are available, see the source code at $(which $progname).
 EOF
     [ "$1" ] && exit $1
 }
