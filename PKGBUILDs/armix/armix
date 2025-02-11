@@ -276,11 +276,11 @@ Usage: $progname [options]
 Options:
     --all
     -A
-        Rank all available mirrors on all continents.
+        Rank all supported mirrors on all continents.
 
     --continent
     -C
-        Rank all available countries of the current continent.
+        Rank all supported countries of the current continent.
 
     --country <list>
     -c <list>
@@ -324,15 +324,17 @@ Options:
         A mirror can be a unique part of the mirror address.
 
     --list-continent-codes
-        List all available continent codes.
+        List all supported continent codes.
 
     --list-country-codes-names
     -l
-        List all available country codes and names.
+        List all supported country codes and names.
 
     --prefer-local-rank
-        If no countries are requested, prefer ranking mirrors in current country only.
-        Default: rank all available mirrors everywhere.
+        If no countries nor continents are requested, prefers mirror ranking
+        only in the current country instead of all supported countries.
+        If there are no supported mirrors in the country, fall back to using
+        all supported countries.
 
     --ranking-data
     -r
