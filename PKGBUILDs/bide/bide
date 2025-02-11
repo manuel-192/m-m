@@ -58,7 +58,18 @@ AddNewParameters() {
 CleanUp() { ModifyParameters "" ; }
 
 ModifyParameters() {
-    sed -i "$settings_file" -E -e "s|^([ ]+\"args\":[ ]+)\[[^]]*\]|\1[$1]|"
+    local para="$1"
+    local sep
+
+    for sep in "|" "_" "?" "/" ; do
+        case "$para" in
+            *"$sep"*) ;;
+            *) sed -i "$settings_file" -E -e "s$sep^([ ]+\"args\":[ ]+)\[[^]]*\]$sep\1[$para]$sep"
+               return 0
+               ;;
+        esac
+    done
+    DIE "parameter problem!"
 }
 
 IdeDebugBash() {
