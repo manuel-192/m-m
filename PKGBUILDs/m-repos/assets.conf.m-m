@@ -43,7 +43,6 @@ local PKGNAMES=(
     arch-rankmirrors
     archive-trim
     # archlinux-appstream-data-pamac-fix
-    armix
     bide
     burn2dev
     c-runner
@@ -86,6 +85,7 @@ local PKGNAMES=(
     meta-general
     meta-install
     metamgr
+    mirank
     mirrorlist-m
     mouse-stuff
     pachandle
