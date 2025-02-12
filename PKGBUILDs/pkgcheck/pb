@@ -260,7 +260,9 @@ EOF
                 return
                 ;;
             --extras)
-                RunIfExists arch-audit cookbook
+                RunIfExists cookbook
+                echo "" >&2
+                RunIfExists arch-audit
                 return
                 ;;
             --dump-options)
