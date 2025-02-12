@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# assets.make definitions for the m-more repo
+# assets.make definitions for the m-m repo
 
 # note: all variables are made 'local'
 
@@ -76,6 +76,7 @@ local PKGNAMES=(
     m-brightness
     # m-hooks
     m-common
+    m-repos
     md
     meld-rcs
     meta-bash

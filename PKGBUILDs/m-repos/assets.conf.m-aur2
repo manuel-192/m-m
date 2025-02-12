@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# definitions for the m-aur repo
+# definitions for the m-aur2 repo
 
 # note: all variables are made 'local'
 
