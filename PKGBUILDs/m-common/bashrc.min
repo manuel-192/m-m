@@ -1292,11 +1292,10 @@ EOF
     ppm() {
         which logstuff pb >/dev/null || return 1
         logstuff on
+        pb -nn -T0 --extras
         pb -nn -T0 MAN m-m m-aur2 m-more2 local-repo
         echo ""
         pb -nn -T0 --pulls-m
-        echo ""
-        pb -nn -T0 --extras
         echo ""
         pb -nn -T0 --assets.conf-m
     }
