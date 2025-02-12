@@ -454,7 +454,7 @@ ExpandFavs() {
             informed=yes
             cc=${fav::2}
             fav=${fav:3}
-            full="$(armix-status -c"$cc" | grep "$fav")"
+            full="$(${progname}-status -c"$cc" | grep "$fav")"
             if [ "$full" ] ; then
                 case $(echo "$full" | wc -l) in
                     0) WARN "cannot expand '$fav' in '$cc'" ;;   # ??

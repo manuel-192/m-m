@@ -159,9 +159,9 @@ $pre1
     -a, --aur              Updates AUR packages too.
         --clear-keyrings   If update fails with keyring issues, try this option.
         --clear-databases  If update fails with e.g. database signature issues, try this option.
-        --update-mirrors-arch   Update Arch mirrors with armix.
+        --update-mirrors-arch   Update Arch mirrors with mirank.
                                 Tip: all preferred configurations must be set up in file
-                                \$HOME/.config/armix.conf.
+                                \$HOME/.config/mirank.conf.
         --update-mirrors-eos    Update EndeavourOS mirrors with eos-rankmirrors.
                                 Tip: all preferred configurations must be set up in file
                                 /etc/eos-rankmirrors.conf.
@@ -236,7 +236,7 @@ Options() {
                     --clear-databases)       ClearDatabases; Exit 0 ;;
                     -c | --connection)       Assign connection yes ;;
                     --debug)                 Assign debug yes ;;
-                    --update-mirrors-arch)   armix | sudo tee /etc/pacman.d/mirrorlist; exit ;;
+                    --update-mirrors-arch)   mirank | sudo tee /etc/pacman.d/mirrorlist; exit ;;
                     --update-mirrors-eos)    eos-rankmirrors; exit ;;
                     -d | --descriptions)     Assign descriptions yes ;;
                     --dump-options)          DumpOptions; Exit 0 ;;

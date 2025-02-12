@@ -2,11 +2,11 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=armix
+pkgname=mirank
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=3.1
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -30,9 +30,9 @@ source=(
     $url/${pkgname}-helper
     $url/${pkgname}-status
 )
-sha512sums=('63e57fcc924b39f452d19a24dba018ce158a0db4df82736cdf372702edfd8b6ff4833ba84184fb659f8d34f4917f17e01fabb75aee8cbda0a49bb2a6086f2404'
+sha512sums=('1b8f7d1341ec18ffb68dcca71896a83c3f1f8c539b4b7c4af4d5352dc9f12fe430ab11e309bbed603411b535358f8a69b1ccf54e61d014065294a3db41e4238a'
             '27daa9b5d5e755b57f11b8fe12522e4cae2191d9aeaebb23a467379608a9e7ba0eb1e7abcccb5d96b6cdf8ff6706893b6bce105e038865ee04d972027f094f32'
-            '83776883286035573888178dbf837b1f56d0c69d16b97b1d4259cef0eda22de9d7f9811d051d54c854895e7da79f6baf3a203fc98e263893e146b4001b7c1aef'
+            'b853645860aec839f8e949330fc5f511a671362df3ac19e36baf3279adf73354112c1cda9b09d3f4d07367e0c73197120b69e4bce1166f8f6afe1084daa6c2f5'
             'ffb0d3326196137b21415b27f47c20e8a8d35081b1d7e618ee6324c618e0ca948bc6b19de98e7acc803830dd64764d0f8d2f6793c5fba1586aea55b8f1da6606'
             '1c96c37fee0473a727f2b5f7903da0f7fca210346b8d3faa69d07e0397005660bc69daa61ed4fdb450b25260553fae3ae1a3228a535d23e6c4de65eac488861b')
 

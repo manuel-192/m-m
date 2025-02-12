@@ -76,7 +76,7 @@ Main() {
         --field="Install packages!$icon_install!Select and install packages":fbtn                     "RunInTerminal 'paf -i'"                                     # ???
         --field="Remove packages!$icon_remove!Select and remove packages":fbtn                        "RunInTerminal 'paf -r'"                                     # ???
 
-        --field="Rank Arch mirrors!$icon_prefs!Rank the list of Arch mirrors":fbtn                    "RunInTerminal 'armix | sudo tee /etc/pacman.d/mirrorlist'"  # ???
+        --field="Rank Arch mirrors!$icon_prefs!Rank the list of Arch mirrors":fbtn                    "RunInTerminal 'mirank | sudo tee /etc/pacman.d/mirrorlist'"  # ???
         --field="Rank EndeavourOS mirrors!$icon_prefs!Rank the list of EndeavourOS mirrors":fbtn      "RunInTerminal eos-rankmirrors"
 
         --field="Edit $pacman_conf!$icon_edit!Change general package management settings":fbtn        "EditFile $pacman_conf"
