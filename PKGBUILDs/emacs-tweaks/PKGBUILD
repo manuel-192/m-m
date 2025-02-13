@@ -3,7 +3,7 @@
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
 pkgver=25
-pkgrel=1
+pkgrel=2
 arch=('any')
 license=('GPL')
 depends=(emacs)
@@ -17,7 +17,7 @@ source=(
 )
 sha512sums=('2f2977cd2d46ab2a2dfadb75c56a52e1468fa23fe951b58093ec1f7a40cd7f7bc6953935386212bdd55764aebab6a811b4f5789ae13df40cd0be95e09932944d'
             '2c4003a729802a92f3875d3135bb5a5185dfa8f8124986af7cd54346529dfee6497c98e1b46eeaeea326c2ebffca43865757cd5844296a9446b493fb04f87dee'
-            '1201555b3636ec9e3baf316299081ee5531ee3ca6be75bc00ee6786ca731a2953d387ede8cd189384e32699862952aec3b7f73a6254a4990f7665083a95a475a')
+            'b37d25dcbab62c427632c0bda0d4ef23016826655b8c3ed863e8c9edf98ccf255940b5a74858c1fbb4c111554798124403d014d2eaebe4d8c0febd380cb9ea11')
 
 package() {
     local _dir=$pkgdir/usr/local/bin

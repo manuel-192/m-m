@@ -8,7 +8,7 @@ emacs_readonly() {
     for arg in "$@" ; do
         case "$arg" in
             -*) ;;
-            *)  if [ -f "$arg" ] ; then
+            *)  if [ -f "$arg" ] && [ -r "$arg" ] ; then
                     old_chmod=$(/bin/ls -l "$arg" | awk '{print $1}')
                     old_chmod=${old_chmod:2:1}${old_chmod:5:1}${old_chmod:8:1}
                     chmod -w "$arg" 2>/dev/null || pkexec --keep-cwd chmod -w "$arg"
