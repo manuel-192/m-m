@@ -2,8 +2,8 @@
 
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
-pkgver=23
-pkgrel=3
+pkgver=25
+pkgrel=1
 arch=('any')
 license=('GPL')
 depends=(emacs)
@@ -13,13 +13,16 @@ url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
 source=(
     $url/emacs
     $url/emacs-fix-position-for-kate
+    $url/emacs-readonly
 )
 sha512sums=('2f2977cd2d46ab2a2dfadb75c56a52e1468fa23fe951b58093ec1f7a40cd7f7bc6953935386212bdd55764aebab6a811b4f5789ae13df40cd0be95e09932944d'
-            '2c4003a729802a92f3875d3135bb5a5185dfa8f8124986af7cd54346529dfee6497c98e1b46eeaeea326c2ebffca43865757cd5844296a9446b493fb04f87dee')
+            '2c4003a729802a92f3875d3135bb5a5185dfa8f8124986af7cd54346529dfee6497c98e1b46eeaeea326c2ebffca43865757cd5844296a9446b493fb04f87dee'
+            '1201555b3636ec9e3baf316299081ee5531ee3ca6be75bc00ee6786ca731a2953d387ede8cd189384e32699862952aec3b7f73a6254a4990f7665083a95a475a')
 
 package() {
     local _dir=$pkgdir/usr/local/bin
 
     install -Dm755 emacs                         $_dir/emacs
+    install -Dm755 emacs-readonly                $_dir/emacs-readonly
     install -Dm755 emacs-fix-position-for-kate   $_dir/emacs-fix-position-for-kate
 }
