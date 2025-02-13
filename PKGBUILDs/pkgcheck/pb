@@ -261,8 +261,10 @@ EOF
                 ;;
             --extras)
                 RunIfExists cookbook
+                read -p "Press ENTER: "
                 echo "" >&2
                 RunIfExists arch-audit
+                read -p "Press ENTER: "
                 return
                 ;;
             --dump-options)
