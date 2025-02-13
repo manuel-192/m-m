@@ -3,7 +3,7 @@
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
 pkgver=25
-pkgrel=2
+pkgrel=3
 arch=('any')
 license=('GPL')
 depends=(emacs)
@@ -12,6 +12,7 @@ url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
 
 source=(
     $url/emacs
+    $url/emacsr
     $url/emacs-fix-position-for-kate
     $url/emacs-readonly
 )
@@ -23,6 +24,7 @@ package() {
     local _dir=$pkgdir/usr/local/bin
 
     install -Dm755 emacs                         $_dir/emacs
+    install -Dm755 emacsr                        $_dir/emacsr
     install -Dm755 emacs-readonly                $_dir/emacs-readonly
     install -Dm755 emacs-fix-position-for-kate   $_dir/emacs-fix-position-for-kate
 }
