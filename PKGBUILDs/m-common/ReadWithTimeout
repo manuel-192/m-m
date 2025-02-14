@@ -1,0 +1,64 @@
+#!/bin/bash
+
+ReadWithTimeout() {
+    # Special handling for option -t: show a seconds counter.
+    # The read value goes to the REPLY variable only.
+    # Exit code and REPLY:
+    #   - timeout:       code=142, REPLY='<empty>'
+    #   - ENTER pressed: code=0,   REPLY='<possible input or empty>'
+
+    local -r progname=${0##*/}
+    local wait_seconds=0
+    local -r cr=$'\r'
+    local args=()
+    local LOPTS=""
+    local SOPTS="ersa:d:i:n:N:p:t:u:"
+    local opts
+    local retval=5656
+    local REPLY1=""
+    local -r code_timeout=142
+
+    opts="$(/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || exit 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --) shift; break ;;
+            -e|-r|-s) args+=("$1") ;;
+            -a|-d|-i|-n|-N|-p|-u) args+=("$1" "$2"); shift ;;
+            -t) wait_seconds="$2"; shift ;;
+        esac
+        shift
+    done
+
+    REPLY=""
+
+    if [ $wait_seconds -gt 0 ] ; then
+        # show a seconds counter while reading
+        while [ $wait_seconds -gt 0 ] ; do
+            printf "%s[%s] " "$cr" "$wait_seconds" >&2
+            read -t1 -n1 "${args[@]}" >&2                # read first char
+            retval=$?
+            if [ $retval -eq 0 ] ; then
+                if [ "$REPLY" ] ; then                   # allow user to finish the line?
+                    REPLY1="$REPLY"                      # save first char
+                    read                                 # read on...
+                    REPLY="$REPLY1$REPLY"                # collect the given line
+                fi
+                break
+            fi
+            ((wait_seconds--))
+        done
+        [ $retval -eq $code_timeout ] && printf "%s[%s] " "$cr" "$wait_seconds" >&2
+    else
+        read "${args[@]}" >&2        # just read the value, no special handling
+        retval=$?
+    fi
+    [ $retval -eq $code_timeout ] && echo "" >&2
+    return $retval
+}
+
+# Usage example:
+#   source /etc/ReadWithTimeout || exit 1
+#   ReadWithTimeout -p "give number: " -t5
+#   echo "$REPLY"
