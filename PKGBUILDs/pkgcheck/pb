@@ -261,10 +261,15 @@ EOF
                 ;;
             --extras)
                 RunIfExists cookbook
-                read -p "Press ENTER: "
+                if [ -e /etc/ReadWithTimeout ] ; then
+                    source /etc/ReadWithTimeout || return 1
+                    ReadWithTimeout -p "Press ENTER: " -t30
+                fi
                 echo "" >&2
                 RunIfExists arch-audit
-                read -p "Press ENTER: "
+                if [ -e /etc/ReadWithTimeout ] ; then
+                    ReadWithTimeout -p "Press ENTER: " -t30
+                fi
                 return
                 ;;
             --dump-options)
