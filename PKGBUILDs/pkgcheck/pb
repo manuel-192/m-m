@@ -231,6 +231,8 @@ Params:
         Show the contents of the given package database (*.db.tar.xz).
     --mirrorlist-arch
         Download a generated mirrorlist from the Arch web page. Useful for testing only.
+    --mirrorcheck
+        Check if the latest EndeavourOS packages have arrived at the mirror.
     --local-repo
         Check and build local repo packages.
     --extras
@@ -277,7 +279,7 @@ EOF
                 op+=" -n -nn -b"
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls --pulls-e --pulls-m"
                 op+=" --check-all --quick-check --assets.conf-check --assets.conf-e --assets.conf-m"
-                op+=" --extras --pkgdb --changelog --changelog-modified --mirrorlist-arch"
+                op+=" --extras --pkgdb --changelog --changelog-modified --mirrorlist-arch --mirrorcheck"
                 op+=" -T --fetch-timeout -C --commit --local-repo"
                 echo "$op"
                 return
@@ -335,6 +337,11 @@ EOF
             --pulls-m)   # | pull)
                 pull-requests -m
                 WaitToQuit
+                return
+                ;;
+            --mirrorcheck)
+                cd endeavouros
+                mirrorcheck
                 return
                 ;;
             --mirrorlist-arch)
