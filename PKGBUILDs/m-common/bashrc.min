@@ -1242,6 +1242,7 @@ EOF
     # Alias pacdiff            "eos-pacdiff"
     # Alias pacdiff            "DIFFPROG=/bin/meld /bin/pacdiff --sudo"
     Alias pacdiff            "eos-pacmerge"
+    Alias pacdiff            "eos-pacdiff --msg-types=cli"
     Alias pacneeds           "who-needs --sync --multi --aur"
     # Alias paq                "sudo paq"
     # Alias I                  "paf -i"
