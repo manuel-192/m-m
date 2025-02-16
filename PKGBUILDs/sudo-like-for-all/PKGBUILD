@@ -5,14 +5,14 @@
 pkgname=optionless-sudo-for-all
 pkgdesc="Optionless 'sudo' command for all users."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=23
+pkgver=25
 pkgrel=1
 
 arch=(any)
 license=(GPL)
 source=(sudo)
 
-sha512sums=('c93a1c745d15799da99a3c9f595dc4de1345610c0bb78aef12bd70daa9cb8340b0454b776b2f517a011aeff1478191bc1205142e966a8f08eedbf85d7e5fc24e')
+sha512sums=('f53800e3843c14e89151ecf1c2da73b352748d269118a4ae64073cfe7b8b529611c3e52f1191ffe4b4160424ef1e842e8e6025ddb07ae72000d565c0192604a1')
 
 package() {
     install -Dm755 sudo $pkgdir/usr/local/bin/sudo

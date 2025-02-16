@@ -6,7 +6,7 @@ case "$(id)" in
         /usr/bin/sudo "$@"
         ;;
     *)
-        # Others get su-based but sudo-like command without any sudo options.
-        su-c_wrapper "$@"
+        # Others get a sudo-like command without any sudo options.
+        pkexec --keep-cwd "$@"
         ;;
 esac
