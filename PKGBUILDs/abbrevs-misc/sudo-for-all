@@ -1,49 +1,43 @@
 #!/bin/bash
 
-# Provide a simple 'sudo' for all users.
+# Provide a simple sudo-like app for all users.
+
+Verbose() {
+    [ $verbose = yes ] && echo "==> $1" >&2
+}
 
 Main() {
-    local who="" msg=""
-
-    if [ $EUID -eq 0 ] || [ "$(whoami)" = "root" ] ; then
-        msg="running as root"
-        who=root
-    elif [ -n "$(/usr/bin/groups | /usr/bin/grep -w wheel)" ] ; then
-        msg="running as a wheel group member"
-        who=wheel
-    else
-        msg="running as a non-privileged user"
-        who=other
-    fi
+    local verbose=no
+    local app
 
     case "$1" in
         --verbose-sudo)
+            verbose=yes
             shift
-            echo "==> $msg" >&2
             ;;
     esac
 
-    case "$who" in
-        root)
-            "$@"
-            exit $?
-            ;;
-        wheel)
-            /usr/bin/sudo "$@"
-            exit $?
-            ;;
-        other)
-            local app
-            for app in su-c_wrapper pkexec2 pkexec ; do
-	        if [ -x /usr/bin/$app ] ; then
-                    /usr/bin/$app "$@"
-                    exit $?
-	        fi
-            done
-            ;;
-    esac
+    if [ "$(/bin/groups | /bin/grep -w wheel)" ] && [ -x /bin/sudo ]; then
+        Verbose "running as a wheel group member"
+        /bin/sudo "$@"
+        exit $?
+    fi
 
-    exit 1
+    if [ $EUID -eq 0 ] || [ "$(whoami)" = "root" ] ; then
+        Verbose "running as root"
+        "$@"
+        exit $?
+    fi
+
+    Verbose "running as a non-privileged user"
+    for app in su-c_wrapper "pkexec --keep-cwd" ; do
+	if [ -x /usr/bin/${app%% *} ] ; then
+            /usr/bin/$app "$@"
+            exit $?
+	fi
+    done
+
+    exit 1  # failed, no sudo-like app found
 }
 
 Main "$@"

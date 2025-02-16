@@ -6,7 +6,7 @@ pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25.2
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -45,7 +45,7 @@ source=(
     $url/printf2
     $url/rate-mirrors-arch
     $url/shellcheck-nameref
-    $url/sudo-for-all
+    # $url/sudo-for-all
     $url/who-needs
 #    $url/update-grub
 )
@@ -73,7 +73,6 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
             '29c3daacdf40b419946d168e28d6d798a08c8b9a5072fd3601211166f0ed638318b0be21529d7ed4015288ed8992107d5e578243d9f7b5a496cf2f3c4c9ceeea'
             '19aa66c5bba9cb1ebfba7f35842dc16ae6961ffaa2cd2d17b48f6ee0c00d3623de8c01d7adb57f2c2924d87bf1e49f6ec97c6ecace1a1e878b858909421bd015'
-            'de18fcad926b3771698917d678392bd77d0739da2a7d04d20b3a22a90c33e9f8725e282746caa3b296fb4f19a1c716090746584bf38e7cbbc3c7b15c782fb44e'
             '53b899a56aa1d6950b8026ad0047412b9c1e32a3cf18a40c44214d5cba2bd66109e3776463a61f6759b79a6bad21806c5ca4cc1bf816ec14c410fb0e13ff57dd')
 
 package() {
@@ -85,7 +84,7 @@ package() {
                            install -Dm755 $item      $pkgdir/usr/bin/$item ;;
             *.bash)        install -Dm644 $item      $pkgdir/etc/skel/$item ;;
             *.completion)  install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.completion} ;;
-            sudo-for-all)  install -Dm755 $item      $pkgdir/usr/local/bin/sudo ;;
+            # sudo-for-all)  install -Dm755 $item      $pkgdir/usr/local/bin/sudo ;;
             *)             install -Dm755 $item      $pkgdir/usr/local/bin/$item ;;
         esac
     done
