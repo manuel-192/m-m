@@ -157,44 +157,49 @@ Main() {
                 -h | --help)      Usage; exit 0 ;;
                 -*)               DIE "option '$1' not supported." ;;
                 *.iso.tar.gz | *.iso | *.iso.sha512sum)
-                                  FetchIsoFile "$1"
-                                  ;;
+                    FetchIsoFile "$1"
+                    ;;
                 *)                DIE "sorry, only *.iso.tar.gz files are supported."
             esac
             shift
         done
     else
         local fzf=(
-            fzf --exact +i --tac
+            fzf
+            --exact +i --tac --multi
             --header="Navigation: Up, Down, PgUp, PgDn; ENTER=accept, ESC=quit"
         )
-        local selected=""
+        local selected="" items=""
         local subdir=""
         while true ; do
-            selected=$(${progname}-show-all-info "$subdir" | "${fzf[@]}" )
-            selected=${selected%% *}                                 # keep the file name, drop other info
+            # keep the names of files, drop other info
+            items=$(${progname}-show-all-info "$subdir" | "${fzf[@]}" | awk '{print $1}')
 
-            case "$selected" in
-                *"/") case "$selected" in
-                          "/") subdir=""
-                               ;;
-                          *)   case "$subdir" in
-                                   "") subdir="${selected%/}" ;;
-                                   *)  subdir="$subdir/${selected%/}" ;;
-                               esac
-                               ;;
-                      esac
-                      ;;
-                "")   echo2 "Nothing selected."
-                      exit 1
-                      ;;
-                *)    read -p "Download $selected now (Y/n)? "
-                      case "$REPLY" in
-                          "" | [Yy]*) FetchIsoFile "$selected" "$subdir"; exit 0 ;;
-                          *)          exit 1 ;;
-                      esac
-                      ;;
-            esac
+            for selected in $items ; do
+                case "$selected" in
+                    *"/") case "$selected" in
+                              "/") subdir=""
+                                   ;;
+                              *)   case "$subdir" in
+                                       "") subdir="${selected%/}" ;;
+                                       *)  subdir="$subdir/${selected%/}" ;;
+                                   esac
+                                   ;;
+                          esac
+                          ;;
+                    "")   echo2 "Nothing selected."
+                          exit 1
+                          ;;
+                    *)    read -p "Download $selected or exit (D/e)? "
+                          case "$REPLY" in
+                              "" | [Yy]* | [Dd]*) FetchIsoFile "$selected" "$subdir" ;;
+                              [Ee]*)              exit ;;
+                          esac
+                          exitcode=$?
+                          [ "$selected" = "$(echo "$items" | tail -n1)" ] && exit $exitcode
+                          ;;
+                esac
+            done
         done
     fi
 
