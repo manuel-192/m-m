@@ -167,13 +167,17 @@ Main() {
         local fzf=(
             fzf
             --exact +i --tac --multi
-            --header="Navigation: Up, Down, PgUp, PgDn; ENTER=accept, ESC=quit"
+            --header="Navigation keys: Up/Down/PgUp/PgDn; TAB=Select, ENTER=accept, ESC=quit"
         )
         local selected="" items=""
         local subdir=""
         while true ; do
             # keep the names of files, drop other info
-            items=$(${progname}-show-all-info "$subdir" | "${fzf[@]}" | awk '{print $1}')
+            items=$(${progname}-show-all-info "$subdir" | "${fzf[@]}")
+            case "$?" in
+                130) exit 1 ;;   # interrupted
+            esac
+            items=$(echo "$items" | awk '{print $1}')
 
             for selected in $items ; do
                 case "$selected" in
