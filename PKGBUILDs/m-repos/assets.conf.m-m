@@ -86,7 +86,6 @@ local PKGNAMES=(
     meta-general
     meta-install
     metamgr
-    mirank
     mirrorlist-m
     mouse-stuff
     pachandle
@@ -99,6 +98,7 @@ local PKGNAMES=(
     pkgcheck
     # pkgcheck-gui
     pkgurl
+    rami
     reflectorext
     safe
     skel
