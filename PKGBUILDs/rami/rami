@@ -4,13 +4,13 @@
 # - long time statistics?
 # - less failure output
 
-echo2()       { echo "$@" >&2; }
-DIE()         { echo2 -e "==> $progname: error:\n    $1"; Usage 1; }
-DIE2()        { echo2 -e "==> $progname: error:\n    $1"; exit 1; }
+echo2()       { echo -e "$@" >&2; }
+DIE()         { echo2 "==> $progname: error:\n    $1"; Usage 1; }
+DIE2()        { echo2 "==> $progname: error:\n    $1"; exit 1; }
 WARN()        {
     local app="$progname"
     [ "$app" ] || app="${FUNCNAME[1]}"
-    echo2 -e "==> $app: warning: $1"
+    echo2 "==> $app: warning: $1"
 }
 
 AssertNumber() { [ "${1//[0-9]/}" ] && DIE "option $2 requires a number"; }
@@ -114,6 +114,22 @@ ListCountryCodesNames() {
 }
 GetCountriesData() {
     [ "$reflector_list_countries" ] || UpdateCompletionFiles
+}
+ListContinentsCountries() {
+    local code_name=()
+    local countrycode continent line
+
+    GetContinentsData
+    readarray -t code_name <<< $(ListCountryCodesNames)
+
+    # gather all info and sort according to continent and country name
+    for line in "${code_name[@]}" ; do
+        countrycode=${line%% *}
+        continent=$(echo "$countries_continents" | grep $countrycode)
+        continent=${continent##* }
+        line=${line//  / }
+        echo "$continent $line"
+    done | sort -k1,1 -k3,3
 }
 GivenContinent() {
     local continent1="$1"
@@ -326,6 +342,9 @@ Options:
     --list-continent-codes
         List all supported continent codes.
 
+    --list-continents-countries
+        List all country names with their continent codes and country codes.
+
     --list-country-codes-names
     -l
         List all supported country codes and names.
@@ -494,6 +513,7 @@ OptionsPreHandle() {
             --list-continent-countrynames)          ShowContinentCountries "$2" name; exit ;;
             --list-current-continent-countrycodes)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code; exit ;;
             --list-current-continent-countrynames)  GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" name; exit ;;
+            --list-continents-countries)            ListContinentsCountries; exit ;;
             -e | --edit-config)                     Edit "$config_file";    exit 0 ;;
             --dump-completion-files)                ShowCompletionFiles;    exit 0 ;;
             -l | --list-country-codes-names)        ListCountryCodesNames;  exit 0 ;;
@@ -592,7 +612,7 @@ Main() {
 
     local LOPTS=""
     LOPTS+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,dump-options-all,favorite:,full-data,help"
-    LOPTS+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data"
+    LOPTS+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data,list-continents-countries"
     LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
     LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
@@ -656,18 +676,25 @@ Main() {
     mirror_count=$(echo "$ranked" | wc -l)               # ranking may have dropped some mirrors!
 
     case $save_ml in
-        yes) local -r yymmdd=$(date +%y%m%d)
+        yes) local -r timestamp=$(date +%y%m%d%H%M)
              local -r mlt=$(mktemp /tmp/ml.XXXXX)
+             local -r bakdir=${ml%/*}/.EOS-BACKUP
+             local -r bakfile=$bakdir/${ml##*/}.$timestamp
              ShowMirrorlistFile | tee $mlt
-             sudo bash -c "cp -a $ml $ml.$yymmdd; cp $mlt $ml"
+             sudo bash -c "mkdir -p $bakdir; cp -a $ml $bakfile; zstd -fq -19 --rm $bakfile; cp $mlt $ml" && {
+                 echo2 "\n==> $bakfile.zst created as backup.\n==> $ml saved.\n"
+             } || {
+                 echo2 "\n==> $ml NOT saved.\n"
+             }
              rm -f $mlt
              ;;
         no)  ShowMirrorlistFile
+             echo2 "\n==> Note: use option '--save' to store this list into $ml.\n"
              ;;
     esac
 
     if [ -e "$errlogfile" ] ; then
-        echo2 -e "\n==> ERRLOG ($errlogfile):"
+        echo2 "\n==> ERRLOG ($errlogfile):"
         cat "$errlogfile" | sort -u -k5n >&2
         # rm -f "$errlogfile"
     fi

@@ -6,7 +6,7 @@ pkgname=rami
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=1
+pkgrel=2
 
 arch=('any')
 license=('GPL')
@@ -29,18 +29,21 @@ source=(
     $url/$pkgname.completion              # bash completion
     $url/${pkgname}-helper
     $url/${pkgname}-status
+    $url/tips.md
 )
-sha512sums=('1b8f7d1341ec18ffb68dcca71896a83c3f1f8c539b4b7c4af4d5352dc9f12fe430ab11e309bbed603411b535358f8a69b1ccf54e61d014065294a3db41e4238a'
+sha512sums=('1c4835ce96beeb55ce70dfa423436551b2666bfeee387b120b8883a6711b923d3ff81c4f02ed92b80a7f64c6be751d17804d01a2cad1887e7b8c5d27a1f1f51e'
             '27daa9b5d5e755b57f11b8fe12522e4cae2191d9aeaebb23a467379608a9e7ba0eb1e7abcccb5d96b6cdf8ff6706893b6bce105e038865ee04d972027f094f32'
             'b0738faeafaa54c13ddf8de73c2c030fa045ea49b7b851de1e890fbe613a8ba778dc8c3f1b5643c6bae1c7c6f4803e02217d94a432632ea546c30dd9e44af18e'
             'ffb0d3326196137b21415b27f47c20e8a8d35081b1d7e618ee6324c618e0ca948bc6b19de98e7acc803830dd64764d0f8d2f6793c5fba1586aea55b8f1da6606'
-            '1c96c37fee0473a727f2b5f7903da0f7fca210346b8d3faa69d07e0397005660bc69daa61ed4fdb450b25260553fae3ae1a3228a535d23e6c4de65eac488861b')
+            '1c96c37fee0473a727f2b5f7903da0f7fca210346b8d3faa69d07e0397005660bc69daa61ed4fdb450b25260553fae3ae1a3228a535d23e6c4de65eac488861b'
+            '42c0d956f6520d04ecb9606d9ca054ec1e1d9906ba6fc7ef2be5536c1fe87c20e1495201b2fbc221389e1216bfa90c4cebf118e5c4161c3c65d0cede09c40c7d')
 
 package() {
     local src
     for src in "${source[@]}" ; do
         src=${src##*/}
         case "$src" in
+            *.md)                install -Dm644 $src  "$pkgdir/usr/share/doc/$pkgname/$src" ;;
             *.conf)              install -Dm644 $src  "$pkgdir/etc/skel/$src" ;;
             *.completion)        install -Dm644 $src  "$pkgdir/usr/share/bash-completion/completions/${src%.completion}" ;;
             *)                   install -Dm755 $src  "$pkgdir/usr/bin/$src" ;;
