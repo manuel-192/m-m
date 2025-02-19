@@ -1,6 +1,6 @@
-# bash completion for mirank        -*- shell-script -*-
+# bash completion for rami        -*- shell-script -*-
 
-_mirank_listselector()
+_rami_listselector()
 {
     local cur="$1"
     local list_elems_all="$2"
@@ -20,35 +20,35 @@ _mirank_listselector()
 }
 
 
-_mirank_complete() {
+_rami_complete() {
     COMPREPLY=( $(compgen -W "$1" -- "$cur") )
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     #compopt -o nosort
 }
-_mirank_complete_url() {
+_rami_complete_url() {
     COMPREPLY=( $(compgen -P "'" -W "$1" -- "$cur") )
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     compopt -o nospace
 }
 
-_mirank_complete_nr() {
+_rami_complete_nr() {
     COMPREPLY=( $(compgen -P "$cur" -W "{0..9}") )
     compopt -o nospace
     compopt -o nosort
 }
 
-_mirank_complete_list() {
+_rami_complete_list() {
     COMPREPLY=( $(compgen -P "$cur" -S"," -W "$1") )
     compopt -o nospace
     compopt -o nosort
 }
 
-_mirank_() 
+_rami_() 
 {
     local cur prev #words cword split
     _init_completion -s || return
 
-    local -r app=mirank
+    local -r app=rami
 
     local -r completion_files=($($app --dump-completion-files))
     local -r countrycodes="${completion_files[2]}"
@@ -60,33 +60,33 @@ _mirank_()
     local options=$(< "$optionsfile")
     case "$prev" in
         -f | --favorite)
-            _mirank_complete_url "https:// http://"
+            _rami_complete_url "https:// http://"
             ;;
         -d | --distro)
-            _mirank_complete "arch"
+            _rami_complete "arch"
             ;;
         -c | --country)
-            _mirank_listselector "$cur" "$(< "$countrycodes")"
+            _rami_listselector "$cur" "$(< "$countrycodes")"
             ;;
         --timeout | --timeout-rank)
-            _mirank_complete_nr
+            _rami_complete_nr
             ;;
         --ignore-countries)
-            _mirank_complete_list "$(< "$countrycodes")"
+            _rami_complete_list "$(< "$countrycodes")"
             ;;
         --ignore-continents | --continent-given | --list-continent-countrycodes | --list-continent-countrycodes)
-            _mirank_listselector "$cur" "$continents"
+            _rami_listselector "$cur" "$continents"
             ;;
         --list-continent-countrycodes | --list-continent-countrynames)
-            _mirank_complete "${continents[*]}"
+            _rami_complete "${continents[*]}"
             ;;
         --ignore-mirrors)
-            _mirank_complete "unique-list"
+            _rami_complete "unique-list"
             ;;
         *)
-            _mirank_complete "$options"
+            _rami_complete "$options"
             ;;
     esac
-    #  --ignore-countries)  _mirank_listselector "$cur" "$(< "$countrycodes")" ;;
+    #  --ignore-countries)  _rami_listselector "$cur" "$(< "$countrycodes")" ;;
 }
-complete -F _mirank_    mirank 
+complete -F _rami_    rami 

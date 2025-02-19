@@ -2,7 +2,7 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=mirank
+pkgname=rami
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
