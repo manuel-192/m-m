@@ -380,9 +380,6 @@ Options:
     --time
         Show the elapsed time of the measurement.
 
-    --timeout <value>
-        Max timeout in seconds for other than ranking.
-
     --timeout-rank
     -k
         Max timeout in seconds for ranking a mirror.
@@ -416,6 +413,9 @@ Notes:
     - More options are available, see the source code at $(which $progname).
 EOF
     [ "$1" ] && exit $1
+
+    #    --timeout <value>
+    #        Max timeout in seconds for other than ranking.
 }
 Options() {
     local opts
@@ -459,7 +459,7 @@ Options() {
             --prefer-local-rank)                    prefer_local_rank=yes ;;
             --no-parallel)                          has_parallel=no ;;
             -u)                                     update_mirrordata_first=yes ;;
-            --timeout)                              timeout_distro="$2"; shift ;;
+            # --timeout)                              timeout_distro="$2"; shift ;;
             -k | --timeout-rank)                    timeout_rank="$2"; shift ;;
 
             --save)                                 save_ml=yes ;;
@@ -655,7 +655,7 @@ Main() {
     LOPTS+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data,list-continents-countries"
     LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info,verbosity:"
-    LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
+    LOPTS+=",ignore-countries:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:" # timeout:
     LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config,max:,prefer-local-rank"
     LOPTS+=",save"
 
