@@ -8,6 +8,8 @@ User can select which mirrors to include or exclude which saves both time and ne
 
 If option `--save` is not given, `rami` will simply show the ranking result on the terminal.
 
+Bash command completion (use the **Tab** key) works as expected, helping to write options and their parameters.
+
 ## Configuration files
 
 File | Description
