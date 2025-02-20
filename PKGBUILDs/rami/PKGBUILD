@@ -6,7 +6,7 @@ pkgname=rami
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=2
+pkgrel=3
 
 arch=('any')
 license=('GPL')
@@ -31,9 +31,9 @@ source=(
     $url/${pkgname}-status
     $url/tips.md
 )
-sha512sums=('1c4835ce96beeb55ce70dfa423436551b2666bfeee387b120b8883a6711b923d3ff81c4f02ed92b80a7f64c6be751d17804d01a2cad1887e7b8c5d27a1f1f51e'
+sha512sums=('0efc05d0ff0198e6e19eecd1f6a289fe4406e4a634867b9440e1f4d3eaedfc369bebd741e2bcd9bce99d4a2e21e06b737af14bd908759e518f1892afa952f198'
             '27daa9b5d5e755b57f11b8fe12522e4cae2191d9aeaebb23a467379608a9e7ba0eb1e7abcccb5d96b6cdf8ff6706893b6bce105e038865ee04d972027f094f32'
-            'b0738faeafaa54c13ddf8de73c2c030fa045ea49b7b851de1e890fbe613a8ba778dc8c3f1b5643c6bae1c7c6f4803e02217d94a432632ea546c30dd9e44af18e'
+            'b80987487fb6ea609a0da9f598f59243c47b14d0e31610117ea5c3b4fdb382271dc857a5f90bf88ee72c79b4ef4dd8dee456001f037ccea8fc32cd623cddc1cc'
             'ffb0d3326196137b21415b27f47c20e8a8d35081b1d7e618ee6324c618e0ca948bc6b19de98e7acc803830dd64764d0f8d2f6793c5fba1586aea55b8f1da6606'
             '1c96c37fee0473a727f2b5f7903da0f7fca210346b8d3faa69d07e0397005660bc69daa61ed4fdb450b25260553fae3ae1a3228a535d23e6c4de65eac488861b'
             '42c0d956f6520d04ecb9606d9ca054ec1e1d9906ba6fc7ef2be5536c1fe87c20e1495201b2fbc221389e1216bfa90c4cebf118e5c4161c3c65d0cede09c40c7d')

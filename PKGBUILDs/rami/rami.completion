@@ -83,6 +83,9 @@ _rami_()
         --ignore-mirrors)
             _rami_complete "unique-list"
             ;;
+        --verbosity)
+            _rami_complete "least less default more most"
+            ;;
         *)
             _rami_complete "$options"
             ;;

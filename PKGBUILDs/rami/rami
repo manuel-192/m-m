@@ -4,14 +4,28 @@
 # - long time statistics?
 # - less failure output
 
-echo2()       { echo -e "$@" >&2; }
-DIE()         { echo2 "==> $progname: error:\n    $1"; Usage 1; }
-DIE2()        { echo2 "==> $progname: error:\n    $1"; exit 1; }
-WARN()        {
-    local app="$progname"
-    [ "$app" ] || app="${FUNCNAME[1]}"
-    echo2 "==> $app: warning: $1"
+echo2() { echo -e "$@" >&2; }
+MSG2()  {
+    local -r level="$1"
+    shift
+    declare -A verbosity_levels=(
+        [least]=1
+        [less]=2
+        [default]=3
+        [more]=4
+        [most]=5
+    )
+    local -r configured_level=${verbosity_levels[$verbosity]}
+    local -r call_level=${verbosity_levels[$level]}
+    [ $configured_level -ge $call_level ] && echo2 "$@"
 }
+
+DIEE()    { MSG2 least    "==> $progname: error:\n    $1"; exit 1; }
+DIE()     { MSG2 less     "==> $progname: error:\n    $1"; Usage 1; }
+WARN()    { MSG2 default  "==> $progname: warning: $1"; }
+MONITOR() { MSG2 default  "==> $progname: $1"; }
+INFO()    { MSG2 more     "==> $progname: info: $1" ; }
+DEBUG()   { MSG2 most     "==> $progname: debug: $1" ; }
 
 AssertNumber() { [ "${1//[0-9]/}" ] && DIE "option $2 requires a number"; }
 
@@ -134,14 +148,15 @@ ListContinentsCountries() {
 GivenContinent() {
     local continent1="$1"
     local tmp1=$(ShowContinentsCountries "$continent1")
-    printf "%s\n" $all_continents | grep "^$continent1$" >/dev/null || DIE2 "continent '$continent1' not found"
-    [ "$tmp1" ] || DIE2 "no mirrors found in: $continent1"
+    printf "%s\n" $all_continents | grep "^$continent1$" >/dev/null || DIEE "continent '$continent1' not found"
+    [ "$tmp1" ] || DIEE "no mirrors found in: $continent1"
     AddCountries $tmp1
 }
 AddContinentCountries() {
     AddCountries $(echo $(GetCurrentCountry && ShowContinentCountries "$(GetContinentOfCountry $cc)" code) | tr ' ' ',')
 }
 AllContinents() {
+    ranking_all_mirrors=yes
     local tmp1=$(ShowContinentsCountries "$all_continents")
     [ "$tmp1" ] || DIE "no mirrors found in: $all_continents"
     AddCountries $tmp1
@@ -236,12 +251,12 @@ ResetCompletionFiles() {
 }
 
 TraverseMirrors-parallel() {
-    echo2 "==> $progname: ranking mirrors in $mode mode"
+    # MONITOR "ranking mirrors in $mode mode"
     echo "$mirrors_with_statefiles" | parallel --bar "$progname_helper {} '$timeout_rank' '$distro' '$time_as_datetime' '$mirror_count' '$errlogfile'"
 }
 
 TraverseMirrors-sequential() {
-    echo2 "==> $progname: $mode ranking"
+    # MONITOR "$mode ranking"
     local mirror
     local ix=1
     local mirs
@@ -275,13 +290,13 @@ Edit() {
     for editor in "${editors[@]}" ; do
         if which $editor &>/dev/null ; then
             if [ ! -e "$file" ] ; then
-                touch "$file" || DIE2 "cannot create file '$file'"
+                touch "$file" || DIEE "cannot create file '$file'"
             fi
             $editor "$file"
             return
         fi
     done
-    DIE2 "no text editor found!"
+    DIEE "no text editor found!"
 }
 
 Usage() {
@@ -374,6 +389,16 @@ Options:
 
     -u
         Update mirror info first.
+
+    --verbosity <value>
+        Sets the verbosity level for the displayed messages.
+        Supported values in verbosity order:
+            least    Show only fatal error messages.
+            less       Show also other error messages.
+            default     Show also warning messages (default).
+            more       Show also info messages.
+            most    Show all available messages.
+        Note: all levels may not be fully implemented.
 
     --help
     -h
@@ -487,7 +512,11 @@ ExpandFavs() {
     fi
 }
 
-OptionsPreHandle0() { [ "$(printf "%s\n" "$@" | grep "\--no-config")" ] && read_config=no; }
+OptionsPreHandle0() {
+    if [ "$(printf "%s\n" "$@" | grep "\--no-config")" ] ; then
+        read_config=no
+    fi
+}
 
 OptionsPreHandle() {
     # - collect limited_options array to be handled later
@@ -517,6 +546,7 @@ OptionsPreHandle() {
             -e | --edit-config)                     Edit "$config_file";    exit 0 ;;
             --dump-completion-files)                ShowCompletionFiles;    exit 0 ;;
             -l | --list-country-codes-names)        ListCountryCodesNames;  exit 0 ;;
+            --verbosity)                            verbosity="$2"; shift ;;
             --dump-options)                         DumpOptions;            exit 0 ;;
             --dump-options-all)                     echo "${opts[*]}" | sed 's| --$||'; exit 0 ;;
             -i | --ignore-mirrors)                  IgnoreMirrors "$2";     shift ;;
@@ -526,6 +556,13 @@ OptionsPreHandle() {
         esac
         shift
     done
+    case "$verbosity" in
+        least|less|default|more|most) ;;
+        *) local -r tmp="$verbosity"
+           verbosity=default
+           WARN "option '--verbosity $tmp': changing value to '$verbosity'"
+           ;;
+    esac
 }
 RemoveIgnoredFromCountries() {
     local code
@@ -540,12 +577,12 @@ AllOrLocalMirrors() {
     case "$prefer_local_rank" in
         yes) if GetCurrentCountry ; then
                  countries+=("$cc")
-                 echo2 "==> ranking mirrors in: $cc"
+                 MONITOR "ranking mirrors in: $cc"
                  return
              fi
              ;;
     esac
-    echo2 "==> ranking mirrors in all countries, please wait..."
+    MONITOR "ranking mirrors in all countries, please wait..."
     AllContinents
 }
 
@@ -555,6 +592,7 @@ Main() {
     local -r comment3="### "
     local -r comment4="#${comment3} "
     local -r comment4i="$comment4  "
+    local verbose=yes
 
     case "$1" in
         --time) shift
@@ -581,6 +619,7 @@ Main() {
     local mirrors
     local time_as_datetime=no
     local ranking_data=no
+    local ranking_all_mirrors=no        # helps tips only?
     local full_data=no
     local ignored_mirrors=()
     local ignored_country_codes=()
@@ -591,6 +630,7 @@ Main() {
     local prefer_local_rank=no
     local save_ml=no                   # not supported currently, if ever
     local suffix=""
+    local verbosity=default
     local reflector_list_countries=""
     local has_parallel=yes
     local read_config=yes
@@ -614,7 +654,7 @@ Main() {
     LOPTS+="all,continent,country:,country-current,distro:,dump-completion-files,dump-options,dump-options-all,favorite:,full-data,help"
     LOPTS+=",list-country-codes,list-country-codes-names,list-country-names,ranking-data,list-continents-countries"
     LOPTS+=",reset-completion-files,list-continent-countrycodes:,list-continent-countrynames:,update-completion-files"
-    LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info"
+    LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info,verbosity:"
     LOPTS+=",ignore-countries:,timeout:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:"
     LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config,max:,prefer-local-rank"
     LOPTS+=",save"
@@ -623,6 +663,7 @@ Main() {
 
     OptionsPreHandle0 "$@"
     if [ $read_config = yes ] && [ -e "$config_file" ] ; then
+        INFO "reading file $config_file2"
         source "$config_file"
     fi
 
@@ -689,15 +730,36 @@ Main() {
              rm -f $mlt
              ;;
         no)  ShowMirrorlistFile
-             echo2 "\n==> Note: use option '--save' to store this list into $ml.\n"
              ;;
     esac
+    LateTips
 
     if [ -e "$errlogfile" ] ; then
         echo2 "\n==> ERRLOG ($errlogfile):"
         cat "$errlogfile" | sort -u -k5n >&2
         # rm -f "$errlogfile"
     fi
+}
+
+LateTips() {
+    local has_tips=no
+    [ $save_ml = no ] && \
+        ShowATip "    -> Use option --save to store the list into $ml."
+    [ $ranking_data = no ] && \
+        ShowATip "    -> Use option --ranking-data to show the details of ranking."
+    [ $ranking_all_mirrors = yes ] && \
+        ShowATip "    -> Use options --country, --ignore-continents, --ignore-countries, --ignore-mirrors, and more\n" \
+                 "      to narrow down the amount of ranked mirrors."
+    [ "$favs" ] || \
+        ShowATip "    -> Use option --favorite to make specific mirrors preferred (advanced)."
+    echo2 ""
+}
+ShowATip() {
+    if [ $has_tips = no ] ; then
+        echo2 "\n==> Tips:"
+        has_tips=yes
+    fi
+    echo2 "$@"
 }
 
 SkipIgnoredMirrors() {
