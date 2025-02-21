@@ -72,8 +72,8 @@ SettingsCommon()
 
         [ "$force" = "" ] && force=yes
 
-        if [ -n "$name" ] ; then
-            if [ -n "$def" ] ; then
+        if [ "$name" ] ; then
+            if [ "$def" ] ; then
                 if [ "$force" = "yes" ] ; then
                     $alias "$name"="$def"    # assign alias only if name is "free"
                     return
@@ -176,7 +176,7 @@ SettingsCommon()
     
     WaitForConnection() {     # wait at most given seconds (or 10), then return 0=connection OK or 1=connection fail
         local seconds="$1"
-        [ -n "$seconds" ] || seconds=10
+        [ "$seconds" ] || seconds=10
         local ix
         for ix in $(seq $seconds) ; do
             eos-connection-checker && { bashrc_min_echo2 " done." ; return 0 ; }
@@ -274,7 +274,7 @@ SettingsCommon()
         local out=""
         local overwrite=no
 
-        while [ -n "$1" ] ; do
+        while [ "$1" ] ; do
             case "$1" in
                 -f | --force)
                     overwrite=yes
@@ -461,8 +461,8 @@ EOF
         local -n _VAR="$1"
         local -r val="$2"
 
-        if [ -n "$_VAR" ] ; then
-            if [ -n "$val" ] ; then
+        if [ "$_VAR" ] ; then
+            if [ "$val" ] ; then
                 case "$_VAR" in
                     *":$val:"* | "$val:"* | *":$val" | "$val") ;;  # middle start end only
                     *) _VAR="$val:$_VAR" ;;
@@ -476,8 +476,8 @@ EOF
         local -n _VAR="$1"
         local -r val="$2"
 
-        if [ -n "$_VAR" ] ; then
-            if [ -n "$val" ] ; then
+        if [ "$_VAR" ] ; then
+            if [ "$val" ] ; then
                 case "$_VAR" in
                     *":$val:"* | "$val:"* | *":$val" | "$val") ;;  # middle start end only
                     *) _VAR="$_VAR:$val" ;;
@@ -563,10 +563,10 @@ EOF
     lsblk() {
         local lsblk="/bin/lsblk -w 300"    # width = 300 because the output is (usually) better when a window is resized
 
-        if [ -z "$1" ] ; then
-            $lsblk -f -o+SIZE
-        else
+        if [ "$1" ] ; then
             $lsblk "$@"
+        else
+            $lsblk -f -o+SIZE
         fi
     }
 
@@ -577,7 +577,7 @@ EOF
 
         if [ -z "$len" ] ; then
             len=$((COLUMNS / 2))
-        elif [ -n "$(echo "$len" | tr -d '[0-9]')" ] ; then
+        elif [ "$(echo "$len" | tr -d '[0-9]')" ] ; then
             bashrc_min_error "first parameter is not a number"
             return 1
         fi
@@ -597,7 +597,7 @@ EOF
 
     _AdHocChecks_() {
         _CheckAlways_() {
-            # [ -z "$BASH_SETTINGS_FILE" ] && bashrc_min_warning "variable BASH_SETTINGS_FILE not set!"
+            # [ "$BASH_SETTINGS_FILE" ] || bashrc_min_warning "variable BASH_SETTINGS_FILE not set!"
             [ -x /usr/local/bin/pacman ] && bashrc_min_warning "executable /usr/local/bin/pacman exists!"
         }
         _DailyChecks_() {
@@ -678,7 +678,7 @@ EOF
                             # if local PKGBUILD includes some sums and
                             # if local PKGBUILD is not the newest file
                             # then try update checksums
-                            if [ -n "$(printf "%s\n" "$@" | grep "^PKGBUILD$")" ] ; then
+                            if [ "$(printf "%s\n" "$@" | grep "^PKGBUILD$")" ] ; then
                                 if [ -r PKGBUILD ] && [ -w PKGBUILD ] && grep -P "^sha.*sums=|^md5sums=|^b2sums=" PKGBUILD >& /dev/null ; then
                                     if [ "$(/usr/bin/ls -a1tr --ignore=. --ignore=.. | tail -n1)" != PKGBUILD ] ; then
                                         read -p "Update checksums (Y/n)? " >&2
@@ -733,7 +733,7 @@ EOF
         local file="$1"
         local result=""
 
-        [ -n "$file" ] || { bashrc_min_warning "${FUNCNAME[0]}: give file parameter" ; return 1 ; }
+        [ "$file" ] || { bashrc_min_warning "${FUNCNAME[0]}: give file parameter" ; return 1 ; }
 
         if [ -f "$file" ] ; then
             if [ -L "$file" ] ; then
@@ -796,7 +796,7 @@ EOF
         case "$ret_man" in
             16)
                 local item="$(_man-get-item "$@")"
-                if [ -n "$item" ] ; then
+                if [ "$item" ] ; then
                     man-eos "$item"                                        # man failed, handle exit code 16 for unknown app
                     [ $? -eq 0 ] && return 0
                     _man-plain-help "$item"                                # eos-apps-info-helper failed, try 'command' --help
@@ -816,7 +816,7 @@ EOF
         #local -r time="${YELLOW}$(date +%a\ %H:%M.%S)${RESET}"
         local -r time="$(date +%a\ %H:%M.%S)"
 
-        if [ -n "$HERE_ARROW" ] ; then
+        if [ "$HERE_ARROW" ] ; then
             local -r rarrow=')'
             local -r larrow='('
             local -r here="$HERE_ARROW"
@@ -838,7 +838,7 @@ EOF
 
     p() {
         local param=""
-        [ -z "$1" ] && param="-Syu -d"
+        [ "$1" ] || param="-Syu -d"
         pacman-ext --no-banner $param "$@"
     }
     # syu()  { p -${FUNCNAME^} ; }
@@ -1194,7 +1194,7 @@ EOF
     # variables
     #############################################################
 
-    [ -z "$FUNCNEST" ] && export FUNCNEST=100
+    [ "$FUNCNEST" ] || export FUNCNEST=100
 
     PROMPT_COMMAND=my_prompt_command
 
@@ -1391,7 +1391,7 @@ EOF
 
         local filename="${BASH_SOURCE[0]}"
 
-        [ -n "$compfunc" ] || compfunc="_${completion_file_name}_"
+        [ "$compfunc" ] || compfunc="_${completion_file_name}_"
 
         [ -r $dir/$completion_file_name ] || {
             bashrc_min_error "sorry, $dir/$completion_file_name does not exist"
@@ -1530,7 +1530,9 @@ EOF
                 *) args+=("$arg") ;;
             esac
         done
-        if [ -z "$args" ] ; then
+        if [ "$args" ] ; then
+            verbose=yes                 # user given commands --> be verbose with issues
+        else
             local -r Apps2Funcs=(
                 adie
                 dolphin
@@ -1553,8 +1555,6 @@ EOF
                 xreader
             )
             args=("${Apps2Funcs[@]}")
-        else
-            verbose=yes                 # user given commands --> be verbose with issues
         fi
         for cmd in "${args[@]}" ; do
             app=${cmd%% *}     # "$cmd" == "$app" [options]
@@ -1620,7 +1620,7 @@ bashrc() { # load updated bash settings
                 :
             else
                 bashrc_min_warning "file $cd_config is missing or empty, creating a skeleton."
-                if [ -n "$CODEDIR" ] ; then
+                if [ "$CODEDIR" ] ; then
                     cat <<EOF > "$cd_config"
 CDPATH_ARR=(
     ~
