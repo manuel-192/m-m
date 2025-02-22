@@ -669,7 +669,9 @@ Main() {
 
     OptionsPreHandle "${CONFIG_OPTIONS[@]}" "$@"
 
-    Options "${limited_options[@]}"
+    echo2 -n "Handling options..."
+    Options "${limited_options[@]}"        # this may take time!
+    echo2 -n "done."
 
     case "$distro" in
         arch)
