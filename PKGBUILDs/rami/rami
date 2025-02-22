@@ -377,6 +377,12 @@ Options:
     --save
         Save the mirrorlist to $ml.
 
+    --sort <value>
+        The <value> specified what to prefer when sorting the list of mirrors.
+        Supported values:
+            age        Prefer mirrors that are most up-to-date.
+            rate       Prefer mirrors that provide answers faster.
+
     --time
         Show the elapsed time of the measurement.
 
@@ -390,11 +396,11 @@ Options:
     --verbosity <value>
         Sets the verbosity level for the displayed messages.
         Supported values in verbosity order:
-            least    Show only fatal error messages.
+            least      Show only fatal error messages.
             less       Show also other error messages.
-            default     Show also warning messages (default).
+            default    Show also warning messages (default).
             more       Show also info messages.
-            most    Show all available messages.
+            most       Show all available messages.
         Note: all levels may not be fully implemented.
 
     --help
@@ -520,7 +526,7 @@ OptionsPreHandle0() {
 
 OptionsPreHandle() {
     # - collect limited_options array to be handled later
-    # - handle some options here for speed (e.g. -l) or validity (e.g. -i)
+    # - handle some options here for better performance (e.g. -l) or validity (e.g. -i)
 
     local opts
 
@@ -547,6 +553,7 @@ OptionsPreHandle() {
             --dump-completion-files)                ShowCompletionFiles;    exit 0 ;;
             -l | --list-country-codes-names)        ListCountryCodesNames;  exit 0 ;;
             --verbosity)                            verbosity="$2"; shift ;;
+            --sort)                                 sort_prefer="$2" ;;
             --dump-options)                         DumpOptions;            exit 0 ;;
             --dump-options-all)                     echo "${opts[*]}" | sed 's| --$||'; exit 0 ;;
             -i | --ignore-mirrors)                  IgnoreMirrors "$2";     shift ;;
@@ -556,14 +563,25 @@ OptionsPreHandle() {
         esac
         shift
     done
+
+    # check some given values
+    local tmp=""
     case "$verbosity" in
         least|less|default|more|most) ;;
-        *) local -r tmp="$verbosity"
+        *) tmp="$verbosity"
            verbosity=default
            WARN "option '--verbosity $tmp': changing value to '$verbosity'"
            ;;
     esac
+    case "$sort_prefer" in
+        age|rate) ;;
+        *) tmp="$sort_prefer"
+           sort_prefer=age
+           WARN "option '--sort $tmp': changing value to '$sort_prefer'"
+           ;;
+    esac
 }
+
 RemoveIgnoredFromCountries() {
     local code
     local countries_orig=("${countries[@]}")
@@ -574,14 +592,12 @@ RemoveIgnoredFromCountries() {
     done
 }
 AllOrLocalMirrors() {
-    case "$prefer_local_rank" in
-        yes) if GetCurrentCountry ; then
-                 countries+=("$cc")
-                 MONITOR "ranking mirrors in: $cc"
-                 return
-             fi
-             ;;
-    esac
+    echo2 ""
+    if [ "$prefer_local_rank" = yes ] && GetCurrentCountry ; then
+        countries+=("$cc")
+        MONITOR "ranking mirrors in: $cc"
+        return
+    fi
     MONITOR "ranking mirrors in all countries, please wait..."
     AllContinents
 }
@@ -593,6 +609,7 @@ Main() {
     local -r comment4="#${comment3} "
     local -r comment4i="$comment4  "
     local verbose=yes
+    local sort_prefer=age
 
     case "$1" in
         --time) shift
@@ -657,7 +674,7 @@ Main() {
     LOPTS+=",list-current-continent-countrycodes,list-current-continent-countrynames,get-time-info,verbosity:"
     LOPTS+=",ignore-countries:,timeout-rank:,no-parallel,continent-given:,list-continent-codes,ignore-continents:" # timeout:
     LOPTS+=",no-ignore-countries,no-config,ignore-mirrors:,edit-config,max:,prefer-local-rank"
-    LOPTS+=",save"
+    LOPTS+=",save,sort:"
 
     [ -x /bin/parallel ] || has_parallel=no
 
@@ -669,10 +686,11 @@ Main() {
 
     OptionsPreHandle "${CONFIG_OPTIONS[@]}" "$@"
 
-    echo2 -n "Handling options..."
+    echo2 -n "==> Processing options..."
     Options "${limited_options[@]}"        # this may take time!
-    echo2 -n "done."
+    echo2 "done."
 
+    echo2 -n "==> Ranking..."
     case "$distro" in
         arch)
             case "${#countries[@]}" in
@@ -698,41 +716,50 @@ Main() {
 
     SkipIgnoredMirrors
 
-    local mirrors_with_statefiles=$(echo "$mirrors" | sed "s|/\$repo/os/\$arch|/$syncfile|")
-
-    # Now we have the final list of mirrors.
-
+    local mirror_count=0
+    local mirrors_with_statefiles=""
     local errlogfile=/tmp/$progname.errlog
-    local mirror_count=$(echo "$mirrors_with_statefiles" | wc -l)
     local mode=""
+    local ranked=""
 
     rm -f "$errlogfile"
 
-    case "$has_parallel" in
-        yes)  mode=parallel ;;
-        no|*) mode=sequential ;; 
-    esac
-    result=$(TraverseMirrors-$mode)
+    if [ "$mirrors" ] ; then
+        mirror_count=$(echo "$mirrors" | wc -l)
+        mirrors_with_statefiles=$(echo "$mirrors" | sed "s|/\$repo/os/\$arch|/$syncfile|")
 
-    local ranked=$(echo "$result" | LC_ALL=C sort -t'|' -k2rb,2 -k3V,3)   # sort: age
+        # Now we have the final list of mirrors.
 
-    mirror_count=$(echo "$ranked" | wc -l)               # ranking may have dropped some mirrors!
+        case "$has_parallel" in
+            yes)  mode=parallel ;;
+            no|*) mode=sequential ;; 
+        esac
+        result=$(TraverseMirrors-$mode)
+        mirror_count=$(echo "$result" | wc -l)                          # ranking may have dropped some mirrors!
+        case "$sort_prefer" in
+            age)  ranked=$(echo "$result" | LC_ALL=C sort -t'|' -k2rb,2 -k3V,3) ;;  # sort: age > rate
+            rate) ranked=$(echo "$result" | LC_ALL=C sort -t'|' -k3V,3 -k2rb,2) ;;  # sort: age < rate
+        esac
+    fi
 
     case $save_ml in
-        yes) local -r timestamp=$(date +%y%m%d%H%M)
-             local -r mlt=$(mktemp /tmp/ml.XXXXX)
-             local -r bakdir=${ml%/*}/.EOS-BACKUP
-             local -r bakfile=$bakdir/${ml##*/}.$timestamp
-             ShowMirrorlistFile | tee $mlt
-             sudo bash -c "mkdir -p $bakdir; cp -a $ml $bakfile; zstd -fq -19 --rm $bakfile; cp $mlt $ml" && {
-                 echo2 "\n==> $bakfile.zst created as backup.\n==> $ml saved.\n"
-             } || {
-                 echo2 "\n==> $ml NOT saved.\n"
-             }
-             rm -f $mlt
-             ;;
-        no)  ShowMirrorlistFile
-             ;;
+        yes)
+            if [ $mirror_count -gt 0 ] || [ "$favs" ] ; then
+                local -r timestamp=$(date +%y%m%d%H%M)
+                local -r mlt=$(mktemp /tmp/ml.XXXXX)
+                local -r bakdir=${ml%/*}/.EOS-BACKUP
+                local -r bakfile=$bakdir/${ml##*/}.$timestamp
+                ShowMirrorlistFile | tee $mlt
+                sudo bash -c "mkdir -p $bakdir; cp -a $ml $bakfile; zstd -fq -19 --rm $bakfile; cp $mlt $ml" && {
+                     echo2 "\n==> $bakfile.zst created as backup.\n==> $ml saved.\n"
+                } || {
+                    echo2 "\n==> $ml NOT saved.\n"
+                }
+                rm -f $mlt
+            fi
+            ;;
+        no) ShowMirrorlistFile
+            ;;
     esac
     LateTips
 
@@ -773,10 +800,13 @@ SkipIgnoredMirrors() {
 }
 
 ShowMirrorlistFile() {
+    if [ $mirror_count = 0 ] && [ -z "$favs" ] ; then
+        return
+    fi
     cat <<EOF
 
 ${comment3}Ranked list of ${distro^} mirrors.
-${comment3}Rank preference : age > speed
+${comment3}Rank preference : age > rate
 ${comment3}Rank time       : $time_of_ranking
 ${comment3}Rank mode       : $mode
 ${comment3}Command         : $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}
@@ -797,19 +827,24 @@ ShowFullData()    {
     fi
 }
 ShowMirrorlist()  {
-    local out=$(echo "$ranked" | head -n $max_nr_of_mirrors | Columns | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|")
-    if [ "$favs" ] ; then
-        # remove favs (=duplicates) from the actual mirrorlist
-        for xx in "${favs[@]}" ; do
-            out=$(echo "$out" | grep -v "$xx")
-        done
+    # show ranked mirrors without user favorites
+    if [ $mirror_count -gt 0 ] ; then
+        local out=$(echo "$ranked" | head -n $max_nr_of_mirrors | Columns | awk '{print $1}' | sed -E "s|(.*)|Server = \1$suffix|")
+        if [ "$favs" ] ; then
+            # remove favs (=duplicates) from the actual mirrorlist
+            local xx
+            for xx in "${favs[@]}" ; do
+                out=$(echo "$out" | grep -v "$xx")
+            done
+        fi
+        [ "$out" ] && echo "$out"
     fi
-    echo "$out"
 }
 ShowRankingData() {
-    if [ $ranking_data = yes ] ; then
+    if [ $mirror_count -gt 0 ] && [ $ranking_data = yes ] ; then
         echo -e "\n${comment3}Ranking data ($mirror_count mirrors):"
-        local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | cat -n | sed -E 's/[ \t]+([0-9]+)[ \t]+(.*)/\2|\1/' | sed -E "s|^([^ ]+)|${comment3}\1|")
+        local data=$(echo "$ranked" | head -n $max_nr_of_mirrors | cat -n |
+                         sed -E 's/[ \t]+([0-9]+)[ \t]+(.*)/\2|\1/' | sed -E "s|^([^ ]+)|${comment3}\1|")
         local -r rankheader="MIRROR|UPDATE LEVEL|FETCH TIME|COUNTRY|ORDINAL"
         local -r rankul="${rankheader//[A-Za-z ]/\~}"
 
