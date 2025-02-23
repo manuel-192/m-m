@@ -798,20 +798,66 @@ SkipIgnoredMirrors() {
         mirrors=$(echo "$mirrors" | grep -Pv "$ign")
     fi
 }
+SeparateIgnoreMirrors() {
+    local list
+    local arg
+    while [ "$1" ] ; do
+        arg="$1"
+        case "$arg" in
+            -i | --ignore-mirrors)
+                list="$2"
+                shift
+                if [ "${list/,/}" != "$list" ] ; then
+                    for item in ${list//,/ } ; do
+                        args+=("-i" "$item")
+                    done
+                fi
+                ;;
+            -x | --ignore-countries | -X | --ignore-continents)
+                args+=(-x "$2")
+                shift
+                ;;
+            *)
+                args+=("$1")
+                ;;
+        esac
+        shift
+    done
+}
+ShowCommandLine() {
+    local -r maxlen=100
+    local -r head1="${comment3}Command         : $progname"
+    local -r head2="${comment3}Command         :"
+    local line="$head1"
+    local item
+    local args=()
+    local list
 
-ShowMirrorlistFile() {
+    SeparateIgnoreMirrors "${CONFIG_OPTIONS[@]}" "${args_orig[@]}"
+
+    for item in "${args[@]}" ; do
+        if [ $((${#line} + ${#item} + 1)) -le $maxlen ] ; then
+            line+=" $item"
+        else
+            echo "$line \\"
+            line="$head2 $item"
+        fi
+    done
+
+    echo "$line"
+    echo ""
+}
+ShowMirrorlistFile() { :
     if [ $mirror_count = 0 ] && [ -z "$favs" ] ; then
         return
     fi
     cat <<EOF
-
 ${comment3}Ranked list of ${distro^} mirrors.
 ${comment3}Rank preference : age > rate
 ${comment3}Rank time       : $time_of_ranking
 ${comment3}Rank mode       : $mode
-${comment3}Command         : $progname ${CONFIG_OPTIONS[*]} ${args_orig[*]}
-
 EOF
+    ShowCommandLine
     ShowFavorites
     ShowMirrorlist
     ShowRankingData
