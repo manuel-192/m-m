@@ -664,7 +664,7 @@ Main() {
     local favs=()
     local time_of_ranking=$(date +%x-%X)
 
-    local SOPTS="ACc:d:ef:hi:k:m:x:lrtu"
+    local SOPTS="ACc:d:ef:hi:k:m:X:x:lrtu"
     SOPTS+="I"
 
     local LOPTS=""
@@ -813,8 +813,12 @@ SeparateIgnoreMirrors() {
                     done
                 fi
                 ;;
-            -x | --ignore-countries | -X | --ignore-continents)
+            -x | --ignore-countries)
                 args+=(-x "$2")
+                shift
+                ;;
+            -X | --ignore-continents)
+                args+=(-X "$2")
                 shift
                 ;;
             *)
