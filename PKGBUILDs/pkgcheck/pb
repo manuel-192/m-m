@@ -155,6 +155,21 @@ RunIfExists() {
     done
 }
 
+ReadWithTimeCounter() {
+    if [ -e /etc/ReadWithTimeout ] ; then
+        local prompt="$1"
+        local timeout="$2"
+        
+        [ "$prompt" ] || prompt="Press ENTER: "
+        [ "$timeout" ] || timeout=30
+        if [ $read_func_sourced = no ] ; then
+            source /etc/ReadWithTimeout || return 1
+            read_func_sourced=yes
+        fi
+        ReadWithTimeout -p "$prompt" -t "$timeout"
+    fi
+}
+
 _pb() {
     local -r RED=$'\e[0;91m'
     local -r GREEN=$'\e[0;92m'
@@ -195,6 +210,7 @@ _pb() {
     local changelogfor=""
     local cmd_options=""
     local commit=no
+    local read_func_sourced=no
 
     supported_folders="MAN EOS $(pacconf --repo-list | grep -P '^endeavouros|^m-|^local-repo' | tr '\n' ' ')"
 
@@ -263,15 +279,10 @@ EOF
                 ;;
             --extras)
                 RunIfExists cookbook
-                if [ -e /etc/ReadWithTimeout ] ; then
-                    source /etc/ReadWithTimeout || return 1
-                    ReadWithTimeout -p "Press ENTER: " -t30
-                fi
                 echo "" >&2
                 RunIfExists arch-audit
-                if [ -e /etc/ReadWithTimeout ] ; then
-                    ReadWithTimeout -p "Press ENTER: " -t30
-                fi
+                ReadWithTimeCounter
+                echo "" >&2
                 return
                 ;;
             --dump-options)
