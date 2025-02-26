@@ -31,7 +31,6 @@ Main() {
     local updates_native=""
     local updates_aur=""
     local clamav=no
-    local clamav_ref=""
     local clamav_ref_file="$HOME/.local/$progname.clamav_ref_file"
     local pkgdir=/var/cache/pacman/pkg
     local paru=/bin/paru
@@ -123,17 +122,12 @@ Clamav() {
 
     case "$1" in
         --init) 
-            # Find clamav_ref, preferably from file.
-            if [ -e "$clamav_ref_file" ] ; then
-                clamav_ref=$(< "$clamav_ref_file")
-            else
-                $FUNCNAME --save
-            fi
+            [ -e "$clamav_ref_file" ] || $FUNCNAME --save
             ;;
         --check)
             local newfiles=""
-            if [ "$clamav_ref" ] ; then
-                newfiles=$(find $pkgdir -type f -newer "$clamav_ref")
+            if [ -e "$clamav_ref_file" ] ; then
+                newfiles=$(find $pkgdir -type f -newer "$clamav_ref_file")
             else
                 newfiles=$(find $pkgdir -type f)
             fi
@@ -144,11 +138,8 @@ Clamav() {
             fi
             ;;
         --save)
-            clamav_ref=$(/bin/ls -ltr $pkgdir | tail -n1 | awk '{print $NF}')
-            if [ "$clamav_ref" ] ; then
-                clamav_ref="$pkgdir/$clamav_ref"
-                echo "$clamav_ref" > "$clamav_ref_file"
-            fi
+            local newref=$(/bin/ls -1tr "$pkgdir" | tail -n1 | awk '{print $NF}')
+            touch -r "$pkgdir/$newref" "$clamav_ref_file"
             ;;
     esac
 }
