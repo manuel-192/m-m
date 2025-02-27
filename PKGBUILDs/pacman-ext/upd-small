@@ -132,7 +132,14 @@ Clamav() {
                 newfiles=$(find $pkgdir -type f)
             fi
             if [ "$newfiles" ] ; then
-                clamscan $newfiles
+                local -r log=/tmp/$progname-clamscan.log
+                local CLAMOPTS="--bell -o --no-summary -l $log"
+                clamscan $CLAMOPTS $newfiles
+                case "$?" in
+                    0) INFO "clamscan found nothing." ;;
+                    1) DIE  "clamscan found problems! See file $log." ;;
+                    2) WARN "clamscan had problems, see file $log." ;;
+                esac
             else
                 INFO "all package files checked with clamav already!"
             fi
