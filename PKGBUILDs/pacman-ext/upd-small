@@ -134,11 +134,12 @@ Clamav() {
             if [ "$newfiles" ] ; then
                 local -r log=/tmp/$progname-clamscan.log
                 local CLAMOPTS="--bell -o --no-summary -l $log"
+                echo2 -n "==> Running clamscan ... "
                 clamscan $CLAMOPTS $newfiles
                 case "$?" in
-                    0) INFO "clamscan found nothing." ;;
-                    1) DIE  "clamscan found problems! See file $log." ;;
-                    2) WARN "clamscan had problems, see file $log." ;;
+                    0)   echo2 "OK." ;;
+                    1)   STOP  "problems found! See file $log." 1 ;;
+                    2|*) echo2 "failed, see file $log." ;;
                 esac
             else
                 INFO "all package files checked with clamav already!"
