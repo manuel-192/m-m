@@ -139,7 +139,7 @@ ListContinentsCountries() {
     # gather all info and sort according to continent and country name
     for line in "${code_name[@]}" ; do
         countrycode=${line%% *}
-        continent=$(echo "$countries_continents" | grep $countrycode)
+        continent=$(echo "$countries_continents" | grep ^$countrycode)
         continent=${continent##* }
         line=${line//  / }
         echo "$continent $line"
