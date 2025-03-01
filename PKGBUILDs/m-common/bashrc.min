@@ -905,13 +905,27 @@ EOF
     export -f MyTermTitle
     trap "MyTermTitle" DEBUG    # Set terminal title to currently running command:
 
-    if [ -x /bin/grub-install ] ; then
-        original-grub-install-parameters-f() {
-            local out=$(sudo grep 'grub-install' /var/log/{Calamares,endeavour-install}.log 2>/dev/null)
-            echo "$out" | sed -E -e 's|.*Running \(||' -e 's|"([^"]+)"[,)]*|\1|g' | head -n1
-        }
-        Alias original-grub-install-parameters original-grub-install-parameters-f
-    fi
+    # if [ -x /bin/grub-install ] ; then
+    #     original-grub-install-parameters-f() {
+    #         local out=$(sudo grep 'grub-install' /var/log/{Calamares,endeavour-install}.log 2>/dev/null)
+    #         echo "$out" | sed -E -e 's|.*Running \(||' -e 's|"([^"]+)"[,)]*|\1|g' | head -n1
+    #     }
+    #     Alias original-grub-install-parameters original-grub-install-parameters-f
+    # fi
+    # another way
+    grub_install_command_at_install() {
+        local file=/var/log/Calamares.log
+        [ -e ${file} ] || file=/var/log/endeavour-install.log
+        [ -e ${file} ] || { echo "Sorry, install log not found." >&2; return 1; }
+
+        local -r line=$(sudo grep "grub-install.*bootloader-id" $file | sed -e 's|^.*Running ||' -e 's|[(),"]||g')
+        
+        if [ "$line" ] ; then
+            echo $line
+        else
+            echo "Sorry, grub-install command not found." >&2
+        fi
+    }
 
     forum() {
         local forum="https://forum.endeavouros.com"
