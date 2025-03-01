@@ -921,7 +921,17 @@ EOF
         local -r line=$(sudo grep "grub-install.*bootloader-id" $file | sed -e 's|^.*Running ||' -e 's|[(),"]||g')
         
         if [ "$line" ] ; then
-            echo $line
+            echo -e "\n$line"
+            cat <<EOF >&2
+
+Disclaimer:
+    The command line above was extracted from the install log file $file.
+    The line might not be accurate, you must manually verify it.
+    If you have modified the bootloader in any way after the install,
+    this command line is very likely partially or completely incorrect.
+    Any usage is at your own risk.
+
+EOF
         else
             echo "Sorry, grub-install command not found." >&2
         fi
