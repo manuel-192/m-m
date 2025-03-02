@@ -6,7 +6,7 @@ pkgname=rami
 pkgdesc="Rank Arch mirrors, prefer up-to-date mirrors"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=13
+pkgrel=14
 
 arch=('any')
 license=('GPL')
@@ -30,7 +30,7 @@ source=(
     $url/$pkgname.completion              # bash completion
     $url/${pkgname}-helper
     $url/${pkgname}-status
-    $url/tips.md
+    $url/README.md
 )
 sha512sums=('92721956036d1e602db8162f915e7f42d0f538ec708c72fec4e86925e0259440df1a8ed5eb45c6ba3fa8aaed05aa16f14820563d3ffd1931eb8b256e897b60fe'
             'b33987d5a6fb273765da5b08f16cb27386fef4fbb5d2014690ff51b235ec81df52b49419d89a027091b22d2ca84683be7b5d4d891d92420169f42b2fca24a081'
@@ -38,7 +38,7 @@ sha512sums=('92721956036d1e602db8162f915e7f42d0f538ec708c72fec4e86925e0259440df1
             'b80987487fb6ea609a0da9f598f59243c47b14d0e31610117ea5c3b4fdb382271dc857a5f90bf88ee72c79b4ef4dd8dee456001f037ccea8fc32cd623cddc1cc'
             'ffb0d3326196137b21415b27f47c20e8a8d35081b1d7e618ee6324c618e0ca948bc6b19de98e7acc803830dd64764d0f8d2f6793c5fba1586aea55b8f1da6606'
             '1c96c37fee0473a727f2b5f7903da0f7fca210346b8d3faa69d07e0397005660bc69daa61ed4fdb450b25260553fae3ae1a3228a535d23e6c4de65eac488861b'
-            '39e4ae5a68dd81d2a8d1480d503e9b8b38533bc011a51eed215f8a7488df5d97c6c185ce094ffc4e3c98591a75dc6b646bbf1285a9b1c78119607ffbd030c3e7')
+            'aaebde960463896152401389f8041467b1c48983d0aff6c51a606be861168553553cc3d6ac7168bdd338aff36736a7ae334f8b628125d3f8dadada3fe380ff73')
 
 package() {
     local src
