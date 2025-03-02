@@ -89,6 +89,12 @@ Parameter | Description
 
 ### Other related commands
 
-`rami-fzf` is another program in package `rami` which lets the user to select the main features to apply.<br>
-`rami-fzf` also tips you about `rami` options to use if it finds anything that might be helpful<br>
-for creating the actual mirrorlist file.
+`rami-fzf` is another program in package `rami` which lets the user to *select* the main features to apply in a very simpler manner.<br>
+`rami-fzf` also tips you about `rami` options to use if it finds anything that might be helpful for creating the actual mirrorlist file.
+
+### Related packages
+
+There are a few alternative packages available for ranking mirrors. Of them we already use:
+- `rate-mirrors`
+- `reclector`
+- `reflector-simple`
