@@ -1188,6 +1188,62 @@ EOF
         echo ""
     }
 
+    FixMList() {
+        local -r A="$1"
+        local -r B="$2"
+        local aname=${A%%:*} adate=${A##*:}
+        local bname=${B%%:*} bdate=${B##*:}
+        local ml=/etc/pacman.d/mirrorlist
+        local ml_new=/tmp/ml.tmp
+        local prefix="### A prefixed mirrorlist. ###"
+        local aline="$(grep "^Server[ ]*=" $ml | grep -nm1 "$aname")"
+        local bline="$(grep "^Server[ ]*=" $ml | grep -nm1 "$bname")"
+        local order=()
+        local weekday=$(LC_ALL=C date +%a)
+
+        [ "$aline" ] || { echo "no $aname line"; return 1; }
+        [ "$bline" ] || { echo "no $bname line"; return 1; }
+
+        while true ; do
+            case "$adate" in
+                *"$weekday"*)
+                    if [ ${aline%%:*} -gt ${bline%%:*} ] ; then
+                        order=("${aline#*:}" "${bline#*:}")
+                        break
+                    fi
+                    ;;
+            esac
+            case "$bdate" in
+                *"$weekday"*)
+                    if [ ${bline%%:*} -gt ${aline%%:*} ] ; then
+                        order=("${bline#*:}" "${aline#*:}")
+                        break
+                    fi
+                    ;;
+            esac
+            break
+        done
+
+        if [ "$order" ] ; then
+            echo "==> $FUNCNAME: adjusting $ml." >&2
+            while true ; do
+                echo "$prefix"
+                printf "%s\n" "${order[@]}"
+                echo ""
+                if [ "$(head -n1 $ml)" = "$prefix" ] ; then
+                    tail -n +5 $ml
+                else
+                    cat $ml
+                fi
+                break
+            done > $ml_new
+            sudo cp $ml_new $ml
+            rm -f $ml_new
+        else
+            echo "==> $FUNCNAME: nothing to do." >&2
+        fi
+    }
+
     eos-packagelist() {
         local opt_list_pkgs="--all-pkgs"
         case "$1" in
