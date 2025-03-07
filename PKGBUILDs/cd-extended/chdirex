@@ -3,6 +3,8 @@
 # Enhance CDPATH and cd:
 #   - if multiple matches, use fzf to select
 
+DIE() { echo "==> $progname: error: $1" >&2; exit 1; }
+
 AddUniqueMatch() {
     local d="$1"
     local m
@@ -11,7 +13,6 @@ AddUniqueMatch() {
     done
     matches+=("$d")
 }
-
 ForgetSaved() { rm -f "$saveddirfile"; }
 
 HandleCdpathMatches() {
@@ -31,7 +32,7 @@ HandleCdpathMatches() {
         1)  dir="${matches[0]}"; ForgetSaved ;;   # one match with CDPATH
         *)
             # many matches with CDPATH
-            case "$multi_match_alg" in
+            case "$MULTI_MATCH_ALG" in
                 fzf)
                     # user selects dir with fzf
                     dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
@@ -65,8 +66,16 @@ HandleCdpathMatches() {
 }
 
 Main() {
-    local -r saveddirfile="$HOME/.chdirex.sav"
-    local multi_match_alg=fzf      # fzf or roundabout
+    local progname=${0##*/}
+    local -r saveddirfile="$HOME/.$progname.sav"
+    local MULTI_MATCH_ALG=fzf                   # fzf or roundabout
+    local conf="$HOME/.config/$progname.conf"
+
+    [ -e "$conf" ] && source "$conf"
+    case "$MULTI_MATCH_ALG" in
+        fzf | roundabout) ;;
+        *) DIE "value of MULTI_MATCH_ALG in $conf is not supported. Use fzf or roundabout." ;;
+    esac
 
     case "$1" in
         --) shift ;;
