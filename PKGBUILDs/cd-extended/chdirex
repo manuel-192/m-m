@@ -12,32 +12,68 @@ AddUniqueMatch() {
     matches+=("$d")
 }
 
+ForgetSaved() { rm -f "$saveddirfile"; }
+
 HandleCdpathMatches() {
     local newdir="$1"
     local dir matches=() count
 
-    for dir in ${CDPATH//:/ } ; do
+    case "$newdir" in
+        *?/) newdir="${newdir:: -1}" ;;   # remove trailing slash after a word
+    esac
+
+    for dir in ${CDPATH//:/ } ; do                   # misses dirs with spaces!
         [ -d "$dir/$newdir" ] && AddUniqueMatch "$dir/$newdir"
     done
     count=${#matches[@]}
     case "$count" in
-        0)  dir="$newdir" ;;         # no match in CDPATH
-        1)  dir="${matches[0]}" ;;   # one match in CDPATH
-        *)  # many matches in CDPATH, select with fzf
-            dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
-            [ "$dir" ] || dir=.      # nothing was selected, so stay here
-            ;;
+        0)  dir="$newdir";       ForgetSaved ;;   # no match with CDPATH
+        1)  dir="${matches[0]}"; ForgetSaved ;;   # one match with CDPATH
+        *)
+            # many matches with CDPATH
+            case "$multi_match_alg" in
+                fzf)
+                    # user selects dir with fzf
+                    dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
+                    ;;
+                roundabout)
+                    # Automatically select next dir from many matches.
+                    # When the next command line is the same,  go round with the matches.
+                    local saveddirname="$(cat "$saveddirfile" 2>/dev/null)"
+                    local ix
+
+                    [ "${saveddirname##*/}" != "${newdir##*/}" ] && saveddirname=""
+
+                    if [ "$saveddirname" ] ; then
+                        for ((ix=0; ix < count; ix++)) ; do
+                            dir="${matches[ix]}"
+                            if [ "$dir" = "$saveddirname" ] ; then
+                                [ $((ix+1)) -lt $count ] && dir="${matches[$((ix+1))]}" || dir="${matches[0]}"
+                                break
+                            fi
+                        done
+                    else
+                        dir="${matches[0]}"
+                    fi
+                    echo "$dir" > "$saveddirfile"
+                    ;;
+            esac
+            [ "$dir" ] || dir="$PWD"      # nothing was selected, so stay here
+
     esac
     echo "$dir"
 }
 
 Main() {
+    local -r saveddirfile="$HOME/.chdirex.sav"
+    local multi_match_alg=fzf      # fzf or roundabout
+
     case "$1" in
         --) shift ;;
     esac
     case "$1" in
-        .* | /* | -*) echo "$@" ;;                    # handled by builtin cd
-        "")           echo "$HOME" ;;
+        .* | /* | -*) ForgetSaved; echo "$@" ;;                    # handled by builtin cd
+        "")           ForgetSaved; echo "$HOME" ;;
         *)            HandleCdpathMatches "$1" ;;
     esac
 }
