@@ -9,8 +9,6 @@ pkgrel=1
 arch=('any')
 license=('GPL')
 
-# install=generate-xfce4-desktop-xml.install
-
 source=(
     $url/generate-xfce4-desktop-xml
 )
