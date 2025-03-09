@@ -1334,10 +1334,13 @@ EOF
     # Alias uc                 "time uc-fast -aey --verbose"
     # Alias upd                "LANG=C /bin/upd -dopv"   # for another alias, add --connection --nvidia --virtualbox --paru --aur when needed
     # Alias u                  "upd-small"
-    Alias u1                 "upd-small --aur"
-    Alias u2                 "upd-small --aur --deep"
+    # Alias u1                 "upd-small --aur"
+    # Alias u2                 "upd-small --aur --deep"
     Alias eos-update         "eos-update --pacdiff --nvidia"                       # --nvidia doesn't hurt
-    Alias u                  "eos-update --fast --descriptions"
+    Alias u                  "eos-update --descriptions --fast"
+    Alias uu                 "eos-update --descriptions"
+    Alias uv                 "upd-small --clamav"
+    Alias uuv                "upd-small --clamav --deep"
     Alias who-needsq         "who-needs --query --multi --aur"
     Alias who-needss         "who-needs --sync --one --aur"
 
