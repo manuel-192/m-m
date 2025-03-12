@@ -134,7 +134,9 @@ Clamav() {
             if [ "$newfiles" ] ; then
                 local -r log=/tmp/$progname-clamscan.log
                 local CLAMOPTS="--bell -o --no-summary -l $log"
-                echo2 -n "==> Running clamscan ... "
+                echo2  "==> Running clamscan for:"
+                printf "    %s\n" $newfiles >&2
+                printf "    ... " >&2
                 clamscan $CLAMOPTS $newfiles
                 case "$?" in
                     0)   echo2 "OK." ;;
