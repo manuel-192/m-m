@@ -102,7 +102,7 @@ CheckApps() {
 
 UpdatePackages() {
     Connection
-    Clamav --init
+    # Clamav --init
     GetAurUpdates
     FastCheck             # stops here if no updates by "fast check"
     PacmanLock
@@ -113,7 +113,7 @@ UpdatePackages() {
     Clamav --check
     Keyrings
     RealUpdate            # update packages here
-    Clamav --save
+    # Clamav --save
     Pacdiff
 }
 
@@ -121,35 +121,25 @@ Clamav() {
     [ $clamav = no ] && return
 
     case "$1" in
-        --init) 
-            [ -e "$clamav_ref_file" ] || $FUNCNAME --save
-            ;;
+        --init) ;;
+        --save) ;;
         --check)
-            local newfiles=""
-            if [ -e "$clamav_ref_file" ] ; then
-                newfiles=$(find $pkgdir -type f -newer "$clamav_ref_file")
-            else
-                newfiles=$(find $pkgdir -type f)
-            fi
-            if [ "$newfiles" ] ; then
-                local -r log=/tmp/$progname-clamscan.log
-                local CLAMOPTS="--bell -o --no-summary -l $log"
-                echo2  "==> Running clamscan for:"
-                printf "    %s\n" $newfiles >&2
-                printf "    ... " >&2
-                clamscan $CLAMOPTS $newfiles
-                case "$?" in
-                    0)   echo2 "OK." ;;
-                    1)   STOP  "problems found! See file $log." 1 ;;
-                    2|*) echo2 "failed, see file $log." ;;
-                esac
-            else
-                INFO "all package files checked with clamav already!"
-            fi
-            ;;
-        --save)
-            local newref=$(/bin/ls -1tr "$pkgdir" | tail -n1 | awk '{print $NF}')
-            touch -r "$pkgdir/$newref" "$clamav_ref_file"
+            [ "$updates_native" ] || { INFO "no native updates to check."; return; }
+            local newfiles="$(/bin/ls -1 $(expac "%n-%v" $updates_native | sed -E 's|(.*)|/var/cache/pacman/pkg/\1\*|'))"
+            [ "$newfiles" ] || INFO "no new files found for clamscan!"
+
+            local -r log=$HOME/.local/$progname_clamscan.log
+            [ -e $log ] || { touch $log; chmod go-rwx $log; }
+            local CLAMOPTS="--bell -o --no-summary -l $log"
+            echo2  "==> Running clamscan for:"
+            printf "    %s\n" $newfiles >&2
+            printf "==> Result: " >&2
+            clamscan $CLAMOPTS $newfiles
+            case "$?" in
+                0)   echo2 "OK." ;;
+                1)   STOP  "problems found! See file $log." 1 ;;
+                2|*) echo2 "failed, see file $log." ;;
+            esac
             ;;
     esac
 }
