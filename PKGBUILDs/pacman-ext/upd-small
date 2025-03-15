@@ -119,7 +119,7 @@ Clamav() {
     [ $clamav = no ] && return
 
     [ "$updates_native" ] || { INFO "no native updates to check."; return; }
-    local newfiles="$(/bin/ls -1 $(expac "%n-%v" $updates_native | sed -E 's|(.*)|/var/cache/pacman/pkg/\1\*|'))"
+    local newfiles="$(/bin/ls -1 $(expac -S "%n-%v" $updates_native | sed -E 's|(.*)|/var/cache/pacman/pkg/\1\*|'))"
     [ "$newfiles" ] || INFO "no new files found for clamscan!"
 
     local -r log=$HOME/.local/$progname_clamscan.log
