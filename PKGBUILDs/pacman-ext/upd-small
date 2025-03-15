@@ -118,11 +118,11 @@ UpdatePackages() {
 Clamav() {
     [ $clamav = no ] && return
 
-    [ "$updates_native" ] || { INFO "no native updates to check."; return; }
-    local newfiles="$(/bin/ls -1 $(expac -S "%n-%v" $updates_native | sed -E 's|(.*)|/var/cache/pacman/pkg/\1\*|'))"
+    [ "$updates_native_ver" ] || { INFO "no native updates to check."; return; }
+    local newfiles="$(echo "${updates_native_ver}" | sed -E 's|(.*)|/var/cache/pacman/pkg/\1\*|')"
     [ "$newfiles" ] || INFO "no new files found for clamscan!"
 
-    local -r log=$HOME/.local/$progname_clamscan.log
+    local -r log=$HOME/.local/${progname}_clamscan.log
     [ -e $log ] || { touch $log; chmod go-rwx $log; }
 
     echo2  "==> Running clamscan for:"
@@ -175,7 +175,9 @@ GetNativeUpdates() {
         yes) $cmd             ;;
         no)  $cmd  >/dev/null ;;
     esac
-    updates_native=$(pacman -Quq)               # find names of updated packages
+    # find the names of updated packages
+    updates_native_ver=$(pacman -Qu | awk '{print $1"-"$4}')                        # 'name-version'
+    updates_native=$(echo "$updates_native_ver" | sed -E 's|\-[^-]+\-[0-9.]+$||')   # just 'name'
 }
 StopIfNoUpdates() {
     # stop if no updated packages
