@@ -124,7 +124,7 @@ Clamav() {
 
     echo2  "==> Running clamscan, please wait ... "
 
-    clamscan --bell --no-summary $newfiles | sed 's|^|      |'
+    clamscan --bell --no-summary $newfiles | column -t -s' ' | sed 's|^|      |'
     case "$?" in
         0)   echo2 "" ;;
         1)   STOP  "problems found!" 1 ;;
