@@ -122,18 +122,13 @@ Clamav() {
     local newfiles="$(echo "${updates_native_ver}" | sed -E 's|(.*)|/var/cache/pacman/pkg/\1\*|')"
     [ "$newfiles" ] || INFO "no new files found for clamscan!"
 
-    local -r log=$HOME/.local/${progname}_clamscan.log
-    [ -e $log ] || { touch $log; chmod go-rwx $log; }
+    echo2  "==> Running clamscan, please wait ... "
 
-    echo2  "==> Running clamscan for:"
-    printf "    %s\n" $newfiles >&2
-    printf "==> Result: " >&2
-
-    clamscan --bell -o --no-summary -l $log $newfiles
+    clamscan --bell --no-summary $newfiles | sed 's|^|      |'
     case "$?" in
-        0)   echo2 "OK." ;;
-        1)   STOP  "problems found! See file $log." 1 ;;
-        2|*) echo2 "failed, see file $log." ;;
+        0)   echo2 "" ;;
+        1)   STOP  "problems found!" 1 ;;
+        2|*) echo2 "failed." ;;
     esac
 }
 
