@@ -94,6 +94,7 @@ handle_formats() {
             %K*)   GetSimpleField "Maintainer" ;;
             %J*)   GetSimpleField "Popularity" ;;
             %j*)   GetSimpleField "Votes" ;;
+            %q*)   GetSimpleField "Last Modified" ;;
             %Q*)   GetSimpleField "Out-of-date" ;;
 
             *)     line+="${format%%%*}"; format="%${format#*%}" ;;
@@ -112,6 +113,8 @@ Options:
    -Q, --query    Search the local database for provided targets. This is the default behavior.
    -S, --sync     Search the sync databases for provided targets.
    -v, --verbose  Output more. ‘Package not found' errors will be shown, and empty field values will display as 'None'.
+   --yay          Use yay.
+   --paru         Use paru.
    -h, --help     Display this help message and quit.
 
 $progname is similar to 'expac' with these exceptions:
@@ -124,6 +127,8 @@ EOF
             -Q|--query)              op="-Q" ;;
             -S|--sync)               op="-S" ;;
             --verbose|-v)            show_errors=yes ;;
+            --paru)                  helper=paru ;;
+            --yay)                   helper=yay ;;
             "%"*)                    format="$1" ;;
             -*)                      DIE "sorry, option '$1' not supported" ;;
             *)                       break ;;
@@ -156,7 +161,7 @@ MakeAurPkgList() {
         local -r pkglistfile="$HOME/.cache/$progname.pkglist"
         local -r now=$(/bin/date +%Y%V)
         if [ "$now" != "$(/bin/cat "$timefile" 2>/dev/null)" ] ; then
-            yay -Pc | awk '{print $1}' > "$pkglistfile"
+            yay -Pc | awk '{print $1}' > "$pkglistfile"                # here yay is faster than paru
             echo "$now" > "$timefile"
         fi
         cat "$pkglistfile"
@@ -178,6 +183,7 @@ Main()
     local pkg
     local info_found=no
     local out2=""
+    local helper=paru    # paru or yay
 
     #MakeAurPkgList "$@"
 
@@ -198,7 +204,8 @@ Main()
                 [ "$show_errors" = "yes" ] && errors+=("==> using -Q but not installed: ${targets_notinstalled[*]}")
                 ;;
             -S)
-                data_all="$(LANG=C yay -Si "${targets_notinstalled[@]}" 2>/dev/null)"
+                # yay does not recognoze 'doas' ???
+                data_all="$(LANG=C $helper -Si "${targets_notinstalled[@]}" 2>/dev/null)" 
                 for pkg in "${targets_notinstalled[@]}" ; do
                     data=$(
                         {
