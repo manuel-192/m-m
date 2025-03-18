@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=PhotoGIMP
+pkgdesc="A patch for GIMP3+ for Photoshopt users"
+url="https://github.com/Diolinux/PhotoGIMP"
+pkgver=3
+pkgrel=0
+arch=(any)
+#license=(GPL)
+depends=()
+
+source=(
+    $url/releases/download/${pkgver}.$pkgrel/${pkgname}-linux.zip
+)
+sha256sums=('1af6e2a6308bbc0fb716a7dbbd68036adbcc091da16432869c7c6c6aef18e54e')
+
+package() {
+    install -d "$pkgdir/etc/skel"
+    cp -a "${pkgname}-linux" "$pkgdir/etc/skel"
+    rm -r $(find "$pkgdir/etc/skel" -name '.DS_Store')  # remove all files named '.DS_Store'
+    local tmpfile=$(mktemp)
+    cat <<EOF > $tmpfile
+#/bin/bash
+/bin/cp -rv --update=all "/etc/skel/${pkgname}-linux/.config" \$HOME
+/bin/cp -rv --update=all "/etc/skel/${pkgname}-linux/.local"  \$HOME
+EOF
+    install -Dm755 $tmpfile "$pkgdir/etc/skel/${pkgname}-linux/install-to-user-home"
+    rm -f $tmpfile
+    rm -f ../"${pkgname}-linux.zip"
+}
