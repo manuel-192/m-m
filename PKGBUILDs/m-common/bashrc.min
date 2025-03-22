@@ -1624,7 +1624,6 @@ EOF
                 # firefox
                 # firefox-developer-edition
                 gitk
-                kaffeine
                 kate
                 konsole
                 libreoffice soffice
@@ -1664,6 +1663,13 @@ EOF
             source $tmpfile
             rm -f $tmpfile
         fi
+        kaffeine() {
+            [ -x /bin/kaffeine ] || { echo "==> Warning: program $FUNCNAME is not installed."; return 1; }
+            case "$XDG_SESSION_TYPE" in
+                wayland) setsid /bin/kaffeine --platform xcb "$@" &> /dev/null ;;
+                x11)     setsid /bin/kaffeine --platform xcb "$@" &> /dev/null ;;
+            esac
+        }
     }
     MakeGuiAppsAsFuncs
 
