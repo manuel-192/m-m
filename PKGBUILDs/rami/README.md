@@ -7,7 +7,7 @@ This document describes only options of `rami` considered most useful in normal 
 By default `rami` will rank all known Arch mirrors in the world and show the result on the terminal.<br>
 Note that the mirrorlist will *not* be saved by default, you need to apply option `--save` for that.<br>
 
-User can give various options to include or exclude mirrors which can
+User can give various *options* to include or exclude mirrors which can
 
 - provide a better result for the location
 - save both time and network resources
