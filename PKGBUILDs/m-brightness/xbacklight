@@ -80,6 +80,9 @@ xbacklight() {
             systemctl --user daemon-reload
             echo "Service initialized." >&2
             ;;
+        "")
+            brightness-intel "$@"
+            ;;
         *)
             brightness-intel "$@"
             touch "$stay_file"
