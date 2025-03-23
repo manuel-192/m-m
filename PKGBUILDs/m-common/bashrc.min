@@ -1665,10 +1665,12 @@ EOF
         fi
         kaffeine() {
             [ -x /bin/kaffeine ] || { echo "==> Warning: program $FUNCNAME is not installed."; return 1; }
+            local opts=""
             case "$XDG_SESSION_TYPE" in
-                wayland) setsid /bin/kaffeine --platform xcb "$@" &> /dev/null ;;
-                x11)     setsid /bin/kaffeine --platform xcb "$@" &> /dev/null ;;
+                wayland) opts="--platform xcb" ;;
+                x11)     ;;
             esac
+            setsid /bin/kaffeine $opts "$@" &> /dev/null
         }
     }
     MakeGuiAppsAsFuncs
