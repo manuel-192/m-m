@@ -60,6 +60,7 @@ local PKGNAMES=(
     expac-completion
     fetch-iso
     fzf-stuff
+    generate-xfce4-desktop-xml
     git-meta
     GitUpdate
     glone
@@ -98,7 +99,6 @@ local PKGNAMES=(
     pkgcheck
     # pkgcheck-gui
     pkgurl
-    rami
     reflectorext
     safe
     skel
