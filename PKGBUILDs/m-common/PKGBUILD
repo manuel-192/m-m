@@ -5,7 +5,7 @@ pkgname=m-common
 pkgdesc="Some common apps, libs, and settings."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25.3
-pkgrel=8
+pkgrel=9
 arch=('any')
 license=('GPL')
 
