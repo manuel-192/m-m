@@ -4,9 +4,11 @@
 
 NextInfo2() { printf "==> %s" "$1" >&2 ; }  # shows info about the next operation (to stderr)
 
-bashrc_min_echo2()   { echo -e "$@" >&2; }
-bashrc_min_error()   { echo -e "==> ${FUNCNAME[1]}: error: $1"   >&2; }
-bashrc_min_warning() { echo -e "==> ${FUNCNAME[1]}: warning: $1" >&2; }
+ECHO2()   { echo -e "$@" >&2 ; }   # mainly to be used here!
+PRINTF2() { printf  "$@" >&2 ; }   # mainly to be used here!
+
+bashrc_min_error()   { ECHO2 "==> ${FUNCNAME[1]}: error: $1"   ; }
+bashrc_min_warning() { ECHO2 "==> ${FUNCNAME[1]}: warning: $1" ; }
 
 SetVarToFirstApp() {
     [ "$2" ] || return 1
@@ -28,7 +30,7 @@ _PackageCheck() {
 
     pacman -Qq "${required_packages[@]}" &> /dev/null && return 0
     for pkg in "${required_packages[@]}" ; do
-        pacman -Qq "$pkg" &> /dev/null || echo "==> warning: package '$pkg' needs to be installed!" >&2
+        pacman -Qq "$pkg" &> /dev/null || ECHO2 "==> warning: package '$pkg' needs to be installed!"
     done
     return 1
 }
@@ -38,7 +40,7 @@ SettingsCommon()
     _PackageCheck || return 1
     unset -f _PackageCheck
 
-    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME"
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && ECHO2 "==> $FUNCNAME"
     case "$-" in
         *i*)
             # history commands with arrow keys (on an interactive shell)
@@ -57,7 +59,6 @@ SettingsCommon()
     # Set in local ~/.bashrc:
     # ROOTDIR_EOS
     # ROOTDIR_MAN
-
 
     #############################################################
     # functions
@@ -123,8 +124,8 @@ SettingsCommon()
 
     packagesof() {       # show packages installed from a given repo
         local repo="$1"
-        [ "$repo" ] || { echo "give a repo name"; return 1; }
-        pacman-conf --repo-list | grep -w "$repo" >/dev/null || { echo "repo '$repo' not supported"; return 1; }
+        [ "$repo" ] || { ECHO2 "give a repo name"; return 1; }
+        pacman-conf --repo-list | grep -w "$repo" >/dev/null || { ECHO2 "repo '$repo' not supported"; return 1; }
 
         LANG=C pacman -Ss | grep "^$repo/" | grep -w "\[installed\]" | awk '{print $1}' | sed "s|^$repo/||"
     }
@@ -179,8 +180,8 @@ SettingsCommon()
         [ "$seconds" ] || seconds=10
         local ix
         for ix in $(seq $seconds) ; do
-            eos-connection-checker && { bashrc_min_echo2 " done." ; return 0 ; }
-            bashrc_min_echo2 -n "."
+            eos-connection-checker && { ECHO2 " done." ; return 0 ; }
+            ECHO2 -n "."
             sleep 1
         done
         return 1
@@ -193,11 +194,11 @@ SettingsCommon()
         local -r msg="$1"
         local code="$2"
 
-        echo "${FUNCNAME[1]}: error: $msg" >&2
+        ECHO2 "${FUNCNAME[1]}: error: $msg"
         if [ "${code//[0-9]/}" ] ; then
-            echo -n "$FUNCNAME: usage error: parameter 2 ($code) is not a number, changed to " >&2
+            ECHO2 -n "$FUNCNAME: usage error: parameter 2 ($code) is not a number, changed to "
             code=123   # 123 means usage error!
-            echo "$code" >&2
+            ECHO2 "$code"
         fi
         [ "$code" ] && echo "$code" || echo "0"
     }
@@ -218,7 +219,7 @@ SettingsCommon()
                     has_postBuffer=no
                 fi
                 newsize=$((oldsize + oldsize/2))   # 100% --> 150%
-                [ $has_postBuffer = no ] && echo "variable 'postBuffer' not found in file $PWD/$file, setting to $newsize" >&2
+                [ $has_postBuffer = no ] && ECHO2 "variable 'postBuffer' not found in file $PWD/$file, setting to $newsize"
 
                 git config http.postBuffer $newsize
                 ;;
@@ -232,7 +233,7 @@ SettingsCommon()
         # Find hyphens in a bash function names.
         # Recurse from current folder.
         cd "$CODEDIR/EOS" || return 1
-        echo "==> please wait..." >&2
+        ECHO2 "==> please wait..."
         grep -E -r '\(\)[ ]+{' 2>/dev/null | \
             grep -Pwv 'PKGBUILD|EXPERIMENTAL|WANHAA|_BUILD_|OLD-PKGBUILDS|MUUTA|eos-pkgbuild-setup|ISO-hotfixes|calamares|EndeavourOS-ISO' | \
             grep -E ':.+[^ ]-.+\(\)'
@@ -251,7 +252,7 @@ SettingsCommon()
         for xx in "${supported_levels[@]}" ; do
             [ "$xx" = "$level" ] && break
         done
-        [ "$xx" = "$level" ] || { echo "$FUNCNAME: unsupported level '$level'."; return 1; }
+        [ "$xx" = "$level" ] || { ECHO2 "$FUNCNAME: unsupported level '$level'."; return 1; }
 
         messages="$(sudo dmesg -l $level |& cat)"
 
@@ -320,24 +321,24 @@ SettingsCommon()
     }
 
     Add-50%-to-VB-disk() {
-        echo "NOT WORKING!"
+        ECHO2 "NOT WORKING!"
         return 1
 
         local -r disk="$1"     # "EndeavourOS test latest official pure.vdi"
 
         case "$disk" in
             "")
-                echo "$FUNCNAME: error: please give a disk name." >&2
+                ECHO2 "$FUNCNAME: error: please give a disk name."
                 return 1
                 ;;
             *.vdi)
                 if [ ! -w "$disk" ] ; then
-                    echo "$FUNCNAME: error: given disk ($disk) does not exist or is not writable." >&2
+                    ECHO2 "$FUNCNAME: error: given disk ($disk) does not exist or is not writable."
                     return 1
                 fi
                 ;;
             *)
-                echo "$FUNCNAME: error: given disk ($disk) must have suffix '.vdi'." >&2
+                ECHO2 "$FUNCNAME: error: given disk ($disk) must have suffix '.vdi'."
                 return 1
                 ;;
         esac
@@ -345,17 +346,17 @@ SettingsCommon()
         local oldsize=$(VB-capacity "$disk")
         local newsize=$((oldsize*2 - oldsize/2))   # newsize is 50% more
 
-        echo -en "Create a (time consuming) backup first\n(N/y)? " >&2
+        ECHO2 -en "Create a (time consuming) backup first\n(N/y)? "
         read
         case "$REPLY" in
-            [Yy]*) echo -n "please wait... " >&2; rm -f "$disk".bak; cp -a "$disk" "$disk".bak; echo "" >&2 ;;
+            [Yy]*) ECHO2 -n "please wait... " ; rm -f "$disk".bak; cp -a "$disk" "$disk".bak; ECHO2 "" ;;
         esac
 
-        echo "Resizing $oldsize --> $newsize ..." >&2
+        ECHO2 "Resizing $oldsize --> $newsize ..."
         # VBoxManage modifymedium disk "$disk" --resizebyte=$newsize
 
-        echo "" >&2
-        echo "NOTE: now you must resize the partition inside the VM!" >&2
+        ECHO2 ""
+        ECHO2 "NOTE: now you must resize the partition inside the VM!"
     }
 
     kb() {   # knowledge base
@@ -410,9 +411,6 @@ EOF
     }
 
     pkgdiffs-source-installed() {
-        _echo2()   { bashrc_min_echo2 "$@" ; }
-        _printf2() { printf "$@" >&2 ; }
-
         local pkg="$1"
         local data=$(expac -l "\n" -Q %F "$pkg")        # local data=$(pacman -Flq "$pkg")
         local file
@@ -422,31 +420,31 @@ EOF
 
         for file in $data ; do
             local="${file##*/}"
-            _printf2 "%-40s: " "$local"
+            PRINTF2 "%-40s: " "$local"
             if [ ! -e "$file" ] ; then
-                _echo2 "file '$file' not found"
+                ECHO2 "file '$file' not found"
             elif [ ! -e "$local" ] ; then
-                _echo2 "file '$local' not found"
+                ECHO2 "file '$local' not found"
             else
                 case "$file" in
                     */bash-completion/*)
                         local=("$local".*completion)
                         if [ -e "$local" ] ; then
                             if diff "$file" "$local" &> /dev/null ; then
-                                _echo2 OK
+                                ECHO2 OK
                             else
-                                _echo2 DIFFS
+                                ECHO2 DIFFS
                                 /bin/meld "$file" "$local"
                             fi
                         else
-                            _echo2 "didn't find local file for '$file'"
+                            ECHO2 "didn't find local file for '$file'"
                         fi
                         ;;
                     *)
                         if diff "$file" "${file##*/}" &> /dev/null ; then
-                            _echo2 OK
+                            ECHO2 OK
                         else
-                            _echo2 DIFFS
+                            ECHO2 DIFFS
                             /bin/meld "$file" "${file##*/}"
                         fi
                         ;;
@@ -706,7 +704,7 @@ EOF
 
         case "$checksumfile" in
             "*"$tailname)
-                echo "checksum file not found"
+                ECHO2 "checksum file not found"
                 return 2
                 ;;
             *$tailname)
@@ -723,7 +721,7 @@ EOF
                 return $ret
                 ;;
             *)
-                echo "file '$checksumfile' not supported"
+                ECHO2 "file '$checksumfile' not supported"
                 return 3
                 ;;
         esac
@@ -758,7 +756,7 @@ EOF
     man-eos() {
         local app=eos-apps-info-helper
         IsAvailable --app $app || { bashrc_min_error "${app%-helper} not installed?"; return 1; }
-        bashrc_min_echo2 "==> $app $*"
+        ECHO2 "==> $app $*"
         $app "$@"
     }
     eos-man() {                                                        # 'man' extended for some external apps
@@ -769,7 +767,7 @@ EOF
                 case "$REPLY" in
                     [Nn]*) return 0 ;;
                 esac
-                bashrc_min_echo2 "==> $* --help:"
+                ECHO2 "==> $* --help:"
                 out=$("$@" --help)
                 ret=$?
                 [ $ret -eq 0 ] && echo "$out" | less --quit-if-one-screen
@@ -861,8 +859,8 @@ EOF
             done
             arrout+=("$dir")
         done
-        # echo "orig = ${#CDPATH_ARR[@]}" >&2
-        # echo "new  = ${#arrout[@]}" >&2
+        # ECHO2 "orig = ${#CDPATH_ARR[@]}"
+        # ECHO2 "new  = ${#arrout[@]}"
         export CDPATH_ARR=("${arrout[@]}")
     }
     _Check_CDPATH_ARR
@@ -916,7 +914,7 @@ EOF
     grub_install_command_at_install() {
         local file=/var/log/Calamares.log
         [ -e ${file} ] || file=/var/log/endeavour-install.log
-        [ -e ${file} ] || { echo "Sorry, install log not found." >&2; return 1; }
+        [ -e ${file} ] || { ECHO2 "Sorry, install log not found."; return 1; }
 
         local -r line=$(sudo grep "grub-install.*bootloader-id" $file | sed -e 's|^.*Running ||' -e 's|[(),"]||g')
         
@@ -933,7 +931,7 @@ Disclaimer:
 
 EOF
         else
-            echo "Sorry, grub-install command not found." >&2
+            ECHO2 "Sorry, grub-install command not found."
         fi
     }
 
@@ -976,9 +974,9 @@ EOF
     CYAN=$'\e[1;96m'
     RESET=$'\e[0m'    # resets to normal
 
-    Red2()  { echo -e  "${RED}${1}${RESET}" >&2 ; }
-    Blue2() { echo -e "${BLUE}${1}${RESET}" >&2 ; }
-    Cyan2() { echo -e "${CYAN}${1}${RESET}" >&2 ; }
+    Red2()  { ECHO2 "${RED}${1}${RESET}"  ; }
+    Blue2() { ECHO2 "${BLUE}${1}${RESET}" ; }
+    Cyan2() { ECHO2 "${CYAN}${1}${RESET}" ; }
 
     upd() {
         local opt="-dopv"
@@ -1072,7 +1070,7 @@ EOF
         [ -e ~/.emacs ] && return
         [ -x /bin/emacs ] || return
 
-        bashrc_min_echo2 "==> $FUNCNAME: configuring emacs"
+        ECHO2 "==> $FUNCNAME: configuring emacs"
 
         cat <<EOF > ~/.emacs
 (custom-set-variables
@@ -1132,7 +1130,7 @@ echo "Please wait..." >&2
 sudo /bin/fstrim --verbose $@
 EOF
         sudo bash "$cmdfile"
-        echo "Done." >&2
+        ECHO2 "Done."
         rm -f "$cmdfile"
     }
 
@@ -1146,7 +1144,7 @@ EOF
     }
 
     makepkg-error() {
-        _makepkg_error_msg() { echo "  ${FUNCNAME[1]}: " "$@" >&2 ; }
+        _makepkg_error_msg() { ECHO2 "  ${FUNCNAME[1]}: " "$@" ; }
         case "$1" in
             0)  _makepkg_error_msg "Success." ;;
             1)  _makepkg_error_msg "Unknown cause of failure." ;;
@@ -1170,7 +1168,13 @@ EOF
     }
     pacman-branch() {  # if using any testing repo, output "testing", otherwise output "stable"
         local out=$(pacman-conf --repo-list | grep -P '\-testing$|\-unstable$')
-        [ "$out" ] && echo "testing due to: $(echo $out)" || echo stable
+        if [ "$out" ] ; then
+            echo "testing due to: $(echo $out)"
+            return 1
+        else
+            echo stable
+            return 0
+        fi
     }
     sleeps() {
         # Sleep X seconds, show counter to 0.
@@ -1189,6 +1193,11 @@ EOF
     }
 
     FixMList() {
+        local -r lockdir="$HOME/.FixTestDir.tmp"
+        mkdir "$lockdir" 2>/dev/null || return
+        local cleanupcmds="rmdir '$lockdir'"
+        ECHO2 "==> fixing mlist"
+
         local -r A="$1"
         local -r B="$2"
         local aname=${A%%:*} adate=${A##*:}
@@ -1201,8 +1210,8 @@ EOF
         local order=()
         local weekday=$(LC_ALL=C date +%a)
 
-        [ "$aline" ] || { echo "no $aname line"; return 1; }
-        [ "$bline" ] || { echo "no $bname line"; return 1; }
+        [ "$aline" ] || { ECHO2 "==> no $aname line"; $cleanupcmds; return 1; }
+        [ "$bline" ] || { ECHO2 "==> no $bname line"; $cleanupcmds; return 1; }
 
         while true ; do
             case "$adate" in
@@ -1225,7 +1234,7 @@ EOF
         done
 
         if [ "$order" ] ; then
-            echo "==> $FUNCNAME: adjusting $ml." >&2
+            ECHO2 "==> $FUNCNAME: adjusting $ml."
             while true ; do
                 echo "$prefix"
                 printf "%s\n" "${order[@]}"
@@ -1240,8 +1249,9 @@ EOF
             sudo cp $ml_new $ml
             rm -f $ml_new
         else
-            echo "==> $FUNCNAME: nothing to do." >&2
+            ECHO2 "==> $FUNCNAME: nothing to do."
         fi
+        $cleanupcmds
     }
 
     eos-packagelist() {
@@ -1261,7 +1271,7 @@ EOF
         esac
     }
 
-    [ -x /usr/local/bin/history-del ] && echo "==> WARNING: file /usr/local/bin/history-del exists." >&2
+    [ -x /usr/local/bin/history-del ] && ECHO2 "==> WARNING: file /usr/local/bin/history-del exists."
     # Alias history-del        "$(cat /usr/local/bin/history-del | grep ^history)"
 
     Unalias history-del
@@ -1293,7 +1303,7 @@ EOF
     # aliases
     #############################################################
 
-    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME: aliases"
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && ECHO2 "==> $FUNCNAME: aliases"
 
     Alias akm                "akm --no-progress --quiet"
     # Alias Build-asdeps       "Build --pacman='--asdeps'"
@@ -1406,7 +1416,7 @@ EOF
     # if [ "$(device-info --vm)" ] ; then
     #     _boot_stuff() {
     #         local -r app="${FUNCNAME[1]}"
-    #         echo "==> sync && $app" >&2
+    #         ECHO2 "==> sync && $app"
     #         sleep 1
     #         sync && /bin/${app##*/}
     #     }
@@ -1415,7 +1425,7 @@ EOF
     # else
     #     _dispatch_my_cmd() {
     #         local cmd="$1"
-    #         bashrc_min_echo2 "==> $cmd"
+    #         ECHO2 "==> $cmd"
     #         sleep 1
     #         bash -c "$cmd"
     #     }
@@ -1432,7 +1442,7 @@ EOF
     #                                 common_cmds="history-del && $common_cmds"
     #                                 _dispatch_my_cmd "$common_cmds poweroff"
     #                                 ;;
-    #             *)  echo "sorry, $FUNCNAME does not support $1" ;;
+    #             *)  ECHO2 "sorry, $FUNCNAME does not support $1" ;;
     #         esac
     #     }
     #     reboot()   { POWER $FUNCNAME ; }
@@ -1456,7 +1466,7 @@ EOF
     # bash completions
     #############################################################
 
-    [ $_COMMON_SETTINGS_VERBOSE = yes ] && bashrc_min_echo2 "==> $FUNCNAME: bash completions"
+    [ $_COMMON_SETTINGS_VERBOSE = yes ] && ECHO2 "==> $FUNCNAME: bash completions"
 
     LoadCompletion() {
         local -r cmdname="$1"                  # (new) command name
@@ -1532,12 +1542,12 @@ EOF
                 -1 | --any)  count=any ;;
                 -A | --all)  count=all ;;
                 -s | --show) count=show ;;
-                -*)          bashrc_min_echo2 "option '$1' not supported"; return 1 ;;
+                -*)          ECHO2 "option '$1' not supported"; return 1 ;;
             esac
             shift
         done
-        [ "$mode" ]  || { bashrc_min_echo2 "usage error, mode is missing"; return 1; }
-        [ "$count" ] || { bashrc_min_echo2 "usage error, count is missing"; return 1; }
+        [ "$mode" ]  || { ECHO2 "usage error, mode is missing"; return 1; }
+        [ "$count" ] || { ECHO2 "usage error, count is missing"; return 1; }
 
         args=("$@")
 
@@ -1564,7 +1574,7 @@ EOF
         local firstpara="$2"
         shift
 
-        bashrc_min_echo2 "==> $app $@"
+        ECHO2 "==> $app $@"
 
         case "$firstpara" in 
             -h | --help*) $app "$@" 2> /dev/null ;;
@@ -1641,22 +1651,22 @@ EOF
         for cmd in "${args[@]}" ; do
             app=${cmd%% *}     # "$cmd" == "$app" [options]
             declare -F "$app" >/dev/null && {
-                [ $verbose = yes ] && echo "==> warning: $app is already a function" >&2
+                [ $verbose = yes ] && ECHO2 "==> warning: $app is already a function"
                 continue
             }
             alias "$app" &>/dev/null && {
-                echo "==> warning: $app is an alias" >&2
+                ECHO2 "==> warning: $app is an alias"
                 continue
             }
             if [ -x "/bin/$app" ] ; then
                 functions+=("$app() { setsid /bin/$cmd \"\$@\" &>/dev/null ; }")      # this is the resulting function for the $cmd/$app
                 ((count++))
             else
-                [ $verbose = yes ] && echo "==> warning: $app not installed" >&2
+                [ $verbose = yes ] && ECHO2 "==> warning: $app not installed"
             fi
         done
         if [ $count -gt 0 ] ; then
-            [ $verbose = yes ] && echo "$count functions created" >&2
+            [ $verbose = yes ] && ECHO2 "$count functions created"
             local tmpfile=$(mktemp)
             printf "%s\n" "${functions[@]}" > $tmpfile
             # shellcheck disable=SC1090
@@ -1664,7 +1674,7 @@ EOF
             rm -f $tmpfile
         fi
         kaffeine() {
-            [ -x /bin/kaffeine ] || { echo "==> Warning: program $FUNCNAME is not installed."; return 1; }
+            [ -x /bin/kaffeine ] || { ECHO2 "==> Warning: program $FUNCNAME is not installed."; return 1; }
             local opts=""
             case "$XDG_SESSION_TYPE" in
                 wayland) opts="--platform xcb" ;;
@@ -1734,14 +1744,14 @@ EOF
         *)
             bashrc --plain
             # [ -e ~/.bashrc ] && source ~/.bashrc
-            bashrc_min_echo2 "==> bash settings updated."
+            ECHO2 "==> bash settings updated."
             ;;
     esac
 }
 
 # Use current settings now. Update settings with 'bashrc'.
 bashrc --plain
-bashrc_min_echo2 "==> 'bashrc' updates bash settings."
+ECHO2 "==> 'bashrc' updates bash settings."
 cat <<EOF
 
 TODO
@@ -1750,20 +1760,20 @@ TODO
 
 EOF
 
-bashrc_min_echo2 "==> Running on $XDG_CURRENT_DESKTOP $XDG_SESSION_TYPE, kernel $(uname -r)"
+ECHO2 "==> Running on $XDG_CURRENT_DESKTOP $XDG_SESSION_TYPE, kernel $(uname -r)"
 
 _Nvidia_driver() {
     local driver=$(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use" | awk '{print $NF}')
     case "$driver" in
         nouveau)
             if expac -Q %n xf86-video-nouveau >/dev/null ; then
-                bashrc_min_echo2 "==> GPU driver: xf86-video-nouveau"
+                ECHO2 "==> GPU driver: xf86-video-nouveau"
             else
-                bashrc_min_echo2 "==> GPU $(echo $(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use"))"
+                ECHO2 "==> GPU $(echo $(lspci -vnn | grep -PA10 "VGA compatible" | grep "Kernel driver in use"))"
             fi
             ;;
         nvidia)
-            bashrc_min_echo2 "==> GPU driver: $(expac %n nvidia nvidia-dkms)"
+            ECHO2 "==> GPU driver: $(expac %n nvidia nvidia-dkms)"
             ;;
     esac
 }
