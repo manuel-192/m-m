@@ -1193,10 +1193,11 @@ EOF
     }
 
     FixMList() {
-        local -r lockdir="$HOME/.FixTestDir.tmp"
-        mkdir "$lockdir" 2>/dev/null || return
-        local cleanupcmds="rmdir '$lockdir'"
+        local -r lockdir="/tmp/tmp.e94ijWJljso"
+        mkdir "$lockdir" || return 2
+        local cleanupcmds="rmdir $lockdir"
         ECHO2 "==> fixing mlist"
+        sleep 0.1   # needed!
 
         local -r A="$1"
         local -r B="$2"
@@ -1210,8 +1211,8 @@ EOF
         local order=()
         local weekday=$(LC_ALL=C date +%a)
 
-        [ "$aline" ] || { ECHO2 "==> no $aname line"; $cleanupcmds; return 1; }
-        [ "$bline" ] || { ECHO2 "==> no $bname line"; $cleanupcmds; return 1; }
+        [ "$aline" ] || { ECHO2 "==> no $aname line"; $cleanupcmds ; return 1; }
+        [ "$bline" ] || { ECHO2 "==> no $bname line"; $cleanupcmds ; return 1; }
 
         while true ; do
             case "$adate" in
