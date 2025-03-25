@@ -1194,7 +1194,7 @@ EOF
 
     FixMList() {
         local -r lockdir="/tmp/tmp.e94ijWJljso"
-        mkdir "$lockdir" || return 2
+        mkdir "$lockdir" 2>/dev/null || { ECHO2 "$lockdir exists."; return 2; }
         local cleanupcmds="rmdir $lockdir"
         ECHO2 "==> fixing mlist"
         sleep 0.1   # needed!
