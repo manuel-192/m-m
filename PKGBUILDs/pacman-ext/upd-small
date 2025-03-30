@@ -96,14 +96,14 @@ CheckApps() {
         IsInstalled clamav || DIE "package 'clamav' is needed by option --clamav"
     fi
     if [ $DEEP = no ] ; then
-        IsInstalled pacman-ext || WARN "package 'pacman-ext' is needed by the fast check"
+        IsInstalled pacman-ext || WARN "package 'pacman-ext' is needed by the shallow check"
     fi
 }
 
 UpdatePackages() {
     Connection
     GetAurUpdates
-    FastCheck             # stops here if no updates by "fast check"
+    ShallowCheck             # stops here if no updates by "shallow check"
     PacmanLock
     GetNativeUpdates
     StopIfNoUpdates
@@ -142,14 +142,14 @@ GetAurUpdates() {
     # check AUR for updates if needed
     [ $AUR = yes ] && updates_aur=$($paru -Quaq)
 }
-FastCheck() {
+ShallowCheck() {
     if [ $DEEP = no ] ; then
         # stop if no updated packages (with uc-fast)
         if [ -x /bin/uc-fast ] ; then
             if ! uc-fast $ucfast_options ; then                              # this line needs internet connection!
                 case $AUR in
-                    yes) [ -z "$updates_aur" ] && STOP "==> No updates (fast check)" 0 ;;
-                    no)  STOP "==> No native updates (fast check)" 0 ;;
+                    yes) [ -z "$updates_aur" ] && STOP "==> No updates (shallow check)" 0 ;;
+                    no)  STOP "==> No native updates (shallow check)" 0 ;;
                 esac
             fi
         fi
