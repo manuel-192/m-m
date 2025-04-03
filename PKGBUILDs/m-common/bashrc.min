@@ -1192,71 +1192,67 @@ EOF
         echo ""
     }
 
-    FixMList() {
-        local -r lockdir="/tmp/tmp.e94ijWJljso"
-        mkdir "$lockdir" 2>/dev/null || {
-            # ECHO2 "$lockdir exists."
-            return 2
-        }
-        local cleanupcmds="rmdir $lockdir"
-        ECHO2 "==> fixing mlist"
-        sleep 0.1   # needed!
-
-        local -r A="$1"
-        local -r B="$2"
-        local aname=${A%%:*} adate=${A##*:}
-        local bname=${B%%:*} bdate=${B##*:}
-        local ml=/etc/pacman.d/mirrorlist
-        local ml_new=/tmp/ml.tmp
-        local prefix="### A prefixed mirrorlist. ###"
-        local aline="$(grep "^Server[ ]*=" $ml | grep -nm1 "$aname")"
-        local bline="$(grep "^Server[ ]*=" $ml | grep -nm1 "$bname")"
-        local order=()
-        local weekday=$(LC_ALL=C date +%a)
-
-        [ "$aline" ] || { ECHO2 "==> no $aname line"; $cleanupcmds ; return 1; }
-        [ "$bline" ] || { ECHO2 "==> no $bname line"; $cleanupcmds ; return 1; }
-
-        while true ; do
-            case "$adate" in
-                *"$weekday"*)
-                    if [ ${aline%%:*} -gt ${bline%%:*} ] ; then
-                        order=("${aline#*:}" "${bline#*:}")
-                        break
-                    fi
-                    ;;
-            esac
-            case "$bdate" in
-                *"$weekday"*)
-                    if [ ${bline%%:*} -gt ${aline%%:*} ] ; then
-                        order=("${bline#*:}" "${aline#*:}")
-                        break
-                    fi
-                    ;;
-            esac
-            break
-        done
-
-        if [ "$order" ] ; then
-            ECHO2 "==> $FUNCNAME: adjusting $ml."
-            while true ; do
-                echo "$prefix"
-                printf "%s\n" "${order[@]}"
-                echo ""
-                if [ "$(head -n1 $ml)" = "$prefix" ] ; then
-                    tail -n +5 $ml
-                else
-                    cat $ml
-                fi
-                break
-            done > $ml_new
-            sudo cp $ml_new $ml
-            rm -f $ml_new
-        else
-            ECHO2 "==> $FUNCNAME: nothing to do."
-        fi
-        $cleanupcmds
-    }
+    # FixMList() {
+    #     local -r lockdir="/tmp/tmp.e94ijWJljso"
+    #     mkdir "$lockdir" 2>/dev/null || {
+    #         # ECHO2 "$lockdir exists."
+    #         return 2
+    #     }
+    #     local cleanupcmds="rmdir $lockdir"
+    #     ECHO2 "==> fixing mlist"
+    #     sleep 0.1   # needed!
+    #     local -r A="$1"
+    #     local -r B="$2"
+    #     local aname=${A%%:*} adate=${A##*:}
+    #     local bname=${B%%:*} bdate=${B##*:}
+    #     local ml=/etc/pacman.d/mirrorlist
+    #     local ml_new=/tmp/ml.tmp
+    #     local prefix="### A prefixed mirrorlist. ###"
+    #     local aline="$(grep "^Server[ ]*=" $ml | grep -nm1 "$aname")"
+    #     local bline="$(grep "^Server[ ]*=" $ml | grep -nm1 "$bname")"
+    #     local order=()
+    #     local weekday=$(LC_ALL=C date +%a)
+    #     [ "$aline" ] || { ECHO2 "==> no $aname line"; $cleanupcmds ; return 1; }
+    #     [ "$bline" ] || { ECHO2 "==> no $bname line"; $cleanupcmds ; return 1; }
+    #     while true ; do
+    #         case "$adate" in
+    #             *"$weekday"*)
+    #                 if [ ${aline%%:*} -gt ${bline%%:*} ] ; then
+    #                     order=("${aline#*:}" "${bline#*:}")
+    #                     break
+    #                 fi
+    #                 ;;
+    #         esac
+    #         case "$bdate" in
+    #             *"$weekday"*)
+    #                 if [ ${bline%%:*} -gt ${aline%%:*} ] ; then
+    #                     order=("${bline#*:}" "${aline#*:}")
+    #                     break
+    #                 fi
+    #                 ;;
+    #         esac
+    #         break
+    #     done
+    #     if [ "$order" ] ; then
+    #         ECHO2 "==> $FUNCNAME: adjusting $ml."
+    #         while true ; do
+    #             echo "$prefix"
+    #             printf "%s\n" "${order[@]}"
+    #             echo ""
+    #             if [ "$(head -n1 $ml)" = "$prefix" ] ; then
+    #                 tail -n +5 $ml
+    #             else
+    #                 cat $ml
+    #             fi
+    #             break
+    #         done > $ml_new
+    #         sudo cp $ml_new $ml
+    #         rm -f $ml_new
+    #     else
+    #         ECHO2 "==> $FUNCNAME: nothing to do."
+    #     fi
+    #     $cleanupcmds
+    # }
 
     eos-packagelist() {
         local opt_list_pkgs="--all-pkgs"
@@ -1351,10 +1347,10 @@ EOF
     # Alias u1                 "upd-small --aur"
     # Alias u2                 "upd-small --aur --deep"
     Alias eos-update         "eos-update --pacdiff --nvidia"                       # --nvidia doesn't hurt
-    Alias u                  "eos-update --descriptions --fast"
-    Alias uu                 "eos-update --descriptions"
-    Alias uv                 "upd-small --clamav"
-    Alias uuv                "upd-small --clamav --deep"
+    # Alias u                  "eos-update --descriptions --fast"
+    # Alias uu                 "eos-update --descriptions"
+    # Alias uv                 "upd-small --clamav"
+    # Alias uuv                "upd-small --clamav --deep"
     Alias who-needsq         "who-needs --query --multi --aur"
     Alias who-needss         "who-needs --sync --one --aur"
 
