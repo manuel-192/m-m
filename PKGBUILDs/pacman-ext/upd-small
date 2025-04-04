@@ -30,6 +30,7 @@ Main() {
     local ucfast_options="-ae --verbose"
     local updates_native=""
     local updates_aur=""
+    local rank=no
     local clamav=no
     local clamav_ref_file="$HOME/.local/$progname.clamav_ref_file"
     local pkgdir=/var/cache/pacman/pkg
@@ -52,6 +53,7 @@ Usage() {
     echo2 "          --deep,       -d  Check availability of updates more thoroughly."
     echo2 "          --hide-fetch, -f  Don't show the package download."
     echo2 "          --quiet,      -q  Be more quiet."
+    echo2 "          --rank,       -r  Rank mirrors first."
     echo2 "          --clamav          Scan updates for viruses with clamav."
     echo2 "          --help,       -h  This help."
     echo2 "Note: internet connection is required."
@@ -60,8 +62,8 @@ Usage() {
 
 Options() {
     # manage options
-    local sopts="acdfhq"
-    local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet"
+    local sopts="acdfhqr"
+    local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet,rank"
     local opts
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -75,6 +77,7 @@ Options() {
             --hide-fetch | -f) SHOW_FETCH=no ;;
             --help       | -h) Usage ;;
             --quiet      | -q) ucfast_options="-ae" ;;
+            --rank       | -r) rank=yes ;;
             --clamav)          clamav=yes ;;
             --) shift; break ;;
         esac
@@ -105,7 +108,7 @@ UpdatePackages() {
     GetAurUpdates
     ShallowCheck             # stops here if no updates by "shallow check"
     PacmanLock
-    [ -x /bin/rami ] && rami --save
+    RankMirrors
     GetNativeUpdates
     StopIfNoUpdates
     Nvidia
@@ -114,6 +117,12 @@ UpdatePackages() {
     Keyrings
     RealUpdate            # update packages here
     Pacdiff
+}
+
+RankMirrors() {
+    if [ $rank = yes ] && [ -x /bin/rami ] ; then
+        rami --save-no-bak
+    fi
 }
 
 Clamav() {
