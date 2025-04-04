@@ -105,6 +105,7 @@ UpdatePackages() {
     GetAurUpdates
     ShallowCheck             # stops here if no updates by "shallow check"
     PacmanLock
+    [ -x /bin/rami ] && rami --save
     GetNativeUpdates
     StopIfNoUpdates
     Nvidia
