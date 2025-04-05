@@ -122,6 +122,34 @@ SettingsCommon()
         esac
     }
 
+    packager_fix() {
+        local mode=fix    # show or fix
+        case "$1" in
+            -s | --show)
+                mode=show
+                ;;
+            -h | --help)
+                cat <<EOF >&2
+Fix the packager info of some packages by downloading and reinstalling them.
+
+Usage
+    $FUNCNAME [options]
+Options
+    -h, --help    This help.
+    -s, --show    Show names of packages with an unknown packager.
+EOF
+                return 0
+                ;;
+        esac
+        local repos=(endeavouros endeavouros-testing-dev m-m m-more2 m-aur2)
+        local pkgs=$( expac "%n|%p" $(pacman -Slq "${repos[@]}") | grep "Unknown Packager" | column -t -s'|' | awk '{print $1}' )
+        [ "$pkgs" ] || { echo "==> No unknown packager." >&2; return; }
+        case "$mode" in
+            show) echo "$pkgs" ;;
+            fix)  sudo pacman -Syu $pkgs ;;
+        esac
+    }
+
     packagesof() {       # show packages installed from a given repo
         local repo="$1"
         [ "$repo" ] || { ECHO2 "give a repo name"; return 1; }
