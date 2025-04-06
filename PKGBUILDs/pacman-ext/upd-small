@@ -54,16 +54,27 @@ Usage() {
     echo2 "          --hide-fetch, -f  Don't show the package download."
     echo2 "          --quiet,      -q  Be more quiet."
     echo2 "          --rank,       -r  Rank mirrors first."
+    echo2 "          --edit-list,  -e  Edit mirrorlist."
     echo2 "          --clamav          Scan updates for viruses with clamav."
     echo2 "          --help,       -h  This help."
     echo2 "Note: internet connection is required."
     [ "$1" ] && exit $1 || exit 0
 }
 
+SudoEdit() {
+    local app
+    for app in emacs nano ; do
+        if [ -x /bin/$app ] ; then
+            sudo $app "$@"
+            return
+        fi
+    done
+}
+
 Options() {
     # manage options
-    local sopts="acdfhqr"
-    local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet,rank"
+    local sopts="acdefhqr"
+    local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet,rank,edit-list"
     local opts
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -78,6 +89,7 @@ Options() {
             --help       | -h) Usage ;;
             --quiet      | -q) ucfast_options="-ae" ;;
             --rank       | -r) rank=yes ;;
+            --edit-list  | -e) SudoEdit /etc/pacman.d/mirrorlist; exit 0 ;;
             --clamav)          clamav=yes ;;
             --) shift; break ;;
         esac
