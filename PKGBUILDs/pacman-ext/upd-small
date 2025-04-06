@@ -134,7 +134,7 @@ UpdatePackages() {
 RankMirrors() {
     if [ $rank = yes ] && [ -x /bin/rami ] ; then
         INFO "ranking mirrors..."
-        rami --save-no-bak
+        rami --save-no-bak &>/dev/null
     fi
 }
 
