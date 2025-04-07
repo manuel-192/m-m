@@ -39,6 +39,8 @@ Main() {
 
     [ -x $paru ] || paru=$yay     # is paru installed?
 
+    DebugBreak
+
     Options "$@"
     CheckApps
     UpdatePackages
@@ -116,6 +118,8 @@ CheckApps() {
 }
 
 UpdatePackages() {
+    DebugBreak
+
     Connection
     GetAurUpdates
     ShallowCheck             # stops here if no updates by "shallow check"
@@ -255,5 +259,7 @@ Pacdiff() {
         fi
     fi
 }
+
+DebugBreak() { : ; }    # add a call to DebugBreak before lines of importance!
 
 Main "$@"
