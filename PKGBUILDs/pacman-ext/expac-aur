@@ -65,6 +65,7 @@ handle_formats() {
             %G*)   GetSimpleField "Groups" ;;
             %H*)   ConflictsWith full ;;                 # works
             %h*)   GetSimpleField "Sha256sum" ;;
+            %I*)   GetSimpleField "Signatures" ;;
             %i*)   GetSimpleField "Install Script" ;;
             %k*)   GetSimpleField "Download Size" ;;
             %l*)   GetSimpleField "Install Date" ;;
@@ -191,12 +192,25 @@ Main()
 
     Options "$@"
 
-    [ ${#targets_installed[@]} -gt 0 ] && out2=$(expac ${op} "$format" "${targets_installed[@]}")
-
-    case "$format" in
-        *"%O"*) echo "$out2" | OptDepsFormat ;;
-        *)      echo "$out2" ;;
-    esac
+    if [ ${#targets_installed[@]} -gt 0 ] ; then
+        out2=$(expac ${op} "$format" "${targets_installed[@]}")
+        case "$format" in
+            *"%O"*)
+                if [ "$out2" != "?" ] ; then
+                    echo "$out2" | OptDepsFormat
+                else
+                    FetchField "${targets_installed[@]}" | OptDepsFormat
+                fi
+                ;;
+            *)
+                if [ "$out2" != "?" ] ; then
+                    echo "$out2"
+                else
+                    FetchField "${targets_installed[@]}"
+                fi
+                ;;
+        esac
+    fi
 
     if [ ${#targets_notinstalled[@]} -gt 0 ] ; then
         case "$op" in
@@ -204,23 +218,7 @@ Main()
                 [ "$show_errors" = "yes" ] && errors+=("==> using -Q but not installed: ${targets_notinstalled[*]}")
                 ;;
             -S)
-                # yay does not recognoze 'doas' ???
-                data_all="$(LANG=C $helper -Si "${targets_notinstalled[@]}" 2>/dev/null)" 
-                for pkg in "${targets_notinstalled[@]}" ; do
-                    data=$(
-                        {
-                            echo "$data_all" | grep -B1 "^Name[ ]*:[ ]*$pkg$" | head -n1
-                            echo "$data_all" | sed  -n "/^Name[ ]*:[ ]*$pkg$/,/^$/{p;/^$/q}"
-                        }
-                        )
-                    if [ "$data" ] ; then
-                        info_found=yes
-                        handle_formats "$format"
-                    else
-                        [ "$show_errors" = "yes" ] && errors+=("package '$pkg' does not exist")
-                        continue
-                    fi
-                done
+                FetchField "${targets_notinstalled[@]}"
                 ;;
         esac
         if [ "$show_errors" = "yes" ] && [ ${#errors[@]} -ne 0 ] ; then
@@ -229,6 +227,27 @@ Main()
         fi
     fi
     [ $info_found = yes ] && return 0 || return 1
+}
+
+FetchField() {
+    # yay does not recognize 'doas' ???
+    local -r myopt="-Sii"
+    data_all="$(LANG=C $helper $myopt "$@" 2>/dev/null)" 
+    for pkg in "$@" ; do
+        data=$(
+            {
+                echo "$data_all" | grep -B1 "^Name[ ]*:[ ]*$pkg$" | head -n1
+                echo "$data_all" | sed  -n "/^Name[ ]*:[ ]*$pkg$/,/^$/{p;/^$/q}"
+            }
+            )
+        if [ "$data" ] ; then
+            info_found=yes
+            handle_formats "$format"
+        else
+            [ "$show_errors" = "yes" ] && errors+=("package '$pkg' does not exist")
+            continue
+        fi
+    done
 }
 
 Main "$@"
