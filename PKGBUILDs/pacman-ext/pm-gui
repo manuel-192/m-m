@@ -44,10 +44,19 @@ EditFile() {
         RunInTerminal $sudo $editor "$file"
     fi
 }
+RankArchMirrors() {
+    if [ -x /bin/rami ] ; then
+        RunInTerminal 'rami --save'
+    elif [ -x /bin/rate-mirrors ] ; then
+        RunInTerminal 'rate-mirrors arch --max-delay=3600 | sudo tee /etc/pacman.d/mirrorlist'
+    else
+        RunInTerminal 'reflector -phttps -l20 --save'
+    fi
+}
 
 
-export -f PMGUI_MSG PMGUI_DIE PMGUI_WARN FirstAppOf EditFile
-export PMGUI_PROGNAME="$(basename "$0")"
+export -f PMGUI_MSG PMGUI_DIE PMGUI_WARN FirstAppOf EditFile RankArchMirrors
+export PMGUI_PROGNAME="${0##*/}"
 
 Main() {
     AssignIconVariables_in_eos_bash_shared
@@ -76,7 +85,7 @@ Main() {
         --field="Install packages!$icon_install!Select and install packages":fbtn                     "RunInTerminal 'paf -i'"                                     # ???
         --field="Remove packages!$icon_remove!Select and remove packages":fbtn                        "RunInTerminal 'paf -r'"                                     # ???
 
-        --field="Rank Arch mirrors!$icon_prefs!Rank the list of Arch mirrors":fbtn                    "RunInTerminal 'mirank | sudo tee /etc/pacman.d/mirrorlist'"  # ???
+        --field="Rank Arch mirrors!$icon_prefs!Rank the list of Arch mirrors":fbtn                    "RankArchMirrors"
         --field="Rank EndeavourOS mirrors!$icon_prefs!Rank the list of EndeavourOS mirrors":fbtn      "RunInTerminal eos-rankmirrors"
 
         --field="Edit $pacman_conf!$icon_edit!Change general package management settings":fbtn        "EditFile $pacman_conf"
