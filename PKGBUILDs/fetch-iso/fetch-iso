@@ -69,9 +69,10 @@ Options:
 Tip1: Write a config file at $configfile2. It must contain variables
       URLBASE, ACCOUNT, PASSWORD, and optionally TARGETDIR with their proper values.
       Alternatively, variable HELLO can replace values "\$ACCOUNT:\$PASSWORD".
+      Note that the config file will be created if it does not exist,
+      and the values will be asked.
 Tip2: Without parameters a selection of downloadable files is presented (using fzf).
-Tip3: Use bash completion (by pressing the TAB key on the command line)
-      to get the file to download.
+Tip3: Bash command completion is supported, just press the TAB key after $progname and see.
 
 EOF
 }
@@ -212,6 +213,8 @@ Main() {
     local header
     local header_lines=(
         "Navigation keys: Up/Down/PgUp/PgDn; TAB=Select, ENTER=accept, ESC=quit"
+        "Other keys:      Ctrl-E = Edit config file"
+        "                 Ctrl-H = Help"
         "Download folder: $TARGETDIR"
     )
     header_lines=("" "${header_lines[@]}" "")        # add empty extra lines to separate header
@@ -221,6 +224,7 @@ Main() {
         fzf
         --exact +i --tac --multi
         --header="$header"
+        --bind "ctrl-e:execute-silent(xdg-open '$configfile'),ctrl-h:execute-silent(RunInTerminal '$progname -h')"
     )
     local selected="" items=""
     local subdir=""
