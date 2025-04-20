@@ -10,17 +10,14 @@ _fetch-iso_() {
     local cur prev words cword split
     _init_completion -s || return
 
-    local -r progname="${BASH_SOURCE[0]##*/}"     # use name from bash completion place (fetch-iso)
-    local -r options="$($progname --dump-options)"
+    local -r app="${BASH_SOURCE[0]##*/}"     # use name from bash completion place (fetch-iso)
 
-    case "$prev" in
-        "" | *$progname) _fetch-iso_complete "$($progname --show-files) $options"
+    case "$cur" in
+        -*)
+            _fetch-iso_complete "$($app --dump-options)"
             ;;
         *)
-            case "$cur" in
-                -*) _fetch-iso_complete "$options" ;;
-                *)  _fetch-iso_complete "$($progname --show-files)" ;;
-            esac
+            _fetch-iso_complete "$($app --show-files) $($app --dump-options)"
             ;;
     esac
 } &&
