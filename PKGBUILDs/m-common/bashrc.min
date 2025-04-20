@@ -122,12 +122,11 @@ SettingsCommon()
         esac
     }
 
-    packager_fix() {
-        local mode=fix    # show or fix
+    packager_fixes() {
+        local mode=show    # show or fix
         case "$1" in
-            -s | --show)
-                mode=show
-                ;;
+            -f | --fix)      mode=fix ;;
+            -s | --show)     mode=show ;;
             -h | --help)
                 cat <<EOF >&2
 Fix the packager info of some packages by downloading and reinstalling them.
@@ -136,7 +135,8 @@ Usage
     $FUNCNAME [options]
 Options
     -h, --help    This help.
-    -s, --show    Show names of packages with an unknown packager.
+    -f, --fix     Fix  packager info for an unknown packager.
+    -s, --show    Show packager info for an unknown packager.
 EOF
                 return 0
                 ;;
