@@ -1,0 +1,160 @@
+#!/bin/bash
+
+# Look for info from /usr/share/hwdata/pci.ids.
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+
+FillUpVendors() {
+    local ix
+    for ((ix=0; ix < ${#vendor_ids[@]}; ix++)) ; do
+        vendors[${vendor_names[$ix]}]=${vendor_ids[$ix]}
+    done
+}
+
+GetDeviceInfo() {
+    case "$hwid_hint" in
+        "")
+            DIE "hw-id or hw-hint is missing"
+            ;;
+        GPU)
+            local tmp=$(lspci -vnnmm | grep -A7 -P 'VGA|Display|3D' | grep "^Device:")
+            hwid=$(echo "$tmp" | awk '{print $NF}' | tr -d '[]')
+            nvidia_family=$(echo "$tmp" | awk '{print $2}')
+            ;;
+        *)
+            # direct hwid, check syntax
+            hwid=${hwid_hint,,}
+            ;;
+    esac
+    [ "${hwid//[0-9a-f]/}" ] && DIE "'$hwid' is not a hw id"
+}
+
+Main2()
+{
+    # 'vendor_names' and 'vendor_ids' must be in the same order!
+    local -r vendor_names=(
+        NVIDIA
+    )
+    local -r vendor_ids=(
+        10de
+    )
+    declare -A vendors=()
+
+    FillUpVendors
+
+    local vname="$vendor_arg"    # vendor name, e.g. NVIDIA
+    local vid                    # vendor id, e.g. 10de
+
+    [ "$vname" ] || vname=${vendor_names[0]}
+    vid=${vendors[$vname]}
+
+    local -r file=/usr/share/hwdata/pci.ids
+    vendor_data=$(cat $file | grep -v "^#" | sed -n "/^$vid/,/^[^\t]/p" | head -n -1)
+
+    # echo "$vendor_data" | less
+}
+
+Main3() {
+    # Now we have the data of a vendor from /usr/share/hwdata/pci.ids.
+    local vendor vendor_name                      # leading zero tabs
+    local device device_name                      # leading one tab
+    local subvendor subdevice subsystem_name      # leading two tabs
+    local hwid=""
+    local nvidia_family=""
+
+    GetDeviceInfo
+
+    echo "hwid   = $hwid"
+    echo "family = $nvidia_family"
+}
+
+Main0() {
+    local progname=${0##*/}
+    local vendor_arg="$1"     # name, e.g. NVIDIA
+    local hwid_hint="$2"      # e.g. GPU or 1d01
+    local vendor_data=""
+
+    # alternative way:
+    local data=$(lspci -vmmnn | grep -A7 -P 'VGA|Display|3D' | grep "^Device:")
+    case "$1" in
+        gpuid)
+            echo "$data" | awk '{print $NF}' | tr -d '[]' ;;
+        gpufamily)
+            echo "$data" | awk '{print $2}' ;;
+        gpuname)
+            echo "$data" | sed -E -e 's|[^\[]+\[||' -e 's|\] \[.*\]$||' ;;
+    esac
+    return
+
+    Main2
+    Main3
+}
+
+Usage() {
+    cat <<EOF
+Usage:   $progname [options]
+Options: --id                    Show the GPU id.
+         --family                Show the GPU family.
+         --nvidia-driver-type    Show the family of the Nvidia GPU.
+         --name                  Show the GPU name.
+         -h, --help              This help.
+EOF
+    [ "$1" ] && exit $1 || exit 0
+}
+
+Options() {
+    local lopts="help,id,family,name,nvidia-driver-type"
+    local sopts="h"
+    local opts
+
+    [ "$1" ] || Usage 1
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || exit 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --id)            echo "$data" | awk '{print $NF}' | tr -d '[]' ;;
+            --family)        local family=$(echo "$data" | awk '{print $2}')
+                             case "$family" in
+                                 GM*) echo maxwell ;;
+                                 GP*) echo pascal ;;
+                                 GV*) echo volta ;;
+
+                                 TU*) echo turing ;;
+                                 GA*) echo ampere ;;
+                                 AD*) echo lovelace ;;
+                                 GB*) echo blackwell ;;
+                                 GN*) echo next ;;
+                                 *)   echo UNKNOWN ;;
+                             esac
+                             ;;
+            --nvidia-driver-type)
+                local family=$($FUNCNAME --family)
+                case "$family" in
+                    maxwell|pascal|volta)
+                        echo closed ;;
+                    turing|ampere|lovelace|blackwell|next)
+                        echo open ;;
+                    *)
+                        echo unknown ;;
+                esac
+                ;;
+            --name)          echo "$data" | sed -E -e 's|[^\[]+\[||' -e 's|\] \[.*\]$||' ;;
+            -h | --help)     Usage 0 ;;
+            --)              shift; break ;;
+        esac
+        shift
+    done
+}
+
+Main() {
+    local progname=${0##*/}
+    local data=$(lspci -vmmnn | grep -A7 -P 'VGA|Display|3D' | grep "^Device:")
+    Options "$@"
+}
+
+Main "$@"
