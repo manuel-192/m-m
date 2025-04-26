@@ -755,6 +755,68 @@ EOF
         esac
     }
 
+    update_pciids() {
+        local -r daynrfile="$HOME/.daynr"
+        local -r daynr=$(date +%j)
+        local -r url=$(grep "^SRC=" /bin/update-pciids | cut -d'=' -f2 | sed 's|"||g')
+        local -r file="/usr/share/hwdata/${url##*/}"
+        local -r file_prev="$HOME/.cache/${file##*/}"
+        local -r file_new="/tmp/${file##*/}"
+
+        local comp=xz                     # xz or gz
+        local compapp=""
+        local check_always=no
+
+        while [ "$1" ] ; do
+            case "$1" in
+                -c)   comp="$2"; shift ;;
+                -c=*) comp="${1#*=}"; shift ;;
+                -c*)  comp="${1:2}"; shift ;;
+                -f)   check_always=yes ;;
+                -h | --help)
+                    echo "Usage: $FUNCNAME [options]"
+                    echo "Options"
+                    echo "   -h, --help    This help."
+                    echo "   -f            Do the check regardless of when the previous check was made."
+                    echo "   -c <suffix>   Set the compression method (default: xz)."
+                    echo "                 <suffix> is one of: xz gz"
+                    return
+                    ;;
+                *) break ;;
+            esac
+            shift
+        done
+
+        if [ $check_always = no ] && [ $daynr = "$(cat "$daynrfile" 2>/dev/null)" ] ; then
+            echo "$file: already checked today. Use -f to check anyway." >&2
+            return
+        fi
+        echo "$daynr" > "$daynrfile"
+
+        case "$comp" in
+            xz) compapp=unxz ;;
+            gz) compapp=gunzip ;;
+        esac
+
+        rm -f "$file_prev" "$file_new"
+        cp "$file" "$file_prev"
+
+        curl -Lsm 10 -o "$file_new".$comp "$url".$comp
+        $compapp "$file_new".$comp
+
+        if diff "$file_prev" "$file_new" ; then
+            echo "$file: no diffs." >&2
+            return
+        fi
+        echo "$file: diffs found." >&2
+        meld "$file_prev" "$file_new"
+
+        read -p "Update $file (Y/n)? " >&2
+        case "$REPLY" in
+            "" | [yY]*) sudo cp "$file_new" "$file" ;;
+        esac
+    }
+
     linktype() {
         local file="$1"
         local result=""
