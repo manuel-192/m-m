@@ -193,6 +193,9 @@ Prepare() {
 }
 
 Main() {
+    if [ -z "$XDG_DOWNLOAD_DIR" ] && [ -e "$HOME/.config/user-dirs.dirs" ] ; then
+        source "$HOME/.config/user-dirs.dirs"
+    fi
     local -r progname=${0##*/}
     local -r configfile="$HOME/.config/$progname.conf"
     local -r configfile2="${configfile/$HOME/\~}"
@@ -200,7 +203,7 @@ Main() {
     local HELLO=""
     local ACCOUNT="" PASSWORD=""
     local APP=""
-    local TARGETDIR=""
+    local TARGETDIR="${XDG_DOWNLOAD_DIR:-~}"           # $HOME/Downloads or $HOME
     local exitcode=0
     local file
     local datafile=/tmp/$progname.tmp   # remove this if new files should be available
