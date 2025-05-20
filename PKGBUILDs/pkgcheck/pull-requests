@@ -93,8 +93,6 @@ Main() {
     local -r progname=${0##*/}
     local -r targetdir=$(mktemp -d)
 
-    echo "dir=$targetdir args=$*" >&2
-
     local urls_e=(
         https://github.com/endeavouros-team/PKGBUILDS
         https://github.com/endeavouros-team/eos-bash-shared
