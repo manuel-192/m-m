@@ -19,7 +19,6 @@ Main3()
     local item=$(echo "$url" | sed 's|https://github\.com/||')
     local -r space="-45"
 
-    # pagedata=$(curl  --fail -Lsm 10 -o- "$url")
     pagedata=$(< "$file")
     retval=$?
     [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
@@ -48,25 +47,28 @@ Main3()
     done
 }
 
+AtomicCurl() {
+    local pid=$(pgrep curl)
+    [ "$pid" ] && echo ${pid} | pidwait -F -
+    curl "$@"
+}
+
 Main2() {
     local ix=0
     local urls=() url
-    local targetdir="/tmp/$progname"
-
-    mkdir -p "$targetdir"
 
     for url in "$@" ; do
         urls+=(-o "$targetdir/$((ix++))" "$url/issues")
         urls+=(-o "$targetdir/$((ix++))" "$url/pulls")
     done
-    curl --parallel --fail -Lsm 60 "${urls[@]}"
+
+    AtomicCurl --parallel --fail -Lsm 60 "${urls[@]}"
+
     ix=0
     for url in "$@" ; do
         Main3 "$url/issues" "$targetdir/$((ix++))"
         Main3 "$url/pulls"  "$targetdir/$((ix++))"
     done
-
-    rm -rf "$targetdir"
 }
 
 Main1() {
@@ -88,7 +90,11 @@ Main1() {
 }
 
 Main() {
-    local progname=${0##*/}
+    local -r progname=${0##*/}
+    local -r targetdir=$(mktemp -d)
+
+    echo "dir=$targetdir args=$*" >&2
+
     local urls_e=(
         https://github.com/endeavouros-team/PKGBUILDS
         https://github.com/endeavouros-team/eos-bash-shared
@@ -150,6 +156,8 @@ EOF
             fi
         done
     fi
+
+    rm -rf "$targetdir"
 }
 
 Main "$@"
