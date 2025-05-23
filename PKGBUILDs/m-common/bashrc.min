@@ -127,6 +127,7 @@ SettingsCommon()
         case "$1" in
             -f | --fix)      mode=fix ;;
             -s | --show)     mode=show ;;
+            -a | --show-all) mode=all ;;
             -h | --help)
                 cat <<EOF >&2
 Fix the packager info of some packages by downloading and reinstalling them.
@@ -134,15 +135,21 @@ Fix the packager info of some packages by downloading and reinstalling them.
 Usage
     $FUNCNAME [options]
 Options
-    -h, --help    This help.
-    -f, --fix     Fix  packager info for an unknown packager.
-    -s, --show    Show packager info for an unknown packager.
+    -h, --help      This help.
+    -a, --show-all  Show packager info for all packagers.
+    -f, --fix       Fix  packager info for an unknown packager.
+    -s, --show      Show packager info for an unknown packager.
 EOF
                 return 0
                 ;;
+            *)  echo "==> unknown option '$1', assuming --show" >&2 ;;
         esac
         local repos=(endeavouros endeavouros-testing-dev m-m m-more2 m-aur2)
-        local pkgs=$( expac "%n|%p" $(pacman -Slq "${repos[@]}") | grep "Unknown Packager" | column -t -s'|' | awk '{print $1}' )
+        local pkgs=$( expac "%n|%p" $(pacman -Slq "${repos[@]}") | column -t -s'|' )
+        case "$mode" in
+            all) echo "$pkgs" ; return 0 ;;
+        esac
+        pkgs=$( echo "$pkgs" | grep "Unknown Packager" | awk '{print $1}' )
         [ "$pkgs" ] || { echo "==> No unknown packager." >&2; return; }
         case "$mode" in
             show) echo "$pkgs" ;;
