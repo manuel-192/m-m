@@ -962,20 +962,20 @@ EOF
     }
     _Check_CDPATH_ARR
 
-    Unalias welcome
-    welcome() {
-        local welcome="eos-welcome --once"  # --lang=en"  # adding lang in this function is dangerous!!
-        local arg
-        for arg in "$@" ; do
-            case "$arg" in
-                --installer)
-                    $welcome "$@" &
-                    return
-                    ;;
-            esac
-        done
-        setsid $welcome "$@"
-    }
+    # Unalias welcome
+    # welcome() {
+    #     local welcome="eos-welcome --once"  # --lang=en"  # adding lang in this function is dangerous!!
+    #     local arg
+    #     for arg in "$@" ; do
+    #         case "$arg" in
+    #             --installer)
+    #                 $welcome "$@" &
+    #                 return
+    #                 ;;
+    #         esac
+    #     done
+    #     setsid $welcome "$@"
+    # }
 
     xfce4-terminal() {
         /bin/xfce4-terminal --geometry=150x25 "$@"
