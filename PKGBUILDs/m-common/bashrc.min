@@ -125,6 +125,7 @@ SettingsCommon()
     packager_fixes() {
         local mode=show    # show or fix
         case "$1" in
+            "") ;;
             -f | --fix)      mode=fix ;;
             -s | --show)     mode=show ;;
             -a | --show-all) mode=all ;;
