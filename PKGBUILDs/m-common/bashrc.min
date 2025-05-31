@@ -978,6 +978,22 @@ EOF
     #     setsid $welcome "$@"
     # }
 
+    welcome() {
+        local -r pkg=webkit2gtk-4.1
+
+        [ -d /usr/include/webkitgtk-4.1 ] || {
+            echo -n " -> installing $pkg..." >&2
+            sudo pacman --noconfirm -S $pkg &>/dev/null
+            echo "done." >&2
+        }
+        eos-welcome -1 "$@"
+        ps -C yad >/dev/null && { echo " -> killing yad" >&2; pkill yad; }
+        ps -C yad >/dev/null && { echo " -> killing yad" >&2; pkill yad; }  # needed ??
+        echo -n " -> uninstalling $pkg..." >&2
+        sudo pacman --noconfirm -Rdd $pkg &>/dev/null
+        echo "done." >&2
+    }
+
     xfce4-terminal() {
         /bin/xfce4-terminal --geometry=150x25 "$@"
     }
