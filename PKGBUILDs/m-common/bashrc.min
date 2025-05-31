@@ -963,22 +963,9 @@ EOF
     }
     _Check_CDPATH_ARR
 
-    # Unalias welcome
-    # welcome() {
-    #     local welcome="eos-welcome --once"  # --lang=en"  # adding lang in this function is dangerous!!
-    #     local arg
-    #     for arg in "$@" ; do
-    #         case "$arg" in
-    #             --installer)
-    #                 $welcome "$@" &
-    #                 return
-    #                 ;;
-    #         esac
-    #     done
-    #     setsid $welcome "$@"
-    # }
-
-    welcome() {
+    _YADapp() {
+        local app="$1"
+        shift
         local -r pkg=webkit2gtk-4.1
 
         [ -d /usr/include/webkitgtk-4.1 ] || {
@@ -986,13 +973,17 @@ EOF
             sudo pacman --noconfirm -S $pkg &>/dev/null
             echo "done." >&2
         }
-        eos-welcome -1 "$@"
+        $app "$@"
         ps -C yad >/dev/null && { echo " -> killing yad" >&2; pkill yad; }
         ps -C yad >/dev/null && { echo " -> killing yad" >&2; pkill yad; }  # needed ??
         echo -n " -> uninstalling $pkg..." >&2
         sudo pacman --noconfirm -Rdd $pkg &>/dev/null
         echo "done." >&2
     }
+    welcome()          { _YADapp "/bin/eos-welcome -1" "$@" ; }
+    akm()              { _YADapp "/bin/akm --no-progress --quiet" "$@" ; }
+    reflector-simple() { _YADapp "/bin/reflector-simple" "$@" ; }
+    eos-log-tool()     { _YADapp "/bin/eos-log-tool" "$@" ; }
 
     xfce4-terminal() {
         /bin/xfce4-terminal --geometry=150x25 "$@"
@@ -1419,7 +1410,6 @@ EOF
 
     [ $_COMMON_SETTINGS_VERBOSE = yes ] && ECHO2 "==> $FUNCNAME: aliases"
 
-    Alias akm                "akm --no-progress --quiet"
     # Alias Build-asdeps       "Build --pacman='--asdeps'"
     Alias bat                "bat --style=number"
     Alias ci                 "ci -u"
