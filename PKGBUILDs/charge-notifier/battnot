@@ -48,20 +48,48 @@ GetPowerDevice() {
     esac
 }
 
+DumpOptions() {
+    if [ "$lopts" ] ; then
+        local out=${lopts//:/}
+        out="--${out//,/ --}"
+        printf "%s\n" $out
+    fi
+    # don't show short options
+}
+
 Options() {
+    local lopts="charge-sleep:,discharge-sleep:,dump-options,edit-config,help,is-running,keep-showing-max,max:,min:"
+    lopts+=",no-reread-conf,power-device-info:,show-cycles,sound-file:"
+    local sopts="h"
+    local opts
+
+    opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || { Usage; exit 1; }
+    eval set -- "$opts"
+
     while [ "$1" ] ; do
         case "$1" in
-            --charge-sleep)       sleeptime_charging="$2";    shift ;;
-            --discharge-sleep)    sleeptime_discharging="$2"; shift ;;
-            --min)                min="$2";                   shift ;;
+            # these use $2
+            --charge-sleep)       sleeptime_charging="$2";            shift ;;
+            --discharge-sleep)    sleeptime_discharging="$2";         shift ;;
+            --max)                max="$2";                           shift ;;
+            --min)                min="$2";                           shift ;;
             --power-device-info)  GetPowerDevice power_device "$2" || shift ;;
             --sound-file)         GetSoundFile   sound_file   "$2" || shift ;;
-            --max)                max="$2";                   shift ;;
-            --keep-showing-max)   max_show_always=yes ;;
 
-            --no-reread-conf)   ;;
-            --dump-options)     ;;                                   # handled already
-            *)                  DIE "unsupported parameter '$1'" ;;
+            # these just set a value
+            --keep-showing-max)   max_show_always=yes ;;
+            --no-reread-conf)     reread_conf=no ;;
+            --is-running)         check_is_running=yes ;;
+
+            # these exit:
+            --edit-config)        EditConfig; exit 0 ;;
+            --dump-options)       DumpOptions; exit 0 ;;
+            --show-cycles)        grep POWER_SUPPLY_CYCLE_COUNT /sys/class/power_supply/BAT1/uevent | cut -d'=' -f2
+                                  exit 0
+                                  ;;
+            --help | -h)          Usage; exit 0 ;;
+            --)                   shift; break ;;
+            *)                    DIE "unsupported parameter '$1'" ;;
         esac
         shift
     done
@@ -83,6 +111,7 @@ Flags: --charge-sleep      Sets sleep time (seconds) between checks when chargin
        --no-reread-conf    Read the config file only at start.
        --power-device-info File path for the power device info.
        --keep-showing-max  Keep notifying after reaching the max charge.
+       --show-cycles       Show charging cycle count.
        --sound-file        Set the sound file path for the notification.
 EOF
 }
@@ -122,7 +151,7 @@ EditConfig() {
     for ed in "${editors[@]}" ; do
         if which ${ed%% *} &> /dev/null ; then
             $ed "$conf"
-            exit 0
+            return 0
         fi
     done
     DIE "editor not found"
@@ -177,27 +206,12 @@ Main() {
 
     for arg in "$@" ; do
         case "$arg" in
-            --edit-config)         EditConfig ;;
-            --help | -h)           Usage; exit 0 ;;
-            --is-running)          check_is_running=yes ;;
-            --no-reread-conf)      reread_conf=no ;;
-            --dump-options)
-                local -r FLAGS=(
-                    --charge-sleep
-                    --discharge-sleep
-                    --dump-options
-                    --edit-config
-                    --is-running
-                    --keep-showing-max
-                    --max
-                    --min
-                    --no-reread-conf
-                    --power-device-info
-                    --sound-file
-                )
-                printf "%s\n" "${FLAGS[@]}"
-                exit 0
-                ;;
+            --help | -h)           Options $arg ;;
+            --edit-config)         Options $arg ;;
+            --show-cycles)         Options $arg ;;
+            --no-reread-conf)      Options $arg ;;
+            --is-running)          Options $arg ;;
+            --dump-options)        Options $arg ;;
         esac
     done
 
