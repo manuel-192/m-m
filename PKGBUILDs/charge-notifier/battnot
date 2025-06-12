@@ -59,7 +59,7 @@ DumpOptions() {
 
 Options() {
     local lopts="charge-sleep:,discharge-sleep:,dump-options,edit-config,help,is-running,keep-showing-max,max:,min:"
-    lopts+=",no-reread-conf,power-device-info:,show-cycles,sound-file:"
+    lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:"
     local sopts="h"
     local opts
 
@@ -84,7 +84,7 @@ Options() {
             # these exit:
             --edit-config)        EditConfig; exit 0 ;;
             --dump-options)       DumpOptions; exit 0 ;;
-            --show-cycles)        grep POWER_SUPPLY_CYCLE_COUNT /sys/class/power_supply/BAT1/uevent | cut -d'=' -f2
+            --cycles)             grep POWER_SUPPLY_CYCLE_COUNT /sys/class/power_supply/BAT1/uevent | cut -d'=' -f2
                                   exit 0
                                   ;;
             --help | -h)          Usage; exit 0 ;;
@@ -111,7 +111,7 @@ Flags: --charge-sleep      Sets sleep time (seconds) between checks when chargin
        --no-reread-conf    Read the config file only at start.
        --power-device-info File path for the power device info.
        --keep-showing-max  Keep notifying after reaching the max charge.
-       --show-cycles       Show charging cycle count.
+       --cycles            Show charging cycle count.
        --sound-file        Set the sound file path for the notification.
 EOF
 }
@@ -208,7 +208,7 @@ Main() {
         case "$arg" in
             --help | -h)           Options $arg ;;
             --edit-config)         Options $arg ;;
-            --show-cycles)         Options $arg ;;
+            --cycles)              Options $arg ;;
             --no-reread-conf)      Options $arg ;;
             --is-running)          Options $arg ;;
             --dump-options)        Options $arg ;;
