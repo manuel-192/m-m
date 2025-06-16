@@ -18,17 +18,24 @@ Main3()
     local pagedata retval
     local item=$(echo "$url" | sed 's|https://github\.com/||')
     local -r space="-45"
+    local mode
+
+    case "$url" in
+        */issues) mode=issues ;;
+        */pulls)  mode=pull-requests ;;
+    esac
 
     pagedata=$(< "$file")
     retval=$?
     [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
-    local issue_numbers=$(echo "$pagedata" | grep -E '^<div id="issue_[0-9]+' | sed -E 's|^<div id="issue_([0-9]+)".*|\1|')
+    # local issue_numbers=$(echo "$pagedata" | grep -E '^<div id="issue_[0-9]+' | sed -E 's|^<div id="issue_([0-9]+)".*|\1|')
+    local issue_numbers=$(echo "$pagedata" | grep ${mode}-repo-tab-count | sed -E 's|.*"Counter">([0-9]+)<.*|\1|')
     local issue_text
     local nr
 
     printf "%${space}s: " "$item"
 
-    if [ -z "$issue_numbers" ] ; then
+    if [ -z "$issue_numbers" ] || [ $issue_numbers -eq 0 ] ; then
         Result yes "-"
         return
     fi
@@ -39,10 +46,15 @@ Main3()
         issue_text=$(echo "$pagedata" | sed -n "/^<div id=\"issue_$nr\"/,/^<\/div>$/p")
         comments="$(echo "$issue_text" | grep -E 'Link--muted.*"[0-9]+ comment' | sed -E 's|.*aria-label="([0-9]+).*|\1|')"
         interesting_urls+=("$url/$nr")
-        case "$comments" in
-            "") Result $first "#$nr: no comments yet"    ;;
-            *)  Result $first "#$nr: $comments comments" ;;
-        esac
+        if true ; then
+            Result $first "$nr"
+        else
+            # currently not working...
+            case "$comments" in
+                "") Result $first "#$nr: no comments yet"    ;;
+                *)  Result $first "#$nr: $comments comments" ;;
+            esac
+        fi
         first=no
     done
 }
@@ -149,7 +161,7 @@ EOF
         for br in exo-open kde-open xdg-open
         do
             if [ -x /bin/$br ] ; then
-                $br "${interesting_urls[@]}"
+                # $br "${interesting_urls[@]}"      # not working...
                 break
             fi
         done
