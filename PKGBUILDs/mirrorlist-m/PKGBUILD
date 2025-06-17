@@ -3,17 +3,23 @@
 pkgname=mirrorlist-m
 pkgdesc="A mirror list for Manuel's packages at github."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=23
-pkgrel=2
+pkgver=25
+pkgrel=1
 arch=(any)
 license=(GPL)
 source=(
     $pkgname
+    ${pkgname}2
 )
-sha512sums=('de8f9cffc1e2141ef4198b26d44c6be229a9c941fba995e0820ef8ddab8ae057de758d76df6b0be0f87881e0e0cd528f3d0463c3033e1bd62c4b76941c6508f5')
+sha512sums=('a96de8c7532685e4c6829129cdad1ca93ef9e7ec7a170253ecf5e546c59dcb87b860b94b523eb91b1e88508da922cac830f9dd59787068a535ac26e990948a9e'
+            '617a768afb67a4d6b661a625b9603688b81af18c2b4e3590f95eb749451331b840a192c3a4899d60158d109048526a3ed79e65d8b218090ad7ba8fd4c8d031ce')
 
-backup=(etc/pacman.d/mirrorlist-m)
+backup=(
+    etc/pacman.d/mirrorlist-m
+    etc/pacman.d/mirrorlist-m2
+)
 
 package() {
-    install -Dm644 $pkgname    $pkgdir/etc/pacman.d/$pkgname
+    install -Dm644 $pkgname       $pkgdir/etc/pacman.d/$pkgname
+    install -Dm644 ${pkgname}2    $pkgdir/etc/pacman.d/${pkgname}2
 }
