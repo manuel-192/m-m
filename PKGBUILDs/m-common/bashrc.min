@@ -985,6 +985,21 @@ EOF
     reflector-simple() { _YADapp "/bin/reflector-simple" "$@" ; }
     eos-log-tool()     { _YADapp "/bin/eos-log-tool" "$@" ; }
 
+    webkit() {
+        local -r pkg=webkit2gtk-4.1
+        local install=no
+        case "$1" in
+            -i | --install) install=yes ;;
+        esac
+        if [ "$install" = "yes" ] || [ ! -d /usr/include/webkitgtk-4.1 ] ; then
+            echo " -> installing $pkg..." >&2
+            sudo pacman --noconfirm --needed -S $pkg &>/dev/null
+        else
+            echo " -> uninstalling $pkg..." >&2
+            sudo pacman --noconfirm -Rdd $pkg &>/dev/null
+        fi
+    }
+
     xfce4-terminal() {
         /bin/xfce4-terminal --geometry=150x25 "$@"
     }
