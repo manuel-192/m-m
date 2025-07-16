@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo2() { echo "$@" >&2 ; }
+echo2() { echo -e "$@" >&2 ; }
 DIE() {
     echo2 "$progname: error: $1"
     [ "$2" ] && exit "$2" || exit 1
@@ -41,16 +41,22 @@ FetchIsoFile() {
         *)  url="$URLBASE/$subdir/$file" ;;
     esac
 
-    echo2 "==> Downloading..."
     local targetopt=""
+
+    [ "$TARGETDIR" ] && file="$TARGETDIR/$file" || file="$PWD/$file"
+    cleanup_files+=("$file")
+
+    echo2 "\n==> Downloading to $file ...\n"
+
     case "$getter" in
         curl)
-            [ "$TARGETDIR" ] && targetopt="-o$TARGETDIR/$file"
-            /bin/curl --fail -m 300 --remote-name-all "$targetopt" -u "$HELLO" "$url" || exitcode=$?
+            targetopt="-o$file"
+            # targetopt+=" -m2000"
+            /bin/curl --fail -L "$targetopt" -u "$HELLO" "$url" || exitcode=$?     #  --remote-name-all
             [ $exitcode = 0 ] || DIE "downloading $url failed, exit code $exitcode from 'curl'" "$exitcode"
             ;;
         wget)
-            [ "$TARGETDIR" ] && targetopt="-O$TARGETDIR/$file"
+            targetopt="-O$file"
             /bin/wget -q "$targetopt" --show-progress --user "$ACCOUNT" --password "$PASSWORD" "$url" || exitcode=$?
             [ $exitcode = 0 ] || DIE "downloading $url failed, exit code $exitcode from 'wget'" "$exitcode"
             ;;
@@ -142,7 +148,7 @@ Options() {
         case "$1" in
             --)               shift;                                    break  ;;
             --dump-options)   DumpOptions;                              exit 0 ;;
-            --show-files)     Prepare; printf "%s\n" $(ShowFiles -q);   exit 0 ;;
+            --show-files)     ReadConfig; printf "%s\n" $(ShowFiles -q);   exit 0 ;;
             --edit-config)    EditFile "$configfile";                   exit 0 ;;
             -h | --help)      Usage;                                    exit 0 ;;
         esac
@@ -160,7 +166,7 @@ Options() {
     esac
 }
 
-Prepare() {
+ReadConfig() {
     [ "$URLBASE" ] && return
 
     # config file sets important values
@@ -179,7 +185,9 @@ Prepare() {
     else
         DIE "HELLO or ACCOUNT/PASSWORD have no proper value in $configfile2"
     fi
-    [ "$APP" ] && getter="$APP"
+    case "$APP" in
+        curl | wget) getter="$APP" ;;
+    esac
     [ "$TARGETDIR" ] || TARGETDIR="."
     [ -d "$TARGETDIR" ] || DIE "'$TARGETDIR' does not exist or is not a folder"
     [ -w "$TARGETDIR" ] || DIE "cannot write to TARGETDIR ($TARGETDIR)"
@@ -192,7 +200,13 @@ Prepare() {
     esac
 }
 
+Cleanup() {
+    [ "$cleanup_files" ] && rm -f "${cleanup_files[@]}"
+}
+
 Main() {
+    trap Cleanup SIGINT
+
     if [ -z "$XDG_DOWNLOAD_DIR" ] && [ -e "$HOME/.config/user-dirs.dirs" ] ; then
         source "$HOME/.config/user-dirs.dirs"
     fi
@@ -208,10 +222,11 @@ Main() {
     local file
     local datafile=/tmp/$progname.tmp   # remove this if new files should be available
     local getter=wget                   # curl or wget
+    local cleanup_files=()
 
     [ "$1" ] && Options "$@"
 
-    Prepare
+    ReadConfig
 
     local header
     local header_lines=(
