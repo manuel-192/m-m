@@ -32,7 +32,7 @@ GetPowerDevice() {
 
     case "$2" in
         "")
-            local -r files=($(/bin/ls /sys/class/power_supply/BAT*/uevent 2>/dev/null))
+            local -r files=($(/bin/ls $BAT/uevent 2>/dev/null))
             [ "$files" ] || DIE "no power device file found"
             local -r f=$(printf "%s\n" "${files[@]}" | fzf)
             [ "$f" ] || DIE "power device file not selected"
@@ -60,10 +60,13 @@ DumpOptions() {
 Options() {
     local lopts="charge-sleep:,discharge-sleep:,dump-options,edit-config,help,is-running,keep-showing-max,max:,min:"
     lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:"
+    if [ -e "$BAT/charge_control_end_threshold" ] ; then
+        lopts+=",ctrl-end-threshold-set:,ctrl-end-threshold-show"
+    fi
     local sopts="h"
     local opts
 
-    opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || { Usage; exit 1; }
+    opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname: error" -- "$@")" || { Usage; exit 1; }
     eval set -- "$opts"
 
     while [ "$1" ] ; do
@@ -84,9 +87,11 @@ Options() {
             # these exit:
             --edit-config)        EditConfig; exit 0 ;;
             --dump-options)       DumpOptions; exit 0 ;;
-            --cycles)             grep POWER_SUPPLY_CYCLE_COUNT /sys/class/power_supply/BAT1/uevent | cut -d'=' -f2
+            --cycles)             grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2
                                   exit 0
                                   ;;
+            --ctrl-end-threshold-set)  BatteryVariable set  charge_control_end_threshold "$2"; exit 0 ;;
+            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold "$2"; exit 0 ;;
             --help | -h)          Usage; exit 0 ;;
             --)                   shift; break ;;
             *)                    DIE "unsupported parameter '$1'" ;;
@@ -97,6 +102,7 @@ Options() {
 
 Usage() {
     cat <<EOF
+
 $progname: show recurring notifications when battery reaches the given max or min level.
 
 Usage: $progname [flags]
@@ -130,7 +136,7 @@ BATTNOT_CONFIG_CMDS=(
     --min                  22     # %
     --charge-sleep         60     # seconds
     --discharge-sleep      120    # seconds
-    --power-device-info    /sys/class/power_supply/BAT1/uevent
+    --power-device-info    '$BAT/uevent'
     --sound-file           /usr/share/sounds/Oxygen-Sys-Question.ogg
     # --keep-showing-max
 )
@@ -177,13 +183,66 @@ IsRunning() {
     fi
 }
 
+LimitedNumber() {
+    local -n _variable="$1"
+    local -r low="$2"
+    local -r def="$3"
+    local -r high="$4"
+    local limit="$_variable"
+
+    if [ -z "$limit" ] ; then              # is empty
+        limit=$def
+    elif [ "${limit//[0-9]/}" ] ; then     # has other then numbers
+        limit=$def
+    elif [ $limit -gt $high ] ; then       # is too high
+        limit=$def
+    elif [ $limit -lt $low ] ; then        # is too low
+        limit=$def
+    fi
+    _variable=$limit
+}
+HandleNumberValue() {
+    local -r low=$1
+    local -r def=$2
+    local -r high=$3
+
+    [ -e "$file" ] || {
+        echo2 "Sorry, '$file' is not available."
+        return 1
+    }
+    case "$mode" in
+        show)
+            cat "$file"
+            ;;
+        "set")
+            LimitedNumber limit $low $def $high
+            echo2 "Setting $var to $limit"
+            sudo bash -c "echo $limit > '$file'"
+            ;;
+    esac
+}
+
+BatteryVariable() {
+    local mode="$1"             # set or show
+    local var="$2"              # variable name
+    local limit="$3"            # some limit for $mode==set
+    local file="$BAT/$var"
+
+    # $low $def $high
+    case "$var" in
+        charge_control_end_threshold)   HandleNumberValue 80 90 100 ;;     # this is supported currently
+        charge_control_start_threshold) HandleNumberValue 30 30 50 ;;      # this is not supported currently
+    esac
+}
+
 Main() {
     local -r progname=${0##*/}
     local -r conf="$HOME/.config/$progname.conf"
     local -r conf2='~/.config/'"$progname"'.conf'
+    local -r BAT="$(/bin/ls -d /sys/class/power_supply/BAT* 2>/dev/null)"
     local max                   #=90
     local min                   #=22
-    local power_device          #=/sys/class/power_supply/BAT1/uevent
+    local power_device          #=$BAT/uevent
     local sound_file            #=/usr/share/sounds/Oxygen-Sys-Question.ogg
     local sleeptime_charging    #=60
     local sleeptime_discharging #=600
