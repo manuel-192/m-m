@@ -28,8 +28,6 @@ Main3()
     pagedata="$(< "$file")"
     retval=$?
     [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
-    # local issue_numbers=$(echo "$pagedata" | grep -E '^<div id="issue_[0-9]+' | sed -E 's|^<div id="issue_([0-9]+)".*|\1|')
-    # local issue_numbers=$(echo "$pagedata" | grep ${mode}-repo-tab-count | sed -E 's|.*"Counter">([0-9]+)<.*|\1|')
     local issue_numbers="$(echo "$pagedata" | grep "$item/" | sed -E "s|.+$item/([0-9]+).+|\1|")"
     local nr
 
