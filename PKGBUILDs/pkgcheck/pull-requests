@@ -25,12 +25,12 @@ Main3()
         */pulls)  mode=pull-requests ;;
     esac
 
-    pagedata=$(< "$file")
+    pagedata="$(< "$file")"
     retval=$?
     [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
     # local issue_numbers=$(echo "$pagedata" | grep -E '^<div id="issue_[0-9]+' | sed -E 's|^<div id="issue_([0-9]+)".*|\1|')
-    local issue_numbers=$(echo "$pagedata" | grep ${mode}-repo-tab-count | sed -E 's|.*"Counter">([0-9]+)<.*|\1|')
-    local issue_text
+    # local issue_numbers=$(echo "$pagedata" | grep ${mode}-repo-tab-count | sed -E 's|.*"Counter">([0-9]+)<.*|\1|')
+    local issue_numbers="$(echo "$pagedata" | grep "$item/" | sed -E "s|.+$item/([0-9]+).+|\1|")"
     local nr
 
     printf "%${space}s: " "$item"
@@ -41,13 +41,14 @@ Main3()
     fi
 
     local first=yes
+    local payload comments
 
     for nr in $issue_numbers ; do
-        issue_text=$(echo "$pagedata" | sed -n "/^<div id=\"issue_$nr\"/,/^<\/div>$/p")
-        comments="$(echo "$issue_text" | grep -E 'Link--muted.*"[0-9]+ comment' | sed -E 's|.*aria-label="([0-9]+).*|\1|')"
         interesting_urls+=("$url/$nr")
+        payload="$(curl -Lsm 20 "$url/$nr" | grep '"payload"')"
+        comments="$(echo "$payload" | sed -E 's|[^{]+(\{.*\}).+|\1|' | jq | grep userInteractionCount | awk '{print $NF}')"
         if true ; then
-            Result $first "$nr"
+            Result $first "${mode:: -1} #$nr: $comments comments"
         else
             # currently not working...
             case "$comments" in
