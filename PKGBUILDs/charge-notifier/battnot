@@ -107,18 +107,24 @@ $progname: show recurring notifications when battery reaches the given max or mi
 
 Usage: $progname [flags]
 
-Flags: --charge-sleep      Sets sleep time (seconds) between checks when charging.
-       --discharge-sleep   Sets sleep time (seconds) between checks when discharging.
-       --dump-options      Show all flags.
-       --edit-config       Edit the user configuration file $conf2.
-       --is-running        Only check if this app is running already.
-       --max               Start notifications when battery reaches this percentage while charging.
-       --min               Start notifications when battery reaches this percentage while discharging.
-       --no-reread-conf    Read the config file only at start.
-       --power-device-info File path for the power device info.
-       --keep-showing-max  Keep notifying after reaching the max charge.
-       --cycles            Show charging cycle count.
-       --sound-file        Set the sound file path for the notification.
+Flags: --charge-sleep             Sets sleep time (seconds) between checks when charging.
+       --discharge-sleep          Sets sleep time (seconds) between checks when discharging.
+       --dump-options             Show all flags.
+       --edit-config              Edit the user configuration file $conf2.
+       --is-running               Only check if this app is running already.
+       --max                      Start notifications when battery reaches this percentage while charging.
+       --min                      Start notifications when battery reaches this percentage while discharging.
+       --no-reread-conf           Read the config file only at start.
+       --power-device-info        File path for the power device info.
+       --keep-showing-max         Keep notifying after reaching the max charge.
+       --cycles                   Show charging cycle count.
+       --sound-file               Set the sound file path for the notification.
+EOF
+
+    [ -e "$BAT/charge_control_end_threshold" ] || return
+    cat <<EOF
+       --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop).
+       --ctrl-end-threshold-show  Show the defined percentage when charging stops.
 EOF
 }
 
@@ -132,7 +138,7 @@ CreateConfigIfNeeded() {
 ## Tip: to re-create the config file, remove file $conf2.
 #
 BATTNOT_CONFIG_CMDS=(
-    --max                  90     # %
+    --max                  $max   # %
     --min                  22     # %
     --charge-sleep         60     # seconds
     --discharge-sleep      120    # seconds
@@ -186,10 +192,15 @@ IsRunning() {
 LimitedNumber() {
     local -n _variable="$1"
     local -r low="$2"
-    local -r def="$3"
+    local def="$3"
     local -r high="$4"
     local limit="$_variable"
 
+    if [ $def -gt $high ] ; then         # default is too high
+        def=$high
+    elif [ $def -lt $low ] ; then        # default is too low
+        def=$low
+    fi
     if [ -z "$limit" ] ; then              # is empty
         limit=$def
     elif [ "${limit//[0-9]/}" ] ; then     # has other then numbers
@@ -230,8 +241,8 @@ BatteryVariable() {
 
     # $low $def $high
     case "$var" in
-        charge_control_end_threshold)   HandleNumberValue 80 90 100 ;;     # this is supported currently
-        charge_control_start_threshold) HandleNumberValue 30 30 50 ;;      # this is not supported currently
+        charge_control_end_threshold)   HandleNumberValue 80 $max_stop 100 ;;     # this is supported currently
+        charge_control_start_threshold) HandleNumberValue 20 30 50 ;;             # this is not supported currently
     esac
 }
 
@@ -240,7 +251,8 @@ Main() {
     local -r conf="$HOME/.config/$progname.conf"
     local -r conf2='~/.config/'"$progname"'.conf'
     local -r BAT="$(/bin/ls -d /sys/class/power_supply/BAT* 2>/dev/null)"
-    local max                   #=90
+    local max_stop=90
+    local max=$max_stop         #=90
     local min                   #=22
     local power_device          #=$BAT/uevent
     local sound_file            #=/usr/share/sounds/Oxygen-Sys-Question.ogg
