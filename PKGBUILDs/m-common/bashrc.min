@@ -1427,8 +1427,8 @@ EOF
 
     # Alias Build-asdeps       "Build --pacman='--asdeps'"
     Alias bat                "bat --style=number"
+    Alias chl                "arch-changelog"
     Alias ci                 "ci -u"
-    Alias cl                 "arch-changelog"
     Alias cls                "clear"
     Alias codium             "codium -n"
     Alias complete-packages  "complete -F _complete-packages_"
