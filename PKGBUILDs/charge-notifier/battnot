@@ -271,18 +271,22 @@ Main() {
     local -r sleeptime_def=10
     local sleeptime=$sleeptime_def
     local arg
+    local args=("$@")
+    local ix
 
     CreateConfigIfNeeded
     source "$conf"
 
-    for arg in "$@" ; do
+    for ((ix=0; ix < ${#args[@]}; ix++)) ; do
+        arg="${args[$ix]}"
         case "$arg" in
-            --help | -h)           Options $arg ;;
-            --edit-config)         Options $arg ;;
-            --cycles)              Options $arg ;;
-            --no-reread-conf)      Options $arg ;;
-            --is-running)          Options $arg ;;
-            --dump-options)        Options $arg ;;
+            --help | -h |\
+            --edit-config |\
+            --cycles |\
+            --no-reread-conf |\
+            --is-running |\
+            --dump-options |\
+            --ctrl-end-threshold-show) Options $arg ;;
         esac
     done
 
