@@ -28,12 +28,12 @@ Main3()
     pagedata="$(< "$file")"
     retval=$?
     [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
-    local issue_numbers="$(echo "$pagedata" | grep "$item/" | sed -E "s|.+$item/([0-9]+).+|\1|")"
+    local issue_numbers="$(echo "$pagedata" | sed 's| href=|\nhref=|g' | grep "$item/" | sed -E "s|.+$item/([0-9]+).+|\1|")"
     local nr
 
     printf "%${space}s: " "$item"
 
-    if [ -z "$issue_numbers" ] || [ $issue_numbers -eq 0 ] ; then
+    if [ -z "$issue_numbers" ] ; then
         Result yes "-"
         return
     fi
@@ -44,7 +44,12 @@ Main3()
     for nr in $issue_numbers ; do
         interesting_urls+=("$url/$nr")
         payload="$(curl -Lsm 20 "$url/$nr" | grep '"payload"')"
-        comments="$(echo "$payload" | sed -E 's|[^{]+(\{.*\}).+|\1|' | jq | grep userInteractionCount | awk '{print $NF}')"
+        comments="$(echo "$payload" | sed -E 's|[^{]+(\{.*\}).+|\1|' | jq)"
+        if echo "$comments" | grep userInteractionCount >/dev/null ; then
+            comments="$(echo "$comments" | grep userInteractionCount | awk '{print $NF}')"
+        else
+            comments="$(echo "$comments" | grep "$nr#issuecomment" | wc -l)"
+        fi
         if true ; then
             Result $first "${mode:: -1} #$nr: $comments comments"
         else
@@ -103,31 +108,13 @@ Main1() {
 Main() {
     local -r progname=${0##*/}
     local -r targetdir=$(mktemp -d)
-
-    local urls_e=(
-        https://github.com/endeavouros-team/PKGBUILDS
-        https://github.com/endeavouros-team/eos-bash-shared
-        https://github.com/endeavouros-team/welcome
-        https://github.com/endeavouros-team/eos-pkgbuild-setup
-        https://github.com/endeavouros-team/ISO-hotfixes
-        https://github.com/endeavouros-team/Important-news
-        https://github.com/endeavouros-team/EndeavourOS-ISO
-        # https://github.com/endeavouros-team/repo
-
-        # https://github.com/endeavouros-team/User-contributions
-    )
-    local urls_m=(
-        # https://github.com/rogalmic/vscode-bash-debug
-
-        https://github.com/manuel-192/m-m
-        https://github.com/manuel-192/m-aur2
-        https://github.com/manuel-192/m-more2
-    )
     local interesting_urls=()
     local show_interesting_urls=yes
     local url
     local br
     local who=b
+
+    source ~/.config/$progname.conf
 
     while [ "$1" ] ; do
         case "$1" in
