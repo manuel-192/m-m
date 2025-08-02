@@ -982,7 +982,7 @@ EOF
     }
     welcome()          { _YADapp "/bin/eos-welcome -1" "$@" ; }
     akm()              { _YADapp "/bin/akm --no-progress --quiet" "$@" ; }
-    reflector-simple() { _YADapp "/bin/reflector-simple" "$@" ; }
+    #reflector-simple() { _YADapp "/bin/reflector-simple" "$@" ; }
     eos-log-tool()     { _YADapp "/bin/eos-log-tool" "$@" ; }
 
     webkit() {
