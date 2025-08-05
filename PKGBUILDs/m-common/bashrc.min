@@ -990,6 +990,8 @@ EOF
         local install=no
         case "$1" in
             -i | --install) install=yes ;;
+            -s | --status)  [ -d /usr/include/webkitgtk-4.1 ] && echo $pkg installed || echo $pkg not installed; return ;;
+            -h | --help)    echo "Usage: $FUNCNAME [ --help | --install | --status | -h | -i | -s ]"; return ;;
         esac
         if [ "$install" = "yes" ] || [ ! -d /usr/include/webkitgtk-4.1 ] ; then
             echo " -> installing $pkg..." >&2
