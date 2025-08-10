@@ -1,0 +1,36 @@
+#!/bin/bash
+
+opt_Zu() {
+    # open the $URL in PKGBUILD for $pkgname(s)
+    shift
+    exo-open $(expac -S %u "$@")
+    exit
+}
+
+Usage() {
+    cat <<EOF
+Usage:      $progname [options] [pacman-options] [parameters]
+Options:    -Zu    Open the URL for pkgname(s).
+Example:    $progname -Zu firefox libreoffice-fresh
+
+EOF
+}
+
+Main() {
+    local progname=${0##*/}
+    local args=("$@")
+
+    # handle options not in pacman or that have additions to them
+    while [ "$1" ] ; do
+        case "$1" in
+            -Zu) opt_Zu "$@" ;;
+            -h | --help) Usage ;;
+        esac
+        shift
+    done
+
+    # run pacman normally
+    pacman-ext "${args[@]}"
+}
+
+Main "$@"

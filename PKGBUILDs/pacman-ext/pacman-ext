@@ -374,6 +374,7 @@ Usage:       $progname
              -v, --verbose            Be more verbose, show commands etc.
              -c, --connection-check   Check internet connection first.
              -d, --show-descriptions  Show the descriptions of the updated packages.
+             -Zurl                    Show the PKGBUILD URL of the given package name.
 
 If no parameter is provided, install updates only if available.
 The <option1> must be used as the *only* parameter on the command line.
@@ -471,7 +472,7 @@ Main() {
                 BANNER_INITIAL=no
                 ;;
             --show-native-options)
-                echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd --build --show-native-options --connection-check $arg"
+                echo "--aur --paru --yay --downgrade --dg --no-banner --wait-enter --show-cmd --build --show-native-options --connection-check -Zurl $arg"
                 exit
                 ;;
             --build)
@@ -499,6 +500,23 @@ Main() {
             -c | --connection-check)
                 echo2 "Checking internet connection..."
                 eos-connection-checker || DIE "no internet connection!"
+                ;;
+            -Zurl)
+                shift
+                local uu
+                if [ "$1" ] ; then
+                    local aur=paru                       # paru knows 'vscodium', yay doesn't !!
+                    [ -x /bin/$aur ] || aur=yay
+                    [ -x /bin/$aur ] || DIE "aur helper not found"
+                    uu="$(expac %u "$1")"
+                    [ "$uu" ] || uu="$($aur -Si "$1" 2>/dev/null | grep ^URL | awk '{print $NF}')"
+                    [ "$uu" ] || DIE "$1 URL not found"
+                    xdg-open "$uu"
+                    exit $?
+                else
+                    DIE "option $arg needs a package name"
+                    exit 1
+                fi
                 ;;
             *)
                 args+=("$arg")
