@@ -934,7 +934,7 @@ EOF
 
     p() {
         local param=""
-        [ "$1" ] || param="-Syu -d"
+        [ "$1" ] || param="-Syu"  # -d"
         pacman-ext --no-banner $param "$@"
     }
     # syu()  { p -${FUNCNAME^} ; }
