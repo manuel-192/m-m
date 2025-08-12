@@ -3,6 +3,12 @@
 echo2() { echo -e "$@" >&2; }
 DIE()   { echo2 "$progname: error: $1"; exit 1; }
 
+Red()     { echo -en $'\e[0;91m' ; }
+Green()   { echo -en $'\e[0;92m' ; }
+Blue()    { echo -en $'\e[0;94m' ; }
+Magenta() { echo -en $'\e[0;95m' ; }
+Reset()   { echo -en $'\e[0m' ; }
+
 Result() {
     local first="$1"
     case "$first" in
@@ -69,7 +75,7 @@ AtomicCurl() {
     curl "$@"
 }
 
-Main2() {
+Main2_old() {
     local ix=0
     local urls=() url
 
@@ -84,6 +90,49 @@ Main2() {
     for url in "$@" ; do
         Main3 "$url/issues" "$targetdir/$((ix++))"
         Main3 "$url/pulls"  "$targetdir/$((ix++))"
+    done
+}
+MsgHandle() {
+    local url="$1"
+    local type
+    local msgtype=""
+    declare -A msgs
+    local header=no
+    local dir=${url##*/}
+
+    cd "$dir" >/dev/null
+    msgs[issue]=""
+    msgs[pr]=""
+    for type in issue pr ; do
+        case "$type" in
+            issue) msgtype="issues";;
+            pr)    msgtype="pull requests" ;;
+        esac
+        msg="$(gh $type list)"
+        case "$msg" in
+            "no open $msgtype in "* | "")
+                msgs[$type]=""
+                ;;
+            *)
+                msgs[$type]="$msg"
+                if [ $header = no ] ; then
+                    Green
+                    echo "======================================= $PWD =========================================" >&2
+                    Reset
+                    header=yes
+                fi
+                ;;
+        esac
+    done
+
+    [ "${msgs[issue]}" ] && { echo -e "==> Issues:\n${msgs[issue]}"; }
+    [ "${msgs[pr]}"    ] && { echo -e "==> Pulls:\n${msgs[pr]}";    }
+}
+
+Main2() {
+    local url msg
+    for url in "$@" ; do
+        MsgHandle "$url"
     done
 }
 
