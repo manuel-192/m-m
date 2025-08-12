@@ -25,11 +25,12 @@ USB_all_infos()
     [ "$info" ] || return 1
 
     case "$options" in
-        "1")   echo "$info" | awk '{printf "%-10s\n", $1}';;
-        "2")   echo "$info" | awk '{printf "%-10s %7s\n", $1, $2}';;
-        "3")   echo "$info" | awk '{printf "%-10s %7s %s\n", $1, $2, $3}';;
-        "4"|*) echo "$info" | awk '{printf "%-10s %7s %s %s\n", $1, $2, $3, $4}';;
+        "1")   info="$(echo "$info" | awk '{printf "%-10s\n", $1}')" ;;
+        "2")   info="$(echo "$info" | awk '{printf "%-10s %7s\n", $1, $2}')" ;;
+        "3")   info="$(echo "$info" | awk '{printf "%-10s %7s %s\n", $1, $2, $3}')" ;;
+        "4"|*) info="$(echo "$info" | awk '{printf "%-10s %7s %s %s\n", $1, $2, $3, $4}')" ;;
     esac
+    echo "$info"
     return 0
 }
 
@@ -44,7 +45,7 @@ USB_generation()
 {
     local vendor="$1"
     local lines=7        # usb-devices lines for one entry, minus one
-    local speed=$(usb-devices | grep -B$lines "Driver=usb-storage" | grep -B$lines "Manufacturer=$vendor" | grep 'Spd=' | sed 's|^.*Spd=\([0-9]*\).*$|\1|')
+    local speed=$(usb-devices 2>/dev/null | grep -B$lines "Driver=usb-storage" | grep -B$lines "Manufacturer=$vendor" | grep 'Spd=' | sed 's|^.*Spd=\([0-9]*\).*$|\1|')
     case "$speed" in
         480)  echo "2.0" ;;
         5000) echo "3.0" ;;

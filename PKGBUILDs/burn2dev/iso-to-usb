@@ -108,9 +108,9 @@ target-USB-device       USB drive device name, e.g. /dev/sde
 ISO-file                Path to ISO file to be burned to the USB drive
 
 Options:
-      --help     | -h   This help.
-      --list-all | -a   List all USB drives.
-      --list     | -l   List all unmounted USB drives.
+      --help, -h             This help.
+      --list-all, -a         List all USB drives.
+      --list-unmounted, -u   List all unmounted USB drives.
 
 EOF
     ShowAvailableUsbDrives
