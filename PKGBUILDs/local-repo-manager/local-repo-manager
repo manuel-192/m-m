@@ -479,6 +479,9 @@ EOF
 Main() {
     local progname="local-repo-manager"
     local conf="/etc/$progname.conf"
+    local errlog="$HOME/.cache/$progname.errlog"
+
+    wget --timeout 10 -qO /tmp/foobar https://aur.archlinux.org/packages || DIELINE "AUR is not available!"
 
     unset -f pkgver
 
@@ -500,7 +503,6 @@ Main() {
     local pkgbuilddir="$repodir/PKGBUILDS"                # contains temporary AUR dirs
     local localroot="$repodir/LOCAL"                      # contains permanent local dirs, don't delete any!
     local buildlog="$HOME/.cache/$progname.buildlog"
-    local errlog="$HOME/.cache/$progname.errlog"
     local build_needed=()
     local changelog_pkgs=()
     local show_changelog=no
