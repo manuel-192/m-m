@@ -264,6 +264,7 @@ Options:
     --reponames              Show names of supported repos and folders.
     -c, --changelog          Show the changelog of a package, if available.
     -T, --fetch-timeout "X"  X is a timeout (in seconds) for starting to fetch packages.
+    --aur-delay=*            Pass this parameter as-is to assets.make.
     -C, --commit             Does: git {add,commit,push} to github. Asks possible comment for 'commit', otherwise defaults.
                              Note: make sure PKGBUILD is a hardlink if needed!
 EOF
@@ -291,7 +292,7 @@ EOF
                 op+=" --dump-options --dump-options-single --editme --help -h --reponames --pulls --pulls-e --pulls-m"
                 op+=" --check-all --quick-check --assets.conf-check --assets.conf-e --assets.conf-m"
                 op+=" --extras --pkgdb --changelog --changelog-modified --mirrorlist-arch --mirrorcheck"
-                op+=" -T --fetch-timeout -C --commit --local-repo"
+                op+=" -T --fetch-timeout -C --commit --local-repo --aur-delay"
                 echo "$op"
                 return
                 ;;
@@ -301,6 +302,9 @@ EOF
                 ;;
             --fetch-timeout=* | -T=*)
                 cmd_options+=" -T=${1#*=}"
+                ;;
+            --aur-delay=*)
+                cmd_options+=" $1"
                 ;;
             -T*)
                 cmd_options+=" -T=${1:2}"
