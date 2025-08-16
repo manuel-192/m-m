@@ -481,7 +481,7 @@ Main() {
     local conf="/etc/$progname.conf"
     local errlog="$HOME/.cache/$progname.errlog"
 
-    wget --timeout 10 -qO /tmp/foobar https://aur.archlinux.org/packages || DIELINE "AUR is not available!"
+    is-aur-available --minutes=10 || DIELINE "AUR is not available!"
 
     unset -f pkgver
 
