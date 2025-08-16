@@ -1473,7 +1473,7 @@ EOF
     AliasIfType  grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
     AliasIfWhich expacol        expac        expacol
-    AliasIfWhich pb             pb           "pb -nn -T0"
+    AliasIfWhich pb             pb           "pb -nn --aur-delay=10m -T0"
     AliasIfWhich pb             pp           "pb"
 
     Unalias l
