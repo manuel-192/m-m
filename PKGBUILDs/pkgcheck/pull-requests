@@ -75,6 +75,28 @@ AtomicCurl() {
     curl "$@"
 }
 
+MsgHandle() {
+    local url="$1"
+    local type
+    local msg
+    declare -A msgs
+    local dir=${url##*/}
+
+    cd "$dir" >/dev/null
+    msgs[issue]=""
+    msgs[pr]=""
+    Green
+    echo "======================================= ${PWD##*/} =========================================" >&2
+    Reset
+    for type in issue pr ; do
+        case "$type" in
+            issue) echo "Issues:" ;;
+            pr)    echo "Pulls:"  ;;
+        esac
+        gh $type list --json title,updatedAt | jq -c .[] | sed -E -e 's/^\{"title"://' -e 's/"updatedAt"://' -e 's/}$//' -e 's/","/"|"/' | tr -d '"' | sed 's|^|    |'
+    done | column -t -s'|'
+}
+
 Main2_old() {
     local ix=0
     local urls=() url
@@ -91,42 +113,6 @@ Main2_old() {
         Main3 "$url/issues" "$targetdir/$((ix++))"
         Main3 "$url/pulls"  "$targetdir/$((ix++))"
     done
-}
-MsgHandle() {
-    local url="$1"
-    local type
-    local msgtype=""
-    declare -A msgs
-    local header=no
-    local dir=${url##*/}
-
-    cd "$dir" >/dev/null
-    msgs[issue]=""
-    msgs[pr]=""
-    for type in issue pr ; do
-        case "$type" in
-            issue) msgtype="issues";;
-            pr)    msgtype="pull requests" ;;
-        esac
-        msg="$(gh $type list)"
-        case "$msg" in
-            "no open $msgtype in "* | "")
-                msgs[$type]=""
-                ;;
-            *)
-                msgs[$type]="$msg"
-                if [ $header = no ] ; then
-                    Green
-                    echo "======================================= $PWD =========================================" >&2
-                    Reset
-                    header=yes
-                fi
-                ;;
-        esac
-    done
-
-    [ "${msgs[issue]}" ] && { echo -e "==> Issues:\n${msgs[issue]}"; }
-    [ "${msgs[pr]}"    ] && { echo -e "==> Pulls:\n${msgs[pr]}";    }
 }
 
 Main2() {
