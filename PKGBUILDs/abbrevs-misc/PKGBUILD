@@ -5,8 +5,8 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.2
-pkgrel=2
+pkgver=25.8
+pkgrel=1
 
 arch=('any')
 license=('GPL')
@@ -30,6 +30,8 @@ source=(
     $url/expacol
     $url/firefox
     $url/firefox-developer-edition
+    $url/gitcl
+    $url/gitcl.bash-completion
 #    $url/history-del
     $url/home-cache-clear
     $url/kde-open
@@ -59,6 +61,8 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '07fd5bd24237371ce471be7b9471145d176692fa163498da501d90002abfbb5a91a53a62c974b55e894e3f82dfb6060e0c3ad6dcacf27cc0857435052f9414c1'
             '2ecf9ea9850e65c2b8c2975b87f711b38f7f24c0e50677ae52e55675037b69a2ebec950fdc71968b4643db8b98ce5abe9422155a6095836144696dbcd8aa1a05'
             '2ecf9ea9850e65c2b8c2975b87f711b38f7f24c0e50677ae52e55675037b69a2ebec950fdc71968b4643db8b98ce5abe9422155a6095836144696dbcd8aa1a05'
+            '896166fc560dd74e33ccfbf25848794a1d5fbfb583ec051a6cb27316233c4da4a2bd13fac231ef0f5d3d14719ba54d8ef3e39cbae03013a0ad7d4c27663576fc'
+            'df95adc37200274983b34216a0f8f037f76dc13c21982665b700134ea46e422c3e68c21e431209235d926b3e78be9fbf01995d3b1db76c48cb710e61655a9a3d'
             'd4f9533bd2d4bf5ff1209610ce3457a1015d1674e1e7ba7951901a2d9a49a4cc41e8a7b97c112cfb3786cbcc7df0346a26898a17d9d3c23c461201a16415a770'
             '684c0e594c8638f29727e7c92fd4d60027fca678868ee608da5c19d262fc30ba3575d46db8da606269310a9d58d50bcfea7ed53650eb33c959f2df5fdaeed2cc'
             'a11555f730b27ed040102ef2408e64ae5212f479f58c89ea54f91b6bd14b9cce9d56541904022d6dd3613334808f0bd1de87fb54edb402446a65e2e8078e1b20'
@@ -80,12 +84,15 @@ package() {
     for item in "${source[@]}" ; do
         item=${item##*/}
         case "$item" in
-            paccache-maintainer | shellcheck-nameref | packages-in-iso | expacol)
-                           install -Dm755 $item      $pkgdir/usr/bin/$item ;;
-            *.bash)        install -Dm644 $item      $pkgdir/etc/skel/$item ;;
-            *.completion)  install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.completion} ;;
             # sudo-for-all)  install -Dm755 $item      $pkgdir/usr/local/bin/sudo ;;
-            *)             install -Dm755 $item      $pkgdir/usr/local/bin/$item ;;
+            *.bash)
+                install -Dm644 $item      $pkgdir/etc/skel/$item ;;
+            paccache-maintainer | shellcheck-nameref | packages-in-iso | expacol)
+                install -Dm755 $item      $pkgdir/usr/bin/$item ;;
+            *.completion | *.bash-completion)
+                install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.*} ;;
+            *)
+                install -Dm755 $item      $pkgdir/usr/local/bin/$item ;;
         esac
     done
 }

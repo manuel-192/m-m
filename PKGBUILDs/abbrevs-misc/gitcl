@@ -1,0 +1,12 @@
+#!/bin/bash
+
+Main() {
+    case "$1" in
+        https://*) local url="$1" ;;
+        *)         local url="https://$1" ;;  # add prefix https:// if missing
+    esac
+    echo git clone "'$url'"
+    git clone "$url"
+}
+
+Main "$@"
