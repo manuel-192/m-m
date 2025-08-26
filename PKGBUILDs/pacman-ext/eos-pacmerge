@@ -51,7 +51,7 @@ Backup() {
     if [ $create_backup = yes ] ; then
         local file
         local bytes=0
-        local -r max=15000                                  # config files mostly < 10000 bytes, except e.g. locale.gen
+        local -r max=25000                                  # config files mostly < 10000 bytes, except e.g. locale.gen
 
         for file in $pacdiff_files ; do
             bytes=$(stat -c %s "${file%.*}")
