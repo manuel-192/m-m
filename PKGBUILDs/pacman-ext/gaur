@@ -1,0 +1,139 @@
+#!/bin/bash
+
+echo2() { echo -e "$@" >&2; }
+DIE()   { echo2 "$progname: error: $1"; exit 1; }
+WARN()  { echo2 "$progname: warning: $1"; }
+
+InDir() {
+    local ret=0
+    pushd "$1" >/dev/null || return 1
+    shift
+    if [ "$1" ] ; then
+        "$@" || ret=$?
+    else
+        ret=2
+    fi
+    popd >/dev/null
+    return $ret
+}
+
+Fetch() {
+    echo2 "FETCHING $*"
+    aur-pkgs-fetch "$@"
+}
+
+Build() {
+    echo2 "BUILDING"
+    local pkg
+    for pkg in "$@" ; do
+        echo2 -n "    $pkg: "
+        if InDir "$pkg" makepkg -cf "$pkg" &>/dev/null ; then
+            echo2 "OK"
+        else
+            echo2 "failed"
+        fi
+    done
+}
+
+Install() {
+    echo2 "INSTALLING"
+    local pkgs=() pkg
+    for pkg in "$@" ; do
+        pkgs+=( "./$pkg/${pkg}"*.zst )
+    done
+    sudo pacman -U "${pkgs[@]}"
+}
+
+Update() {
+    echo2 "UPDATING"
+    # echo2 fails. ; return 1
+    local infofile
+    local foreigners=()
+    local pkginfo pkgname verold vernew updates=() downgrades=()
+
+    infofile="$(aur-fetch-pkg-info --fetch --show-target-path)"
+    readarray -t foreigners <<< "$(pacman -Qm)"
+    for pkginfo in "${foreigners[@]}" ; do
+        pkgname=${pkginfo% *}
+        verold=${pkginfo#* }
+        # vernew="$(jq < "$infofile" | grep -A1 "\"PackageBase\": \"$pkgname\"" | grep '"Version"' | awk '{print $NF}' | tr -d '",')"
+        vernew="$(aur-fetch-pkg-info -v="$pkgname")"
+        if [ "$vernew" ] ; then
+            echo2 -n "    aur/$pkgname:\t"
+            local cmp
+            cmp="$(vercmp "$verold" "$vernew")"
+            if [ $cmp -eq 0 ] ; then
+                echo2 "OK ($verold)"                      # echo2 "$pkgname $verold"
+            elif [ $cmp -lt 0 ] ; then
+                echo2 "$verold -> $vernew"
+                updates+=("$pkgname")
+            else
+                echo2 "$verold -> $vernew"
+                downgrades+=("$pkgname")
+            fi
+        else
+            : # echo2 "    other/$pkgname"
+        fi
+    done
+    updates=(aurutils pacseek-bin)   # TESTING !!!
+    if [ "${updates}" ] ; then
+        echo2 "AUR updates:"
+        printf "%s\n" "${updates[@]}"
+        Gaur -fbi "${updates[@]}"
+    else
+        echo2 "No AUR updates."
+    fi
+    if [ "${downgrades}" ] ; then
+        echo2 "AUR downgrades:"
+        printf "%s\n" "${downgrades[@]}"
+    else
+        : # echo2 "No downgrades."
+    fi
+}
+
+Gaur() {
+    local progname=${0##*/}
+    local opts
+    local SOPTS="bfhiu"
+    local LOPTS="build,fetch,help,install,update"
+    local fetch=no
+    local build=no
+    local install=no
+    local update=no
+
+    opts=$(getopt -o=$SOPTS --longoptions $LOPTS --name "$progname" -- "$@") || exit 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -b | --build) build=yes ;;
+            -f | --fetch) fetch=yes ;;
+            -i | --install) install=yes ;;
+            -u | --update) update=yes ;;
+            --) shift; break ;;
+            -h | --help)
+                cat <<EOF
+Usage:   $progname {option} [package-names]
+Options: -f, --fetch    Fetch given package names from AUR into folder(s)./<package-name>.
+         -b, --build    Build given packages (assume they have been fetched).
+         -i, --install  Install given packages (assume they have been built).
+         -u, --update   Update installed AUR packages.
+         -h, --help     This help.
+EOF
+                echo2 "Usage: $progname {--fetch | --build | --install | --update | --help}"
+                return 0
+                ;;
+        esac
+        shift
+    done
+    if [ $update = yes ] ; then
+        Update "$@"
+        return $?
+    fi
+
+    [ $fetch   = yes ] && Fetch "$@"
+    [ $build   = yes ] && Build "$@"
+    [ $install = yes ] && Install "$@"
+}
+
+Gaur "$@"
