@@ -89,12 +89,15 @@ Update() {
         : # echo2 "No downgrades."
     fi
 }
+Search() {
+    jq < ~/.cache/packages-meta-v1.json | less
+}
 
 Gaur() {
     local progname=${0##*/}
     local opts
-    local SOPTS="bfhiu"
-    local LOPTS="build,fetch,help,install,update"
+    local SOPTS="bfhisu"
+    local LOPTS="build,fetch,help,install,search,update"
     local fetch=no
     local build=no
     local install=no
@@ -109,6 +112,7 @@ Gaur() {
             -f | --fetch) fetch=yes ;;
             -i | --install) install=yes ;;
             -u | --update) update=yes ;;
+            -s | --search) Search; return 0 ;;
             --) shift; break ;;
             -h | --help)
                 cat <<EOF
@@ -117,6 +121,7 @@ Options: -f, --fetch    Fetch given package names from AUR into folder(s)./<pack
          -b, --build    Build given packages (assume they have been fetched).
          -i, --install  Install given packages (assume they have been built).
          -u, --update   Update installed AUR packages.
+         -s, --search   Search for info about AUR packages.
          -h, --help     This help.
 EOF
                 echo2 "Usage: $progname {--fetch | --build | --install | --update | --help}"
