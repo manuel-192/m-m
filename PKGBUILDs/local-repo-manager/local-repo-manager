@@ -13,15 +13,20 @@ printf2v() { [ $verbose = yes ] && printf2 "$@" ; }
 
 ASSERT() { "$@" || DIE "'$*' failed" ; }
 DIE()    {
-    case "$2" in
-        "") local msg="$progname: error: $1" ;;
-        *)  local msg="$progname (L:$2): error: $1" ;;
+    local msg="$1"
+    local lineno="$2"
+
+    case "$lineno" in
+        "") msg="$progname: error: $msg" ;;
+        *)  msg="$progname (L:$2): error: $msg" ;;
     esac
 
     echo2 "$msg"
 
-    local date="$(date +%Y%m%d-%H%M)"
-    echo "$date: $msg" > "$errlog"
+    if [ $debugging = yes ] ; then
+        local date="$(date +%Y%m%d-%H%M)"
+        echo "$date: $msg" > "$errlog"
+    fi
     exit 1
 }
 DIELINE() { DIE "$1" "${BASH_LINENO[0]}" ; }
@@ -121,6 +126,17 @@ BuildPackages() {
     fi
 }
 
+GetAurPkgVersion() {
+    local -r pkgname="$1"
+    if [ -d "$AURSTORE/$pkgname" ] ; then
+        local pkgver=$(grep ^pkgver= "$AURSTORE/$pkgname/PKGBUILD" | cut -d'=' -f2)
+        local pkgrel=$(grep ^pkgrel= "$AURSTORE/$pkgname/PKGBUILD" | cut -d'=' -f2)
+        echo "${pkgver}-$pkgrel"
+    else
+        LANG=C yay Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}'   # yay does this faster than paru
+    fi
+}
+
 BuildNeeded() {
     # TODO: handle multipackage PKGBUILDs
 
@@ -142,8 +158,8 @@ BuildNeeded() {
             [ -n "$new_version" ] || DIELINE "cannot find the latest available version of package '$pkgname1'"
             ;;
         */aur | *)
-            new_version=$(LANG=C $helper_Sia "$pkgname" | grep -E "^Version[ ]+: " | awk '{print $NF}')
-            [ -n "$new_version" ] || DIELINE "'$helper_Sia' cannot find the latest available version of package '$pkgname1'"
+            new_version=$(GetAurPkgVersion "$pkgname")
+            [ -n "$new_version" ] || DIELINE "'GetAurPkgVersion' cannot find the latest available version of package '$pkgname1'"
             ;;
     esac
 
@@ -164,6 +180,19 @@ BuildNeeded() {
 
 FetchPkgbuilds() {
     FetchAurPackage() {
+        local pkg_name="$1"
+
+        if [ -d "$AURSTORE/$pkg_name" ] ; then
+            printf2v "...fetching"
+            ASSERT cp -r "$AURSTORE/$pkg_name" ./
+            echo2v "...done."
+            return
+        fi
+
+
+        local helper_Ga="yay -Ga"    # because yay is faster
+        [ -x /bin/${helper_Ga%% *} ] || helper_Ga="paru -Ga"
+
         printf2v "...fetching"
         ASSERT $helper_Ga "$1"
         echo2v "...done."
@@ -477,11 +506,14 @@ EOF
 }
 
 Main() {
-    local progname="local-repo-manager"
-    local conf="/etc/$progname.conf"
-    local errlog="$HOME/.cache/$progname.errlog"
+    local -r progname="local-repo-manager"
+    [ "$AURSRCDIR" ] || DIE "AURSRCDIR is empty"
+    local -r AURSTORE="$AURSRCDIR/local-repo"
+    [ -d "$AURSTORE" ] || DIE "$AURSTORE does not exist"
+    local -r conf="/etc/$progname.conf"
+    local -r errlog="$HOME/.cache/$progname.errlog"
 
-    is-aur-available --minutes=10 || DIELINE "AUR is not available!"
+    # is-aur-available --minutes=10 || DIELINE "AUR is not available!"
 
     unset -f pkgver
 
@@ -538,10 +570,6 @@ Main() {
     fi
 
     Options "${args[@]}"
-
-    local helper_Sia="yay -Sia"   # because yay does this faster than paru
-    local helper_Ga="paru -Ga"    # because yay does not detect failure as it should
-    [ -x /bin/paru ] || helper_Ga="yay -Ga"
 
     [ -n "$REPONAME" ]        || DIELINE "REPONAME in the config file is empty or not set"
     [ -n "$WORKDIR" ]         || DIELINE "WORKDIR is missing, cannot build packages"
