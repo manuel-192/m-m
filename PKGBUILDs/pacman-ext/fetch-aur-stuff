@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Usage: $progname <names-of-repos>
+
+echo2() { echo -e "$@" >&2; }
+DIE()   { echo2 "$progname: error: $1" ; exit 1; }
+WARN()  { echo2 "$progname: warning: $1" ; }
+
+ListPkgs() {
+    local -r assetsfile="$1"
+    source "$assetsfile" 2>/dev/null || DIE "$FUNCNAME: 'source $assetsfile' failed"
+    printf "%s\n" "${PKGNAMES[@]}" | grep /aur | sed 's|/aur.*||' | sort -u
+}
+
+Fetch() {
+    local -r reponame="$1"
+    [ "$reponame" ] || DIE "$FUNCNAME: reponame is empty"
+    shift
+    [ "$1" ]        || { WARN "$FUNCNAME: no packages listed"; return; }
+
+    echo2 "$reponame:"
+    mkdir -p "$reponame"
+    cd "$reponame" >/dev/null
+    aur-pkgs-fetch --verbose "$@"
+    cd - >/dev/null
+}
+
+Main() {
+    local progname=${0##*/}
+    local packages=()
+    local reponame
+
+    [ "$1" ]              || DIE "no reponames listed"
+    [ "$AURSRCDIR" ]      || DIE "variable AURSRCDIR is empty"
+    mkdir -p "$AURSRCDIR" || DIE "cannot create '$AURSRCDIR'"
+    cd "$AURSRCDIR"       || DIE "'cd $AURSRCDIR' failed"
+
+    for reponame in "$@" ; do
+        packages=( $(ListPkgs /etc/assets.conf.$reponame) )
+        Fetch "$reponame" "${packages[@]}"
+    done
+}
+
+Main "$@"
