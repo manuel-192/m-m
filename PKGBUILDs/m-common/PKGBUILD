@@ -4,7 +4,7 @@
 pkgname=m-common
 pkgdesc="Some common apps, libs, and settings."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.8.2
+pkgver=25.8.3
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -18,7 +18,7 @@ source=(
     $url/STOP
     $url/ReadWithTimeout
 )
-sha512sums=('317efbb580da2e05c2954fb6207b7e7c2469cb32ebd7446702281af2bcb67924a0b1a9c764cdf557fd0737843fa036cc128b5e6bccd4be20eb33fbdfa1dabad2'
+sha512sums=('e06fba0adc8761718c8b222dbf09b231659aa8c46501e52bf434f90f97c18e2a6c3f424d3d626f8dc99a537fae837223a753f46b7eaf12bb8d6b2ba262f87f5b'
             '745bc6d83bc333202eb70904a3daf7cc6f24db5bfecaaff0d9b21d0cfb747e103bdc750dbe516cce2553f2f2a35cebd08b6db1aa142777acb47de52c285db985'
             '8a93bcce7fc7a6f3c2d5d313dd416feaf3d3a00b328c4903f3bb733844010363089a1e25e99b2dea3eb81d482ad953fa6980c2296d43cb6f4717fff9992efad9'
             'cb7269ca55afca951c8ec872cd1bc8b7c0aebd9cde3c3e166da58bb4b65a0c8ccf9f5f4a00276e16cf822d56dea2ee71a20d8919b9f472ce77b68cc9564fb7d4'

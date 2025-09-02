@@ -26,9 +26,20 @@ Color() {
     local graynr
     local bright=yes       # yes=enable bright colors, no=disable them
 
+    # ad hoc generally useful "colors":
+    case "$color" in
+        "")      color=reset ;;
+        error)   color=red;    [ "$attr" ] || attr=bold ;;
+        info)    color=yellow; [ "$attr" ] || attr=bold ;;
+        warning) color=cyan;   [ "$attr" ] || attr=bold ;;
+    esac
+
     case "$color" in
         reset | normal | default)
             retval+='0m'
+            # printf "$retval"
+            # tput rmso
+            # return
             ;;
         *)
             case "$attr" in
@@ -127,7 +138,6 @@ Color() {
             esac
             ;;
     esac
-
 
     printf "$retval"
 }
