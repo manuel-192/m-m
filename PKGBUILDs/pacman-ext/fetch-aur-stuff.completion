@@ -1,0 +1,24 @@
+# bash completion for fetch-aur-stuff        -*- shell-script -*-
+
+_fetch-aur-stuff_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_fetch-aur-stuff_() 
+{
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        # --begin | --middle | --end) ;;
+        *)
+            # Handle all top-level parameters.
+            _fetch-aur-stuff_complete "endeavouros m-aur2 m-more2" ;;
+    esac
+} &&
+complete -F _fetch-aur-stuff_ fetch-aur-stuff
