@@ -1,8 +1,15 @@
 #!/bin/bash
 
 echo2() { echo -e "$@" >&2; }
-DIE()   { echo2 "$progname: error: $1"; exit 1; }
 WARN()  { echo2 "$progname: warning: $1"; }
+DIE()   {
+    Color error
+    echo2 "\n==> $progname: error: $1\n"
+    Color info
+    Gaur -h
+    Color reset
+    exit 1
+}
 
 InDir() {
     local ret=0
@@ -44,26 +51,29 @@ Install() {
     sudo pacman -U "${pkgs[@]}"
 }
 
+NotFromAUR() {
+    [ $verbose = yes ] && echo2 "foreign $1 is not from AUR"
+}
+
 Update() {
     echo2 "UPDATING"
-    # echo2 fails. ; return 1
     local infofile
     local foreigners=()
     local pkginfo pkgname verold vernew updates=() downgrades=()
 
     infofile="$(aur-fetch-pkg-info --fetch --show-target-path)"
-    readarray -t foreigners <<< "$(pacman -Qm)"
+    readarray -t foreigners <<< "$(pacman -Qm)"                    # list of installed foreign packages
+
     for pkginfo in "${foreigners[@]}" ; do
         pkgname=${pkginfo% *}
         verold=${pkginfo#* }
-        # vernew="$(jq < "$infofile" | grep -A1 "\"PackageBase\": \"$pkgname\"" | grep '"Version"' | awk '{print $NF}' | tr -d '",')"
         vernew="$(aur-fetch-pkg-info -v="$pkgname")"
         if [ "$vernew" ] ; then
             echo2 -n "    aur/$pkgname:\t"
             local cmp
             cmp="$(vercmp "$verold" "$vernew")"
             if [ $cmp -eq 0 ] ; then
-                echo2 "OK ($verold)"                      # echo2 "$pkgname $verold"
+                echo2 "OK ($verold)"
             elif [ $cmp -lt 0 ] ; then
                 echo2 "$verold -> $vernew"
                 updates+=("$pkgname")
@@ -72,7 +82,7 @@ Update() {
                 downgrades+=("$pkgname")
             fi
         else
-            : # echo2 "    other/$pkgname"
+            NotFromAUR "$pkgname"
         fi
     done
     if [ "${updates}" ] ; then
@@ -90,7 +100,7 @@ Update() {
     fi
 }
 Search() {
-    jq < ~/.cache/packages-meta-v1.json | less
+    jq < $AURSRCDIR/packages-meta-v1.json | less
 }
 
 Gaur() {
@@ -102,6 +112,9 @@ Gaur() {
     local build=no
     local install=no
     local update=no
+    local verbose=no
+
+    [ "$1" ] || DIE "no parameters"
 
     opts=$(getopt -o=$SOPTS --longoptions $LOPTS --name "$progname" -- "$@") || exit 1
     eval set -- "$opts"
@@ -113,18 +126,20 @@ Gaur() {
             -i | --install) install=yes ;;
             -u | --update) update=yes ;;
             -s | --search) Search; return 0 ;;
+            -v | --verbose) verbose=yes ;;
             --) shift; break ;;
             -h | --help)
                 cat <<EOF
 Usage:   $progname {option} [package-names]
-Options: -f, --fetch    Fetch given package names from AUR into folder(s)./<package-name>.
+Options: -f, --fetch    Fetch given package names from AUR into folder(s) ./<package-name>.
          -b, --build    Build given packages (assume they have been fetched).
          -i, --install  Install given packages (assume they have been built).
          -u, --update   Update installed AUR packages.
          -s, --search   Search for info about AUR packages.
+         -v, --verbose  Be more verbose.
          -h, --help     This help.
 EOF
-                echo2 "Usage: $progname {--fetch | --build | --install | --update | --help}"
+                # echo2 "Usage: $progname {--fetch | --build | --install | --update | --help}"
                 return 0
                 ;;
         esac
