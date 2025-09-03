@@ -15,10 +15,9 @@ _fetch-aur-stuff_()
     # Each option "case" should return immediately.
 
     case "$prev" in
-        # --begin | --middle | --end) ;;
         *)
             # Handle all top-level parameters.
-            _fetch-aur-stuff_complete "endeavouros m-aur2 m-more2" ;;
+            _fetch-aur-stuff_complete "endeavouros endeavouros-testing-dev m-aur2 m-more2 m-m" ;;
     esac
 } &&
-complete -F _fetch-aur-stuff_ fetch-aur-stuff
+complete -F _fetch-aur-stuff_ fetch-aur-stuff am

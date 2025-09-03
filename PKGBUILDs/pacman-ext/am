@@ -1,0 +1,37 @@
+#!/bin/bash
+
+echo2()   { echo -e "$@" >&2; }
+warning() { echo2 "$progname: $FUNCNAME: $1" ; }
+error()   { echo2 "$progname: $FUNCNAME: $1" ; exit 1; }
+
+assets_make() {
+    local progname=${0##*/}
+    local reponames_known=(m-aur2 m-more2 m-m endeavouros endeavouros-testing-dev)
+    local reponame
+    local curdir="$PWD"
+    local options=()
+    local reponames_given=()
+    local arg
+
+    for arg in "$@" ; do
+        echo2 "==> arg = '$arg'"
+        case "$arg" in
+            -*) options+=("$arg") ;;
+            *)  reponames_given+=("$arg") ;;
+        esac
+    done
+    [ "$reponames_given" ] || error "give reponame(s)"
+
+    for reponame in "${reponames_given[@]}" ; do
+        if printf "%s\n" "${reponames_known[@]}" | grep "^$reponame$" >/dev/null ; then  # is known reponame?
+            cd "$reponame"
+            echo2 "==> assets.make $options $reponame"
+            assets.make $options
+            cd "$curdir"
+        else
+            warning "'$reponame' is not a known repository name"
+        fi
+    done
+}
+
+assets_make "$@"
