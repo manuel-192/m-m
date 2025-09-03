@@ -9,24 +9,29 @@ assets_make() {
     local reponames_known=(m-aur2 m-more2 m-m endeavouros endeavouros-testing-dev)
     local reponame
     local curdir="$PWD"
-    local options=()
+    local options=(--fetch-timeout=120)
     local reponames_given=()
     local arg
+    local mode="--dryrun"
 
     for arg in "$@" ; do
-        echo2 "==> arg = '$arg'"
         case "$arg" in
+            -b | --build)                                     mode="" ;;
+            -n | -nl | -nn | -nr | --dryrun | --dryrun-local) mode="$arg" ;;
             -*) options+=("$arg") ;;
             *)  reponames_given+=("$arg") ;;
         esac
     done
     [ "$reponames_given" ] || error "give reponame(s)"
+    if [ "$mode" ] ; then
+        options+=("${mode}")
+    fi
 
     for reponame in "${reponames_given[@]}" ; do
         if printf "%s\n" "${reponames_known[@]}" | grep "^$reponame$" >/dev/null ; then  # is known reponame?
             cd "$reponame"
-            echo2 "==> assets.make $options $reponame"
-            assets.make $options
+            echo2 "==> assets.make ${options[*]}"
+            assets.make ${options[*]}
             cd "$curdir"
         else
             warning "'$reponame' is not a known repository name"
