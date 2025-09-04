@@ -5,7 +5,7 @@
 pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.9.1
+pkgver=25.9.2
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -109,9 +109,7 @@ package() {
                 ;;
             am)
                 install -Dm755 "$item"   "$pkgdir/usr/local/bin/$item"
-                if [ ! -e /usr/share/bash-completion/completions/am ] ; then
-                    ln -s fetch-aur-stuff "$pkgdir/usr/share/bash-completion/completions/$item"
-                fi
+                ln -s fetch-aur-stuff "$pkgdir/usr/share/bash-completion/completions/$item"
                 ;;
             *)
                 install -Dm755 "$item"   "$pkgdir/usr/bin/$item"
