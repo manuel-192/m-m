@@ -1499,6 +1499,7 @@ EOF
         pb -nn -T0 --assets.conf-e
         #pb -nn -T0 EOS endeavouros-testing-dev endeavouros
         pb -nn -T0 EOS
+        echo ""
         am endeavouros-testing-dev endeavouros
     }
     ppm() {
@@ -1511,6 +1512,7 @@ EOF
         echo ""
         # pb -nn -T0 MAN m-m m-aur2 m-more2 local-repo
         pb -nn -T0 MAN local-repo
+        echo ""
         am m-m m-aur2 m-more2
     }
     
