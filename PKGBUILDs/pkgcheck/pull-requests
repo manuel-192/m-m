@@ -81,20 +81,30 @@ MsgHandle() {
     local msg
     declare -A msgs
     local dir=${url##*/}
+    local out
+    local count ix nl=no kind
 
     cd "$dir" >/dev/null
     msgs[issue]=""
     msgs[pr]=""
-    Green
-    echo "======================================= ${PWD##*/} =========================================" >&2
-    Reset
+    # Green
+    # echo "======================================= ${PWD##*/} =========================================" >&2
+    # Reset
+    echo "- ${PWD##*/}"
     for type in issue pr ; do
-        case "$type" in
-            issue) echo "Issues:" ;;
-            pr)    echo "Pulls:"  ;;
-        esac
-        gh $type list --json title,updatedAt | jq -c .[] | sed -E -e 's/^\{"title"://' -e 's/"updatedAt"://' -e 's/}$//' -e 's/","/"|"/' | tr -d '"' | sed 's|^|    |'
+        out=$(gh $type list --json updatedAt,title)
+        count=$(echo "$out" | jq -c .[].updatedAt | wc -l)
+        if [ $count -gt 0 ] ; then
+            case "$type" in
+                issue) kind="[Issue]" ;; 
+                pr)    kind="[Pull]" ;;
+            esac
+            for ((ix=0; ix < count; ix++)) ; do
+                printf "    %-7s %s|%s\n" "$kind" "$(echo -n "$out" | jq .[$ix].updatedAt | tr -d '"')" "$(echo -n "$out" | jq .[$ix].title | tr -d '"')"
+            done
+        fi
     done | column -t -s'|'
+    [ $nl = yes ] && echo ""
 }
 
 Main2_old() {
