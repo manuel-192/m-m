@@ -1510,8 +1510,8 @@ EOF
         pb -nn -T0 --assets.conf-m
         echo ""
         # pb -nn -T0 MAN m-m m-aur2 m-more2 local-repo
-        pb -nn -T0 MAN
-        am m-m m-aur2 m-more2 local-repo
+        pb -nn -T0 MAN local-repo
+        am m-m m-aur2 m-more2
     }
     
     shellcheck() {
