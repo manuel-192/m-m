@@ -79,6 +79,7 @@ Purpose: Fetch the latest AUR package info file.
 Usage:   $progname {options}
 Options: -f,   --fetch               Fetch the latest AUR info file if needed.
          -f=*, --fetch=*             Fetch the latest AUR info file if needed, with set timeout (seconds).
+         -e,   --ext                 Fetch the "extended" version of the AUR info file.
          -r,   --remove              Remove the local AUR info file.
          -i,   --show-target-info    Show details about the info file (to stderr).
          -p,   --show-target-path    Show the path of the info file (to stdout).
@@ -90,9 +91,11 @@ EOF
 Main() {
     local -r progname=${0##*/}
     [ "$AURSRCDIR" ] || DIE "AURSRCDIR is empty"
-    local -r url="https://aur.archlinux.org/packages-meta-v1.json.gz"
-    local -r file="${url##*/}"
-    local -r target="$AURSRCDIR/${file%.gz}"
+    declare -A urls=(
+        default  "https://aur.archlinux.org/packages-meta-v1.json.gz"
+        extended "https://aur.archlinux.org/packages-meta-ext-v1.json.gz"
+    )
+    local url="${urls[default]}"
     local show_target_path=no
     local show_target_info=no
     local fetch=no
@@ -103,18 +106,22 @@ Main() {
     while true ; do
         case "$1" in
             "") break ;;
-            -f | --fetch)            fetch=yes ;;
-            -f=* | --fetch=*)        fetch=yes; fetch_timeout=${1#*=} ;;
-            -i | --show-target-info) show_target_info=yes ;;
-            -p | --show-target-path) show_target_path=yes ;;
-            -v=* | --pkg-version=*)  GetPkgVersion "${1#*=}"; exit ;;
-            -r | --remove)           rm -f "$target"; exit 0 ;;
-            -h | --help)             Help -c=0 ;;
-            -*)                      DIE "$1 is not supported" ;;
-            *)                       DIE "$1 is not an option" ;;
+            -e   | --ext)              url="${urls[extended]}" ;;
+            -f   | --fetch)            fetch=yes ;;
+            -f=* | --fetch=*)          fetch=yes; fetch_timeout=${1#*=} ;;
+            -i   | --show-target-info) show_target_info=yes ;;
+            -p   | --show-target-path) show_target_path=yes ;;
+            -v=* | --pkg-version=*)    GetPkgVersion "${1#*=}"; exit ;;
+            -r   | --remove)           rm -f "$target"; exit 0 ;;
+            -h   | --help)             Help -c=0 ;;
+            -*)                        DIE "$1 is not supported" ;;
+            *)                         DIE "$1 is not an option" ;;
         esac
         shift
     done
+    local -r file="${url##*/}"
+    local -r target="$AURSRCDIR/${file%.gz}"
+
     [ "$fetch" = yes ] && Fetch
 
     [ $show_target_path = yes ] && echo "${target}"
