@@ -5,10 +5,31 @@ warning() { echo2 "$progname: $FUNCNAME: $1" ; }
 error()   { echo2 "$progname: $FUNCNAME: $1" ; exit 1; }
 
 BuildRepo() {
-    local -r folder="$1"
-    cd "$folder"
-    echo2 "==> ${folder##*/}: assets.make ${options[*]}"
+    echo2 "==> ${PWD##*/}: assets.make ${options[*]}"
     assets.make ${options[*]}
+}
+export -f BuildRepo
+
+Banner() {
+    local tool="$1"
+    local extra="$2"
+    local line="${tool%% *}"
+    [ "$extra" ] && line+=" $extra"
+    Color info
+    printf "======== %s ========\n" "$line" >&2
+    Color
+    $tool
+}
+BannerIf() {
+    local -r tool="$1"
+    type "${tool%% *}" &>/dev/null && Banner "$tool"
+}
+Bannered() {
+    local -r dir="$1"
+    local -r tool="$2"
+    local -r extra="$3"
+    cd "$dir"
+    Banner $tool $extra
     cd "$curdir"
 }
 
@@ -22,7 +43,7 @@ assets_make() {
     local options=(--fetch-timeout=120)
     local reponames_given=()
     local arg
-    local buildmode="--dryrun"
+    local buildmode="--dryrun-local"
 
     [ "$CODEDIR" ] || error "CODEDIR is not set"
 
@@ -35,24 +56,28 @@ assets_make() {
         esac
     done
     [ "$reponames_given" ] || error "give reponame(s)"
-    if [ "$buildmode" ] ; then
-        options+=("${buildmode}")
-    fi
+    [ "$buildmode" ] && options+=("${buildmode}")
 
     for reponame in "${reponames_given[@]}" ; do
         if printf "%s\n" "${known_reponames_eos[@]}" | grep "^$reponame$" >/dev/null ; then
-            BuildRepo "$CODEDIR/EOS/_BUILD_/$reponame"
+            Bannered "$CODEDIR/EOS/_BUILD_/$reponame" BuildRepo EOS
         elif printf "%s\n" "${known_reponames_m[@]}" | grep "^$reponame$" >/dev/null ; then
-            BuildRepo "$CODEDIR/MAN/_BUILD_/$reponame"
+            Bannered "$CODEDIR/MAN/_BUILD_/$reponame" BuildRepo MAN
         else
             case "$reponame" in
                 MAN | EOS)
-                    cd "$CODEDIR/$reponame"
-                    UpdateSources
-                    cd "$curdir"
+                    case "$reponame" in
+                        MAN) BannerIf cookbook
+                             BannerIf arch-audit
+                             BannerIf "pull-requests -m"
+                             ;;
+                        EOS) BannerIf "pull-requests -e"
+                             ;;
+                    esac
+                    Bannered "$CODEDIR/$reponame" UpdateSources "$reponame"
                     ;;
                 local-repo)
-                    local-repo-manager
+                    BannerIf local-repo-manager
                     ;;
                 *)
                     warning "'$reponame' is not a known repo/src name"
