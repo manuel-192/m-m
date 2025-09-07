@@ -14,6 +14,18 @@ _am_()
     local items=(EOS endeavouros endeavouros-testing-dev
                  MAN m-aur2 m-more2 m-m
                  local-repo)
+    local opts=(
+        --allow-downgrade     -ad
+        --dryrun-local        -n
+        --dryrun              -nn
+        --explain-hook-marks  -e
+        --fetch-timeout=      -T=
+        --pkgnames=
+        --pkgdiff
+        --repoup
+        --no-aur
+        --aursrc=
+    )
 
     # Handle options that need sub-options.
     # Each option "case" should return immediately.
@@ -21,7 +33,7 @@ _am_()
     case "$prev" in
         *)
             # Handle all top-level parameters.
-            _am_complete "${items[*]}" ;;
+            _am_complete "${items[*]} ${opts[*]}" ;;
     esac
 } &&
 complete -F _am_ am
