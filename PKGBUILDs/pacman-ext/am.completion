@@ -16,15 +16,16 @@ _am_()
                  local-repo)
     local opts=(
         --allow-downgrade     -ad
+        --aursrc=
+        --build               -b
         --dryrun-local        -n
         --dryrun              -nn
         --explain-hook-marks  -e
         --fetch-timeout=      -T=
-        --pkgnames=
-        --pkgdiff
-        --repoup
         --no-aur
-        --aursrc=
+        --pkgdiff
+        --pkgnames=
+        --repoup
     )
 
     # Handle options that need sub-options.
