@@ -60,9 +60,9 @@ assets_make() {
 
     for reponame in "${reponames_given[@]}" ; do
         if printf "%s\n" "${known_reponames_eos[@]}" | grep "^$reponame$" >/dev/null ; then
-            Bannered "$CODEDIR/EOS/_BUILD_/$reponame" BuildRepo EOS
+            Bannered "$CODEDIR/EOS/_BUILD_/$reponame" BuildRepo $reponame
         elif printf "%s\n" "${known_reponames_m[@]}" | grep "^$reponame$" >/dev/null ; then
-            Bannered "$CODEDIR/MAN/_BUILD_/$reponame" BuildRepo MAN
+            Bannered "$CODEDIR/MAN/_BUILD_/$reponame" BuildRepo $reponame
         else
             case "$reponame" in
                 MAN | EOS)
