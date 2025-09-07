@@ -5,7 +5,7 @@
 pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.9.3
+pkgver=25.9.4
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -59,6 +59,7 @@ source=(
     $url/fetch-aur-stuff
     $url/fetch-aur-stuff.completion
     $url/am
+    $url/am.completion
 )
 sha512sums=('a3bfc77751dbdb2bef6d89962429c5a3baf6dfde7ee2626fc1328828363bb1bbc86578e96f7d72bb8166e7577123d71889b2a9a4a8a641435c8b3b03b45e21e6'
             'a200a89211ec4d883b53ceecf852568b4f8f1a01c7d2a3dae4be48588b23e088ed37d9f2965a585f10fdf1efcc6af2e2fca078b1a82a92ded0c464237a2b8f81'
@@ -89,8 +90,9 @@ sha512sums=('a3bfc77751dbdb2bef6d89962429c5a3baf6dfde7ee2626fc1328828363bb1bbc86
             '536efa6a35fed0575a8b6e20948591ca543eecd835f977e449971da0545542dbfc877fc7dc5de1570b2bc951ec2f9d6081cfaee28f8e73451c641eca816eca35'
             'cb103870f1b08c2d50abdf9a119f315d22dfa3737624fae0ddf3b9a4f01932cad3184d5ee0e5b3e5238bf4887b8d24088b14f315088c31d0119081847a44ec18'
             '5fbbaabff83c331d243757f68382bfe966605022743bca4e11cc7591d412f2e76a50c28770e025d9acd608094333366dc97847c4322e6b4f47f6ba1f62c02bf2'
-            'c6c6df9df213da65558594277ae80d569d2e3b0d0c6995c75c61cfd87e9bf242eb52b887ab5ad15993775d7b8670b731f69d1c799dd12b5dce8046bdad1fb0d8'
-            '672044253d1c5d8472192229d8421a1e304beeb49daaa8f856b10b8824e40157144f66c3484332501f8e6ab481b869e612f01423656d02da04e67e4462279699')
+            '112c7cd06eae53d15dc691f22cf109ff70badf71f71ede48d12ca42a708cdf4eeab2bc4191dc13826671a96810435d7fa2dc0f3d958db24e407718624aeef129'
+            'af342a185cc2ad3fd6990aa5c267e6f4321e862d8f33efbf4b7f943180b2251a764c9af4d54064b2d58fbc429dc132ec31976c76c759c90115be0fdca9c44e9a'
+            'd40530a5950079541d517d4e27dc21c8e39d6117d794b1627b94371716d38708aea0e53862b755d58dfb88cabb6b08999ce85c00124ecc9aa7e7ab57b2a3da1b')
 
 package() {
     local item src
@@ -109,7 +111,7 @@ package() {
                 ;;
             am)
                 install -Dm755 "$item"   "$pkgdir/usr/local/bin/$item"
-                ln -s fetch-aur-stuff "$pkgdir/usr/share/bash-completion/completions/$item"
+                ln -s fetch-aur-stuff    "$pkgdir/usr/share/bash-completion/completions/$item"
                 ;;
             *)
                 install -Dm755 "$item"   "$pkgdir/usr/bin/$item"

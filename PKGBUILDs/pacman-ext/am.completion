@@ -1,15 +1,19 @@
-# bash completion for fetch-aur-stuff        -*- shell-script -*-
+# bash completion for am        -*- shell-script -*-
 
-_fetch-aur-stuff_complete() {
+_am_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
     compopt -o nosort
 }
 
-_fetch-aur-stuff_() 
+_am_() 
 {
     local cur prev words #cword split
     _init_completion -s || return
+
+    local items=(EOS endeavouros endeavouros-testing-dev
+                 MAN m-aur2 m-more2 m-m
+                 local-repo)
 
     # Handle options that need sub-options.
     # Each option "case" should return immediately.
@@ -17,7 +21,7 @@ _fetch-aur-stuff_()
     case "$prev" in
         *)
             # Handle all top-level parameters.
-            _fetch-aur-stuff_complete "endeavouros endeavouros-testing-dev m-aur2 m-more2" ;;
+            _am_complete "${items[*]}" ;;
     esac
 } &&
-complete -F _fetch-aur-stuff_ fetch-aur-stuff
+complete -F _am_ am

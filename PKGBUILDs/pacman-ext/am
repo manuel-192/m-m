@@ -4,37 +4,60 @@ echo2()   { echo -e "$@" >&2; }
 warning() { echo2 "$progname: $FUNCNAME: $1" ; }
 error()   { echo2 "$progname: $FUNCNAME: $1" ; exit 1; }
 
+BuildRepo() {
+    local -r folder="$1"
+    cd "$folder"
+    echo2 "==> ${folder##*/}: assets.make ${options[*]}"
+    assets.make ${options[*]}
+    cd "$curdir"
+}
+
 assets_make() {
     local progname=${0##*/}
-    local reponames_known=(m-aur2 m-more2 m-m endeavouros endeavouros-testing-dev)
+    local known_reponames_eos=(endeavouros endeavouros-testing-dev)
+    local known_reponames_m=(m-aur2 m-more2 m-m)
+    #local known_othernames=(MAN EOS local-repo)
     local reponame
     local curdir="$PWD"
     local options=(--fetch-timeout=120)
     local reponames_given=()
     local arg
-    local mode="--dryrun"
+    local buildmode="--dryrun"
+
+    [ "$CODEDIR" ] || error "CODEDIR is not set"
 
     for arg in "$@" ; do
         case "$arg" in
-            -b | --build)                                     mode="" ;;
-            -n | -nl | -nn | -nr | --dryrun | --dryrun-local) mode="$arg" ;;
+            -b | --build)                                     buildmode="" ;;
+            -n | -nl | -nn | -nr | --dryrun | --dryrun-local) buildmode="$arg" ;;
             -*) options+=("$arg") ;;
             *)  reponames_given+=("$arg") ;;
         esac
     done
     [ "$reponames_given" ] || error "give reponame(s)"
-    if [ "$mode" ] ; then
-        options+=("${mode}")
+    if [ "$buildmode" ] ; then
+        options+=("${buildmode}")
     fi
 
     for reponame in "${reponames_given[@]}" ; do
-        if printf "%s\n" "${reponames_known[@]}" | grep "^$reponame$" >/dev/null ; then  # is known reponame?
-            cd "$reponame"
-            echo2 "==> assets.make ${options[*]}"
-            assets.make ${options[*]}
-            cd "$curdir"
+        if printf "%s\n" "${known_reponames_eos[@]}" | grep "^$reponame$" >/dev/null ; then
+            BuildRepo "$CODEDIR/EOS/_BUILD_/$reponame"
+        elif printf "%s\n" "${known_reponames_m[@]}" | grep "^$reponame$" >/dev/null ; then
+            BuildRepo "$CODEDIR/MAN/_BUILD_/$reponame"
         else
-            warning "'$reponame' is not a known repository name"
+            case "$reponame" in
+                MAN | EOS)
+                    cd "$CODEDIR/$reponame"
+                    UpdateSources
+                    cd "$curdir"
+                    ;;
+                local-repo)
+                    local-repo-manager
+                    ;;
+                *)
+                    warning "'$reponame' is not a known repo/src name"
+                    ;;
+            esac
         fi
     done
 }
