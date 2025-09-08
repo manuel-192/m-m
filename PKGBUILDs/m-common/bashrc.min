@@ -1490,32 +1490,19 @@ EOF
         Alias rm         "rm -i"
     fi
 
-    # Unalias ppe ppm
     ppe() {
-        which logstuff pb >/dev/null || return 1
+        which logstuff am >/dev/null || return 1
         logstuff on
-        pb -nn -T0 --pulls-e
-        echo ""
         pb -nn -T0 --assets.conf-e
-        #pb -nn -T0 EOS endeavouros-testing-dev endeavouros
-        pb -nn -T0 EOS
-        echo ""
-        am endeavouros-testing-dev endeavouros
+        am EOS endeavouros endeavouros-testing-dev
     }
     ppm() {
-        which logstuff pb >/dev/null || return 1
+        which logstuff am >/dev/null || return 1
         logstuff on
-        pb -nn -T0 --extras
-        pb -nn -T0 --pulls-m
-        echo ""
         pb -nn -T0 --assets.conf-m
-        echo ""
-        # pb -nn -T0 MAN m-m m-aur2 m-more2 local-repo
-        pb -nn -T0 MAN local-repo
-        echo ""
-        am m-m m-aur2 m-more2
+        am MAN local-repo m-m m-aur2 m-more2
     }
-    
+
     shellcheck() {
         /bin/shellcheck "$@"
         if [ -x /bin/shellcheck-nameref ] && [ "$2" = "" ] && [ -f "$1" ] ; then
