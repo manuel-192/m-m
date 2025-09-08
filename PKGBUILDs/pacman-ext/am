@@ -5,7 +5,6 @@ warning() { echo2 "$progname: $FUNCNAME: $1" ; }
 error()   { echo2 "$progname: $FUNCNAME: $1" ; exit 1; }
 
 BuildRepo() {
-    echo2 "==> ${PWD##*/}: assets.make ${options[*]}"
     assets.make ${options[*]}
 }
 export -f BuildRepo
