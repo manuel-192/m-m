@@ -1403,6 +1403,8 @@ EOF
     export -f history-del
     Alias hc history-del
 
+    hr() { $(history | fzf --tac | sed -E 's|[ ]+[0-9]+[ ]+||'); }   # "history select-and-run"
+
 
     #############################################################
     # variables
@@ -1440,9 +1442,9 @@ EOF
     Alias df                 "LANG=C df -hT"
     # Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
     Alias glances            "glances --disable-check-update --disable-bg"
-    Alias history-fuzzy      "history | fzf --tac --no-sort"
-    Alias history-select     "history | fzf --tac --no-separator --no-info"
-    Alias hlp                "eos-man"
+    # Alias history-fuzzy      "history | fzf --tac --no-sort"
+    # Alias history-select     "history | fzf --tac --no-separator --no-info"
+    Alias hlp                "tldr"
     Alias inxi               "inxi -z"
     Alias local-repo-manager "local-repo-manager --verbose"
     # Alias ls                 "/bin/ls $(l --get-ls-opts)"
