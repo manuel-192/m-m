@@ -897,6 +897,8 @@ EOF
                     [ $? -eq 0 ] && return 0
                     _man-plain-help "$item"                                # eos-apps-info-helper failed, try 'command' --help
                     [ $? -eq 0 ] && return 0
+                    expac %d "$@"
+                    [ $? -eq 0 ] && return 0
                 fi
                 bashrc_min_warning "no manual page about '$item'."
                 ;;
@@ -1652,6 +1654,7 @@ EOF
                 -A | --all)  count=all ;;
                 -s | --show) count=show ;;
                 -*)          ECHO2 "option '$1' not supported"; return 1 ;;
+                *) break ;;
             esac
             shift
         done
