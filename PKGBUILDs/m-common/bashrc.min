@@ -53,8 +53,9 @@ SettingsCommon()
     esac
     shopt -s autocd
 
-    SetVarToFirstApp PAGER "less -F" "most"
+    SetVarToFirstApp PAGER "less" "most"
     SetVarToFirstApp EDITOR codium emacs   # sets EDITOR to the first existing listed app
+    export LESS="-RF"
 
     # Set in local ~/.bashrc:
     # ROOTDIR_EOS
@@ -300,7 +301,7 @@ EOF
                 echo "############################################################################"
                 printf -v prefix "%10s: " "$level"
                 echo "$messages" | sed "s|^|$prefix|"
-            } | less -F
+            } | less
         else
             echo "No messages."
         fi
@@ -544,10 +545,10 @@ EOF
         ls -l "$@" | grep rw
     }
 
-    lp()  { l  "$@" | less -F ; }   # show long listing but no hidden dotfiles except "."
-    llp() { ll "$@" | less -F ; }   # show long listing of all except ".."
+    lp()  { l  "$@" | less ; }   # show long listing but no hidden dotfiles except "."
+    llp() { ll "$@" | less ; }   # show long listing of all except ".."
 
-    less() {
+    less_foo() {
         # Like 'less' but shows the lines of /var/log/pacman.log from last to first.
         #
         # Note: this implementation may separate an option from its value if  '=' is not used (so use e.g. --buffers=<n>).
@@ -556,7 +557,7 @@ EOF
         local opts=()
         local others=()
         local para
-        local -r pager=/bin/less
+        local -r pager="/bin/less -R"
 
         for para in "$@" ; do
             case "$para" in
@@ -582,7 +583,7 @@ EOF
     page() {  # page one text file
         local -r file="$1"
         if [ "$file" ] && [ -r "$file" ] && [[ $(file "$file") =~ text ]] ; then
-            local pager="/bin/less -F"
+            local pager="/bin/less"
             case "$(realpath "$file")" in
                 /var/log/pacman.log)
                     tac "$file" | $pager ;;
@@ -684,8 +685,8 @@ EOF
     }
 
     icons() {
-        find /usr/share/icons -name $1.\* 2> /dev/null | grep scalable | less -F
-        # find /usr/share/icons -name $1.\* 2> /dev/null | less -F
+        find /usr/share/icons -name $1.\* 2> /dev/null | grep scalable | less
+        # find /usr/share/icons -name $1.\* 2> /dev/null | less
     }
 
     git() {        # preparations for doing a git command
