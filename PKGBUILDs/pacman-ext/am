@@ -42,7 +42,7 @@ assets_make() {
     local options=(--fetch-timeout=120)
     local reponames_given=()
     local arg
-    local buildmode="--dryrun-local"
+    local buildmode="--dryrun"
 
     [ "$CODEDIR" ] || error "CODEDIR is not set"
 
