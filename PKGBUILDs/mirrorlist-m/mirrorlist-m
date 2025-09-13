@@ -1,4 +1,4 @@
 ### Manuel's mirror list ###
 
-Server = https://raw.githubusercontent.com/manuel-192/$repo/master/repo
 Server = https://github.com/manuel-192/$repo/releases/download/$arch
+Server = https://raw.githubusercontent.com/manuel-192/$repo/master/repo
