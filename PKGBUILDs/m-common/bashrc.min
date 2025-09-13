@@ -1507,12 +1507,14 @@ EOF
         which logstuff am >/dev/null || return 1
         logstuff on
         pb -nn -T0 --assets.conf-e
+        fetch-aur-stuff endeavouros
         am EOS endeavouros endeavouros-testing-dev
     }
     ppm() {
         which logstuff am >/dev/null || return 1
         logstuff on
         pb -nn -T0 --assets.conf-m
+        fetch-aur-stuff local-repo m-aur2 m-more2
         am MAN local-repo m-m m-aur2 m-more2
     }
 
