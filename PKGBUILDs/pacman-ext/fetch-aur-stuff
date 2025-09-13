@@ -12,6 +12,8 @@ ListPkgs() {
     printf "%s\n" "${PKGNAMES[@]}" | grep /aur | sed 's|/aur.*||' | sort -u
 }
 
+CD() { cd "$@" >/dev/null || DIE "'cd $*' failed" ; }
+
 Fetch() {
     local -r reponame="$1"
     [ "$reponame" ] || DIE "$FUNCNAME: reponame is empty"
@@ -20,9 +22,9 @@ Fetch() {
 
     echo2 "$reponame:"
     mkdir -p "$reponame"
-    cd "$reponame" >/dev/null
+    CD "$reponame"
     aur-pkgs-fetch --verbose "$@"
-    cd - >/dev/null
+    CD -
 }
 
 Main() {
@@ -36,8 +38,20 @@ Main() {
     cd "$AURSRCDIR"       || DIE "'cd $AURSRCDIR' failed"
 
     for reponame in "$@" ; do
-        packages=( $(ListPkgs /etc/assets.conf.$reponame) )
-        Fetch "$reponame" "${packages[@]}"
+        case "$reponame" in
+            local-repo)
+                local dir
+                for dir in $(/bin/ls -1d local-repo/*) ; do
+                    CD "$PWD/$dir"
+                    git pull
+                    CD -
+                done
+                ;;
+            *)
+                packages=( $(ListPkgs /etc/assets.conf.$reponame) )
+                Fetch "$reponame" "${packages[@]}"
+                ;;
+        esac
     done
 }
 

@@ -17,7 +17,7 @@ _fetch-aur-stuff_()
     case "$prev" in
         *)
             # Handle all top-level parameters.
-            _fetch-aur-stuff_complete "endeavouros endeavouros-testing-dev m-aur2 m-more2" ;;
+            _fetch-aur-stuff_complete "endeavouros endeavouros-testing-dev m-aur2 m-more2 local-repo" ;;
     esac
 } &&
 complete -F _fetch-aur-stuff_ fetch-aur-stuff
