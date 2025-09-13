@@ -937,7 +937,15 @@ EOF
 
     p() {
         local param=""
-        [ "$1" ] || param="-Syu"  # -d"
+        case "$1" in
+            "") param="-Syu" ;;
+            -Sii)
+                local tmp
+                tmp=$(pacman "$@" 2>/dev/null) && echo "$tmp" || paru "$@"
+                return
+                ;;
+        esac
+        # [ "$1" ] || param="-Syu"  # -d"
         pacman-ext --no-banner $param "$@"
     }
     # syu()  { p -${FUNCNAME^} ; }
