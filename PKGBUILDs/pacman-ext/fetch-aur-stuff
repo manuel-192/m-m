@@ -2,7 +2,8 @@
 
 # Usage: $progname <names-of-repos>
 
-echo2() { echo -e "$@" >&2; }
+echo2()   { echo -e "$@" >&2; }
+printf2() { printf "$@" >&2; }
 DIE()   { echo2 "$progname: error: $1" ; exit 1; }
 WARN()  { echo2 "$progname: warning: $1" ; }
 
@@ -27,6 +28,17 @@ Fetch() {
     CD -
 }
 
+PkgsLocalRepo() {
+    local conf=/etc/local-repo-manager.conf
+    source $conf 2>/dev/null
+    local item
+    for item in "${PKGNAMES[@]}" ; do
+        case "$item" in
+            */aur) echo "${item%/aur}" ;;
+        esac
+    done
+}
+
 Main() {
     local progname=${0##*/}
     local packages=()
@@ -40,10 +52,20 @@ Main() {
     for reponame in "$@" ; do
         case "$reponame" in
             local-repo)
+                echo2 "$reponame"
+                mkdir -p "$reponame" || DIE "cannot create '$AURSRCDIR/$reponame'"
+                local pkgs=($(PkgsLocalRepo))
                 local dir
-                for dir in $(/bin/ls -1d local-repo/*) ; do
-                    CD "$PWD/$dir"
-                    git pull
+                for dir in "${pkgs[@]}" ; do
+                    if [ -d "$reponame/$dir" ] ; then
+                        CD "$reponame/$dir"
+                        printf2 "    %-25s git pull: " "$dir"
+                        git pull
+                    else
+                        CD "$reponame"
+                        printf2 "    %-25s git clone\n" "$dir"
+                        aur-pkgs-fetch "$dir"
+                    fi
                     CD -
                 done
                 ;;
