@@ -68,9 +68,9 @@ assets_make() {
                     case "$reponame" in
                         MAN) BannerIf cookbook
                              BannerIf arch-audit
-                             BannerIf "pull-requests -m"
+                             [ -x /bin/gh ] && BannerIf "pull-requests -m"
                              ;;
-                        EOS) BannerIf "pull-requests -e"
+                        EOS) [ -x /bin/gh ] && BannerIf "pull-requests -e"
                              ;;
                     esac
                     Bannered "$CODEDIR/$reponame" UpdateSources "$reponame"
