@@ -31,6 +31,7 @@ Main() {
     local updates_native=""
     local updates_aur=""
     local rank=no
+    local paccache=""             # "" = not used; allowed numbers: 1, 2, 3. Defaults to 1.
     local clamav=no
     local clamav_ref_file="$HOME/.local/$progname.clamav_ref_file"
     local pkgdir=/var/cache/pacman/pkg
@@ -48,18 +49,21 @@ Main() {
 
 Usage() {
     [ "$1" = "1" ] && echo2 ""
-    echo2 "Purpose:  Updates packages including extra checks."
-    echo2 "Usage:    $progname [options]"
-    echo2 "Options:  --aur,        -a  Include AUR packages too."
-    echo2 "          --connection, -c  Check internet connection first."
-    echo2 "          --deep,       -d  Check availability of updates more thoroughly."
-    echo2 "          --hide-fetch, -f  Don't show the package download."
-    echo2 "          --quiet,      -q  Be more quiet."
-    echo2 "          --rank,       -r  Rank mirrors first."
-    echo2 "          --edit-list,  -e  Edit mirrorlist."
-    echo2 "          --clamav          Scan updates for viruses with clamav."
-    echo2 "          --help,       -h  This help."
-    echo2 "Note: internet connection is required."
+    cat <<EOF >&2
+Purpose:  Updates packages and includes extra checks.
+Usage:    $progname [options]
+Options:  -a,   --aur            Include AUR packages too.
+          -c,   --connection     Check internet connection first.
+          -d,   --deep           Check availability of updates more thoroughly.
+          -f,   --hide-fetch     Don't show the package download.
+          -q,   --quiet          Be more quiet.
+          -r,   --rank           Rank mirrors first.
+          -l=*, --cache-limit=*  Cache keeps only * latest package versions.
+          -e,   --edit-list      Edit mirrorlist.
+                --clamav         Scan updates for viruses with clamav.
+          -h,   --help           This help.
+Note: internet connection is required.
+EOF
     [ "$1" ] && exit $1 || exit 0
 }
 
@@ -73,10 +77,19 @@ SudoEdit() {
     done
 }
 
+PacCache() {
+    case "$paccache" in
+        "") return ;;
+        1|2|3) ;;
+        *) paccache=1 ;;
+    esac
+    sudo paccache -rk$paccache
+}
+
 Options() {
     # manage options
-    local sopts="acdefhqr"
-    local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet,rank,edit-list"
+    local sopts="acdefhl:qr"
+    local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet,rank,edit-list,cache-limit:"
     local opts
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -93,7 +106,8 @@ Options() {
             --rank       | -r) rank=yes ;;
             --edit-list  | -e) SudoEdit /etc/pacman.d/mirrorlist; exit 0 ;;
             --clamav)          clamav=yes ;;
-            --) shift; break ;;
+            --cache-limit | -l) paccache="$2"; shift ;;
+            --)                shift; break ;;
         esac
         shift
     done
@@ -122,7 +136,7 @@ UpdatePackages() {
 
     Connection
     GetAurUpdates
-    ShallowCheck             # stops here if no updates by "shallow check"
+    ShallowCheck          # stops here if no updates by "shallow check"
     PacmanLock
     RankMirrors
     GetNativeUpdates
@@ -132,6 +146,7 @@ UpdatePackages() {
     Clamav
     Keyrings
     RealUpdate            # update packages here
+    PacCache              # optionally clean up package cache
     Pacdiff
 }
 
