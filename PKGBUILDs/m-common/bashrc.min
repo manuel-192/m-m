@@ -1472,13 +1472,14 @@ EOF
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
 
-    Alias u                  "upd-small"
+    Alias eos-update         "eos-update --pacdiff --nvidia --fast --descriptions --cache-limit=1"         # --nvidia doesn't hurt
+    Alias u                  "eos-update"
+    # Alias u                  "upd-small"
     Alias uc                 "upd-small --clamav"
     Alias ucr                "upd-small --clamav --rank"
     Alias ucrd               "upd-small --clamav --rank --deep"
     Alias ur                 "upd-small --rank"
     Alias urd                "upd-small --rank --deep"
-    Alias eos-update         "eos-update --pacdiff --nvidia --fast --descriptions --cache-limit=1"         # --nvidia doesn't hurt
 
     Alias who-needsq         "who-needs --query --multi --aur"
     Alias who-needss         "who-needs --sync --one --aur"
