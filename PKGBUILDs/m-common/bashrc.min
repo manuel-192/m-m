@@ -1478,7 +1478,7 @@ EOF
     Alias ucrd               "upd-small --clamav --rank --deep"
     Alias ur                 "upd-small --rank"
     Alias urd                "upd-small --rank --deep"
-    Alias eos-update         "eos-update --pacdiff --nvidia --fast --descriptions"         # --nvidia doesn't hurt
+    Alias eos-update         "eos-update --pacdiff --nvidia --fast --descriptions --cache-limit=1"         # --nvidia doesn't hurt
 
     Alias who-needsq         "who-needs --query --multi --aur"
     Alias who-needss         "who-needs --sync --one --aur"
