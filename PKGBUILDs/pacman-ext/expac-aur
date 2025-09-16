@@ -130,14 +130,15 @@ EOF
             --verbose|-v)            show_errors=yes ;;
             --paru)                  helper=paru ;;
             --yay)                   helper=yay ;;
-            "%"*)                    format="$1" ;;
             -*)                      DIE "sorry, option '$1' not supported" ;;
             *)                       break ;;
         esac
         shift
     done
-    [ "$1" ]         || DIE "no targets"
+    format="$1"
+    shift
     [ "$format" ]    || DIE "no format"
+    [ "$1" ]         || DIE "no targets"
 
     local repo
     for pkg in "$@" ; do
