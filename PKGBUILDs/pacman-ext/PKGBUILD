@@ -5,7 +5,7 @@
 pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.9.13
+pkgver=25.9.14
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -38,6 +38,7 @@ source=(
     $url/pac                       # "combines" yay/paru, pacman, paf, and adds more
     $url/pac.completion
     $url/paf                       # TUI
+    $url/paccache                  # makes paccache verbose
     $url/mirror-swap-eos
     $url/pm-gui
     $url/Build
@@ -71,6 +72,7 @@ sha512sums=('a3bfc77751dbdb2bef6d89962429c5a3baf6dfde7ee2626fc1328828363bb1bbc86
             '6324b437fcd5e80c79518ff9c1672fd061c1865e855a9579b7f616a926ca9239c7ca7e6e92b4c50d89d3978b353fcfa40ce1a4872cd4e2d1833917e7f89adc5c'
             '36e075274aa86deb1eb545212c33b671247c61693e32d5b2cbda406d9e005b6dc83747a266a82e775664b15eeb2af96b1ba24b2680f8425dae7c840fa930422b'
             'b4de6eb61bd37a0dea4eaf3a47e1923ceb2c14de460b80d20faf4809a911bf20814724c8ec5f68fb2295f89d40e416ffc5f187ec5812d473df3e522ebfeb1c67'
+            '2dedd78995b9c056322b4201e529fa04f8de362c984a26ce2871a7ae0ec70d980391d61ad73ca329d229c9c0a39434da2a59ba8d2fd8c9758fc6c05d06e95c53'
             '84d89e5eeb4982675e08cc1a1b914b8255c8335ce73add5275452c28b1c5c21545d7cb823034f9ed89aaa022db9d410ea908818a65b72ef750ac5545c5fdc8b6'
             '92caa0ffc7ac26e748e814554647edb2389a26239cafab289451199615553752b60f61f6a438b1e592b898b32d603181eb685da4d394555ef39347f076c06afc'
             '29a1a762518522a04a223525a54f919d52f7efb8f56b4b05fd61471f445f7d8401491c0b36062df629da2366993033c2001b20f993dd1d62579c609dc2702c1b'
@@ -108,6 +110,9 @@ package() {
                 ;;
             local-update-checker)
                 # don't install
+                ;;
+            paccache)
+                install -Dm755 "$item"   "$pkgdir/usr/local/bin/$item"
                 ;;
             am)
                 install -Dm755 "$item"   "$pkgdir/usr/local/bin/$item"
