@@ -408,6 +408,17 @@ EOF
         esac
     }
 
+    expac() {
+        local expac="/bin/expac"
+        local verbose=no
+        [ $verbose = yes ] && { eos-color info 2; echo "==> $expac" "$@" >&2; eos-color reset 2; }
+        if ! $expac "$@" ; then
+            expac="/bin/expac-aur -S"
+            [ $verbose = yes ] && { eos-color info 2; echo "==> $expac" "$@" >&2; eos-color reset 2; }
+            $expac -S "$@"
+        fi
+    }
+
     systemctl() {
         # Adds sudo to the most used commands that want it.
         local arg sudo=""
@@ -1472,21 +1483,21 @@ EOF
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
 
-    Alias eos-update         "eos-update --pacdiff --nvidia --fast --descriptions --cache-limit=1"         # --nvidia doesn't hurt
-    Alias u                  "eos-update"
+    Alias up                 "eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates"  # --nvidia doesn't hurt
+    Alias u                  "up --fast"
     # Alias u                  "upd-small"
-    Alias uc                 "upd-small --clamav"
-    Alias ucr                "upd-small --clamav --rank"
-    Alias ucrd               "upd-small --clamav --rank --deep"
-    Alias ur                 "upd-small --rank"
-    Alias urd                "upd-small --rank --deep"
+    # Alias uc                 "upd-small --clamav"
+    # Alias ucr                "upd-small --clamav --rank"
+    # Alias ucrd               "upd-small --clamav --rank --deep"
+    # Alias ur                 "upd-small --rank"
+    # Alias urd                "upd-small --rank --deep"
 
     Alias who-needsq         "who-needs --query --multi --aur"
     Alias who-needss         "who-needs --sync --one --aur"
 
     AliasIfType  grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
-    AliasIfWhich expacol        expac        expacol
+    # AliasIfWhich expacol        expac        expacol
     AliasIfWhich pb             pb           "pb -nn --aur-delay=10m -T0"
     AliasIfWhich pb             pp           "pb"
 
