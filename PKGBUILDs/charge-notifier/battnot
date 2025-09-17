@@ -57,13 +57,17 @@ DumpOptions() {
     # don't show short options
 }
 
+ShowPercent() {
+    grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2
+}
+
 Options() {
     local lopts="charge-sleep:,discharge-sleep:,dump-options,edit-config,help,is-running,keep-showing-max,max:,min:"
-    lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:"
+    lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:,percent"
     if [ -e "$BAT/charge_control_end_threshold" ] ; then
         lopts+=",ctrl-end-threshold-set:,ctrl-end-threshold-show"
     fi
-    local sopts="h"
+    local sopts="hp"
     local opts
 
     opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname: error" -- "$@")" || { Usage; exit 1; }
@@ -90,6 +94,7 @@ Options() {
             --cycles)             grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2
                                   exit 0
                                   ;;
+            --percent | -p)       ShowPercent; exit 0 ;;
             --ctrl-end-threshold-set)  BatteryVariable set  charge_control_end_threshold "$2"; exit 0 ;;
             --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold "$2"; exit 0 ;;
             --help | -h)          Usage; exit 0 ;;
@@ -118,6 +123,7 @@ Flags: --charge-sleep             Sets sleep time (seconds) between checks when 
        --power-device-info        File path for the power device info.
        --keep-showing-max         Keep notifying after reaching the max charge.
        --cycles                   Show charging cycle count.
+       --percent                  Show the current level of battery charge.
        --sound-file               Set the sound file path for the notification.
 EOF
 
@@ -297,7 +303,7 @@ Main() {
     echo2 "Starting $progname"
 
     while true ; do
-        percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
+        percent=$(ShowPercent)
         [ "$percent" ] || DIE "cannot determine battery level"
 
         status=$(grep ^POWER_SUPPLY_STATUS= $power_device | cut -d'=' -f2)
