@@ -90,7 +90,7 @@ Main() {
 
     UpdateDatabase               # pacman -Sy
     FindAllUpdates
-    ShowDescriptions
+    # ShowDescriptions
 
     UpdateKeyrings               # install keyring packages if needed
     CheckNvidia
@@ -98,6 +98,7 @@ Main() {
     Xadditions middle "$middle"
 
     UpdatePackages               # pacman -Su and yay (repo and AUR)
+    ShowDescriptions
     Foreign
     Pacdiff
     Xadditions end "$end"
