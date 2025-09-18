@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=gitcl
+pkgdesc="Customizable bash completion for 'git clone'"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=25
+pkgrel=1
+
+arch=(any)
+license=(GPL)
+depends=(git)
+
+source=(
+    $url/gitcl
+    $url/gitcl.bash-completion
+    $url/gitcl.conf
+)
+sha512sums=('896166fc560dd74e33ccfbf25848794a1d5fbfb583ec051a6cb27316233c4da4a2bd13fac231ef0f5d3d14719ba54d8ef3e39cbae03013a0ad7d4c27663576fc'
+            'f303773b7b179d23fe9b8bcfe95d5469eab9a2672800c374d8c74fe7faeacc56441f2235bb2d2130a46fb82e4b103661557530cd1609b8c1592cc880ed3f18f9'
+            '39e4655ff1419ecfb1e63775ab6d08425f7d400239d689366989ecd7e5cc424a64fd0f63b4fe10a84ae44027bb5844ee65e0fc6ce2341efe852329ea55b0f33f')
+
+package() {
+    local item
+    for item in "${source[@]}" ; do
+        item=${item##*/}
+        case "$item" in
+            *.conf)             install -Dm644 $item      $pkgdir/etc/$item ;;
+            *.bash-completion)  install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.*} ;;
+            *)                  install -Dm755 $item      $pkgdir/usr/local/bin/$item ;;
+        esac
+    done
+}
