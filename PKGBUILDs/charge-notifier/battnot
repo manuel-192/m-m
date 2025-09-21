@@ -52,7 +52,7 @@ DumpOptions() {
     if [ "$lopts" ] ; then
         local out=${lopts//:/}
         out="--${out//,/ --}"
-        printf "%s\n" $out
+        printf "%s\n" $out | sort
     fi
     # don't show short options
 }
@@ -73,33 +73,35 @@ Options() {
     opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname: error" -- "$@")" || Usage 1
     eval set -- "$opts"
 
-    local exit_here=no
+    local exit_after_loop=""   # fill with exit code if stopping here
 
     while [ "$1" ] ; do
         case "$1" in
             # these use $2
-            --charge-sleep)       sleeptime_charging="$2";            shift ;;
-            --discharge-sleep)    sleeptime_discharging="$2";         shift ;;
-            --max)                max="$2";                           shift ;;
-            --min)                min="$2";                           shift ;;
-            --power-device-info)  GetPowerDevice power_device "$2" || shift ;;
-            --sound-file)         GetSoundFile   sound_file   "$2" || shift ;;
+            --charge-sleep)            sleeptime_charging="$2";            shift ;;
+            --discharge-sleep)         sleeptime_discharging="$2";         shift ;;
+            --max)                     max="$2";                           shift ;;
+            --min)                     min="$2";                           shift ;;
+            --power-device-info)       GetPowerDevice power_device "$2" || shift ;;
+            --sound-file)              GetSoundFile   sound_file   "$2" || shift ;;
+            --ctrl-end-threshold-set)  BatteryVariable set charge_control_end_threshold "$2"; shift ;;
 
             # these just set a value
-            --ctrl-end-threshold-set)  BatteryVariable set charge_control_end_threshold "$2" ;;
             --is-running)              check_is_running=yes ;;
             --keep-showing-max)        max_show_always=yes ;;
             --no-reread-conf)          reread_conf=no ;;
 
-            # these exit:
-            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold "$2"; exit_here=yes ;;
+            # these exit after options management loop:
+            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold; exit_after_loop=0 ;;
             --cycles)                  grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2
-                                       exit_here=yes
+                                       exit_after_loop=0
                                        ;;
-            --dump-options)            DumpOptions; exit_here=yes ;;
-            --edit-config)             EditConfig; exit_here=yes ;;
+            --percent | -p)            ShowPercent; exit_after_loop=0 ;;
+
+            # these exit immediately:
+            --dump-options)            DumpOptions; exit 0 ;;
+            --edit-config)             EditConfig; exit 0 ;;
             --help | -h)               Usage 0 ;;
-            --percent | -p)            ShowPercent; exit_here=yes ;;
 
             # misc param handling:
             --)                   shift; break ;;
@@ -107,7 +109,7 @@ Options() {
         esac
         shift
     done
-    [ $exit_here = yes ] && exit 0
+    [ "$exit_after_loop" ] && exit $exit_after_loop
 }
 
 Usage() {
@@ -133,8 +135,9 @@ Flags: --charge-sleep             Sets sleep time (seconds) between checks when 
 EOF
 
     [ -e "$BAT/charge_control_end_threshold" ] || return
+    local threshold=$(BatteryVariable show charge_control_end_threshold)
     cat <<EOF
-       --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop).
+       --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop, current: $threshold).
        --ctrl-end-threshold-show  Show the defined percentage when charging stops.
 EOF
     [ "$1" ] && exit $1
@@ -206,23 +209,23 @@ LimitedNumber() {
     local -r low="$2"
     local def="$3"
     local -r high="$4"
-    local limit="$_variable"
+    local tmplimit="$_variable"
 
     if [ $def -gt $high ] ; then         # default is too high
         def=$high
     elif [ $def -lt $low ] ; then        # default is too low
         def=$low
     fi
-    if [ -z "$limit" ] ; then              # is empty
-        limit=$def
-    elif [ "${limit//[0-9]/}" ] ; then     # has other then numbers
-        limit=$def
-    elif [ $limit -gt $high ] ; then       # is too high
-        limit=$def
-    elif [ $limit -lt $low ] ; then        # is too low
+    if [ -z "$tmplimit" ] ; then              # is empty
+        tmplimit=$def
+    elif [ "${tmplimit//[0-9]/}" ] ; then     # has other then numbers
+        tmplimit=$def
+    elif [ $tmplimit -gt $high ] ; then       # is too high
+        tmplimit=$def
+    elif [ $tmplimit -lt $low ] ; then        # is too low
         limit=$def
     fi
-    _variable=$limit
+    _variable=$tmplimit
 }
 HandleNumberValue() {
     local -r low=$1
