@@ -70,8 +70,10 @@ Options() {
     local sopts="hp"
     local opts
 
-    opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname: error" -- "$@")" || { Usage; exit 1; }
+    opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname: error" -- "$@")" || Usage 1
     eval set -- "$opts"
+
+    local exit_here=no
 
     while [ "$1" ] ; do
         case "$1" in
@@ -84,25 +86,28 @@ Options() {
             --sound-file)         GetSoundFile   sound_file   "$2" || shift ;;
 
             # these just set a value
-            --keep-showing-max)   max_show_always=yes ;;
-            --no-reread-conf)     reread_conf=no ;;
-            --is-running)         check_is_running=yes ;;
+            --ctrl-end-threshold-set)  BatteryVariable set charge_control_end_threshold "$2" ;;
+            --is-running)              check_is_running=yes ;;
+            --keep-showing-max)        max_show_always=yes ;;
+            --no-reread-conf)          reread_conf=no ;;
 
             # these exit:
-            --edit-config)        EditConfig; exit 0 ;;
-            --dump-options)       DumpOptions; exit 0 ;;
-            --cycles)             grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2
-                                  exit 0
-                                  ;;
-            --percent | -p)       ShowPercent; exit 0 ;;
-            --ctrl-end-threshold-set)  BatteryVariable set  charge_control_end_threshold "$2"; exit 0 ;;
-            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold "$2"; exit 0 ;;
-            --help | -h)          Usage; exit 0 ;;
+            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold "$2"; exit_here=yes ;;
+            --cycles)                  grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2
+                                       exit_here=yes
+                                       ;;
+            --dump-options)            DumpOptions; exit_here=yes ;;
+            --edit-config)             EditConfig; exit_here=yes ;;
+            --help | -h)               Usage 0 ;;
+            --percent | -p)            ShowPercent; exit_here=yes ;;
+
+            # misc param handling:
             --)                   shift; break ;;
             *)                    DIE "unsupported parameter '$1'" ;;
         esac
         shift
     done
+    [ $exit_here = yes ] && exit 0
 }
 
 Usage() {
@@ -132,6 +137,7 @@ EOF
        --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop).
        --ctrl-end-threshold-show  Show the defined percentage when charging stops.
 EOF
+    [ "$1" ] && exit $1
 }
 
 CreateConfigIfNeeded() {
@@ -283,22 +289,25 @@ Main() {
     CreateConfigIfNeeded
     source "$conf"
 
+    if false ; then
     for ((ix=0; ix < ${#args[@]}; ix++)) ; do
         arg="${args[$ix]}"
         case "$arg" in
             --help | -h |\
             --edit-config |\
             --cycles |\
+            --percent |\
             --no-reread-conf |\
             --is-running |\
             --dump-options |\
             --ctrl-end-threshold-show) Options $arg ;;
         esac
     done
-
-    IsRunning
+    fi
 
     Options "${BATTNOT_CONFIG_CMDS[@]}" "$@"
+
+    IsRunning
 
     echo2 "Starting $progname"
 
