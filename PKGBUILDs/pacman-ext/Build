@@ -3,7 +3,7 @@
 DIE()         { echo2 "$progname: error:" "$@"; exit 1; }
 echo2()       { echo "$@" >&2; }
 verbose2cmd() { [ $show_commands = yes ] && echo2 "${YELLOW}""===> ""$@""${RESET}"; }
-Cmd()         { verbose2cmd "$*" ; "$@" ; }
+Cmd()         { verbose2cmd "$*" ; "$@" || DIE "'$*' failed" ; }
 
 _Build_pkgname-pkgver-pkgrel() {
     source PKGBUILD
@@ -98,16 +98,16 @@ Build() {
     fi
 
     if [ "$updatesums" = "yes" ] ; then
-        Cmd updpkgsums || DIE "updpkgsums failed."
+        Cmd updpkgsums
     fi
-    LANG=C Cmd makepkg -cf $makepkg_opts || DIE "makepkg failed."
+    LANG=C Cmd makepkg -cf $makepkg_opts
 
     local files=(${Pkgname}-*.pkg.tar.zst)
 
     [ "${files[*]}" = "${Pkgname}-*.pkg.tar.zst" ] && DIE "nothing was built for '$Pkgname'"
 
     echo "Install ${files[*]}:"
-    Cmd sudo pacman $pacman_opts -U "${files[@]}" || DIE "pacman -U failed"
+    Cmd sudo pacman $pacman_opts -U "${files[@]}"
     read -p "  ${YELLOW}-> Delete ${files[*]} (Y/n)? ${RESET}"
     case "$REPLY" in
         "" | [yY]*) rm -f "${files[@]}" ;;
