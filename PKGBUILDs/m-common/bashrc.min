@@ -1483,9 +1483,9 @@ EOF
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
 
-    Alias EOS_UPDATE         "eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates"  # --nvidia doesn't hurt
+    Alias EOS_UPDATE         "eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates --faillock-check"  # --nvidia doesn't hurt
     Alias up                 "EOS_UPDATE"
-    Alias u                  "up --fast"
+    Alias u                  "EOS_UPDATE --fast"
     # Alias u                  "upd-small"
     # Alias uc                 "upd-small --clamav"
     # Alias ucr                "upd-small --clamav --rank"
