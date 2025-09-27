@@ -1,0 +1,28 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-manual-intervention
+pkgdesc="Manual interventions manager."
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=25
+pkgrel=1
+arch=('any')
+license=('GPL')
+
+source=(
+    $url/$pkgname
+    $url/hffile.bash
+)
+sha512sums=('aeaf9ee592b5e1086f0a166737c710e41e723232d801e43569a9117f6f539ce1f11f7c4f85a70779515ffb5920785546d42bfb33b91534b7447a065a1971dd5b'
+            '49f1371d9579da18eb3140eb31beadfc81281f2b7f0919bacf32b9d6ad91b2e1dce3d1e702260761950d0fd784cfffbfec59a44c5876b83d168741f64934eb08')
+
+package() {
+    local src file
+    for src in "${source[@]}" ; do
+        file="${src##*/}"
+        case "$file" in
+            *.bash) install -Dm644 "$file" "$pkgdir/etc/$pkgname/$file" ;;
+            *)      install -Dm755 "$file" "$pkgdir/usr/bin/$file" ;;
+        esac
+    done
+}

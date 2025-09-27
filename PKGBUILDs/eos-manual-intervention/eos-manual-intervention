@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# System hotfix manager.
+
+echo2() { echo -e "$@" >&2; }
+WARN()  { echo2 "$progname: warning: $1"; }
+DIE()   { echo2 "$progname: error: $1"; exit 1; }
+
+RUN() {
+    echo2 "   ->" "$@"
+    if "$@" ; then
+        return 0
+    else
+        DIE "'$*' failed."
+        exit 1
+    fi
+}
+
+MarkOk() {
+    echo2 "  ==> marking '$1' as handled"
+    echo "$1" | sudo tee -a "$handled_fixes" >/dev/null
+}
+IsOk() { grep "^$1$" "$handled_fixes" &>/dev/null; }
+
+FetchHotfixFile() {
+    # TODO: fetch it
+    if [ -e "$hffile" ] ; then
+        sudo chmod -w "$hffile"
+        source "$hffile"
+    fi
+}
+
+RunFixesIfNeeded() {
+    local count=${#HF_func_names[@]}
+    local ix hffunc descr
+
+    for ((ix=0; ix < count; ix+=2)) ; do
+        hffunc="${HF_func_names[$ix]}"
+        descr="${HF_func_names[$((ix+1))]}"
+        if IsOk "$hffunc" ; then
+            echo2 "$hffunc:\talready handled"
+        else
+            echo2 "$hffunc: $descr"
+            if $hffunc ; then
+                MarkOk "$hffunc"
+            else
+                return 1
+            fi
+        fi
+    done
+}
+
+Main() {
+    local -r progname=${0##*/}
+    local -r dir=/etc/$progname
+    local -r hffile="$dir/hffile.bash"
+    local -r handled_fixes="$dir/handled.txt"
+    local HF_func_names=()
+
+    sudo mkdir -p $dir
+
+    FetchHotfixFile
+    RunFixesIfNeeded
+}
+
+Main "$@"
