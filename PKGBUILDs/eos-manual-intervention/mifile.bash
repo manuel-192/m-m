@@ -8,7 +8,7 @@
 
 # Functions
 
-HF_20250621() {
+MI_20250621() {
     local pkg=linux-firmware
     local curver="$(expac %v $pkg)"
     local newver=20250613.12fe085f-5
@@ -24,7 +24,7 @@ HF_20250621() {
     fi
 }
 
-HF_20250620() {
+MI_20250620() {
     local pkg=plasma-x11-session
     if [ -e /usr/share/wayland-sessions/plasma.desktop ] ; then
         if [ ! -e /usr/share/xsessions/plasmax11.desktop ] ; then
@@ -37,7 +37,7 @@ HF_20250620() {
 }
 
 # Add each function name and description into this array:
-HF_func_names=(
-    HF_20250621 "linux-firmware"
-    HF_20250620 "x11 plasma session"
+MI_func_names=(
+    MI_20250621 "linux-firmware"
+    MI_20250620 "x11 plasma session"
 )

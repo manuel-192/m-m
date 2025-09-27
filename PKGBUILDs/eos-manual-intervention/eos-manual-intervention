@@ -24,25 +24,25 @@ IsOk() { grep "^$1$" "$handled_fixes" &>/dev/null; }
 
 FetchHotfixFile() {
     # TODO: fetch it
-    if [ -e "$hffile" ] ; then
-        sudo chmod -w "$hffile"
-        source "$hffile"
+    if [ -e "$mifile" ] ; then
+        sudo chmod -w "$mifile"
+        source "$mifile"
     fi
 }
 
 RunFixesIfNeeded() {
-    local count=${#HF_func_names[@]}
-    local ix hffunc descr
+    local count=${#MI_func_names[@]}
+    local ix mifunc descr
 
     for ((ix=0; ix < count; ix+=2)) ; do
-        hffunc="${HF_func_names[$ix]}"
-        descr="${HF_func_names[$((ix+1))]}"
-        if IsOk "$hffunc" ; then
-            echo2 "$hffunc:\talready handled"
+        mifunc="${MI_func_names[$ix]}"
+        descr="${MI_func_names[$((ix+1))]}"
+        if IsOk "$mifunc" ; then
+            echo2 "$mifunc:\talready handled"
         else
-            echo2 "$hffunc: $descr"
-            if $hffunc ; then
-                MarkOk "$hffunc"
+            echo2 "$mifunc: $descr"
+            if $mifunc ; then
+                MarkOk "$mifunc"
             else
                 return 1
             fi
@@ -53,9 +53,9 @@ RunFixesIfNeeded() {
 Main() {
     local -r progname=${0##*/}
     local -r dir=/etc/$progname
-    local -r hffile="$dir/hffile.bash"
+    local -r mifile="$dir/mifile.bash"
     local -r handled_fixes="$dir/handled.txt"
-    local HF_func_names=()
+    local MI_func_names=()
 
     sudo mkdir -p $dir
 
