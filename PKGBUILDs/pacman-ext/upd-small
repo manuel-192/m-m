@@ -90,6 +90,7 @@ Options() {
     # manage options
     local sopts="acdefhl:qr"
     local lopts="aur,clamav,connection,deep,help,hide-fetch,quiet,rank,edit-list,cache-limit:"
+    lopts+=",manual-intervention"
     local opts
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -107,6 +108,9 @@ Options() {
             --edit-list  | -e) SudoEdit /etc/pacman.d/mirrorlist; exit 0 ;;
             --clamav)          clamav=yes ;;
             --cache-limit | -l) paccache="$2"; shift ;;
+            --manual-intervention)
+                eos-manual-intervention
+                ;;
             --)                shift; break ;;
         esac
         shift

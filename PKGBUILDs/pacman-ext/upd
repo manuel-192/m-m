@@ -53,6 +53,7 @@ Main() {
     local keyrings=$DEFAULT_keyrings lock_check=$DEFAULT_lock_check nvidia=$DEFAULT_nvidia
     local optimize_checks=$DEFAULT_optimize_checks instant=$DEFAULT_instant
     local pacdiff=$DEFAULT_pacdiff quiet=$DEFAULT_quiet sync=$DEFAULT_sync virtualbox=$DEFAULT_virtualbox
+    local interventions=no
 
     local verbose=no   # for uc-fast only !?
     local debug=no
@@ -61,7 +62,7 @@ Main() {
     local SOPTS="acdfhil:nopqsv"
     local LOPTS="aur,begin:,clear-databases,clear-keyrings,connection,debug,descriptions,dump-options,end:,instant,instant-no-aur"
     LOPTS+=",foreign,help,middle:,no-keyrings,no-lock,nvidia,optimize-checks,pacdiff,pager,paru,quiet,sync,verbose,virtualbox"
-    LOPTS+=",update-mirrors-arch,update-mirrors-eos"
+    LOPTS+=",update-mirrors-arch,update-mirrors-eos,manual-intervention"
 
     local args=("$@")
 
@@ -93,6 +94,7 @@ Main() {
     # ShowDescriptions
 
     UpdateKeyrings               # install keyring packages if needed
+    CheckInterventions
     CheckNvidia
     CheckVirtualbox
     Xadditions middle "$middle"
@@ -255,6 +257,7 @@ Options() {
                     -s | --sync)             Assign sync yes ;;
                     --verbose)               Assign verbose yes ;;
                     -v | --virtualbox)       Assign virtualbox yes ;;
+                    --manual-intervention)   interventions=yes ;;
                     --begin)                 AppendCmd begin  "$2" ; shift ;;
                     --middle)                AppendCmd middle "$2" ; shift ;;
                     --end)                   AppendCmd end    "$2" ; shift ;;
@@ -381,6 +384,11 @@ ClearKeyrings() {
 
 ClearDatabases() {
     Cmd rm /var/lib/pacman/sync/*
+}
+
+CheckInterventions() {
+    [ "$interventions" = "yes" ] || return
+    eos-manual-intervention
 }
 
 CheckNvidia() {
