@@ -5,24 +5,24 @@ pkgname=eos-manual-intervention
 pkgdesc="Manual interventions manager."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=25
-pkgrel=1
+pkgrel=1.1
 arch=('any')
 license=('GPL')
 
 source=(
     $url/$pkgname
-    $url/mifile.bash
+    $url/$pkgname.interventions
 )
-sha512sums=('98648cfb6028cbbde86bc0f9240d0dae6b675b1714c3288aef94664feae15c82950af645ff2ff02fd3c438cffc1a16b507da0b2fcdf2b5c15a892cae44430ab6'
-            '944a853a1c8082490e1edb2856b484e674e955193d34f2d97de6ad38ac005f6f44f8dfc7f72607e0639a2667a0452005b7d2fc90fd518e452162dfa5464fcd2f')
+sha512sums=('197b7aadc1e84843671dce25b669d591652d433a83858130ba7989e3b6427db96ebc28650b75457af493d6d85dfca6b20e5262550eb756ef18f53751cb5b227b'
+            'bb65174987d01f9396400eca3c3f92c7a1cbc1c43326f8198080b427bd16bd9ccb867ef3a903e67b7d9774fadebe1c9de33ac8a22ea713b803e5f2b8e8ab0ed1')
 
 package() {
     local src file
     for src in "${source[@]}" ; do
         file="${src##*/}"
         case "$file" in
-            *.bash) install -Dm644 "$file" "$pkgdir/etc/$pkgname/$file" ;;
-            *)      install -Dm755 "$file" "$pkgdir/usr/bin/$file" ;;
+            *.interventions) install -Dm644 "$file" "$pkgdir/etc/$pkgname/$file" ;;
+            *)               install -Dm755 "$file" "$pkgdir/usr/bin/$file" ;;
         esac
     done
 }

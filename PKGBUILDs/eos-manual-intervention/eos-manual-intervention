@@ -53,7 +53,7 @@ RunFixesIfNeeded() {
 Main() {
     local -r progname=${0##*/}
     local -r dir=/etc/$progname
-    local -r mifile="$dir/mifile.bash"
+    local -r mifile="$dir/$progname.interventions"
     local -r handled_fixes="$dir/handled.txt"
     local MI_func_names=()
 
