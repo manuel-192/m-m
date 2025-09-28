@@ -50,12 +50,23 @@ RunFixesIfNeeded() {
     done
 }
 
+Disclaimer() {
+    cat <<EOF >&2
+NOTE: This program ($progname) is experimental meaning it may contain bugs.
+      Please report any unexpected behavior at https://forum.endeavouros.com,
+      the EndeavourOS forum.
+
+EOF
+}
+
 Main() {
     local -r progname=${0##*/}
     local -r dir=/etc/$progname
     local -r mifile="$dir/$progname.interventions"
     local -r handled_fixes="$dir/handled.txt"
     local MI_func_names=()
+
+    # Disclaimer
 
     sudo mkdir -p $dir
 
