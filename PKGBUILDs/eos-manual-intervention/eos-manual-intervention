@@ -38,7 +38,7 @@ RunFixesIfNeeded() {
         mifunc="${MI_func_names[$ix]}"
         descr="${MI_func_names[$((ix+1))]}"
         if IsOk "$mifunc" ; then
-            echo2 "$mifunc:\talready handled"
+            echo2 "$mifunc:\talready OK"
         else
             echo2 "$mifunc: $descr"
             if $mifunc ; then

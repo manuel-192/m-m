@@ -17,6 +17,8 @@ MI_20250621() {
         if [ $(vercmp $curver $newver) -lt 0 ] ; then
             RUN sudo pacman -Rsn $pkg || return 1
             RUN sudo pacman -Syu $pkg || return 1
+        else
+            echo "  ==> $pkg already OK" >&2
         fi
         return 0
     else
@@ -27,15 +29,17 @@ MI_20250621() {
 
 MI_20250620() {
     local -r pkg=plasma-x11-session
-    local reply=""
     if [ -e /usr/share/wayland-sessions/plasma.desktop ] ; then
-        if [ ! -e /usr/share/xsessions/plasmax11.desktop ] ; then
+        if [ -e /usr/share/xsessions/plasmax11.desktop ] ; then
+            echo "  ==> $pkg already OK" >&2
+        else
+            local reply=""
             while true ; do
                 read -sn1 -p "Do you want to support x11 sessions (y/n)? " reply >&2
                 case "$reply" in
                     [yY]) RUN sudo pacman -Syu $pkg && return 0 || return 1 ;;
                     [nN]) return 0 ;;
-                    *)     echo "Please give 'y' or 'n'." >&2 ;;
+                    *)    echo "Please give 'y' or 'n'." >&2 ;;
                 esac
             done
         fi
