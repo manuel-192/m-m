@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# System hotfix manager.
+# Manager for manual interventions.
 
 echo2() { echo -e "$@" >&2; }
 WARN()  { echo2 "$progname: warning: $1"; }
@@ -68,7 +68,7 @@ Main() {
 
     # Disclaimer
 
-    sudo mkdir -p $dir
+    sudo mkdir -p "$dir"
 
     FetchHotfixFile
     RunFixesIfNeeded

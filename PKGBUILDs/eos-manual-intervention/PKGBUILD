@@ -13,8 +13,8 @@ source=(
     $url/$pkgname
     $url/$pkgname.interventions
 )
-sha512sums=('55ca33b72ac897e9e6e2da0d3847871d2715c0f66ac4b3ee0eb8eedcb82547e26287e8620891994fbf24294708f2b39f8c1297551bcbdc196ce90a479f41c471'
-            'fa53e4fa0c86bca87b6bf5d63194e3e4722796cfafe25b10841e9f3bfe2836bb6be615fbdc55b79111dd020b83a686505f6cccef049f3659e91b207f23d4b23d')
+sha512sums=('97e23edff68293d34db4a3e7e27b434d4ea2e7d01959a67e91d528d2347e276ed97a23afd079e5ff3e2ddd3458163df9bbbce76a6d19c09f4d6cbb2cdc009412'
+            '4d16ee8ec3b35c68f71cb3ddeabbe082acdd780f273335de57c1598d317cb8faf343291ac719b9407c6accd7ec2f52fbc1becca9a24b10c450c9d154cdacef33')
 
 package() {
     local src file
