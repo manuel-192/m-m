@@ -1,0 +1,32 @@
+#!/bin/bash
+
+Main() {
+    local installed="$(pacman -Qq emacs 2>/dev/null)"
+    [ "$installed" ] || return 1
+    case "$XDG_SESSION_TYPE" in
+        x11)
+            if [ "$installed" = emacs-wayland ] ; then
+		echo "==> emacs-wayland -> emacs" >&2
+		sudo pacman -Rdd --noconfirm emacs-tweaks
+                sudo pacman -Rdd --noconfirm emacs-wayland
+                sudo pacman -S --noconfirm emacs
+		sudo pacman -S --noconfirm emacs-tweaks
+	    else
+		echo "emacs already OK" >&2
+            fi
+            ;;
+        wayland)
+            if [ "$installed" = emacs ] ; then
+		echo "==> emacs -> emacs-wayland" >&2
+		sudo pacman -Rdd --noconfirm emacs-tweaks
+                sudo pacman -Rdd --noconfirm emacs
+                sudo pacman -S --noconfirm emacs-wayland
+		sudo pacman -S --noconfirm emacs-tweaks
+	    else
+		echo "emacs-wayland already OK" >&2
+            fi
+            ;;
+    esac
+}
+
+Main "$@"

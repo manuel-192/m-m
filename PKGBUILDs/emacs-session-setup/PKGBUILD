@@ -1,0 +1,25 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=emacs-session-setup
+pkgdesc="Fix emacs session for x11 or wayland"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=25
+pkgrel=1
+arch=('any')
+license=('GPL')
+
+source=(
+    $url/$pkgname
+)
+sha512sums=('9d7e6cc88adc041e776a3c332ddeca641b8e98a6e815c442d430ac44fcbef4bf8b50f2a4502d7f07d05abba2ed4035f5c585b55878fe9f7c8bd5f8c9b613c2d0')
+
+package() {
+    local src file
+    for src in "${source[@]}" ; do
+        file="${src##*/}"
+        case "$file" in
+            *)               install -Dm755 "$file" "$pkgdir/usr/bin/$file" ;;
+        esac
+    done
+}
