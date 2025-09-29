@@ -12,7 +12,7 @@ license=('GPL')
 source=(
     $url/$pkgname
 )
-sha512sums=('9d7e6cc88adc041e776a3c332ddeca641b8e98a6e815c442d430ac44fcbef4bf8b50f2a4502d7f07d05abba2ed4035f5c585b55878fe9f7c8bd5f8c9b613c2d0')
+sha512sums=('6499d40edcd17d9e00237232baa5e21d1465c8d41f0bae31f47fb1e3f5e2fa57006109f036e4e7a680545310fa765590ef19f823832b29838a8a6d44c0b68c98')
 
 package() {
     local src file

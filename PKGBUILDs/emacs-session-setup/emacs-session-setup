@@ -12,7 +12,7 @@ Main() {
                 sudo pacman -S --noconfirm emacs
 		sudo pacman -S --noconfirm emacs-tweaks
 	    else
-		echo "emacs already OK" >&2
+		echo "==> emacs already OK" >&2
             fi
             ;;
         wayland)
@@ -23,7 +23,7 @@ Main() {
                 sudo pacman -S --noconfirm emacs-wayland
 		sudo pacman -S --noconfirm emacs-tweaks
 	    else
-		echo "emacs-wayland already OK" >&2
+		echo "==> emacs-wayland already OK" >&2
             fi
             ;;
     esac
