@@ -1124,6 +1124,7 @@ EOF
 
     upd() {
         local opt="-dopv"
+        [ -x /bin/eos-manual-intervention ] && opt+=" --manual-intervention"
         [ "$(lspci -k | grep " VGA .* NVIDIA ")" ] && opt+=" -n"
         LANG=C /bin/upd $opt "$@"
     }
