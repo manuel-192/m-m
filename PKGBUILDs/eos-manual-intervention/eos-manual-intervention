@@ -23,9 +23,31 @@ MarkOk() {
 IsOk() { grep "^$1$" "$handled_fixes" &>/dev/null; }
 
 FetchHotfixFile() {
-    echo2 "\n###### TODO: fetch the latest recipe file! ######\n"
+    local testing=yes
+
+    local -r pname=eos-manual-intervention
+    local -r fname=$pname.interventions
+    local -r github="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pname/$fname"
+    local -r gitlab="https://gitlab.com/endeavouros-filemirror/PKGBUILDS/raw/master/$pname/$fname"
+    local -r githubm="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pname/$fname"
+
+    if [ ! -e "$mifile" ] ; then
+        if [ $testing = yes ] ; then
+            sudo mkdir -p "$dir"
+            wget -qO "$HOME/.$fname" "$githubm"
+        else
+            wget -qO "$HOME/.$fname" "$github" || wget -O "$HOME/.$fname" "$gitlab"
+        fi
+        if [ -e "$HOME/.$fname" ] ; then
+            sudo bash -c "cp '$HOME/.$fname' '$mifile' && chmod -w '$mifile'"
+            rm -f "$HOME/.$fname"
+        else
+            rm -f "$HOME/.$fname"
+            DIE "downloading $fname failed"
+        fi
+    fi
+
     if [ -e "$mifile" ] ; then
-        sudo chmod -w "$mifile"
         source "$mifile"
     fi
 }
@@ -50,9 +72,6 @@ RunFixesIfNeeded() {
     done
 }
 
-Prepare() {
-    sudo mkdir -p "$dir"
-}
 NewsPage() {
     local bb
     for bb in exo-open kde-open xdg-open firefox ; do
@@ -91,7 +110,6 @@ Main() {
     local MI_func_names=()
 
     Options "$@"
-    Prepare
     FetchHotfixFile
     RunFixesIfNeeded
 }
