@@ -23,7 +23,7 @@ MarkOk() {
 IsOk() { grep "^$1$" "$handled_fixes" &>/dev/null; }
 
 FetchHotfixFile() {
-    # TODO: fetch it
+    echo2 "\n###### TODO: fetch the latest recipe file! ######\n"
     if [ -e "$mifile" ] ; then
         sudo chmod -w "$mifile"
         source "$mifile"
@@ -50,13 +50,37 @@ RunFixesIfNeeded() {
     done
 }
 
-Disclaimer() {
+Prepare() {
+    sudo mkdir -p "$dir"
+}
+NewsPage() {
+    local bb
+    for bb in exo-open kde-open xdg-open firefox ; do
+        if [ -x /bin/$bb ] ; then
+            /bin/$bb https://archlinux.org/news &
+            break
+        fi
+    done
+    [ "$1" ] && exit $1
+}
+Help() {
     cat <<EOF >&2
-NOTE: This program ($progname) is experimental meaning it may contain bugs.
-      Please report any unexpected behavior at https://forum.endeavouros.com,
-      the EndeavourOS forum.
-
+Purpose: Execute and manage essential manual interventions.
+Usage:   $progname [options]
+Options: -h, --help            This help.
+         -n, --show-arch-news  Show the Arch news page in a browser.
 EOF
+    [ "$1" ] && exit $1
+}
+
+Options() {
+    local arg
+    for arg in "$@" ; do
+        case "$arg" in
+            -h | --help)           Help 0 ;;
+            -n | --show-arch-news) NewsPage 0 ;;
+        esac
+    done
 }
 
 Main() {
@@ -66,10 +90,8 @@ Main() {
     local -r handled_fixes="$dir/handled.txt"
     local MI_func_names=()
 
-    # Disclaimer
-
-    sudo mkdir -p "$dir"
-
+    Options "$@"
+    Prepare
     FetchHotfixFile
     RunFixesIfNeeded
 }
