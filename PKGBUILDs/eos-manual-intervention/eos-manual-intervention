@@ -3,8 +3,8 @@
 # Manager for manual interventions.
 
 echo2() { echo -e "$@" >&2; }
-WARN()  { echo2 "$progname: warning: $1"; }
-DIE()   { echo2 "$progname: error: $1"; exit 1; }
+WARN()  { echo2 "==> $progname: warning: $1"; }
+DIE()   { echo2 "==> $progname: error: $1"; exit 1; }
 
 RUN() {
     echo2 "   ->" "$@"
@@ -82,6 +82,19 @@ NewsPage() {
     done
     [ "$1" ] && exit $1
 }
+
+CheckPacmanConf() {
+    local -r conf=/etc/pacman.conf
+    local lines="$(grep -n "^[ \t]*IgnorePkg[ \t]*=[ \t]*[a-zA-Z0-9]" $conf)"
+    if [ "$lines" ] ; then
+        cat <<EOF >&2
+==> $progname: warning:
+==> file $conf contains IgnorePkg line(s). This *may* affect manual interventions.
+EOF
+        printf "      %s\n" "$lines" >&2
+    fi
+}
+
 Help() {
     cat <<EOF >&2
 Purpose: Execute and manage essential manual interventions.
@@ -110,6 +123,7 @@ Main() {
     local MI_func_names=()
 
     Options "$@"
+    CheckPacmanConf
     FetchHotfixFile
     RunFixesIfNeeded
 }
