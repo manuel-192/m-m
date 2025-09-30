@@ -24,7 +24,7 @@ MI_20250620() {
         else
             local reply=""
             while true ; do
-                read -sn1 -p "Do you want to support x11 sessions (y/n)? " reply >&2
+                read -sn1 -p "Do you want to support plasma x11 sessions (y/n)? " reply >&2
                 case "$reply" in
                     [yY]) RUN sudo pacman -Syu $pkg && return 0 || return 1 ;;
                     [nN]) return 0 ;;
