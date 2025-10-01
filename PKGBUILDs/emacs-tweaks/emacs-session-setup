@@ -1,0 +1,44 @@
+#!/bin/bash
+
+WantToContinue() {
+    local reply=""
+    read -p "==> Want to setup proper EMACS for $XDG_SESSION_TYPE (Y/n)? " reply >&2
+    case "$reply" in
+        [nN]*) return 1 ;;
+    esac
+    return 0
+}
+
+Main() {
+    local progname=${##*/}
+    local quiet=no
+    case "$1" in
+        --help  | -h) echo "Usage: $progname [--help | --quiet]" >&2; return ;;
+        --quiet | -q) quiet=yes ;;
+    esac
+    local installed="$(pacman -Qq emacs 2>/dev/null)"
+    if [ -z "$installed" ] ; then
+        return 0                     # no emacs installed, nothing to change
+    fi
+    local new="" old=""
+    case "$XDG_SESSION_TYPE" in
+        wayland) new=emacs-wayland
+                 [ "$installed" = emacs ] && old=emacs
+                 ;;
+        x11)     new=emacs
+                 [ "$installed" = emacs-wayland ] && old=emacs-wayland
+                 ;;
+    esac
+    if [ "$old" ] ; then
+	echo "==> $old -> $new" >&2
+        WantToContinue || return
+	sudo pacman -Rdd --noconfirm emacs-tweaks
+        sudo pacman -Rdd --noconfirm $old
+        sudo pacman -S --noconfirm $new
+	sudo pacman -S --noconfirm emacs-tweaks
+    else
+	[ $quiet = no ] && echo "==> $new is properly installed" >&2
+    fi
+}
+
+Main "$@"
