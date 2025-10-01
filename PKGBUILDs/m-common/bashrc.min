@@ -54,10 +54,8 @@ SettingsCommon()
     shopt -s autocd
 
     SetVarToFirstApp PAGER "less" "most"
-    SetVarToFirstApp EDITOR codium emacs   # sets EDITOR to the first existing listed app
+    SetVarToFirstApp EDITOR emacs codium   # sets EDITOR to the first existing listed app
     export LESS="-RF"
-
-    [ -x /bin/emacs-session-setup ] && emacs-session-setup
 
     # Set in local ~/.bashrc:
     # ROOTDIR_EOS
@@ -1485,6 +1483,7 @@ EOF
     # Alias paq                "sudo paq"
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
+    Alias rehash             "hash -r"
 
     Alias EOS_UPDATE         "eos-manual-intervention && eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates --faillock-check"  # --nvidia doesn't hurt
     Alias up                 "EOS_UPDATE"
