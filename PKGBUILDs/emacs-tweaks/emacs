@@ -51,11 +51,10 @@ _geometry_old() {
         source $conf
         wmax=$((emacs_max_columns))  # why "/ 2" ??
         hmax=$((emacs_max_lines))
-        #echo "wmax=$wmax hmax=$hmax"
     fi
 
     w=$(/usr/bin/cat "$arg" | wc -L)
-    # echo "w=$w" >&2
+
     ((w+=7))                         # 5 is minimum
     test $w -gt $wmax && w=$wmax
     test $w -lt $wmin && w=$wmin
@@ -64,9 +63,7 @@ _geometry_old() {
     test $h -gt $hmax && h=$hmax
     test $h -lt $hmin && h=$hmin
 
-    #echo "w=$w h=$h"
     args+=("--geometry=${w}x$h")
-    # echo "w=$w h=$h" >&2
 }
 
 _geometry() {
@@ -101,8 +98,6 @@ _geometry() {
     [ $max_lines   -lt $file_lines ]   && y=$max_lines
 
     args+=("--geometry=${x}x$y")
-
-    #echo "x=$x y=$y" >&2
 }
 
 _emacs()
@@ -111,6 +106,8 @@ _emacs()
     # Also make help usage easier with a pager.
     # See also emacs_new_options() above.
     # And, added option -h (alias --help) for emacs. ;)
+
+    [ -x /bin/emacs-session-setup ] && emacs-session-setup
 
     local arg args=()
     local moreargs extarg
@@ -121,23 +118,6 @@ _emacs()
 
     # this should be made better regarding DEs and themes...
     extopt="--reverse-video"
-
-    #if [ "$XDG_CURRENT_DESKTOP" = "KDE" ] ; then
-    #    if [ -r ~/.config/kdedefaults/kdeglobals ] ; then
-    #        if [ -n "$(/usr/bin/grep "^ColorScheme=" ~/.config/kdedefaults/kdeglobals | /usr/bin/grep -i dark)" ] ; then
-    #            extopt=""
-    #        fi
-    #    fi
-    #fi
-
-    #args=(--reverse-video)
-
-#    case "$(uname -n)" in
-#        tykki2) args+=('--geometry=150x60') ;;
-#        *)      args+=('--geometry=150x50') ;;
-#    esac
-
-    #echo "args = ${args[*]}"
 
     for arg in "$@"
     do
