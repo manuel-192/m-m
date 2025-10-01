@@ -58,9 +58,10 @@ local PKGNAMES=(
     eos-driver-db
     eos-repocheck
     expac-completion
-    fetch-iso
+    # fetch-iso
     fzf-stuff
     generate-xfce4-desktop-xml
+    gitcl
     git-meta
     GitUpdate
     glone

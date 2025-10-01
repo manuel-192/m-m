@@ -4,7 +4,7 @@
 
 pkgname=m-repos
 pkgdesc="Configs for the m-repos"
-pkgver=25.3
+pkgver=25.10
 pkgrel=1
 arch=(any)
 license=(GPL2)
@@ -28,7 +28,7 @@ source=(
     $_url/changelogs.conf.m-more2
     $_url/changelogs.conf.m-aur2
 )
-sha512sums=('6b1c0fd640684dea4ebf0efb5a83e0346e3be637ea01bfc68506567d07ec4954f3dd24f107545131a7ddfbfafd7c21d0de202629fe6bee2892e888de89c98b8a'
+sha512sums=('6e3249471f7d66a783ed5ff3ed40bea3634c67e7788ce9959f7ae8cc8cb2bc4498585cb680a0c993f09daa87045c844493820d79302002b30fe9ad6f72b14bce'
             '0e188403ba8bee19252c06eac14e958bb14517f8840adfbb5f63bb1069f62da7275edadc78cfd62e5d980de22386f8ba12cda8fd6b33db39ba03c20d604bd711'
             '704d497c1b06d2195907b3a03c7e714ad94f2dce8be7612761e3dee78ecb352863c6fd014db5a494b565fd4a08bd24a7a1682b46ec6b4a86e63000c8976daf17'
             '74e6171a17c2b6df572a490b6d1f8f89a20a88124a557d07ce78d12c335c1c05623af452020429644bbd281af409870bdda60cef9bfde1e5c0458768f2213d25'
