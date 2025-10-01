@@ -1466,6 +1466,7 @@ EOF
     # Alias history-fuzzy      "history | fzf --tac --no-sort"
     # Alias history-select     "history | fzf --tac --no-separator --no-info"
     Alias hlp                "tldr"
+    Alias ide                "bide"
     Alias inxi               "inxi -z"
     Alias local-repo-manager "local-repo-manager --verbose"
     # Alias ls                 "/bin/ls $(l --get-ls-opts)"
