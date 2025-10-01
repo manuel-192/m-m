@@ -57,6 +57,8 @@ SettingsCommon()
     SetVarToFirstApp EDITOR codium emacs   # sets EDITOR to the first existing listed app
     export LESS="-RF"
 
+    [ -x /bin/emacs-session-setup ] && emacs-session-setup
+
     # Set in local ~/.bashrc:
     # ROOTDIR_EOS
     # ROOTDIR_MAN
@@ -1484,7 +1486,7 @@ EOF
     # Alias I                  "paf -i"
     # Alias Install            "paf -i"
 
-    Alias EOS_UPDATE         "eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates --faillock-check"  # --nvidia doesn't hurt
+    Alias EOS_UPDATE         "eos-manual-intervention && eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates --faillock-check"  # --nvidia doesn't hurt
     Alias up                 "EOS_UPDATE"
     Alias u                  "EOS_UPDATE --fast"
     # Alias u                  "upd-small"
