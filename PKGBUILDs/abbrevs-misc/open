@@ -20,25 +20,19 @@ IsTextFile() {
     return 1
 }
 
-Opener() {
-    local openers=(/bin/exo-open /bin/kde-open /bin/xdg-open)
-
-    for opener in "${openers[@]}" ; do
-        if [ -x $opener ] ; then
-            return 0
-        fi
-    done
-    DIE "general mime app for editing files not found"
-}
-
 Main()
 {
     local progname=${0##*/}
     local files=()
     local arg path
-    local opener=exo-open
+    local openers=(/bin/exo-open /bin/kde-open /bin/xdg-open)
+    local opener
 
-    which ${opener%% *} &>/dev/null || Opener
+    # check which of the opener apps are available
+    for opener in "${openers[@]}" ; do
+        [ -x $opener ] && break
+    done
+    [ -x $opener ] || DIE "general mime app for editing files not found"
 
     for arg in "$@" ; do
         case "$arg" in
@@ -58,7 +52,16 @@ Main()
         esac
     done
     if [ ${#files[@]} -gt 0 ] ; then
-        "$opener" "${files[@]}"
+        case "${opener##*/}" in
+            exo-open)
+                setsid "$opener" "${files[@]}" &>/dev/null
+                ;;
+            *)
+                for arg in "${files[@]}" ; do
+                    setsid "$opener" "$arg" &>/dev/null
+                done
+                ;;
+        esac
     else
         DIE "==> nothing to open."
     fi
