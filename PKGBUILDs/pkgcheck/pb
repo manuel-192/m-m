@@ -392,12 +392,14 @@ EOF
                 return $?
                 ;;
             --assets.conf-m)
-                local folders=("$MAN/b-assets")
+                # local folders=("$MAN/b-assets")
+                local folders=("$MAN/m-m/PKGBUILDs/m-repos")
                 AssetsConfCheck
                 return $?
                 ;;
             --assets.conf-check)
-                local folders=("$EOS/eos-pkgbuild-setup" "$MAN/b-assets")
+                # local folders=("$EOS/eos-pkgbuild-setup" "$MAN/b-assets")
+                local folders=("$EOS/eos-pkgbuild-setup" "$MAN/m-m/PKGBUILDs/m-repos")
                 AssetsConfCheck
                 return $?
                 ;;
