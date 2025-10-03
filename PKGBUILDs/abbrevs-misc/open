@@ -20,48 +20,49 @@ IsTextFile() {
     return 1
 }
 
+EmacsSetup() { type emacs-session-setup &>/dev/null && emacs-session-setup --quiet; }
+
 Main()
 {
     local progname=${0##*/}
-    local files=()
-    local arg path
+    local commands=()
+    local arg ix path cmd file
     local openers=(/bin/exo-open /bin/kde-open /bin/xdg-open)
-    local opener
+    local opener=""
+    local -r emacs=emacs
 
     # check which of the opener apps are available
     for opener in "${openers[@]}" ; do
-        [ -x $opener ] && break
+        [ -x $opener ] && break || opener=""
     done
-    [ -x $opener ] || DIE "general mime app for editing files not found"
 
     for arg in "$@" ; do
         case "$arg" in
             -*) DIE "unknown arg '$arg'" ;;
             *)
                 if IsTextFile "$arg" ; then
-                    files+=("$arg")
+                    commands+=($emacs "$arg")
+                    EmacsSetup
                 else
                     path=$(which "$arg" 2>/dev/null)
                     if [ "$path" ] && IsTextFile "$path" ; then
-                        files+=("$path")
+                        commands+=($emacs "$path")
+                        EmacsSetup
                     else
-                        files+=("$arg")
+                        [ "$opener" ] || DIE "general mime app for editing files not found"
+                        commands+=("$opener" "$arg")
                     fi
                 fi
                 ;;
         esac
     done
-    if [ ${#files[@]} -gt 0 ] ; then
-        case "${opener##*/}" in
-            exo-open)
-                setsid "$opener" "${files[@]}" &>/dev/null
-                ;;
-            *)
-                for arg in "${files[@]}" ; do
-                    setsid "$opener" "$arg" &>/dev/null
-                done
-                ;;
-        esac
+    if [ "$commands" ] ; then
+        for ((ix=0; ix < ${#commands[@]}; ix+=2)) ; do
+            cmd="${commands[$ix]}"
+            file="${commands[$((ix+1))]}"
+            echo "$cmd '$file'" >&2
+            setsid "$cmd" "$file" &>/dev/null
+        done
     else
         DIE "==> nothing to open."
     fi
