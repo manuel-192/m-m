@@ -5,6 +5,8 @@ warning() { echo2 "$progname: $FUNCNAME: $1" ; }
 error()   { echo2 "$progname: $FUNCNAME: $1" ; exit 1; }
 
 BuildRepo() {
+    local reponame="$1"
+    [ $aur_src = local ] && fetch-aur-stuff $reponame
     assets.make ${options[*]}
 }
 export -f BuildRepo
@@ -17,7 +19,7 @@ Banner() {
     Color info
     printf "======== %s ========\n" "$line" >&2
     Color
-    $tool
+    $tool $extra
 }
 BannerIf() {
     local -r tool="$1"
@@ -43,6 +45,7 @@ assets_make() {
     local reponames_given=()
     local arg
     local buildmode="--dryrun"
+    local aur_src=aur
 
     [ "$CODEDIR" ] || error "CODEDIR is not set"
 
@@ -50,6 +53,7 @@ assets_make() {
         case "$arg" in
             -b | --build)                                     buildmode="" ;;
             -n | -nl | -nn | -nr | --dryrun | --dryrun-local) buildmode="$arg" ;;
+            --aursrc=*) aur_src=${arg#*=}; options+=("$arg") ;;
             -*) options+=("$arg") ;;
             *)  reponames_given+=("$arg") ;;
         esac
