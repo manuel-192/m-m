@@ -1524,14 +1524,14 @@ EOF
         logstuff on
         pb -nn -T0 --assets.conf-e
         fetch-aur-stuff endeavouros
-        am EOS endeavouros-testing-dev endeavouros
+        am "$@" EOS endeavouros-testing-dev endeavouros
     }
     ppm() {
         which logstuff am >/dev/null || return 1
         logstuff on
         pb -nn -T0 --assets.conf-m
         fetch-aur-stuff local-repo m-aur2 m-more2
-        am MAN local-repo m-aur2 m-more2 m-m
+        am "$@" MAN local-repo m-aur2 m-more2 m-m
     }
 
     shellcheck() {
