@@ -71,6 +71,7 @@ Main() {
                 ;;
             *)
                 packages=( $(ListPkgs /etc/assets.conf.$reponame) )
+                [ "$packages" ] || return
                 [ $reponame = endeavouros ] && packages+=(ckbcomp)
                 Fetch "$reponame" "${packages[@]}"
                 ;;
