@@ -1486,7 +1486,7 @@ EOF
     # Alias Install            "paf -i"
     Alias rehash             "hash -r"
 
-    Alias EOS_UPDATE         "eos-manual-intervention && eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates --faillock-check"  # --nvidia doesn't hurt
+    Alias EOS_UPDATE         "eos-manual-intervention; eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates --faillock-check"  # --nvidia doesn't hurt
     Alias up                 "EOS_UPDATE"
     Alias u                  "EOS_UPDATE --fast"
     # Alias u                  "upd-small"
