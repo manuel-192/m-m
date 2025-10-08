@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# Fetch AUR package PKGBUILDs etc. from https://github.com/archlinux/aur.git
+# using:
+# - git-clone for a new package
+# - git-pull  for an existing package
+# Packages are stored under the current working folder or a user-given folder.
+
+Main() {
+    local progname=${0##*/}
+    local -r repo=https://github.com/archlinux/aur.git
+    local package_name
+    local exitcode
+    local workdir="$PWD"
+    local pkgs=()
+
+    Options "$@"
+
+    for package_name in "${pkgs[@]}" ; do
+        ShowPkgname
+        if IsClonedFromWantedRepo "$repo" "$package_name" ; then
+            GitPull
+        else
+            GitClone
+        fi
+        ShowOK
+    done
+}
+
+Usage() {
+    cat <<EOF >&2
+
+Usage:    $progname [options] package-name(s)
+Options:  -h, --help             Shows small help about all available options.
+          -d, --workdir <dir>    Sets the working directory under which the AUR packages will be stored.
+Examples: $progname -d /tmp geany-git xed-git
+
+EOF
+    [ "$1" ] && exit $1
+}
+
+Options() {
+    local sopts="d:h"
+    local lopts="help,workdir:"
+    local opts
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            -d | --workdir)
+                workdir="$2"
+                shift
+                [ "$workdir" ] || DIE "workdir value missing"
+                cd "$workdir" >/dev/null || DIE "cannot cd to $workdir"
+                ;;
+            -h | --help) Usage 0 ;;
+            --) shift; break ;;
+        esac
+        shift
+    done
+    pkgs=("$@")
+}
+
+DIE()         { echo "ERROR: $1" >&2; exit 1; }
+ShowPkgname() { echo -n " -> $package_name: "; }
+ShowOK()      { echo "OK"; }
+IsClonedFromWantedRepo() { grep -w "url = $1$" "$2/.git/config" &>/dev/null; }
+
+GitPull() {
+    cd "$workdir/$package_name" >/dev/null
+    /bin/git pull --quiet
+    exitcode=$?
+    cd "$workdir" >/dev/null
+    [ $exitcode -eq 0 ] || DIE "git-pull failed with code $exitcode."
+}
+GitClone() {
+    /bin/git clone --quiet --branch $package_name --single-branch $repo $package_name 2>/dev/null
+    exitcode=$?
+    case "$exitcode" in
+        0)  ;;
+        128)
+            if [ -e "$package_name" ] ; then
+                DIE "$package_name exists but not downloaded from $repo"
+            else
+                DIE "$package_name does not exist"
+            fi
+            ;;
+        *)  DIE "git-clone failed with code $exitcode"
+            ;;
+    esac
+}
+
+Main "$@"
