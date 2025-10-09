@@ -30,6 +30,7 @@ Main() {
 Usage() {
     cat <<EOF >&2
 
+Purpose:  Download AUR package recipes when aur.archlinux.org is offline.
 Usage:    $progname [options] package-name(s)
 Options:  -h, --help             Shows small help about all available options.
           -d, --workdir <dir>    Sets the working directory under which the AUR packages will be stored.
