@@ -51,9 +51,9 @@ assets_make() {
     local reponames_given=()
     local arg
     local buildmode="--dryrun"
-    local aur_src
+    local aur_src=aur
 
-    AurSource aur_src
+    # AurSource aur_src
 
     [ "$CODEDIR" ] || error "CODEDIR is not set"
 
