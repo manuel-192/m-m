@@ -34,6 +34,12 @@ Bannered() {
     cd "$curdir"
 }
 
+AurSource() {
+    # Use AUR if possible, otherwise use local copies from the backup repo.
+    local -n _refvar="$1"
+    /bin/curl --fail-early -Lsm 5 https://aur.archlinux.org >/dev/null  &&  _refvar=aur  ||  _refvar=local
+}
+
 assets_make() {
     local progname=${0##*/}
     local known_reponames_eos=(endeavouros endeavouros-testing-dev)
@@ -45,9 +51,9 @@ assets_make() {
     local reponames_given=()
     local arg
     local buildmode="--dryrun"
-    local aur_src=local   # aur
+    local aur_src
 
-    [ $aur_src = local ] && options+=(--aursrc=local)
+    AurSource aur_src
 
     [ "$CODEDIR" ] || error "CODEDIR is not set"
 

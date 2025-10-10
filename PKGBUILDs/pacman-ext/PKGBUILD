@@ -5,7 +5,7 @@
 pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.10.2
+pkgver=25.10.3
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -93,7 +93,7 @@ sha512sums=('a3bfc77751dbdb2bef6d89962429c5a3baf6dfde7ee2626fc1328828363bb1bbc86
             'cb103870f1b08c2d50abdf9a119f315d22dfa3737624fae0ddf3b9a4f01932cad3184d5ee0e5b3e5238bf4887b8d24088b14f315088c31d0119081847a44ec18'
             'd2ffa2ff5ba459900bcb43fe8a2f0d9ac499f0db691f752a2dd41fff20c38226c5ade259b93c46bae06b6ab4384ba1bbf9eafdd5c99f98d4eb9a14bbf9dfb989'
             '45f8c3d0fc191c5a23699ee0306aaf08fb495a2db30d7d306cd4690d952729c249fd473b40b3ba3724fffc3e3dfd46f4f0b5114c7e12ca783ae89e49bca4c671'
-            '7bd3e17f4927199a30e0a7eb86b20413685d6d38228ed712c4086946ae69caa32118c93e381d0d20d51d63e9bfab46fda3c6bbab388dd8872a05ebc0aafe5b67'
+            '96fb5c0e46f334c408d105581846f0bf49adc9e0ec6b1c07d9d7889dd911511003ef8174a4dad122f74320ca727f8bc0fb4a8f240ef27858f3df63b08c0aebc0'
             '0b7fdd653952931584baebea646d7567324d2d960f15748665012ea4adedc8f59662c1298020b51c051ab2d7aeaa781d6515de764a0c2fab04eb2838601fb38a')
 
 package() {
