@@ -1159,22 +1159,14 @@ EOF
     #    done
     #}
 
-    paccache() {
-        # Changes to official paccache:
-        # 1. check if sudo is needed
-        # 2. be verbose always
-
+    if false ; then
         paccache-options() {
             local opts
             local sopts="a:c:dfhi:k:m:rquvVz"
             local lopts="dryrun,move:,remove,arch:,cachedir:,force,help,ignore:,keep:"
             lopts+=",min-atime:,min-mtime:,nocolor,quiet,uninstalled,verbose,version"
 
-            opts="$(getopt -o=$sopts --longoptions $lopts --name "$progname" -- "$@")" || {
-                #$FUNCNAME --help
-                return 1
-            }
-
+            opts="$(getopt -o=$sopts --longoptions $lopts --name "${FUNCNAME[0]}" -- "$@")" || return 1
             eval set -- "$opts"
 
             while true ; do
@@ -1196,20 +1188,12 @@ EOF
                     --verbose | -v)     verbose+=" $1" ;;
                     --version | -V)     ;;
                     --help | -h)        ;;
-
-                    --) shift ; break ;;
+                    --)                 shift ; break ;;
                 esac
                 shift
             done
         }
-
-        local progname="$FUNCNAME"
-        local sudo=""
-        local verbose="-v"
-
-        paccache-options "$@" || return
-        $sudo /bin/paccache $verbose "$@"
-    }
+    fi
 
     EmacsConfig() {
         [ -e ~/.emacs ] && return
