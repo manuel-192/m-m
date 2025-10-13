@@ -124,7 +124,7 @@ SettingsCommon()
     }
 
     packager_fixes() {
-        local mode=show    # show or fix
+        local mode=fix    # show or fix
         case "$1" in
             "") ;;
             -f | --fix)      mode=fix ;;
@@ -144,7 +144,7 @@ Options
 EOF
                 return 0
                 ;;
-            *)  echo "==> unknown option '$1', assuming --show" >&2 ;;
+            *)  echo "==> unknown option '$1', bailing out." >&2; return 1 ;;
         esac
         local repos=(endeavouros endeavouros-testing-dev m-m m-more2 m-aur2)
         local pkgs=$( expac "%n|%p" $(pacman -Slq "${repos[@]}") | column -t -s'|' )
