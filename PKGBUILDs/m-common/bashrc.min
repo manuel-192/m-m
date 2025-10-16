@@ -937,7 +937,16 @@ EOF
         fi
 
         #local -r pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"      # do color codes cause prompt issues??? YES!
-        local -r pwd="$larrow${PWD/$HOME/\~}$rarrow"
+        local pwd="$PWD"
+        case "$pwd" in
+            "$HOME")           pwd="${pwd/$HOME/\~}" ;;
+            "$HOME"/*)         pwd="${pwd/$HOME/\~}" ;;
+            "$CODEDIR/EOS"*)   pwd="${pwd/$CODEDIR\/EOS/\{endeavouros-team\}}" ;;
+            "$CODEDIR2/EOS"*)  pwd="${pwd/$CODEDIR2\/EOS/\{endeavouros-team\}}" ;;
+            "$CODEDIR/MAN"*)   pwd="${pwd/$CODEDIR\/MAN/\{MAN\}}" ;;
+            "$CODEDIR2/M"*)    pwd="${pwd/$CODEDIR2\/M*/\{MAN\}}" ;;
+        esac
+        pwd="$larrow$pwd$rarrow"
 
         if [ ${#pwd} -gt $((COLUMNS / 2)) ] ; then
             printf -v PS1 "%s\n%s %s "  "$pwd" "$time" "$here"   # two line prompt
