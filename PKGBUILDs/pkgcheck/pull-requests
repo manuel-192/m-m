@@ -84,6 +84,9 @@ MsgHandle() {
     local out
     local count ix nl=no kind
 
+    # Maybe another implementation using:
+    #   gh repo view "user"/"repo"  --json issues,pullRequests --jq .issues,.pullRequests | less
+
     cd "$dir" >/dev/null
     msgs[issue]=""
     msgs[pr]=""
