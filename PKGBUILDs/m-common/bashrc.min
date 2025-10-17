@@ -922,9 +922,8 @@ EOF
     my_prompt_command() {
         # Show one or two line prompt (folder, time) after trying to slightly shorten the folder name.
 
-        # local pwd=${PWD/$HOME/\~}             # shorten for $HOME
-        #local -r time="${YELLOW}$(date +%a\ %H:%M.%S)${RESET}"
         local -r time="$(date +%a\ %H:%M.%S)"
+        local pwd="$PWD"
 
         if [ "$HERE_ARROW" ] ; then
             local -r rarrow=')'
@@ -936,17 +935,15 @@ EOF
             local -r here=$'\u2ba9'
         fi
 
-        #local -r pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"      # do color codes cause prompt issues??? YES!
-        local pwd="$PWD"
         case "$pwd" in
-            "$HOME")           pwd="${pwd/$HOME/\~}" ;;
-            "$HOME"/*)         pwd="${pwd/$HOME/\~}" ;;
-            "$CODEDIR/EOS"*)   pwd="${pwd/$CODEDIR\/EOS/\{endeavouros-team\}}" ;;
-            "$CODEDIR2/EOS"*)  pwd="${pwd/$CODEDIR2\/EOS/\{endeavouros-team\}}" ;;
-            "$CODEDIR/MAN"*)   pwd="${pwd/$CODEDIR\/MAN/\{MAN\}}" ;;
-            "$CODEDIR2/M"*)    pwd="${pwd/$CODEDIR2\/M*/\{MAN\}}" ;;
+            "$HOME" | "$HOME"/*)  pwd="${pwd/$HOME/\~}" ;;
+            "$CODEDIR/EOS"*)      pwd="${pwd/$CODEDIR\/EOS/\{EOS\}}" ;;
+            "$CODEDIR/MAN"*)      pwd="${pwd/$CODEDIR\/MAN/\{MAN\}}" ;;
+            "$CODEDIR2/EOS"*)     pwd="${pwd/$CODEDIR2\/EOS/\{EOS\}}" ;;
+            "$CODEDIR2/MAN"*)     pwd="${pwd/$CODEDIR2\/MAN*/\{MAN\}}" ;;
         esac
         pwd="$larrow$pwd$rarrow"
+        # pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"    # do color codes cause prompt issues??? YES!
 
         if [ ${#pwd} -gt $((COLUMNS / 2)) ] ; then
             printf -v PS1 "%s\n%s %s "  "$pwd" "$time" "$here"   # two line prompt
