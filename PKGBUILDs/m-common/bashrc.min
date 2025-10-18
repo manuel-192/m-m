@@ -941,6 +941,7 @@ EOF
             "$CODEDIR/MAN"*)      pwd="${pwd/$CODEDIR\/MAN/\{MAN\}}" ;;
             "$CODEDIR2/EOS"*)     pwd="${pwd/$CODEDIR2\/EOS/\{EOS\}}" ;;
             "$CODEDIR2/MAN"*)     pwd="${pwd/$CODEDIR2\/MAN*/\{MAN\}}" ;;
+            "$CODEDIR2/Man"*)     pwd="${pwd/$CODEDIR2\/Man*/\{MAN\}}" ;;
         esac
         pwd="$larrow$pwd$rarrow"
         # pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"    # do color codes cause prompt issues??? YES!
