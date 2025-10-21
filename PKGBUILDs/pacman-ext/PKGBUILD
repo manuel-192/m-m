@@ -5,7 +5,7 @@
 pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.10.4
+pkgver=25.10.5
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -20,6 +20,7 @@ optdepends=(
     'vim: editor alternative for pm-gui'
     'yad: GUI widgets for pm-gui'
     'sudo: alternative privileges manager for pm-gui'
+    'sudo: privileges manager for eos-pacmerge'
     'polkit: alternative privileges manager for pm-gui'
     'pandoc: for upd help'
     'mirank: for updating Arch mirrors'
@@ -82,7 +83,7 @@ sha512sums=('a3bfc77751dbdb2bef6d89962429c5a3baf6dfde7ee2626fc1328828363bb1bbc86
             'fe86f55b59748b131322c3afd0eaa15481daa7384b49fed2e3bfb1140cf5d280c805839585353400877a4e714b6ab316ee0ca4a28a368aa0944b5f5218e5ac0e'
             '1304f76604bbe39dd975591839fb702463225139a06c4319ec58c72a737e5206d28c00deb6c39238b0d2a6fb021cf78ba698aeca23d1d36bb0058d654e1d886e'
             '2910e388755e63bed6935b5fb13e6b272c5f8316bd5fc2c85aebb1f95064f06096861c4167fbcf14b8da43cba19268c9918b90056f36600eb5d403d0b27cc72e'
-            '7a166c5a6a1f7c7c85c7217ee188a77b1085ec15aa7e74969b1b70d12dc9dbfbd2602772795712dfc0e36aafbf8e71c115cd9de97526268fa0e8d86a2682b290'
+            '81000d5ac8e8bec035cfd98fb2dfdbc02e66945b7bd72bb56ad09f3d0a961821e79e2bd078071caec3f00e43d96f7dfd321131e711923092d324758f86799955'
             'd2cf54eb5cc28792119dec4feac125e1e0130130c3f7709e00e99bbefbc04585b1ae3b4a025952b2a8b7489e3aff74d4534e1951540a736fa8b0206d7d349172'
             '059a5923047164b5e0941651b9aa3e6ed0e6d32eeb308442c192ef016480924c98ed00f0e88c508022c10fef3f7a723a4eb8ee599bd489d48b69dba61edb006e'
             '0073861182839fd337a8f6a92474f0a882794311d3b40f9b609d451d1595a1223e2c3f9a5336f7e89810b98993ebf95ae3d1c3acfaad15321a00da35f4412b06'

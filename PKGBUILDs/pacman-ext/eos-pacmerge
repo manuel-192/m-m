@@ -17,16 +17,11 @@ Main() {
         shift
     done
 
-    source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1   # needs EOS_ROOTER
-
-    local commands=""                                       # commands will be collected to this variable
     local pacdiff_files="$(/bin/pacdiff --output)"          # find .pac* files
     
     if [ "$pacdiff_files" ] ; then
-        commands+="$(Backup)"                               # backup most changed files for accident safety
-        commands+="; DIFFPROG=/bin/meld /bin/pacdiff"       # actual pacdiffer
-        commands="${commands#; }"                           # skip leading "; " of the command line
-        $EOS_ROOTER "$commands"                             # run the pacdiffer
+        Backup
+        DIFFPROG=/bin/meld /bin/pacdiff -s
     else
         Info "Nothing to do."
         return 2
@@ -34,7 +29,6 @@ Main() {
 }
 
 Usage() {
-    # caller variable read:  progname
     cat <<EOF >&2
 Usage: $progname [options]
 Options:
@@ -46,17 +40,15 @@ EOF
 }
 
 Backup() {
-    # caller variable read:    pacdiff_files progname create_backup
-
     if [ $create_backup = yes ] ; then
         local file
-        local bytes=0
+        local bytes
         local -r max=25000                                  # config files mostly < 10000 bytes, except e.g. locale.gen
 
         for file in $pacdiff_files ; do
             bytes=$(stat -c %s "${file%.*}")
             if [ $bytes -le $max ] ; then
-                echo -n "; cp ${file%.*} ${file%.*}.bak"
+                sudo cp ${file%.*} ${file%.*}.bak
             else
                 Info "did not backup file ${file%.*} because size > $max bytes"
             fi
@@ -64,7 +56,7 @@ Backup() {
     fi
 }
 
-DIE()  { echo "==> $progname: error: $1" >&2; exit 1; }                        # caller variable read:  progname
-Info() { [ $quiet = no ] && echo "==> $progname: info: $1"  >&2; }             # caller variable read:  progname quiet
+DIE()  { echo "==> $progname: error: $1" >&2; exit 1; }
+Info() { [ $quiet = no ] && echo "==> $progname: info: $1"  >&2; }
 
 Main "$@"
