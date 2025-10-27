@@ -1419,6 +1419,13 @@ EOF
 
     hr() { $(history | fzf --tac | sed -E 's|[ ]+[0-9]+[ ]+||'); }   # "history select-and-run"
 
+    EOS_UPDATE() {
+        [ -x /bin/eos-manual-intervention ] && eos-manual-intervention
+        [ "$MY_CACHE_LIMIT" ] || MY_CACHE_LIMIT=1
+        eos-update --pacdiff --nvidia --descriptions --cache-limit=$MY_CACHE_LIMIT --other-updates --faillock-check
+        # --nvidia doesn't hurt
+    }
+
 
     #############################################################
     # variables
@@ -1479,7 +1486,6 @@ EOF
     # Alias Install            "paf -i"
     Alias rehash             "hash -r"
 
-    Alias EOS_UPDATE         "eos-manual-intervention; eos-update --pacdiff --nvidia --descriptions --cache-limit=1 --other-updates --faillock-check"  # --nvidia doesn't hurt
     Alias up                 "EOS_UPDATE"
     Alias u                  "EOS_UPDATE --fast"
     # Alias u                  "upd-small"
