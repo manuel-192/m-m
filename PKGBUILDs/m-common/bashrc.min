@@ -155,7 +155,7 @@ EOF
         [ "$pkgs" ] || { echo "==> No unknown packager." >&2; return; }
         case "$mode" in
             show) echo "$pkgs" ;;
-            fix)  sudo pacman -Syu $pkgs; sudo paccache -rk1 ;;       # sudo for paccache not really needed...
+            fix)  sudo pacman -Syu $pkgs; sudo paccache -rk2 ;;       # sudo for paccache not really needed...
         esac
     }
 
