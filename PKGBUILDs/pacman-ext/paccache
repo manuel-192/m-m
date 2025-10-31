@@ -1,3 +1,68 @@
 #!/bin/bash
 
-/usr/bin/paccache --verbose "$@"
+# paccache wrapper
+# - properly handle the default value for option -k
+# - show the actual command and parameters (if --quiet not used)
+
+paccache_options_to_args() {
+    local opts
+    local sopts="a:c:dfhi:k::m:rquvVz"
+    local lopts="dryrun,move:,remove,arch:,cachedir:,force,help,ignore:,keep::"
+    lopts+=",min-atime:,min-mtime:,nocolor,null,quiet,uninstalled,verbose,version"
+
+    opts="$(getopt -o=$sopts --longoptions $lopts --name "${FUNCNAME[0]}" -- "$@")" || exit 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --)                 shift ; break ;;
+
+            --move | -m)        args+=("$1" "$2"); shift ;;
+            --arch | -a)        args+=("$1" "$2"); shift ;;
+            --cachedir | -c)    args+=("$1" "$2"); shift ;;
+            --ignore | -i)      args+=("$1" "$2"); shift ;;
+            --keep | -k)        [ "$2" ] && args+=("$1" "$2") || args+=("$1" 3); shift ;;
+            --min-atime)        args+=("$1" "$2"); shift ;;
+            --min-mtime)        args+=("$1" "$2"); shift ;;
+            --dryrun | -d)      args+=("$1") ;;
+            --remove | -r)      args+=("$1") ;;
+            --force | -f)       args+=("$1") ;;
+            --help | -h)        args+=("$1") ;;
+            --nocolor)          args+=("$1") ;;
+            --null | -z)        args+=("$1") ;;
+            --quiet | -q)       args+=("$1"); quiet=yes ;;  # used in this file too
+            --uninstalled | -u) args+=("$1") ;;
+            --verbose | -v)     args+=("$1") ;;
+            --version | -V)     args+=("$1") ;;
+        esac
+        shift
+    done
+    args+=("$@")
+}
+
+ShowCommand() {                                      # show the *real* command and parameters
+    if [ $quiet = no ] ; then
+        local progname=${0}
+        local arg
+        echo -n ":: $progname " >&2
+        for arg in "$@" ; do
+            if [ "${arg/ /}" = "$arg" ] ; then
+                echo -n "$arg " >&2                  # $arg includes no spaces
+            else
+                echo -n "'$arg' " >&2                # $arg includes spaces
+            fi
+        done
+        echo "" >&2
+    fi
+}
+
+Main() {
+    local args=()
+    local quiet=no
+    paccache_options_to_args "$@"
+    ShowCommand "${args[@]}"
+    # /bin/paccache --verbose "${args[@]}"
+    /bin/paccache "${args[@]}"
+}
+
+Main "$@"
