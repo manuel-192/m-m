@@ -1173,7 +1173,7 @@ EOF
             local opts
             local sopts="a:c:dfhi:k:m:rquvVz"
             local lopts="dryrun,move:,remove,arch:,cachedir:,force,help,ignore:,keep:"
-            lopts+=",min-atime:,min-mtime:,nocolor,quiet,uninstalled,verbose,version"
+            lopts+=",min-atime:,min-mtime:,nocolor,null,quiet,uninstalled,verbose,version"
 
             opts="$(getopt -o=$sopts --longoptions $lopts --name "${FUNCNAME[0]}" -- "$@")" || return 1
             eval set -- "$opts"
