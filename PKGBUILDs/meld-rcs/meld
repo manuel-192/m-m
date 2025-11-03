@@ -50,9 +50,9 @@ InGitTree() {
     return 1
 }
 
-MeldRcs() { [ "$1" ] && meldrcs "$@" || DIE "RCS detected, meld needs parameters" ; }
+# MeldRcs() { [ "$1" ] && meldrcs "$@" || DIE "RCS detected, meld needs parameters" ; }
 
-Meld() {
+Meld_old() {
     # Changing meld operation:
     # - plain 'meld' means 'meld .'
     # - compare two files when one parameter is a folder
@@ -68,7 +68,7 @@ Meld() {
     [ -d RCS ] && has_rcs=yes
 
     case "$1" in
-        -R) shift; MeldRcs "$@" ;;
+        -R) shift; meldrcs "$@" ;;
         -G) shift; meldgit "$@" ;;
         *)
             # handle special case of 2 file or folder parameters
@@ -87,15 +87,26 @@ Meld() {
             case "$has_git$has_rcs" in
                 nono)   MELD "$@" ;;
                 yesno)  meldgit "$@" ;;
-                noyes)  MeldRcs "$@" ;;
+                noyes)  meldrcs "$@" ;;
                 yesyes) case "$(printf "GIT\nRCS\n"  | fzf)" in
                             GIT) meldgit "$@" ;;
-                            RCS) MeldRcs "$@" ;;
+                            RCS) meldrcs "$@" ;;
                         esac
                         ;;
             esac
             ;;
     esac
+}
+
+Meld() {
+    local cmd=()
+    case "$1" in
+        -G) shift; cmd=(meldgit "$@") ;;
+        -R) shift; cmd=(meldrcs "$@") ;;
+        *)  [ -d RCS ] && cmd=(meldrcs "$@") || cmd=(meldgit "$@") ;;
+    esac
+    echo "==> ${cmd[*]}" >&2
+    "${cmd[@]}"
 }
 
 Meld "$@"

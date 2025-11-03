@@ -37,23 +37,29 @@ CheckRevisions() {
 Main()
 {
     local progname=${0##*/}
-    local arg args=()
+    local arg args=("$@")
     local revs=() rev1 rev2
     local filepath rcsdir filename
 
-    case "$1" in
-        "") [ -d RCS ] && args=($(fzf)) ;;
+    case "$args" in
+        "") if [ -d RCS ] ; then
+                local inrcs=()
+                readarray -t inrcs < <(/bin/ls -1 RCS | sed 's|,v$||')
+                readarray -t args  < <(/bin/ls -1 "${inrcs[@]}" 2>/dev/null | fzf)
+            fi
+            ;;
     esac
 
+    [ "$args" ] || DIE "no parameters!"
+
+    local args2=("${args[@]}")
+    args=()
+
     # look for RCS related stuff
-    for arg in "$@" ; do
+    for arg in "${args2[@]}" ; do
         case "$arg" in
-            -r*)
-                revs+=("${arg:2}")      # -r is an rcsdiff option
-                ;;
-            *)
-                args+=("$arg")          # args may contain the file that has RCS
-                ;;
+            -r*) revs+=("${arg:2}") ;;      # -r is an rcsdiff option
+            *)   args+=("$arg") ;;          # args may contain the file that has RCS
         esac
     done
 
@@ -101,8 +107,7 @@ Main()
                         mv "$filename" "$filename"."$rev2"
                         MELD "$filename"."$rev1" "$filename"."$rev2"
                         ;;
-                    *)
-                        rm -f RCS
+                    *)  rm -f RCS
                         DIE "there can be zero, one or two -r options"
                         ;;
                 esac
@@ -115,7 +120,7 @@ Main()
     fi
 
     # no RCS stuff, so continue as normal meld
-    MELD "$@"
+    # MELD "$@"
 }
 
 Main "$@"
