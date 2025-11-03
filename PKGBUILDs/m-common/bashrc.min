@@ -1248,10 +1248,9 @@ EOF
     command_not_found_handle() {
         if [ -f "$1" ] ; then
             eos-open "$@" 2>/dev/null
-        elif [ -d "$1" ] ; then
-            bashrc_min_warning "did you mean 'cd $*'?"    # cd is not working here...
         else
-            bashrc_min_warning "'$*' not recognized."
+            # bashrc_min_warning "'$*' not recognized."
+            echo "bash: $*: command not found." >&2
         fi
     }
 
