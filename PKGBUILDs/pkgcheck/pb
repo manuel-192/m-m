@@ -574,11 +574,14 @@ _pb3() {
         exit
     fi
 
+    local command=()
     if [ -n "$pkgnames_para" ] ; then
-        /bin/assets.make "$op" --pkgnames="${pkgnames_para//,/ }"
+        command=(/bin/assets.make "$op" --pkgnames="${pkgnames_para//,/ }")
     else
-        /bin/assets.make "$op" $cmd_options
+        command=(/bin/assets.make "$op" $cmd_options)
     fi
+    echo "==> ${command[*]}" >&2
+    "${command[@]}"
     exit_code=$?
     cd "$cwd" || DIE "'cd $cwd' failed"
     case $exit_code in
