@@ -240,6 +240,39 @@ EOF
         [ "$code" ] && echo "$code" || echo "0"
     }
 
+    grep2() {
+        # grep recursively and filter unwanted result lines
+        local filters=(
+            'EXPERIMENTAL/'
+            '_BUILD_/'
+            '\.git/'
+            'sandbox/'
+        )
+        local filters_str
+        local opts
+
+        printf -v filters_str "%s|" "${filters[@]}"
+        filters_str=${filters_str%|}
+        opts="-nr"
+
+        /bin/grep $opts "$@" 2>/dev/null | /bin/grep -Pv "$filters_str"
+    }
+    grepedit() {
+        # Edit the file selected from the grep2 result lines.
+        # Note: grep2 uses option -n in grep which helps parsing the file name below.
+        local file file2
+        local greps=$(grep2 "$@")
+        [ "$greps" ]                    || { echo "==> nothing found" >&2; return 1; }
+        file=$(echo "$greps" | fzf)
+        [ "$file" ]                     || { echo "==> nothing selected" >&2; return 1; }
+        file2="$file"
+        # remove line's tail after the file name
+        file=${file%%:*}
+        [ "$file" ]                     || { echo "==> cannot parse the file name from '$file2'" >&2; return 1; }
+        [ -e "$file" ]                  || { echo "==> $file not found" >&2; return 1; }
+        emacs "$file"
+    }
+
     git-fix-size-issue-for-repo() {
         local -r file=".git/config"
         local -r url=$(grep "url = https://" "$file" | awk '{print $NF}')
@@ -961,7 +994,7 @@ EOF
             "") param="-Syu" ;;
             -Sii)
                 local tmp
-                tmp=$(pacman "$@" 2>/dev/null) && echo "$tmp" || paru "$@"
+                tmp=$(LANG=C pacman "$@" 2>/dev/null) && echo "$tmp" || LANG=C paru "$@"
                 return
                 ;;
         esac
