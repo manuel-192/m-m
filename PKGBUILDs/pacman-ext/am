@@ -47,7 +47,7 @@ assets_make() {
     #local known_othernames=(MAN EOS local-repo)
     local reponame
     local curdir="$PWD"
-    local options=(--fetch-timeout=120)
+    local options=(--fetch-timeout=120 -T=0)
     local reponames_given=()
     local arg
     local buildmode="--dryrun"
