@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# Show the fields from the output of 'pacman -Sii $pkgname'.
+# See also: $progname -h
+
+DumpOptions() {
+    local ret_cmd="$(shopt -p patsub_replacement)"
+    [ "$ret_cmd" != "shopt -s patsub_replacement" ] && shopt -s patsub_replacement || ret_cmd=""
+
+    local sopts2="${sopts//:/}"
+    local lopts2="${lopts//:/}"
+    echo "${sopts2//?/-& }--${lopts2//,/ --}"
+
+    $ret_cmd
+
+    ## - $lopts may *not* be empty
+    ## - $sopts handling requires 'patsub_replacement' enabled by 'shopt'
+}
+
+ValueOf() {
+    local fieldname="$1"
+    local value=$(echo "$data" | grep -w "^$fieldname")
+    value=${value#*: }                # sed -E "s|^[ ]+$fieldname[ ]+:[ ]+||"
+    echo "$value"
+}
+GetListField() {
+    out="$(echo "$data" | sed -n "/$1/,/^[A-Z]/p" | head -n -1 | sed -e "s|^$1[ ]*:||" | sed 's|^[ ]*||')"
+    format=${format:2}
+}
+
+OptDepsFormat() { sed -E 's/([a-zA-Z0-9\.-]+:)/\n\1|/g' | column -t -s'|' ; }   # show as a nice table
+
+OptionalDeps() {
+    local out=""
+    GetListField "Optional Deps"
+    case "$1" in
+        full) out=$(echo "$out" | OptDepsFormat) ;;
+        *)    out=$(echo "$out" | sed 's|:[^:]*$||') ;;  # remove descriptions
+    esac
+    echo "$out"
+}
+
+Options() {
+    local sopts="h"
+    local lopts="dump-options,repository,name,version,description,architecture,url,licenses"
+    lopts+=",groups,provides,depends-on,optional-deps,required-by,optional-for,conflicts-with"
+    lopts+=",replaces,download-size,installed-size,packager,build-date,md5-sum,sha-256-sum"
+    lopts+=",signatures,extended-data,help"
+    local opts=""
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || return 1
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            #-c | --cecilia)   nimi="$2" ; echo "$1: $2"; shift  ;;
+            --) shift ; break ;;
+            --dump-options)   DumpOptions; exit 0; ;;
+
+            --repository)     ValueOf "Repository" ;;
+            --name)           ValueOf "Name" ;;
+            --version)        ValueOf "Version" ;;
+            --description)    ValueOf "Description" ;;
+            --architecture)   ValueOf "Architecture" ;;
+            --url)            ValueOf "URL" ;;
+            --licenses)       ValueOf "Licenses" ;;
+            --groups)         ValueOf "Groups" ;;
+            --provides)       ValueOf "Provides" ;;
+            --depends-on)     ValueOf "Depends On" ;;
+            --optional-deps)  OptionalDeps full ;; # "Optional Deps" ;;
+            --required-by)    ValueOf "Required By" ;;
+            --optional-for)   ValueOf "Optional For" ;;
+            --conflicts-with) ValueOf "Conflicts With" ;;
+            --replaces)       ValueOf "Replaces" ;;
+            --download-size)  ValueOf "Download Size" ;;
+            --installed-size) ValueOf "Installed Size" ;;
+            --packager)       ValueOf "Packager" ;;
+            --build-date)     ValueOf "Build Date" ;;
+            --md5-sum)        ValueOf "MD5 Sum" ;;
+            --sha-256-sum)    ValueOf "SHA-256 Sum" ;;
+            --signatures)     ValueOf "Signatures" ;;
+            --extended-data)  ValueOf "Extended Data" ;;
+            -h | --help)
+                cat <<EOF >&2
+Usage: $progname option pkgname
+
+Pkgname:                 Name of the package from which info is fetched.
+Options:
+  --dump-options         Display all options.
+  -h, --help             This info.
+
+  --repository           
+  --name
+  --version
+  --description
+  --architecture
+  --url
+  --licences
+  --groups
+  --provides
+  --depends-on
+  --optional-deps
+  --required-by
+  --optional-for
+  --conflicts-with
+  --replaces
+  --download-size
+  --installed-size
+  --packager
+  --build-date
+  --md5-sum
+  --sha-256-sum
+  --signatures
+  --extended-data
+EOF
+                exit 0
+                ;;
+            
+        esac
+        shift
+    done
+}
+
+Main() {
+    local -r progname=${0##*/}
+    local pkgname option data
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -*) option="$1" ;;
+            *)  pkgname="$1" ;;
+        esac
+        shift
+    done
+
+    data=$(LANG=C pacman -Sii "$pkgname" 2>/dev/null)
+
+    Options "$option" "$pkgname"
+}
+
+Main "$@"
