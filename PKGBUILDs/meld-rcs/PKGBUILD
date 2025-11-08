@@ -5,20 +5,21 @@
 pkgname=meld-rcs
 pkgdesc="Meld with RCS support and small UI changes"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.10.1
+pkgver=25.11
 pkgrel=1
 
 arch=('any')
 license=('GPL')
+depends=(meld rcs git)
 
 source=(
-    $url/meld               # overrides /bin/meld
+    $url/eld
     $url/meldrcs
     $url/meldgit
 )
-sha512sums=('77f54c1100183dde40f689ffe9e29f3a4aacc31ba61af780eaa4b285ae94ba05eebb81c278031933d5d8fd4b7612d1c670268cb53ac5abe852bfdf749cb95862'
-            'f5ad833d9af2229c67e4855f2181cc1ebecdce1aaf8f808695bec9cf1394a44f6e47dfd86ee7b1f7e5fb40d7798894b9741ba5a9fe01647eea0e1180bc435c23'
-            '8550f621f03be4a622273aa7ab849f6dcb2c365f072ac325f88b50299efca9382f58e1f16c478682b41877a5b5c7d005d15c131d82c96be5151ca9957d0d45c2')
+sha512sums=('1027926b12fbd600399b49933741c913522dc9d456de2fbfef4051dcdf489c49afacad32ad64e3b12b85fc0eab5b695ce0538b5c3f49b7fc2adbb9ccc5f5dd16'
+            'd0c4298a7dff831f3f10543e3dcefc1f08c6ade7c02b9cd097d77989c00e3aa4164613b4848574e425995bc83e5caaf91479c204208df1d2d5f5f4ee4b204b70'
+            '48567b16a5ab78125fb8674535b809c2db28786866f4c08e1e0bce2a976171f25dc11aa24c4d0f87dd8ac5574f07e0b6aa2e06c15eebc611ce8dcf3806c64c6e')
 
 package() {
     local src file
@@ -27,7 +28,6 @@ package() {
         file="${src##*/}"
         case "$file" in
             *.conf)   install -Dm644 $file    $pkgdir/etc/$file ;;
-            meld)     install -Dm755 $file    $pkgdir/usr/local/bin/$file ;;
             *)        install -Dm755 $file    $pkgdir/usr/bin/$file ;;
         esac
     done

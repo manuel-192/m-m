@@ -1,0 +1,88 @@
+#!/bin/bash
+
+echo2()   { [ $verbosity != deaf ] && echo -e "$@" >&2 ; }
+Message() { [ $verbosity = loud ] && echo2 "$@" ; }
+
+InGitTree() {
+    local dir="$PWD"
+    while [ "$dir" ] ; do
+        [ -d "$dir/.git" ] && return 0
+        dir="${dir%/*}"
+    done
+    return 1
+}
+
+MELD() { meld "$@" &> /dev/null & }
+
+Help() {
+    local -r progname=${0}
+    cat <<EOF
+Purpose: Extend 'meld' to make comparison(s) with either 'meld' or 'rcsdiff' parameters.
+         Plain 'meld' command will assume '.' as the parameter.
+Usage:   $progname [verbosity-options] [tool-options] [vcs-options] [parameters]
+
+Verbosity options:
+        -l, --loud         Show all mesages. Default.
+        -q, --quiet        Show less messages.
+        -d, --deaf         Show no messages.
+Tool options:
+        -G                 Comparison using GIT instead of RCS.
+        -R                 Comparison using RCS instead of GIT.
+        -h, --help         This info and help from meld.
+Vcs options:               For meld: any options for 'meld'.
+                           For RCS:  any options for 'rcsdiff'.
+Parameters (meld extension):                
+        file folder        Show 'meld' comparison between given 'file' with
+                           the same file in the given 'folder'.
+        folder file        -"-
+Parameters (other cases):
+        Any 'meld' or 'rcsdiff' parameters.
+
+EOF
+}
+
+Meld() {
+    local cmd=()
+    local verbosity=loud
+    case "$1" in
+        -l | --loud)      shift; verbosity=loud ;;
+        -q | --quiet)     shift; verbosity=quiet ;;
+        -d | --deaf)      shift; verbosity=deaf ;;
+        -h | --help)      Help; meld $1; return ;;
+    esac
+    local count=${#@}
+
+    if [ $count -eq 2 ] && [ -d "$1" ] && [ -f "$2" ] ; then
+        # meld: handle 2 parameters: folder and file.
+        cmd=(MELD "${1%/}/${2##*/}" "$2")
+        Message "==> meld: folder & file comparison detected"
+    elif [ $count -eq 2 ] && [ -f "$1" ] && [ -d "$2" ] ; then
+        # meld: handle 2 parameters: file and folder,
+        cmd=(MELD "$1" "${2%/}/${1##*/}")
+        Message "==> meld: file & folder comparison detected"
+    else
+        # Other parameter set, use either 'meld with git' or 'meld with rcsdiff'
+        case "$1" in
+            -G) shift
+                cmd=(meldgit "$@")
+                Message "==> 'meld with git' selected"
+                ;;
+            -R) shift
+                cmd=(meldrcs "$@")
+                Message "==> 'meld with rcsdiff' selected"
+                ;;
+            *)  if [ -d RCS ] ; then
+                    cmd=(meldrcs "$@")
+                    Message "==> 'meld with rcsdiff' detected"
+                elif InGitTree ; then
+                    cmd=(meldgit "$@")
+                    Message "==> 'meld with git' detected"
+                fi
+                ;;
+        esac
+    fi
+    echo2 "==> ${cmd[*]}"
+    "${cmd[@]}"
+}
+
+Meld "$@"

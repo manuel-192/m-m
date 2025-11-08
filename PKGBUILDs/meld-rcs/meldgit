@@ -1,17 +1,14 @@
 #!/bin/bash
 
 DIE() {
-    source /etc/bash-colors.conf
-    [ "$RED" ]   || local -r RED=""
-    [ "$RESET" ] || local -r RESET=""
     local -r progname="${0##*/}"
-    echo -e "${RED}$progname: error: $1${RESET}" >&2
+    eos-color RED 2
+    echo -e "$progname: error: $1" >&2
+    eos-color RESET 2
     exit 1
 }
 
-MELD() {
-    /bin/meld "$@"  &> /dev/null &
-}
+MELD() { /bin/meld "$@" &> /dev/null & }
 
 Meld() {
     # Changing meld operation:
@@ -31,7 +28,7 @@ Meld() {
                 echo "No git diffs." >&2
             fi
             ;;
-        129)
+        129 | 127)
             MELD "$@"        # no git, just run meld
             # DIE "'git diff' problem, code $code.\n$PWD is not a git directory?"
             ;;
