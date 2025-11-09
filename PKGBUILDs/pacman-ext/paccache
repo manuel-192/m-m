@@ -7,7 +7,7 @@
 HandleOpt_k() {  # option -k/--keep has an optional value
     kopt="$1"
     local val sep=""
-    local -r kd=3
+    local -r kd=2   # 3
     [ "$2" ] && val="$2" || val=$kd
     [ "$kopt" = "--keep" ] && sep="="
     args+=("$kopt$sep$val")
