@@ -1,0 +1,28 @@
+# bash completion for pa        -*- shell-script -*-
+
+_pa_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_pa_() 
+{
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    local items=($(pacman -Qq))
+    local opts=($(pa --dump-options))
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        -*)
+            _pa_complete "${items[*]}" ;;
+        *)
+            # Handle all top-level parameters.
+            _pa_complete "${opts[*]}" ;;
+    esac
+} &&
+complete -F _pa_ pa
