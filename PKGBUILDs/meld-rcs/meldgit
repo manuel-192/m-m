@@ -16,7 +16,7 @@ Meld() {
     # - compare two files when one parameter is a folder
 
     local git_diffs code=0
-    git_diffs="$(git diff 2>/dev/null)" || code=$?
+    git_diffs="$(git diff . 2>/dev/null)" || code=$?
 
     case "$code" in
         0)  if [ "$git_diffs" ] ; then
