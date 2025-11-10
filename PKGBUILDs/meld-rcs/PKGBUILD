@@ -5,7 +5,7 @@
 pkgname=meld-rcs
 pkgdesc="Meld with RCS support and small UI changes"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.11.1
+pkgver=25.11.2
 pkgrel=1
 
 arch=('any')
@@ -13,7 +13,7 @@ license=('GPL')
 depends=(meld rcs git)
 
 source=(
-    $url/eld
+    $url/mel
     $url/meldrcs
     $url/meldgit
 )
