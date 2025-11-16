@@ -247,6 +247,7 @@ EOF
             '_BUILD_/'
             '\.git/'
             'sandbox/'
+            'ZZ_OLD/'
         )
         local filters_str
         local opts
