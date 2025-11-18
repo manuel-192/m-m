@@ -71,7 +71,7 @@ _geometry() {
     local xrandr=$(xrandr | head -n1 | sed -e 's|.* current ||' -e 's|, maximum.*||' -e 's| x | |')
     local emacs_xdivider=9   # uses full width.  machine, program and font dependent!
     local emacs_ydivider=19  # uses full height. machine, program and font dependent!
-    local conf="$HOME/.config/emacs-tweaks.conf"
+    local conf="$HOME/.config/emacs-sizes.conf"
 
     if [ -r "$conf" ] ; then
         source "$conf"   # may change emacs_{x,y}divider
@@ -93,9 +93,15 @@ _geometry() {
 
     local x=$file_columns
     local y=$file_lines
+    local -r min_columns=60
+    local -r min_lines=20
 
-    [ $max_columns -lt $file_columns ] && x=$max_columns
-    [ $max_lines   -lt $file_lines ]   && y=$max_lines
+    # don't make window too large or small
+    [ $max_columns -lt $x ] && x=$max_columns
+    [ $max_lines   -lt $y ] && y=$max_lines
+
+    [ $min_columns -gt $x ] && x=$min_columns
+    [ $min_lines   -gt $y ] && y=$min_lines
 
     args+=("--geometry=${x}x$y")
 }
