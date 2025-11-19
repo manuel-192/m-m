@@ -953,11 +953,16 @@ EOF
     }
     manx() { man -H "$@" ; }
 
+    _HAS_BATTNOT_=no
+    [ -x /bin/battnot ] && _HAS_BATTNOT_=yes
+
     my_prompt_command() {
         # Show one or two line prompt (folder, time) after trying to slightly shorten the folder name.
 
-        local -r time="$(date +%a\ %H:%M.%S)"
+        local time="$(date +%a\ %H:%M.%S)"
         local pwd="$PWD"
+
+        [ $_HAS_BATTNOT_ = yes ] && time="$time [$(battnot --percent)%]"
 
         if [ "$HERE_ARROW" ] ; then
             if true ; then
