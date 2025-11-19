@@ -42,7 +42,7 @@ GetPowerDevice() {
         -*) DIE "option --power-device-info without a device path"
             ;;
         *)
-            [ -e "$2" ] || return 1
+            [ -e "$2" ] || DIE "power device file '$2' not found"
             _file_ret="$2"
             return 1
             ;;
