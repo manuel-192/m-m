@@ -61,9 +61,25 @@ ShowPercent() {
     grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2
 }
 
+MousePercent() {
+    local power_device="$(/bin/ls -d /sys/class/power_supply/hidpp_battery_*/uevent 2>/dev/null | head -n1)"
+    if [ "$power_device" ] ; then
+        local percent=$(grep "^POWER_SUPPLY_CAPACITY="       "$power_device" | cut -d'=' -f2)
+        echo "$percent"
+    fi
+}
+MouseModel() {
+    local power_device="$(/bin/ls -d /sys/class/power_supply/hidpp_battery_*/uevent 2>/dev/null | head -n1)"
+    if [ "$power_device" ] ; then
+        local model=$(  grep "^POWER_SUPPLY_MODEL_NAME="     "$power_device" | cut -d'=' -f2)
+        local company=$(grep "^POWER_SUPPLY_MANUFACTURER=" "$power_device" | cut -d'=' -f2)
+        echo "$company $model"
+    fi
+}
+
 Options() {
     local lopts="charge-sleep:,discharge-sleep:,dump-options,edit-config,help,is-running,keep-showing-max,max:,min:"
-    lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:,percent"
+    lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:,percent,mouse-percent,mouse-model"
     if [ -e "$BAT/charge_control_end_threshold" ] ; then
         lopts+=",ctrl-end-threshold-set:,ctrl-end-threshold-show"
     fi
@@ -97,6 +113,8 @@ Options() {
                                        exit_after_loop=0
                                        ;;
             --percent | -p)            ShowPercent; exit_after_loop=0 ;;
+            --mouse-percent)           MousePercent; exit_after_loop=0 ;;
+            --mouse-model)             MouseModel; exit_after_loop=0 ;;
 
             # these exit immediately:
             --dump-options)            DumpOptions; exit 0 ;;
@@ -131,6 +149,8 @@ Flags: --charge-sleep             Sets sleep time (seconds) between checks when 
        --keep-showing-max         Keep notifying after reaching the max charge.
        --cycles                   Show charging cycle count.
        --percent                  Show the current level of battery charge.
+       --mouse-percent            Show the current level of battery charge of the mouse.
+       --mouse-model              Show info about the mouse.
        --sound-file               Set the sound file path for the notification.
 EOF
 
