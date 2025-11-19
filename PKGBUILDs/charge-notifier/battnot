@@ -58,23 +58,42 @@ DumpOptions() {
 }
 
 ShowPercent() {
-    grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2
+    local percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
+    if [ "$percent" ] ; then
+        echo "$percent"
+        return 0
+    fi
+    return 1
 }
 
 MousePercent() {
     local power_device="$(/bin/ls -d /sys/class/power_supply/hidpp_battery_*/uevent 2>/dev/null | head -n1)"
     if [ "$power_device" ] ; then
         local percent=$(grep "^POWER_SUPPLY_CAPACITY="       "$power_device" | cut -d'=' -f2)
-        echo "$percent"
+        if [ "$percent" ] ; then
+            echo "$percent"
+            return 0
+        fi
     fi
+    return 1
 }
 MouseModel() {
     local power_device="$(/bin/ls -d /sys/class/power_supply/hidpp_battery_*/uevent 2>/dev/null | head -n1)"
     if [ "$power_device" ] ; then
-        local model=$(  grep "^POWER_SUPPLY_MODEL_NAME="     "$power_device" | cut -d'=' -f2)
+        local model=$(  grep "^POWER_SUPPLY_MODEL_NAME="   "$power_device" | cut -d'=' -f2)
         local company=$(grep "^POWER_SUPPLY_MANUFACTURER=" "$power_device" | cut -d'=' -f2)
-        echo "$company $model"
+        if [ "$company" ] && [ "$model" ] ; then
+            echo "$company $model"
+        elif [ "$company" ] ; then
+            echo "$company"
+        elif  [ "$model" ] ; then
+            echo "$model"
+        else
+            return 1
+        fi
+        return 0
     fi
+    return 1
 }
 
 Options() {
@@ -90,6 +109,7 @@ Options() {
     eval set -- "$opts"
 
     local exit_after_loop=""   # fill with exit code if stopping here
+    local cycles=""
 
     while [ "$1" ] ; do
         case "$1" in
@@ -108,13 +128,14 @@ Options() {
             --no-reread-conf)          reread_conf=no ;;
 
             # these exit after options management loop:
-            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold; exit_after_loop=0 ;;
-            --cycles)                  grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2
-                                       exit_after_loop=0
+            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold; exit_after_loop=$? ;;
+            --cycles)                  cycles=$(grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2)
+                                       [ "$cycles" ] && exit_after_loop=0 || exit_after_loop=1
                                        ;;
-            --percent | -p)            ShowPercent; exit_after_loop=0 ;;
-            --mouse-percent)           MousePercent; exit_after_loop=0 ;;
-            --mouse-model)             MouseModel; exit_after_loop=0 ;;
+            --percent | -p)            ShowPercent;  exit_after_loop=$? ;;
+
+            --mouse-percent)           MousePercent; exit_after_loop=$? ;;
+            --mouse-model)             MouseModel;   exit_after_loop=$? ;;
 
             # these exit immediately:
             --dump-options)            DumpOptions; exit 0 ;;
