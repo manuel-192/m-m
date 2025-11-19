@@ -42,6 +42,7 @@ GetPowerDevice() {
         -*) DIE "option --power-device-info without a device path"
             ;;
         *)
+            [ -e "$2" ] || return 1
             _file_ret="$2"
             return 1
             ;;
@@ -58,6 +59,7 @@ DumpOptions() {
 }
 
 ShowPercent() {
+    [ "$power_device" ] || return 1
     local percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
     if [ "$percent" ] ; then
         echo "$percent"
@@ -108,7 +110,6 @@ Options() {
     opts="$(/bin/getopt -o=$sopts --longoptions $lopts --name "$progname: error" -- "$@")" || Usage 1
     eval set -- "$opts"
 
-    local exit_after_loop=""   # fill with exit code if stopping here
     local cycles=""
 
     while [ "$1" ] ; do
@@ -128,14 +129,17 @@ Options() {
             --no-reread-conf)          reread_conf=no ;;
 
             # these exit after options management loop:
-            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold; exit_after_loop=$? ;;
-            --cycles)                  cycles=$(grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" | cut -d'=' -f2)
-                                       [ "$cycles" ] && exit_after_loop=0 || exit_after_loop=1
+            --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold; exit $? ;;
+            --cycles)                  if [ "$BAT" ] ; then
+                                           cycles=$(grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" 2>/dev/null| cut -d'=' -f2)
+                                           [ "$cycles" ] && exit 0 || exit 1
+                                       else
+                                           exit 1
+                                       fi
                                        ;;
-            --percent | -p)            ShowPercent;  exit_after_loop=$? ;;
-
-            --mouse-percent)           MousePercent; exit_after_loop=$? ;;
-            --mouse-model)             MouseModel;   exit_after_loop=$? ;;
+            --percent | -p)            ShowPercent;   exit $? ;;
+            --mouse-percent)           MousePercent;  exit $? ;;
+            --mouse-model)             MouseModel;    exit $? ;;
 
             # these exit immediately:
             --dump-options)            DumpOptions; exit 0 ;;
@@ -148,7 +152,6 @@ Options() {
         esac
         shift
     done
-    [ "$exit_after_loop" ] && exit $exit_after_loop
 }
 
 Usage() {
@@ -175,17 +178,19 @@ Flags: --charge-sleep             Sets sleep time (seconds) between checks when 
        --sound-file               Set the sound file path for the notification.
 EOF
 
-    [ -e "$BAT/charge_control_end_threshold" ] || return
-    local threshold=$(BatteryVariable show charge_control_end_threshold)
-    cat <<EOF
-       --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop, current: $threshold).
-       --ctrl-end-threshold-show  Show the defined percentage when charging stops.
+    if [ -e "$BAT/charge_control_end_threshold" ] ; then
+        local threshold=$(BatteryVariable show charge_control_end_threshold)
+        cat <<EOF
+        --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop, current: $threshold).
+        --ctrl-end-threshold-show  Show the defined percentage when charging stops.
 EOF
+    fi
     [ "$1" ] && exit $1
 }
 
 CreateConfigIfNeeded() {
     if [ ! -e "$conf" ] ; then
+        # [ "$BAT" ] || return 1
         cat <<EOF > "$conf"
 #!/bin/bash
 
@@ -290,6 +295,7 @@ HandleNumberValue() {
 }
 
 BatteryVariable() {
+    [ "$BAT" ] || return 1
     local mode="$1"             # set or show
     local var="$2"              # variable name
     local limit="$3"            # some limit for $mode==set
@@ -331,6 +337,7 @@ Main() {
     local ix
 
     CreateConfigIfNeeded
+    # [] || BAT
     source "$conf"
 
     if false ; then
