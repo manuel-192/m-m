@@ -955,6 +955,7 @@ EOF
 
     _HAS_BATTNOT_=no
     [ -x /bin/battnot ] && _HAS_BATTNOT_=yes
+    [ -e /sys/class/power_supply/BAT*/uevent ] || _HAS_BATTNOT_=no
 
     my_prompt_command() {
         # Show one or two line prompt (folder, time) after trying to slightly shorten the folder name.
