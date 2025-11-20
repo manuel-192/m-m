@@ -42,11 +42,7 @@ GetPowerDevice() {
         -*) DIE "option --power-device-info without a device path"
             ;;
         *)
-            if [ -e "$2" ] ; then
-                echo2 "==> power device file '$2' not found"
-                return 1
-            fi
-            _file_ret="$2"
+            [ -e "$2" ] && _file_ret="$2"
             return 1
             ;;
     esac
