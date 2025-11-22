@@ -38,6 +38,7 @@ local PKGNAMES=(
 
     # gnome-hearts
 
+    # grimaur-git/aur
     minizip-ng-ex
 
     # pacseek-bin/aur

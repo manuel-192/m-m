@@ -4,7 +4,7 @@
 
 pkgname=m-repos
 pkgdesc="Configs for the m-repos"
-pkgver=25.10
+pkgver=25.11
 pkgrel=1
 arch=(any)
 license=(GPL2)
