@@ -55,7 +55,7 @@ SettingsCommon()
 
     SetVarToFirstApp PAGER "less" "most"
     SetVarToFirstApp EDITOR emacs codium   # sets EDITOR to the first existing listed app
-    export LESS="-RF"
+    export LESS="-R"                       # with option -F 'less /sys/power/mem_sleep' fails!
 
     # Set in local ~/.bashrc:
     # ROOTDIR_EOS
