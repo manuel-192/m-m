@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Open the 'url' defined in file PKGBUILD in the current folder.
+
+Main() {
+    if [ -e PKGBUILD ] ; then
+        source PKGBUILD
+        if [ "$url" ] ; then
+            case "$1" in
+                -o | --open) xdg-open "$url" ;;
+                *)           echo "$url" ;;
+            esac
+        fi
+    fi
+}
+
+Main "$@"
