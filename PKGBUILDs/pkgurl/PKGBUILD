@@ -5,7 +5,7 @@
 pkgname=pkgurl
 pkgdesc="Show the URL or AUR URL of the package"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=1
+pkgver=25
 pkgrel=1
 
 arch=('any')
@@ -14,12 +14,12 @@ license=('GPL')
 source=(
     $url/$pkgname
 )
-sha512sums=('18d200986e7ec9d579b5422d2dcb35a5016eb55a8ccadf2fd148602d4d411bbd58722f0baec9a941adcc15b8e0121871f73a325f3a7093910758fced92310ea8')
+sha512sums=('2f6a69db3cb8551e07e79bba7bdaf8c77a4c4168f1b5140a92f3ea990104c200872403cb84c169c5ca287bd5b312179a29711a0fbf04b3e47f251d2187f4236c')
 
 package() {
-    local xx pkg
-    for xx in "${source[@]}" ; do
-        pkg=$(basename "$xx")
-        install -Dm755 "$pkg"               "$pkgdir/usr/bin/$pkg"
+    local file
+    for file in "${source[@]}" ; do
+        file=${file##*/}
+        install -Dm755 "$file"   "$pkgdir/usr/bin/$file"
     done
 }
