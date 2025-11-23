@@ -1343,16 +1343,6 @@ EOF
             *)  _makepkg_error_msg "[Undefined error code '$1', see 'man makepkg'!]" ;;
         esac
     }
-    pacman-branch() {  # if using any testing repo, output "testing", otherwise output "stable"
-        local out=$(pacman-conf --repo-list | grep -P '\-testing$|\-unstable$')
-        if [ "$out" ] ; then
-            echo "testing due to: $(echo $out)"
-            return 1
-        else
-            echo stable
-            return 0
-        fi
-    }
     sleeps() {
         # Sleep X seconds, show counter to 0.
         # Saved if ever needed, probably not...
