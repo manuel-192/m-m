@@ -1,0 +1,16 @@
+#!/bin/bash
+
+pacman-branch() {
+    local out=$(pacman-conf --repo-list | grep -P '\-testing$|\-unstable$')
+    if [ "$out" ]; then
+        echo -n "testing"
+        echo -n " due to: $(echo $out)" >&2
+        return 1
+    else
+        echo -n stable
+        return 0
+    fi
+    echo "" >&2
+}
+
+pacman-branch "$@"
