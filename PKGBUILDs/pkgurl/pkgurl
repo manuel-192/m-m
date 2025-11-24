@@ -10,41 +10,66 @@ DIE() {
 
 Main() {
     local progname=${0##*/}
-    local pkg_name=""
-    local fieldname="URL"      # optional, default: URL
+    local pkg_name="$1"
+    local fieldname="$2"      # optional, default: URL
+    shift 2
 
-    while [ "$1" ] ; do
-        case "$1" in
-            -p=* | --pkg=*)   pkg_name=${1#*=} ;;
-            -f=* | --field=*) fieldname=${1#*=} ;;
-            -h | --help)
-                cat <<EOF >&2
+    if false ; then
+        while [ "$1" ] ; do
+            case "$1" in
+                -p=* | --pkg=*)   pkg_name=${1#*=} ;;
+                -f=* | --field=*) fieldname=${1#*=} ;;
+                -h | --help)
+                    cat <<EOF >&2
 Usage:   $progname [options]
 Options:
     -h,   --help        This help.
-    -p=*, --pkg=*       Name of the package.
-    -f=*, --field=*     Name of the field in 'yay -Sii pkg_name'. Default: URL
 
 If no options and if a PKGBUILD file exists in the current folder, its URL is used.
+EOF
+                    return 0
+                    ;;
+            esac
+            shift
+        done
+    else
+        case "$1" in
+            -h | --help)
+                    cat <<EOF >&2
+Usage:   $progname [options] [pkg-name [field-name]]
+Parameters:
+    pkg-name         Name of a package.
+    field-name       Name of the field in the output of 'yay -Sii <pkg-name>'.
+                     Default: URL
+                     Field-name is in English.
+Options:
+    -h,   --help        This help.
+
+If no parameters/options and if a PKGBUILD file exists in the current folder,
+its URL will be used.
+If the field-name is one of
+    URL
+    AUR URL
+the url will be opened in the web browser.
 EOF
                 return 0
                 ;;
         esac
-        shift
-    done
+    fi
+
     [ "$fieldname" ] || fieldname=URL
 
     local helper=paru
     [ -x /bin/$helper ] || helper=yay
     [ -x /bin/$helper ] || helper=pacman
 
-    if [ "$pkg_name" ] ; then
-        :
-    elif [ -e PKGBUILD ] ; then
-        source PKGBUILD
-        pkg_name="$pkgname"
-    else
-        DIE "no option nor PKGBUILD"
+    if [ -z "$pkg_name" ] ; then
+        if [ -e PKGBUILD ] ; then
+            source PKGBUILD
+            pkg_name="$pkgname"
+        else
+            DIE "no option nor PKGBUILD"
+        fi
     fi
 
     local data=$(LANG=C $helper -Sii "$pkg_name" 2>/dev/null)
