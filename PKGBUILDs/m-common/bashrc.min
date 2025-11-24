@@ -738,44 +738,55 @@ EOF
         _logstuff() { IsAvailable --app logstuff && logstuff "$@"; }
 
         local arg
+        local updpkgsums=no
+
         for arg in "$@" ; do
             case "$arg" in
-                -*) ;;
-                *)
-                    case "$arg" in
-                        push)
-                            case "$(realpath .)" in
-                                /UNI/lisa/repo/*)  _logstuff on ;;
-                            esac
-                            ;;
-                        pull_NOT-USED)                     # pull disabled for now!
-                            case "$(realpath .)" in
-                                /UNI/lisa/repo/*/b-assets) _logstuff on ;;
-                            esac
-                            ;;
-                        add)
-                            # if args include local PKGBUILD and
-                            # if local PKGBUILD includes some sums and
-                            # if local PKGBUILD is not the newest file
-                            # then try update checksums
-                            if [ "$(printf "%s\n" "$@" | grep "^PKGBUILD$")" ] ; then
-                                if [ -r PKGBUILD ] && [ -w PKGBUILD ] && grep -P "^sha.*sums=|^md5sums=|^b2sums=" PKGBUILD >& /dev/null ; then
-                                    if [ "$(/usr/bin/ls -a1tr --ignore=. --ignore=.. | tail -n1)" != PKGBUILD ] ; then
-                                        read -p "Update checksums (Y/n)? " >&2
-                                        case "$REPLY" in
-                                            "" | [yY]*) updpkgsums ;;
-                                        esac
-                                    fi
-                                fi
-                            fi
-                            ;;
+                # pull)                     # pull disabled for now!
+                #     case "$(realpath .)" in
+                #         $CODEDIR2/*/b-assets) _logstuff on ;;
+                #     esac
+                #     break
+                #     ;;
+                push)
+                    case "$(realpath .)" in
+                        $CODEDIR2/*) _logstuff on ;;
                     esac
+                    break
+                    ;;
+                add)
+                    # if args include local PKGBUILD and
+                    # if local PKGBUILD is readable and writable
+                    # if local PKGBUILD includes some sums and
+                    # if local PKGBUILD is not the newest file
+                    # then try update checksums
+                    if [ "$(printf "%s\n" "$@" | grep "^PKGBUILD$")" ] ; then
+                        if   [ ! -r PKGBUILD ] ; then
+                            echo "Error: $FUNCNAME: PKGBUILD is not readable." >&2
+                            return 1
+                        elif [ ! -w PKGBUILD ] ; then
+                            echo "Error: $FUNCNAME: PKGBUILD is not writable." >&2
+                            return 1
+                        elif ! grep -P "^sha.*sums=|^md5sums=|^b2sums=" PKGBUILD &>/dev/null ; then
+                            :
+                        elif [ "$(/bin/ls -a1tr --ignore=. --ignore=.. | tail -n1)" = PKGBUILD ] ; then
+                            :
+                        else
+                            read -p "Update checksums (Y/n)? " >&2
+                            case "$REPLY" in
+                                "" | [yY]*) updpkgsums ;;
+                            esac
+                        fi
+                    fi
                     break
                     ;;
             esac
         done
+
         unset -f _logstuff
-        /bin/git "$@"
+
+        local out=$(/bin/git "$@")
+        [ "$out" ] && echo "$out" | /bin/less -RF
     }
 
     sha512sum-check() {
