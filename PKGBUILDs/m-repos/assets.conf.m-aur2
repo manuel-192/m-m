@@ -59,7 +59,7 @@ local PKGNAMES=(
 # PKGNAMES=(upd72020x-fw/aur)
 
 PKGNAMES_WAIT=(
-    # 'yad-git/aur|v13.0.r7.g92a7978-1'  # skip this version
+    'yad-git/aur|v14.2.r*'  # skip this version series
 )
 
 # Additional options for makepkg usage.
