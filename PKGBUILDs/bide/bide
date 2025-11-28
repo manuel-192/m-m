@@ -77,15 +77,11 @@ IdeDebugBash() {
     AddNewParameters "$@"
 
     # Run vscodium.
-    local opts=""
-    [ "$1" ] && opts="--wait"                           # wait for the debugging session to end
-    [ "$bash_file_to_debug" ] || opts+=" --new-window"
-
-    if [ "$bash_file_to_debug" ] ; then
-        $app $opts "$bash_file_to_debug"
-    else
-        $app $opts                                      # no parameters, just start vscodium
-    fi
+    local params=(--password-store=basic)                   # needed?
+    [ "$1" ] && params+=(--wait)                            # wait for the debugging session to end
+    [ "$bash_file_to_debug" ] || params+=(--new-window)
+    [ "$bash_file_to_debug" ] && params+=("$bash_file_to_debug")
+    $app "${params[@]}"                                     # no parameters, just start vscodium
     return $?
 }
 
