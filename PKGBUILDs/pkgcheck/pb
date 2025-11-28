@@ -446,7 +446,7 @@ AssetsConfCheck() {
     for folder in "${folders[@]}" ; do
         printf2 "%-*s : " "$len" "$folder"
         pushd "$folder" >/dev/null || DIE "folder '$folder' does not exist."
-        if [ -n "$(git diff)" ] ; then
+        if [ -n "$(git diff .)" ] ; then
             echo2 "Diffs detected"
             ret=1
             meld
