@@ -59,7 +59,7 @@ local PKGNAMES=(
 # PKGNAMES=(upd72020x-fw/aur)
 
 PKGNAMES_WAIT=(
-    'yad-git/aur|v14.2.r*'  # skip this version series
+    # 'yad-git/aur|v14.2.r*'  # skip this version series
 )
 
 # Additional options for makepkg usage.
@@ -141,42 +141,49 @@ _menulibre-git_hook() {
 _yad-git_hook() {
     local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
 
+    # remove intltool usage
+    sed -E -i "$PKGBUILD" \
+        -e "s|^(makedepends=.*)'intltool>=[0-9.]+'(.*)|\1\2|" \
+        -e "s|([ ]+)intltoolize|\1# intltoolize|"
+
     if false ; then
-        pushd "${PKGBUILD%/PKGBUILD}" >/dev/null
-        local nrcommits=$(git rev-list --count HEAD)
-        local lastcommit=$(git rev-parse --short HEAD)
-        popd >/dev/null
-    else
-        local url=https://github.com/v1cont/yad
-        local nrcommits=$( curl -Lsm 10 "$url" | grep -EB2 "^[ ]+commits$" | head -n1 | sed -E 's|^[ ]+<strong>([0-9]+)</strong>$|\1|')
-        local lastcommit=$(curl -Lsm 10 "$url/commits/master" | grep '/commits_list_item' | head -n1 | sed -E 's|.*/commits/([0-9a-f]{7,7}).*|\1|')
+	if false ; then
+            pushd "${PKGBUILD%/PKGBUILD}" >/dev/null
+            local nrcommits=$(git rev-list --count HEAD)
+            local lastcommit=$(git rev-parse --short HEAD)
+            popd >/dev/null
+	else
+            local url=https://github.com/v1cont/yad
+            local nrcommits=$( curl -Lsm 10 "$url" | grep -EB2 "^[ ]+commits$" | head -n1 | sed -E 's|^[ ]+<strong>([0-9]+)</strong>$|\1|')
+            local lastcommit=$(curl -Lsm 10 "$url/commits/master" | grep '/commits_list_item' | head -n1 | sed -E 's|.*/commits/([0-9a-f]{7,7}).*|\1|')
+	fi
+
+	sed -i "$PKGBUILD" \
+            -e "s| 'i686'||" \
+            -e 's|http://|https://|' \
+            -e 's|--with-gtk=gtk3|--enable-gio --enable-spell --enable-sourceview|' \
+            -e "s|^pkgver=.*|pkgver=1.$nrcommits.$lastcommit|" \
+            -e "s|^pkgrel=.*|pkgrel=1|"
+
+	local apply_patch=no   # yes = test to see if the latest yad release would need the patch
+
+	case "$apply_patch" in
+            yes)
+		printf "applied the window height patch"
+		local url_patch=https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/yad/yad-github-issue-107.patch
+		local file=../../$(basename $url_patch)
+
+		sed -i "$PKGBUILD" \
+                    -e "s|^source=(\(.*\))$|source=(\1 '$url_patch')|" \
+                    -e "/autoreconf -ivf/i \    # patch for the dialog height issue\n    patch -u src/main.c -i $file\n"
+
+		updpkgsums "$PKGBUILD" 2>/dev/null
+		;;
+            no | *)
+		printf "no patch"
+		;;
+	esac
     fi
-
-    sed -i "$PKGBUILD" \
-        -e "s| 'i686'||" \
-        -e 's|http://|https://|' \
-        -e 's|--with-gtk=gtk3|--enable-gio --enable-spell --enable-sourceview|' \
-        -e "s|^pkgver=.*|pkgver=1.$nrcommits.$lastcommit|" \
-        -e "s|^pkgrel=.*|pkgrel=1|"
-
-    local apply_patch=no   # yes = test to see if the latest yad release would need the patch
-
-    case "$apply_patch" in
-        yes)
-            printf "applied the window height patch"
-            local url_patch=https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/yad/yad-github-issue-107.patch
-            local file=../../$(basename $url_patch)
-
-            sed -i "$PKGBUILD" \
-                -e "s|^source=(\(.*\))$|source=(\1 '$url_patch')|" \
-                -e "/autoreconf -ivf/i \    # patch for the dialog height issue\n    patch -u src/main.c -i $file\n"
-
-            updpkgsums "$PKGBUILD" 2>/dev/null
-            ;;
-        no | *)
-            printf "no patch"
-            ;;
-    esac
 }
 
 _is_this_pkgname_included() {
@@ -543,7 +550,7 @@ ASSET_PACKAGE_HOOKS["virtualbox-ext-oracle"]=_virtualbox-ext-oracle_hook
 #ASSET_PACKAGE_HOOKS["bashdb"]=_bashdb_hook
 # ASSET_PACKAGE_HOOKS["ccrypt"]="_ccrypt_hook"
 
-#ASSET_PACKAGE_HOOKS[yad-git]=_yad-git_hook
+ASSET_PACKAGE_HOOKS[yad-git]=_yad-git_hook
 ASSET_PACKAGE_HOOKS["shellcheck-bin"]=_shellcheck-bin_hook
 ASSET_PACKAGE_HOOKS["budgie-control-center"]=_budgie-control-center_hook
 
