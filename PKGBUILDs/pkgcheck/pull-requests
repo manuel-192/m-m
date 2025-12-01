@@ -3,11 +3,7 @@
 echo2() { echo -e "$@" >&2; }
 DIE()   { echo2 "$progname: error: $1"; exit 1; }
 
-Red()     { echo -en $'\e[0;91m' ; }
-Green()   { echo -en $'\e[0;92m' ; }
-Blue()    { echo -en $'\e[0;94m' ; }
-Magenta() { echo -en $'\e[0;95m' ; }
-Reset()   { echo -en $'\e[0m' ; }
+source /etc/eos-color.conf
 
 Result() {
     local first="$1"
@@ -83,6 +79,7 @@ MsgHandle() {
     local dir=${url##*/}
     local out
     local count ix nl=no kind
+    local updated_at title ym
 
     # Maybe another implementation using:
     #   gh repo view "user"/"repo"  --json issues,pullRequests --jq .issues,.pullRequests | less
@@ -103,7 +100,13 @@ MsgHandle() {
                 pr)    kind="[Pull]" ;;
             esac
             for ((ix=0; ix < count; ix++)) ; do
-                printf "    %-7s %s|%s\n" "$kind" "$(echo -n "$out" | jq .[$ix].updatedAt | tr -d '"')" "$(echo -n "$out" | jq .[$ix].title | tr -d '"')"
+                updated_at="$(echo -n "$out" | jq .[$ix].updatedAt | tr -d '"')"
+                ym=${updated_at//-/}; ym=${ym::6}
+                if [ $((ym+1)) -ge $(date +%Y%m) ] ; then
+                    updated_at="${RED}$updated_at${RESET}"
+                fi
+                title="$(     echo -n "$out" | jq .[$ix].title     | tr -d '"')"
+                printf "    %-7s %s|%s\n" "$kind" "$updated_at" "$title"
             done
         fi
     done | column -t -s'|'
