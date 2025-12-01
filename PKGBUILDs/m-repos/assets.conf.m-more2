@@ -140,7 +140,7 @@ _pkgver_to_github_latest_tag_release() {
         sed -i "$PKGBUILD" \
             -e "/^pkgver=/a \pkgver=$new_pkgver   # latest available"
         updpkgsums "$PKGBUILD" 2>/dev/null
-        return 11        # return value 1 indicates: pkgver was changed
+        return 0 # 11       # return value 1 indicates: pkgver was changed
     fi
 }
 
@@ -155,7 +155,8 @@ _qogir-icon-theme_hook() {
     local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
     sed -i "$PKGBUILD" -E \
         -e 's|(\./install\.sh.*)|\1 --theme default|' \
-        -e 's|^(pkgrel=.*)|\1.1|'
+        -e 's|^(pkgrel=.*)|\1.1|' \
+	-e "s|^url=.*pling\.com.*|url='https://github.com/vinceliuice/Qogir-icon-theme'|"
 
     sed -i "$PKGBUILD" \
         -e '/^depends=/a \provides=(eos-qogir-icons)'
