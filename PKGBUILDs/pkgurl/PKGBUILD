@@ -5,7 +5,7 @@
 pkgname=pkgurl
 pkgdesc="Show the URL or AUR URL of the package"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.2
+pkgver=25.11
 pkgrel=1
 
 arch=('any')
@@ -14,7 +14,7 @@ license=('GPL')
 source=(
     $url/$pkgname
 )
-sha512sums=('66003bf88a6f2333ca18b426784a441a8efd21469f78eb65658223013da4bdda95996d52ba63759ed347a96c618182b2540dde703851c34843a254973443ea32')
+sha512sums=('7b8c1383cc9e6d2fd584150a4edf472bab3c11570709ad140d823adb76178a2ede350decd29e178b1eefe85ac8addd7abb85f3490d11864dac535af8dcebc2a2')
 
 package() {
     local file

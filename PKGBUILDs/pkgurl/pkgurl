@@ -61,7 +61,7 @@ EOF
 
     local helper=paru
     [ -x /bin/$helper ] || helper=yay
-    [ -x /bin/$helper ] || helper=pacman
+    [ -x /bin/$helper ] || DIE "no supported AUR helper (paru, yay) found"
 
     if [ -z "$pkg_name" ] ; then
         if [ -e PKGBUILD ] ; then
@@ -72,7 +72,14 @@ EOF
         fi
     fi
 
-    local data=$(LANG=C $helper -Sii "$pkg_name" 2>/dev/null)
+    local opt="-Sii"
+
+    case "$fieldname" in
+        "AUR URL") opt+=" --aur" ;;
+    esac
+
+    local data=$(LANG=C pacman $opt "$pkg_name" 2>/dev/null)
+    [ "$data" ] || data=$(LANG=C $helper $opt "$pkg_name" 2>/dev/null)
     [ "$data" ] || DIE "$pkg_name info not found"
     local info=$(echo "$data" | grep -w "^$fieldname" | sed -E "s|^$fieldname[ ]+:[ ]+||")
     [ "$info" ] || DIE "field-name '$fieldname' not found"
