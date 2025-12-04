@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# A simple 'man' replacement, adds help for the EndeavourOS apps.
+#
+# Usage examples ($progname is the name of this app)
+#
+#    $progname endeavouros          # show a web page about EndeavourOS
+#    $progname eos                  # same as above
+#    $progname welcome              # show the help page of an EndeavourOS app
+#    $progname xed geany            # show the manual page for more than one (Arch) app
+#    $progname not-an-app           # see what it shows for an unknown app
+
+
+Main() {
+    local progname=${0##*/}
+    local para
+    local ret=0
+
+    # handle special cases first
+    for para in "$@" ; do
+        case "${para,,}" in
+            endeavouros | eos)
+                # easy case; show some endeavouros info
+                /bin/xdg-open "https://endeavouros.com/about-us/"
+                exit
+                ;;
+            -*)
+                # has options, so use 'man'
+                /bin/man "$@"
+                exit
+                ;;
+        esac
+    done
+
+    # now the usual cases
+    for para in "$@" ; do
+        /bin/man "$@" 2>/dev/null && return                                         # try 'man' first
+        case "$?" in
+            16)
+                if ! /bin/eos-apps-info-helper "$@" 2>/dev/null ; then              # try EOS help
+                    echo "$progname: info: manual page not found for '$para'" >&2
+                    ret=16
+                fi
+                ;;
+        esac
+    done
+    exit $ret
+}
+
+Main "$@"

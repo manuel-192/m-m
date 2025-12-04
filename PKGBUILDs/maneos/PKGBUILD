@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=maneos
+pkgdesc="A simple man replacement for EndeavourOS"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=25.12
+pkgrel=1
+
+arch=('any')
+license=('GPL')
+
+source=(
+    $url/$pkgname
+    $url/$pkgname.completion
+)
+depends=(bash-completion xdg-utils man-db eos-apps-info)
+sha512sums=('6c6b3fe78c3843cb654c5664a097b0fffb5d5a7a169ba5a51b9bc30c1ec2eb633ea2c7da65a759f0e1137893a98b8c1802c7376c5500db210f0d0e646c42a47b'
+            'd9eb7018b4205fde3734c3e4a486f4f0b7b9281afb2382c498b2492fd174203739c6cd0e679c35172f404beebed6e1e5a74b9e76228b748267c1c92c753b89e8')
+
+package() {
+    local file
+    for file in "${source[@]}" ; do
+        file=${file##*/}
+        case "$file" in
+            *.completion) install -Dm644 "$file"   "$pkgdir/usr/share/bash-completion/completions/${file%.completion}" ;;
+            *)            install -Dm755 "$file"   "$pkgdir/usr/bin/$file" ;;
+        esac
+    done
+}

@@ -1,0 +1,32 @@
+# bash completion for maneos        -*- shell-script -*-
+
+declare -F _comp_cmd_man >/dev/null || source /usr/share/bash-completion/completions/man
+
+_maneos_complete() {
+    local eos_COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    # [[ $eos_COMPREPLY == *= ]] && compopt -o nospace
+
+    _comp_cmd_man
+    COMPREPLY+=("${eos_COMPREPLY[@]}")
+
+    compopt -o nosort
+}
+
+_maneos_() 
+{
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    local apps=($(eos-apps-info --show-apps))
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        *)
+            # Handle all top-level parameters.
+            _maneos_complete "${apps[*]}"
+            ;;
+    esac
+}
+complete -F _maneos_ maneos
