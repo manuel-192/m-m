@@ -908,6 +908,7 @@ EOF
         vboxmanage modifyvm "$vmname" --vram 256                       # set video memory to 256 MB
     }
 
+    if false ; then
     man-eos() {
         local app=eos-apps-info-helper
         IsAvailable --app $app || { bashrc_min_error "${app%-helper} not installed?"; return 1; }
@@ -963,6 +964,7 @@ EOF
         return $ret_man
     }
     manx() { man -H "$@" ; }
+    fi
 
     _HAS_BATTNOT_=no
     [ -x /bin/battnot ] && _HAS_BATTNOT_=yes
@@ -1512,7 +1514,6 @@ EOF
     Alias inxi               "inxi -z"
     Alias local-repo-manager "local-repo-manager --verbose"
     # Alias ls                 "/bin/ls $(l --get-ls-opts)"
-    Alias man                "eos-man"
     Alias md                 "codium"
     Alias nano               "nano -l"
     Alias o                  "open"
@@ -1545,6 +1546,8 @@ EOF
     # AliasIfWhich expacol        expac        expacol
     AliasIfWhich pb             pb           "pb -nn --aur-delay=10m -T0"
     AliasIfWhich pb             pp           "pb"
+    # AliasIfWhich man            maneos       "maneos"
+    which maneos &>/dev/null && Alias man            maneos
 
     Unalias l
     AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
