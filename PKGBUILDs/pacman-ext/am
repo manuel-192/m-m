@@ -66,7 +66,12 @@ assets_make() {
             *)  reponames_given+=("$arg") ;;
         esac
     done
-    [ "$reponames_given" ] || error "give reponame(s)"
+    if [ -z "$reponames_given" ] ; then
+        case "$(realpath $PWD)" in
+            $CODEDIR/*/_BUILD_/*) reponames_given=("${PWD##*/}") ;;
+            *)                    error "give reponame(s)" ;;
+        esac
+    fi
     [ "$buildmode" ] && options+=("${buildmode}")
 
     for reponame in "${reponames_given[@]}" ; do
