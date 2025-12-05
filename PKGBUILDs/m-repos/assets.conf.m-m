@@ -75,6 +75,7 @@ local PKGNAMES=(
     hook-update-description
     hwinfo-completion
     local-repo-manager
+    maneos
     m-brightness
     # m-hooks
     m-common
