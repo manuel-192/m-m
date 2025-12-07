@@ -1,0 +1,25 @@
+# bash completion for pkgurl        -*- shell-script -*-
+
+declare -F _comp_cmd_man >/dev/null || source /usr/share/bash-completion/completions/man
+
+_pkgurl_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+}
+
+_pkgurl_() 
+{
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    if true ; then
+        local pkgs=($(/bin/pacman -Qq))
+    else
+        local pkgs=($(yay -Pc | awk '{print $1}'))  # this is very slow
+    fi
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    _pkgurl_complete "${pkgs[*]}"
+}
+complete -F _pkgurl_ pkgurl

@@ -1,0 +1,108 @@
+#!/bin/bash
+
+echo2() { echo "$@" >&2; }
+DIE() {
+    local progname=${0##*/}
+    echo2 "$progname: error: $1"
+    Main --help
+    exit 1
+}
+
+Help() {
+    cat <<EOF >&2
+Usage:   $progname [options] [pkg-name] [field-name]
+Parameters:
+    pkg-name         Name of a package, 'PKGBUILD', or ''.
+                     If parameter 'pkg-name' is 'PKGBUILD' or empty, then
+                     file PKGBUILD in the current folder will be examined
+                     and the 'url' setting will be used as the 'URL' or 'AUR URL'.
+    field-name       Name of the field in the output of 'yay -Sii <pkg-name>'.
+                     Default: URL
+Options:
+    -h, --help           This help.
+    -a, --aur-url        Use 'AUR URL' instead of 'URL'.
+    -d, --description    Show the 'Description' field.
+        --depends-on     Show the 'Depends On' field.
+
+If the field-name is one of
+    URL
+    AUR URL
+the url will be opened in the web browser.
+EOF
+}
+
+Main() {
+    local progname=${0##*/}
+    local pkg_name=""
+    local fieldname=""      # optional, default: URL
+
+    while [ "$1" ] ; do
+        case "$1" in
+            -h | --help)        Help; exit 0 ;;
+            -a | --aur-url)     fieldname="AUR URL" ;;
+            -d | --description) fieldname="Description" ;;
+            --depends-on)       fieldname="Depends On" ;;
+            --required-by)      fieldname="Required By" ;;
+            --build-date)       fieldname="Build Date" ;;
+            --sha-256-sum)      fieldname="SHA-256 Sum" ;;
+            --conflicts-with)   fieldname="Conflicts With" ;;
+            --repository)       fieldname="Repository" ;;
+            --name)             fieldname="Name" ;;
+            --version)          fieldname="Version" ;;
+            --architecture)     fieldname="Architecture" ;;
+            --url)              fieldname="URL" ;;
+            --licenses)         fieldname="Licenses" ;;
+            --groups)           fieldname="Groups" ;;
+            --provides)         fieldname="Provides" ;;
+            --optional-deps)    fieldname="Optional Deps" ;;
+            --optional-for)     fieldname="Optional For" ;;
+            --replaces)         fieldname="Replaces" ;;
+            --download-size)    fieldname="Download Size" ;;
+            --installed-size)   fieldname="Installed Size" ;;
+            --packager)         fieldname="Packager" ;;
+            --md5-sum)          fieldname="MD5 Sum" ;;
+            --signatures)       fieldname="Signatures" ;;
+            --extended-data)    fieldname="Extended Data" ;;
+
+            # TODO !!
+
+            -*)                 ;;       # ignore unknown options
+            *)                  [ "$pkg_name" ] && fieldname="$1" || pkg_name="$1" ;;
+        esac
+        shift
+    done
+
+    [ "$fieldname" ] || fieldname=URL
+    case "$pkg_name" in
+        "" | PKGBUILD)
+            pkg_name="PKGBUILD"
+            SourcePKGBUILD
+            ;;
+    esac
+
+    local helper=paru
+    [ -x /bin/$helper ] || helper=yay
+    [ -x /bin/$helper ] || DIE "no supported AUR helper (paru, yay) found"
+
+    local opt="-Sii"
+    case "$fieldname" in
+        "AUR URL") opt+=" --aur" ;;
+    esac
+
+    local data=$(LANG=C pacman $opt "$pkg_name" 2>/dev/null)
+    [ "$data" ] || data=$(LANG=C $helper $opt "$pkg_name" 2>/dev/null)
+    [ "$data" ] || DIE "$pkg_name info not found"
+    local info=$(echo "$data" | grep -w "^$fieldname" | sed -E "s|^$fieldname[ ]+:[ ]+||")
+    [ "$info" ] || DIE "field-name '$fieldname' not found"
+
+    echo2 "$info"
+    case "$fieldname" in
+        URL | "AUR URL") setsid xdg-open "$info" &>/dev/null ;;
+    esac
+}
+
+SourcePKGBUILD() {
+    [ -e PKGBUILD ] && source PKGBUILD || DIE "PKGBUILD failed"
+}
+
+Main "$@"

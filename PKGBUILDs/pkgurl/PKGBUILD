@@ -2,10 +2,10 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
-pkgname=pkgurl
-pkgdesc="Show the URL or AUR URL of the package"
+pkgname=pf
+pkgdesc="Show the contents of a specified field in 'yay -Sii <pkgname>'"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.11
+pkgver=25.12
 pkgrel=1
 
 arch=('any')
@@ -13,13 +13,18 @@ license=('GPL')
 
 source=(
     $url/$pkgname
+    $url/$pkgname.completion
 )
-sha512sums=('7b8c1383cc9e6d2fd584150a4edf472bab3c11570709ad140d823adb76178a2ede350decd29e178b1eefe85ac8addd7abb85f3490d11864dac535af8dcebc2a2')
+sha512sums=('7512fa7c101c896ad1fcfb1c5c96e95a22bc6ec6489ab0a119ce6f877c211fd161eeaf9182df54d0275c63e92fda547127001a2e416b17453478fd795c82bc04'
+            'b6598e05a5d5cfc3a07630b5d7703f12e89fe7c2b0b548b234b953a51085afa6efe3d22135db9ddb5577fc5bb2b2087dad391ad8e8f94f98a8aba572c34f89e9')
 
 package() {
     local file
     for file in "${source[@]}" ; do
         file=${file##*/}
-        install -Dm755 "$file"   "$pkgdir/usr/bin/$file"
+        case "$file" in
+            *.completion) install -Dm644 "$file"   "$pkgdir/usr/share/bash-completion/completions/${file%.completion}" ;;
+            *)            install -Dm755 "$file"   "$pkgdir/usr/bin/$file" ;;
+        esac
     done
 }
