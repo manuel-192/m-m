@@ -67,10 +67,13 @@ assets_make() {
         esac
     done
     if [ -z "$reponames_given" ] ; then
-        case "$(realpath $PWD)" in
-            $CODEDIR/*/_BUILD_/*) reponames_given=("${PWD##*/}") ;;
-            *)                    error "give reponame(s)" ;;
-        esac
+        # current folder may be the right place to run!
+        arg="$( printf "%s\n" "${known_reponames_m[@]}" "${known_reponames_eos[@]}" | grep "^${PWD##*/}$" )"
+        if [ "$arg" ] ; then
+            reponames_given=("$arg")
+        else
+            error "give reponame(s)"
+        fi
     fi
     [ "$buildmode" ] && options+=("${buildmode}")
 
