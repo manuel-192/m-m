@@ -1479,8 +1479,8 @@ EOF
 
     PROMPT_COMMAND=my_prompt_command
 
-    export HISTFILESIZE=10
     export HISTSIZE=100
+    export HISTFILESIZE=$HISTSIZE
     export HISTCONTROL="erasedups"
     FIGNORE=".o:~"                      # ignored suffixes in filename completion
 
