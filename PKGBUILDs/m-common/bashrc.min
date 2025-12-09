@@ -1870,6 +1870,40 @@ EOF
     }
     MakeGuiAppsAsFuncs
 
+    Func_and() {
+        ${FUNCNAME[1]} "$@" 2>/dev/null &    # TODO: checks like Func_setsid
+    }
+    Func_setsid() {
+        local app="${FUNCNAME[1]}"
+        local cmd=""
+        if [ "$app" ] ; then
+            cmd=$(which "$app" 2> /dev/null)
+            if [ "$cmd" ] ; then
+                echo "setsid $cmd $@" >&2
+                setsid $cmd "$@" 2>/dev/null
+            else
+                echo "==> $app is not installed" >&2
+            fi
+        else
+            echo "==> no app to run!" >&2
+        fi
+    }
+
+    Funcize1() {
+        local app="$1"
+        local def
+        if which $app &>/dev/null ; then
+            def="$app() { Func_setsid \"\$@\" ; }"
+            eval $def
+        fi
+    }
+    Funcize() {
+        source /etc/apps2func.conf
+        for app in "${Apps2Funcs[@]}" ; do
+            Funcize1 $app
+        done
+    }
+    
     # AppsToFuncsMaker() {
     #     local apps=(
     #     )
