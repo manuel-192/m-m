@@ -1754,24 +1754,24 @@ EOF
         esac
     }
 
-    RunSilentlyInBackground() {
-        local app="$1"
-        local firstpara="$2"
-        shift
-
-        ECHO2 "==> $app $@"
-
-        case "$firstpara" in 
-            -h | --help*) $app "$@" 2> /dev/null ;;
-            *)
-                case "$app" in
-                    kate)
-                        HERE_ARROW=">" setsid $app "$@" &> /dev/null ;;   # workaround prompt for kate's integrated terminal!
-                    *)
-                                       setsid $app "$@" &> /dev/null ;;
-                esac
-        esac
-    }
+    # RunSilentlyInBackground() {
+    #     local app="$1"
+    #     local firstpara="$2"
+    #     shift
+    #
+    #     ECHO2 "==> $app $@"
+    #
+    #     case "$firstpara" in 
+    #         -h | --help*) $app "$@" 2> /dev/null ;;
+    #         *)
+    #             case "$app" in
+    #                 kate)
+    #                     HERE_ARROW=">" setsid $app "$@" &> /dev/null ;;   # workaround prompt for kate's integrated terminal!
+    #                 *)
+    #                                    setsid $app "$@" &> /dev/null ;;
+    #             esac
+    #     esac
+    # }
 
     if IsAvailable --app qtcreator ; then
         Unalias qtcreator
@@ -1783,97 +1783,98 @@ EOF
         }
     fi
 
-    MakeGuiAppsAsFuncs() {
-        # Usage: $FUNCNAME [options] list-of-commands
-        # list-of-commands contains one or more commands; a command with options must be quoted.
-        # options: [-v | --verbose]
+#     MakeGuiAppsAsFuncs() {
+#         # Usage: $FUNCNAME [options] list-of-commands
+#         # list-of-commands contains one or more commands; a command with options must be quoted.
+#         # options: [-v | --verbose]
+#
+#         local cmd app
+#         local count=0
+#         local functions=()
+#         local verbose=no
+#         local arg args=()
+#         for arg in "$@" ; do
+#             case "$arg" in
+#                 -v | --verbose) verbose=yes ;;
+#                 -h | --help)
+#                     cat <<EOF
+# Usage:     $FUNCNAME [options] <commands>
+# Commands:  The list of commands one or more commands; a command with its options must be quoted.
+# Options:   -h, --help       This help.
+#            -v, --verbose    Give more warnings about potential issues.
+# EOF
+#                     return 0
+#                     ;;
+#                 *) args+=("$arg") ;;
+#             esac
+#         done
+#         if [ "$args" ] ; then
+#             verbose=yes                 # user given commands --> be verbose with issues
+#         else
+#             local -r Apps2Funcs=(
+#                 adie
+#                 dolphin
+#                 # "emacs --reverse-video"    # handled by /usr/local/bin/emacs
+#                 eog
+#                 # firefox
+#                 # firefox-developer-edition
+#                 gitk
+#                 kate
+#                 konsole
+#                 libreoffice soffice
+#                 parole
+#                 "qtcreator -client"
+#                 ristretto
+#                 thunderbird
+#                 virtualbox
+#                 xed
+#                 xfce4-screenshooter
+#                 xplayer
+#                 xreader
+#             )
+#             args=("${Apps2Funcs[@]}")
+#         fi
+#         for cmd in "${args[@]}" ; do
+#             app=${cmd%% *}     # "$cmd" == "$app" [options]
+#             declare -F "$app" >/dev/null && {
+#                 [ $verbose = yes ] && ECHO2 "==> warning: $app is already a function"
+#                 continue
+#             }
+#             alias "$app" &>/dev/null && {
+#                 ECHO2 "==> warning: $app is an alias"
+#                 continue
+#             }
+#             if [ -x "/bin/$app" ] ; then
+#                 functions+=("$app() { setsid /bin/$cmd \"\$@\" &>/dev/null ; }")      # this is the resulting function for the $cmd/$app
+#                 ((count++))
+#             else
+#                 [ $verbose = yes ] && ECHO2 "==> warning: $app not installed"
+#             fi
+#         done
+#         if [ $count -gt 0 ] ; then
+#             [ $verbose = yes ] && ECHO2 "$count functions created"
+#             local tmpfile=$(mktemp)
+#             printf "%s\n" "${functions[@]}" > $tmpfile
+#             # shellcheck disable=SC1090
+#             source $tmpfile
+#             rm -f $tmpfile
+#         fi
+#         kaffeine() {
+#             [ -x /bin/kaffeine ] || { ECHO2 "==> Warning: program $FUNCNAME is not installed."; return 1; }
+#             local opts=""
+#             case "$XDG_SESSION_TYPE" in
+#                 wayland) opts="--platform xcb" ;;
+#                 x11)     ;;
+#             esac
+#             setsid /bin/kaffeine $opts "$@" &> /dev/null
+#         }
+#     }
+#     # MakeGuiAppsAsFuncs
 
-        local cmd app
-        local count=0
-        local functions=()
-        local verbose=no
-        local arg args=()
-        for arg in "$@" ; do
-            case "$arg" in
-                -v | --verbose) verbose=yes ;;
-                -h | --help)
-                    cat <<EOF
-Usage:     $FUNCNAME [options] <commands>
-Commands:  The list of commands one or more commands; a command with its options must be quoted.
-Options:   -h, --help       This help.
-           -v, --verbose    Give more warnings about potential issues.
-EOF
-                    return 0
-                    ;;
-                *) args+=("$arg") ;;
-            esac
-        done
-        if [ "$args" ] ; then
-            verbose=yes                 # user given commands --> be verbose with issues
-        else
-            local -r Apps2Funcs=(
-                adie
-                dolphin
-                # "emacs --reverse-video"    # handled by /usr/local/bin/emacs
-                eog
-                # firefox
-                # firefox-developer-edition
-                gitk
-                kate
-                konsole
-                libreoffice soffice
-                parole
-                "qtcreator -client"
-                ristretto
-                thunderbird
-                xed
-                xfce4-screenshooter
-                xplayer
-                xreader
-            )
-            args=("${Apps2Funcs[@]}")
-        fi
-        for cmd in "${args[@]}" ; do
-            app=${cmd%% *}     # "$cmd" == "$app" [options]
-            declare -F "$app" >/dev/null && {
-                [ $verbose = yes ] && ECHO2 "==> warning: $app is already a function"
-                continue
-            }
-            alias "$app" &>/dev/null && {
-                ECHO2 "==> warning: $app is an alias"
-                continue
-            }
-            if [ -x "/bin/$app" ] ; then
-                functions+=("$app() { setsid /bin/$cmd \"\$@\" &>/dev/null ; }")      # this is the resulting function for the $cmd/$app
-                ((count++))
-            else
-                [ $verbose = yes ] && ECHO2 "==> warning: $app not installed"
-            fi
-        done
-        if [ $count -gt 0 ] ; then
-            [ $verbose = yes ] && ECHO2 "$count functions created"
-            local tmpfile=$(mktemp)
-            printf "%s\n" "${functions[@]}" > $tmpfile
-            # shellcheck disable=SC1090
-            source $tmpfile
-            rm -f $tmpfile
-        fi
-        kaffeine() {
-            [ -x /bin/kaffeine ] || { ECHO2 "==> Warning: program $FUNCNAME is not installed."; return 1; }
-            local opts=""
-            case "$XDG_SESSION_TYPE" in
-                wayland) opts="--platform xcb" ;;
-                x11)     ;;
-            esac
-            setsid /bin/kaffeine $opts "$@" &> /dev/null
-        }
+    Func_with_and() {
+        ${FUNCNAME[1]} "$@" 2>/dev/null &    # TODO: checks like Func_with_setsid
     }
-    MakeGuiAppsAsFuncs
-
-    Func_and() {
-        ${FUNCNAME[1]} "$@" 2>/dev/null &    # TODO: checks like Func_setsid
-    }
-    Func_setsid() {
+    Func_with_setsid() {
         local app="${FUNCNAME[1]}"
         local cmd=""
         if [ "$app" ] ; then
@@ -1893,16 +1894,21 @@ EOF
         local app="$1"
         local def
         if which $app &>/dev/null ; then
-            def="$app() { Func_setsid \"\$@\" ; }"
+            def="$app() { Func_with_setsid \"\$@\" ; }"
             eval $def
+        else
+            ECHO2 "==> $_PROGNAME_: $FUNCNAME: app '$app' not found"
         fi
     }
     Funcize() {
-        source /etc/apps2func.conf
+        local _PROGNAME_=${BASH_SOURCE[-1]}
+        local Apps2Funcs=()
+        source /etc/apps2func.conf              # fill Apps2Funcs array
         for app in "${Apps2Funcs[@]}" ; do
             Funcize1 $app
         done
     }
+    Funcize
     
     # AppsToFuncsMaker() {
     #     local apps=(
@@ -1969,8 +1975,8 @@ EOF
 }
 
 # Use current settings now. Update settings with 'bashrc'.
+ECHO2 "==> update bash settings."
 bashrc --plain
-ECHO2 "==> 'bashrc' updates bash settings."
 cat <<EOF
 
 TODO
