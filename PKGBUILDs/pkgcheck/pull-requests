@@ -71,6 +71,15 @@ AtomicCurl() {
     curl "$@"
 }
 
+MakeDateRedInRecentEntry() {
+    # Make the date of a recent entry RED.
+    local updated_at_sec
+    updated_at_sec=$(date --date="$updated_at" "+%s")
+    if [ $((updated_at_sec + seconds_in_month)) -gt $seconds_now ] ; then
+        updated_at="${RED}$updated_at${RESET}"
+    fi
+}
+
 MsgHandle() {
     local url="$1"
     local type
@@ -79,7 +88,9 @@ MsgHandle() {
     local dir=${url##*/}
     local out
     local count ix nl=no kind
-    local updated_at title ym
+    local updated_at title
+    local -r seconds_in_month=$((31 * 24 * 3600))
+    local -r seconds_now=$(date +%s)
 
     # Maybe another implementation using:
     #   gh repo view "user"/"repo"  --json issues,pullRequests --jq .issues,.pullRequests | less
@@ -101,10 +112,7 @@ MsgHandle() {
             esac
             for ((ix=0; ix < count; ix++)) ; do
                 updated_at="$(echo -n "$out" | jq .[$ix].updatedAt | tr -d '"')"
-                ym=${updated_at//-/}; ym=${ym::6}
-                if [ $((ym+1)) -ge $(date +%Y%m) ] ; then
-                    updated_at="${RED}$updated_at${RESET}"
-                fi
+                MakeDateRedInRecentEntry
                 title="$(     echo -n "$out" | jq .[$ix].title     | tr -d '"')"
                 printf "    %-7s %s|%s\n" "$kind" "$updated_at" "$title"
             done
