@@ -5,7 +5,7 @@
 pkgname=pf
 pkgdesc="Show the contents of a specified field in 'yay -Sii <pkgname>'"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.12
+pkgver=25.12.1
 pkgrel=1
 
 arch=('any')
@@ -15,8 +15,8 @@ source=(
     $url/$pkgname
     $url/$pkgname.completion
 )
-sha512sums=('7512fa7c101c896ad1fcfb1c5c96e95a22bc6ec6489ab0a119ce6f877c211fd161eeaf9182df54d0275c63e92fda547127001a2e416b17453478fd795c82bc04'
-            'b6598e05a5d5cfc3a07630b5d7703f12e89fe7c2b0b548b234b953a51085afa6efe3d22135db9ddb5577fc5bb2b2087dad391ad8e8f94f98a8aba572c34f89e9')
+sha512sums=('01b372481f8af8136c22fde14456d8e90ee8743a848c5927de1b68ed7dd616caac1a0590d7766ea39eba9d856b8790a9cf6fee7fcd23302a8159f8b037cf93c0'
+            'feef4f021ab52bfbe472d39e4dd6853edda81afb5c6a03c4dbbab9f76b5a01ba3fed4580d610e1c778e1fb9f25ed93891fb437d3848b2adc383f1c5e0984a25b')
 
 package() {
     local file

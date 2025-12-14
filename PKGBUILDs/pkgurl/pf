@@ -10,69 +10,110 @@ DIE() {
 
 Help() {
     cat <<EOF >&2
-Usage:   $progname [options] [pkg-name] [field-name]
+Usage:   $progname [options] [pkg-name] [field-names]
 Parameters:
     pkg-name         Name of a package, 'PKGBUILD', or ''.
                      If parameter 'pkg-name' is 'PKGBUILD' or empty, then
                      file PKGBUILD in the current folder will be examined
                      and the 'url' setting will be used as the 'URL' or 'AUR URL'.
-    field-name       Name of the field in the output of 'yay -Sii <pkg-name>'.
+    field-names      Names of the fields in the output of 'yay -Sii <pkg-name>'.
+                     Note: options are another way to define fields.
                      Default: URL
 Options:
     -h, --help           This help.
-    -a, --aur-url        Use 'AUR URL' instead of 'URL'.
-    -d, --description    Show the 'Description' field.
-        --depends-on     Show the 'Depends On' field.
+    -a, --aur-url        Show field 'AUR URL' in a web browser too
+    -d, --description    Show field "Description"
+        --depends-on     Show field "Depends On"
+        --required-by    Show field "Required By"
+        --build-date     Show field "Build Date"
+        --sha-256-sum    Show field "SHA-256 Sum"
+        --conflicts-with Show field "Conflicts With"
+        --repository     Show field "Repository"
+        --name           Show field "Name"
+        --version        Show field "Version"
+        --architecture   Show field "Architecture"
+        --url            Show field "URL" in a web browser too
+        --licenses       Show field "Licenses"
+        --groups         Show field "Groups"
+        --provides       Show field "Provides"
+        --optional-deps  Show field "Optional Deps"
+        --optional-for   Show field "Optional For"
+        --replaces       Show field "Replaces"
+        --download-size  Show field "Download Size"
+        --installed-size Show field "Installed Size"
+        --packager       Show field "Packager"
+        --md5-sum        Show field "MD5 Sum"
+        --signatures     Show field "Signatures"
+        --extended-data  Show field "Extended Data"
 
-If the field-name is one of
-    URL
-    AUR URL
-the url will be opened in the web browser.
 EOF
+}
+
+DumpOptions() {
+    local l="${lopts//:/}"
+    l="--${l//,/ --}"
+    local s="${sopts//:/}"
+    s="${s//?/ -&}"
+    s="${s# }"
+    local i="--${iopts//,/ --}"  # forget ':' for now
+
+    printf "%s\n" $s $l $i
 }
 
 Main() {
     local progname=${0##*/}
     local pkg_name=""
-    local fieldname=""      # optional, default: URL
+    local fieldnames=() fieldname=""
+    local lopts="architecture,aur-url,build-date,conflicts-with,depends-on,description"
+    lopts+=",extended-data,download-size,groups,help,installed-size,licenses,md5-sum"
+    lopts+=",name,optional-deps,optional-for,packager"
+    lopts+=",provides,replaces,repository,required-by"
+    lopts+=",sha-256-sum,signatures,url,version"
+    local sopts="adh"
+    local iopts="dump-options,au"
+    local helper_opt=(-Sii)
 
     while [ "$1" ] ; do
         case "$1" in
             -h | --help)        Help; exit 0 ;;
-            -a | --aur-url)     fieldname="AUR URL" ;;
-            -d | --description) fieldname="Description" ;;
-            --depends-on)       fieldname="Depends On" ;;
-            --required-by)      fieldname="Required By" ;;
-            --build-date)       fieldname="Build Date" ;;
-            --sha-256-sum)      fieldname="SHA-256 Sum" ;;
-            --conflicts-with)   fieldname="Conflicts With" ;;
-            --repository)       fieldname="Repository" ;;
-            --name)             fieldname="Name" ;;
-            --version)          fieldname="Version" ;;
-            --architecture)     fieldname="Architecture" ;;
-            --url)              fieldname="URL" ;;
-            --licenses)         fieldname="Licenses" ;;
-            --groups)           fieldname="Groups" ;;
-            --provides)         fieldname="Provides" ;;
-            --optional-deps)    fieldname="Optional Deps" ;;
-            --optional-for)     fieldname="Optional For" ;;
-            --replaces)         fieldname="Replaces" ;;
-            --download-size)    fieldname="Download Size" ;;
-            --installed-size)   fieldname="Installed Size" ;;
-            --packager)         fieldname="Packager" ;;
-            --md5-sum)          fieldname="MD5 Sum" ;;
-            --signatures)       fieldname="Signatures" ;;
-            --extended-data)    fieldname="Extended Data" ;;
+            -a | --aur-url)     fieldnames+=("AUR URL"); helper_opt+=(--aur) ;;
+            -d | --description) fieldnames+=(Description) ;;
+            --au)               fieldnames+=(URL "AUR URL"); helper_opt+=(--aur) ;;   # combined fields!
+            --depends-on)       fieldnames+=("Depends On") ;;
+            --required-by)      fieldnames+=("Required By") ;;
+            --build-date)       fieldnames+=("Build Date") ;;
+            --sha-256-sum)      fieldnames+=("SHA-256 Sum") ;;
+            --conflicts-with)   fieldnames+=("Conflicts With") ;;
+            --repository)       fieldnames+=(Repository) ;;
+            --name)             fieldnames+=(Name) ;;
+            --version)          fieldnames+=(Version) ;;
+            --architecture)     fieldnames+=(Architecture) ;;
+            --url)              fieldnames+=(URL) ;;
+            --licenses)         fieldnames+=(Licenses) ;;
+            --groups)           fieldnames+=(Groups) ;;
+            --provides)         fieldnames+=(Provides) ;;
+            --optional-deps)    fieldnames+=("Optional Deps") ;;
+            --optional-for)     fieldnames+=("Optional For") ;;
+            --replaces)         fieldnames+=(Replaces) ;;
+            --download-size)    fieldnames+=("Download Size") ;;
+            --installed-size)   fieldnames+=("Installed Size") ;;
+            --packager)         fieldnames+=(Packager) ;;
+            --md5-sum)          fieldnames+=("MD5 Sum") ;;
+            --signatures)       fieldnames+=(Signatures) ;;
+            --extended-data)    fieldnames+=("Extended Data") ;;
 
+            # internal options
+            --dump-options)     DumpOptions; exit 0 ;;
             # TODO !!
 
             -*)                 ;;       # ignore unknown options
-            *)                  [ "$pkg_name" ] && fieldname="$1" || pkg_name="$1" ;;
+            *)                  [ "$pkg_name" ] && fieldnames+=("$1") || pkg_name="$1" ;;
         esac
         shift
     done
 
-    [ "$fieldname" ] || fieldname=URL
+    [ "$fieldnames" ] || fieldnames=(URL)    # default field
+
     case "$pkg_name" in
         "" | PKGBUILD)
             pkg_name="PKGBUILD"
@@ -80,25 +121,30 @@ Main() {
             ;;
     esac
 
-    local helper=paru
+    local helper=yay                      # paru
     [ -x /bin/$helper ] || helper=yay
     [ -x /bin/$helper ] || DIE "no supported AUR helper (paru, yay) found"
 
-    local opt="-Sii"
-    case "$fieldname" in
-        "AUR URL") opt+=" --aur" ;;
-    esac
-
-    local data=$(LANG=C pacman $opt "$pkg_name" 2>/dev/null)
-    [ "$data" ] || data=$(LANG=C $helper $opt "$pkg_name" 2>/dev/null)
+    local data=$(LANG=C pacman $helper_opt "$pkg_name" 2>/dev/null)
+    [ "$data" ] || data=$(LANG=C $helper $helper_opt "$pkg_name" 2>/dev/null)
     [ "$data" ] || DIE "$pkg_name info not found"
-    local info=$(echo "$data" | grep -w "^$fieldname" | sed -E "s|^$fieldname[ ]+:[ ]+||")
-    [ "$info" ] || DIE "field-name '$fieldname' not found"
 
-    echo2 "$info"
-    case "$fieldname" in
-        URL | "AUR URL") setsid xdg-open "$info" &>/dev/null ;;
-    esac
+    local info
+    for fieldname in "${fieldnames[@]}" ; do
+        case "$fieldname" in
+            "AUR URL")
+                info="https://aur.archlinux.org/packages/$pkg_name"
+                ;;
+            *)
+                info=$(echo "$data" | grep -w "^$fieldname" | sed -E "s|^$fieldname[ ]+:[ ]+||")
+                [ "$info" ] || DIE "field-name '$fieldname' not found"
+                ;;
+        esac
+        echo2 "$info"
+        case "$fieldname" in
+            URL | "AUR URL") setsid xdg-open "$info" &>/dev/null ;;
+        esac
+    done
 }
 
 SourcePKGBUILD() {

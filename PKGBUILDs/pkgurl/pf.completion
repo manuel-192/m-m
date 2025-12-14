@@ -11,6 +11,7 @@ _pkgurl_()
     local cur prev words #cword split
     _init_completion -s || return
 
+    local opts=($(pf --dump-options))
     if true ; then
         local pkgs=($(/bin/pacman -Qq))
     else
@@ -20,6 +21,6 @@ _pkgurl_()
     # Handle options that need sub-options.
     # Each option "case" should return immediately.
 
-    _pkgurl_complete "${pkgs[*]}"
+    _pkgurl_complete "${pkgs[*]} ${opts[*]}"
 }
 complete -F _pkgurl_ pkgurl
