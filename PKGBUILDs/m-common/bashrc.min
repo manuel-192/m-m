@@ -1901,7 +1901,9 @@ EOF
         fi
     }
     Funcize() {
-        local _PROGNAME_=${BASH_SOURCE[-1]}
+        # ECHO2 "===> $FUNCNAME: debug: BASH_SOURCE = ${BASH_SOURCE[*]}"
+        # ECHO2 "===> $FUNCNAME: debug: \$0 = $0"
+        local _PROGNAME_=${BASH_SOURCE[0]}
         local Apps2Funcs=()
         source /etc/apps2func.conf              # fill Apps2Funcs array
         for app in "${Apps2Funcs[@]}" ; do
