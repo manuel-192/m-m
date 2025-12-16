@@ -973,31 +973,22 @@ EOF
     my_prompt_command() {
         # Show one or two line prompt (folder, time) after trying to slightly shorten the folder name.
 
-        local time="$(date +%a\ %H:%M.%S)"
-        local pwd="$PWD"
-
-        [ $_HAS_BATTNOT_ = yes ] && time="$time [$(battnot --percent)%]"
-
         if [ "$HERE_ARROW" ] ; then
-            if true ; then
-                local -r rarrow=']'
-                local -r larrow='['
-            else
-                local -r rarrow=''
-                local -r larrow=''
-            fi
+            local -r rarrow=']'
+            local -r larrow='['
             local -r here="$HERE_ARROW"
         else
             local -r rarrow=$'\u2773'            # nice delimiters, https://en.wikipedia.org/wiki/Arrow_(symbol)#Unicode
             local -r larrow=$'\u2772'
             local -r here=$'\u2ba9'
         fi
-        local -r _codedir='\$CODEDIR'
 
-        case "$pwd" in
-            "$HOME" | "$HOME"/*)  pwd="${pwd/$HOME/\~}" ;;
-            "$CODEDIR"*)          pwd="${pwd/$CODEDIR/$_codedir}" ;;
-        esac
+        local time="$(date +%a\ %H:%M.%S)"
+        [ $_HAS_BATTNOT_ = yes ] && time+=" [$(battnot --percent)%]"
+
+        local pwd="$PWD"
+        local -r path_config_file=/etc/path-fixes.bash
+        [ -x $path_config_file ] && pwd=$($path_config_file "$pwd") || echo "==> $FUNCNAME: $path_config_file not found" >&2
         pwd="$larrow$pwd$rarrow"
         # pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"    # do color codes cause prompt issues??? YES!
 
