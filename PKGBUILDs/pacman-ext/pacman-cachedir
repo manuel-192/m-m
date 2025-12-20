@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep -w "^CacheDir[ ]*=" /etc/pacman.conf | tail -n1 | awk '{print $NF}'
