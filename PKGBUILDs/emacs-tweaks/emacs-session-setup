@@ -38,7 +38,7 @@ Main() {
         sudo pacman -S --noconfirm $new
         # sudo pacman -S --noconfirm emacs-tweaks
     else
-        [ $quiet = no ] && echo "==> $new is properly installed" >&2
+        [ $quiet = no ] && echo "==> $new is properly installed" >&2 || true
     fi
 }
 
