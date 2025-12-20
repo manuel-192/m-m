@@ -113,7 +113,9 @@ _emacs()
     # See also emacs_new_options() above.
     # And, added option -h (alias --help) for emacs. ;)
 
-    type emacs-session-setup &>/dev/null && emacs-session-setup --quiet
+    if type emacs-session-setup &>/dev/null ; then
+        emacs-session-setup --quiet || return 1
+    fi
 
     local arg args=()
     local moreargs extarg

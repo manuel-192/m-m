@@ -2,11 +2,13 @@
 
 WantToContinue() {
     local reply=""
-    read -p "==> Want to setup proper EMACS for $XDG_SESSION_TYPE (Y/n)? " reply
-    case "$reply" in
-        [nN]*) return 1 ;;
-    esac
-    return 0
+    while true ; do
+        read -p "==> Want to setup proper EMACS for $XDG_SESSION_TYPE (Y/q)? " reply
+        case "$reply" in
+            "" | [Yy]*) return 0 ;;
+            [Qq]*) return 1 ;;
+        esac
+    done
 }
 
 Main() {
@@ -30,7 +32,7 @@ Main() {
     esac
     if [ "$old" ] ; then
         echo "==> $old -> $new" >&2
-        WantToContinue || return
+        WantToContinue || return $?
         # sudo pacman -Rdd --noconfirm emacs-tweaks
         sudo pacman -Rdd --noconfirm $old
         sudo pacman -S --noconfirm $new
