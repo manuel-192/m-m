@@ -1991,7 +1991,7 @@ _Nvidia_driver() {
             fi
             ;;
         nvidia)
-            ECHO2 "==> GPU driver: $(expac %n nvidia nvidia-dkms)"
+            ECHO2 "==> GPU driver: $(/bin/pacman -Qs nvidia dkms | /bin/grep local | /bin/awk '{print $1}' | /bin/sed 's|local/||')"
             ;;
     esac
 }
