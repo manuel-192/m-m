@@ -55,8 +55,14 @@ local PKGNAMES=(
     # penguins-eggs/aur
 
     # lib32-nvidia-470xx-utils/aur
-    # nvidia-470xx-settings/aur    # needs gtk2
+    # nvidia-470xx-settings/aur    # needs 'gtk2' and 'nvidia-470xx-utils' (in makedepends)
     # nvidia-470xx-utils/aur
+
+    # For GPUs older than Turing:
+    lib32-nvidia-580xx-utils/aur
+    nvidia-580xx-utils/aur
+    # and more:
+    nvidia-580xx-settings/aur
 
     vscodium-bin/aur
 
