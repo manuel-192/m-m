@@ -5,7 +5,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=25.11.1
+pkgver=25.12
 pkgrel=1
 
 arch=('any')
@@ -32,6 +32,7 @@ source=(
     $url/firefox-developer-edition
 #    $url/history-del
     $url/home-cache-clear
+    $url/kaffeine
     $url/kde-open
     $url/lines
     $url/man2pdf
@@ -62,6 +63,7 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '2ecf9ea9850e65c2b8c2975b87f711b38f7f24c0e50677ae52e55675037b69a2ebec950fdc71968b4643db8b98ce5abe9422155a6095836144696dbcd8aa1a05'
             '2ecf9ea9850e65c2b8c2975b87f711b38f7f24c0e50677ae52e55675037b69a2ebec950fdc71968b4643db8b98ce5abe9422155a6095836144696dbcd8aa1a05'
             'd4f9533bd2d4bf5ff1209610ce3457a1015d1674e1e7ba7951901a2d9a49a4cc41e8a7b97c112cfb3786cbcc7df0346a26898a17d9d3c23c461201a16415a770'
+            'f323ad0a6cba932a60332c7607f42ad67cd39581c039b246795e9cc5ff6b51e99173d6781a9ffc210971fabf484df2c0993bc0658ef6abb8638223643baf43fe'
             '684c0e594c8638f29727e7c92fd4d60027fca678868ee608da5c19d262fc30ba3575d46db8da606269310a9d58d50bcfea7ed53650eb33c959f2df5fdaeed2cc'
             'a11555f730b27ed040102ef2408e64ae5212f479f58c89ea54f91b6bd14b9cce9d56541904022d6dd3613334808f0bd1de87fb54edb402446a65e2e8078e1b20'
             'bd0f4bb10c8acae3ebb9be9a620940fc46cf9f6f12798f12f5c8b0682396617efed4b88aba2bd036dd4e6d72f3cde6a2754e2ca61bcac9f926e24137af88a789'

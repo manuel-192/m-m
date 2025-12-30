@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ -x /bin/kaffeine ] ; then
+    /bin/kaffeine --lastchannel "$@" 2> "$HOME"/.config/kaffeine.errlog &
+else
+    echo "$0: kaffeine is not installed." >&2
+fi
