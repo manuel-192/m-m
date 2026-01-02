@@ -59,10 +59,10 @@ local PKGNAMES=(
     # nvidia-470xx-utils/aur
 
     # For GPUs older than Turing:
-    lib32-nvidia-580xx-utils/aur
-    nvidia-580xx-utils/aur
+    #lib32-nvidia-580xx-utils/aur
+    #nvidia-580xx-utils/aur
     # and more:
-    nvidia-580xx-settings/aur
+    #nvidia-580xx-settings/aur
 
     vscodium-bin/aur
 
