@@ -28,6 +28,12 @@ trap finaloutput INT
 declare -r myname=${0##*/}    #'rankmirrors'
 declare -r myver='1.13.1'
 
+prefer_what=age    # age or speed
+case "$prefer_what" in
+    speed) sort_direction="-k2V,2 -k1rb,1" ;;
+    age|*) sort_direction="-k1rb,1 -k2V,2" ;;
+esac
+
 usage() {
 	cat <<EOF
 ${myname} v${myver}
@@ -80,7 +86,7 @@ gettime_orig() {
 	echo "${output[0]}"
 	return 0
 }
-gettime() {
+gettime_o2() {
     local url="$1"
     local output=() result
     local curl_exitcode=0
@@ -100,6 +106,24 @@ gettime() {
         *)  printf "==> curl code %3s from: %s\n" $curl_exitcode "$url" >&2; return 1 ;;
     esac
 }
+gettime() {
+    local url="$1"
+    local result curl_exitcode=0 time syncnr
+
+    result=$(curl --fail -Lsm $MAX_TIME -w "%{time_total}" "$url") || curl_exitcode=$?
+    case $curl_exitcode in
+        0)
+            syncnr=$(echo "$result" | head -n1)    # tells when mirror was synced (bigger is better)
+            time=$(  echo "$result" | tail -n1)    # tells the "speed" of the mirror (smaller is better)
+            echo "$syncnr $time"
+            return 0
+            ;;
+        *)
+            printf "==> curl code %3s from: %s\n" $curl_exitcode "$url" >&2
+            return 1
+            ;;
+    esac
+}
 
 # getfetchurl serverurl (e.g. getturl https://foo.com/core/os/i686)
 # if $repo is in the line, then assumes core
@@ -108,6 +132,11 @@ gettime() {
 ARCH="$(uname -m)"
 getfetchurl() {
 	local strippedurl="${1%/}"
+
+	# shellcheck disable=SC2016
+	local fetchurl="${strippedurl/\$repo\/os\/\$arch/lastupdate}"
+	echo "$fetchurl"
+	return
 
 	# shellcheck disable=SC2016
 	local replacedurl="${strippedurl//'$arch'/$ARCH}"
@@ -140,7 +169,7 @@ finaloutput() {
 		rm "$tmpfile"
 	fi
 	IFS=$'\n' read -r -d '' -a sortedarray < \
-		<(printf '%s\n' "${timesarray[@]}" | LC_COLLATE=C sort)
+		<(printf '%s\n' "${timesarray[@]}" | LC_COLLATE=C sort $sort_direction)
 
 	# Final output for mirrorfile
 	numiterator="0"
@@ -154,7 +183,7 @@ finaloutput() {
 		done
 	else
 		for line in "${sortedarray[@]}"; do
-			echo "Server = ${line#* }"
+			echo "Server = ${line#* * }"
 			((numiterator++))
 			(( NUM && numiterator >= NUM )) && break
 		done
@@ -274,8 +303,8 @@ get_url_time() {
 	fi
 
 	# Output
-        local sep=" ... "
-        sep="|"
+        # local sep=" ... "
+        local sep="|"
 	if [[ $VERBOSE && $TIMESONLY ]]; then
 		echo "$server$sep$time"
 	elif [[ $VERBOSE ]]; then
@@ -292,6 +321,7 @@ if [[ $PARALLEL ]]; then
 	export MAX_TIME ARCH TARGETREPO VERBOSE TIMESONLY WORKING_ONLY tmpfile
 	export -f getfetchurl gettime get_url_time
 fi
+
 for line in "${linearray[@]}"; do
 	if [[ $line =~ ^[[:space:]]*# ]]; then
 		[[ $TIMESONLY ]] || echo "$line"
@@ -300,6 +330,7 @@ for line in "${linearray[@]}"; do
 		# Getting values and times and such
 		server="${line#*= }"
 		server="${server%%#*}"
+		server="${server/\$repo\/os\/\$arch/lastupdate}"
 
 		if [[ $PARALLEL ]]; then
 			servers+=("$server")
@@ -307,8 +338,8 @@ for line in "${linearray[@]}"; do
 			get_url_time "$server"
 		fi
 	fi
-done
+done #| column -t -s'|'
 if [[ $PARALLEL ]]; then
-	parallel get_url_time ::: "${servers[@]}"
+	parallel get_url_time ::: "${servers[@]}" | column -t -s'|' #| sed 's|/lastupdate|/$repo/os/$arch|'
 fi
 finaloutput
