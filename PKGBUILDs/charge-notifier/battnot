@@ -131,10 +131,12 @@ Options() {
             --ctrl-end-threshold-show) BatteryVariable show charge_control_end_threshold; exit $? ;;
             --cycles)                  if [ "$BAT" ] ; then
                                            cycles=$(grep POWER_SUPPLY_CYCLE_COUNT "$BAT/uevent" 2>/dev/null| cut -d'=' -f2)
-                                           [ "$cycles" ] && exit 0 || exit 1
-                                       else
-                                           exit 1
+                                           if [ "$cycles" ] ; then
+                                               echo "$cycles"
+                                               exit 0
+                                           fi
                                        fi
+                                       exit 1
                                        ;;
             --percent | -p)            ShowPercent;   exit $? ;;
             --mouse-percent)           MousePercent;  exit $? ;;
