@@ -1,7 +1,7 @@
 # Maintainer : manuel at endeavouros.com
 
 pkgname=iso-create-ml
-pkgver=0.2.3
+pkgver=0.2.4
 pkgrel=1
 pkgdesc="Create a mirrorlist for the ISO"
 arch=('any')
@@ -16,7 +16,7 @@ source=(
     arch-countries.conf
     arch-mirrors-active.conf
 )
-sha256sums=('322dbd54c120e1b755a016d777d836f8cac3198e337520023dc2179d029fa040'
+sha256sums=('52828f05712f947884fb9cfa05ff4777e6a15295f617e9911b13fb8f8f110fcc'
             '7036b26376843a63d3be7a5d472992c67979a1efcd7789c0316a8f4ca00324cf'
             '5776615fa666b708161de831f334469c003bdb81fc95afa4ad26faa8f7675f56'
             'e826d2c30bce08cf09595118bddd8211446fafaf95f8b36bffe2d373d847850c')

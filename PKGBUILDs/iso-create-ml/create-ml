@@ -87,12 +87,7 @@ AddCountry() {
 }
 
 Cleanup() {
-    if [ "$cleanups" ] ; then
-        local cmd
-        for cmd in "${cleanups[@]}" ; do
-            $cmd
-        done
-    fi
+    [ "$cleanup_files" ] && rm -f "${cleanup_files[@]}"
 }
 
 ShowLocationInfo() {
@@ -106,68 +101,6 @@ ShowLocationInfo() {
         fi
     done
     WARN "cannot get current location"
-}
-
-Main2() {
-    declare -A reflector_countries
-
-    source "$dbfile"
-
-    local tmplist mirrorlist
-    tmplist=$(mktemp)                           # collect mirrors that user wanted here
-    mirrorlist=$(mktemp)
-
-    chmod go-rwx "$tmplist" "$mirrorlist"
-    cleanups+=("rm -f '$tmplist'"
-               "rm -f '$mirrorlist'")
-
-    # if user wanted, add the current country into $tmplist
-    if [ $local_country_wanted = yes ] && [ $has_internet_connection = yes ] ; then
-        AddCountry "$country_code"
-    fi
-
-    # add user given countries into $tmplist
-    local cc
-    for cc in "${countries_given[@]}" ; do
-        case "$cc" in
-            [a-z][a-z]) AddCountry "$cc" ;;
-            *)          DIE "'$cc' not supported" ;;
-        esac
-    done
-
-    if [ $has_internet_connection = yes ] ; then
-        local rankmirrors_opt=()
-        [ $verbose  = yes ] && rankmirrors_opt+=(-v)
-        [ $parallel = yes ] && rankmirrors_opt+=(-p)
-
-        echo2 "==> Ranking mirrors."
-        {
-            echo -e "### Mirror list generated at $(date "+%Y-%m-%d %X")"
-            echo -e "### Command: $progname ${orig_args[*]}\n"
-            ./rankmirrors-arch "${rankmirrors_opt[@]}" "$tmplist" | column -t -s'|' | sed 's|/lastupdate|/$repo/os/$arch|'
-        } > "$mirrorlist"
-        echo2 "==> Mirrors ranked."
-    else
-        {
-            echo -e "### Mirror list generated at $(date "+%Y-%m-%d %X")"
-            echo -e "### Command: $progname $*"
-            echo -e "### Note: this mirrorlist was NOT ranked during install. We strongly recommend to rank it soon.\n"
-        } > "$mirrorlist"
-        cat "$tmplist" >> "$mirrorlist"
-    fi
-
-    if [ $save = yes ] ; then
-        echo2 "==> Updating $target:"
-        sudo rm -f $target.bak
-        sudo mv $target $target.bak
-        sudo cp -iv "$mirrorlist" $target
-        sudo chmod go+r $target
-    else
-        echo2 ""
-        cat "$mirrorlist" >&2
-        echo2 "\n==> $target NOT updated because of option --nosave."
-    fi
-    Cleanup
 }
 
 UserCountriesFromFile() {
@@ -196,6 +129,23 @@ DumpOptions() {
         echo "$o"
     fi
     exit 0
+}
+
+GetSupportFiles() {
+    if [ ! -e "$mirrordata" ] ; then
+        if [ $has_internet_connection = yes ] ; then
+            FetchMirrors && cleanup_files+=("$mirrordata") || mirrordata=/etc/$mirrordata
+        else
+            mirrordata=/etc/$mirrordata
+        fi
+    fi
+    if [ ! -e "$dbfile" ] ; then
+        if [ $has_internet_connection = yes ] ; then
+            FetchCountries && cleanup_files+=("$dbfile") || dbfile="/etc/$dbfile"
+        else
+            dbfile="/etc/$dbfile"
+        fi
+    fi
 }
 
 Parameters() {
@@ -269,21 +219,65 @@ EOF
     done
 }
 
-GetSupportFiles() {
-    if [ ! -e "$mirrordata" ] ; then
-        if [ $has_internet_connection = yes ] ; then
-            FetchMirrors || mirrordata=/etc/$mirrordata
-        else
-            mirrordata=/etc/$mirrordata
-        fi
+Main2() {
+    declare -A reflector_countries
+
+    source "$dbfile"
+
+    local tmplist mirrorlist
+    tmplist=$(mktemp)                           # collect mirrors that user wanted here
+    mirrorlist=$(mktemp)
+
+    chmod go-rwx "$tmplist" "$mirrorlist"
+    cleanup_files+=("$tmplist" "$mirrorlist")
+
+    # if user wanted, add the current country into $tmplist
+    if [ $local_country_wanted = yes ] && [ $has_internet_connection = yes ] ; then
+        AddCountry "$country_code"
     fi
-    if [ ! -e "$dbfile" ] ; then
-        if [ $has_internet_connection = yes ] ; then
-            FetchCountries || dbfile="/etc/$dbfile"
-        else
-            dbfile="/etc/$dbfile"
-        fi
+
+    # add user given countries into $tmplist
+    local cc
+    for cc in "${countries_given[@]}" ; do
+        case "$cc" in
+            [a-z][a-z]) AddCountry "$cc" ;;
+            *)          DIE "'$cc' not supported" ;;
+        esac
+    done
+
+    if [ $has_internet_connection = yes ] ; then
+        local rankmirrors_opt=()
+        [ $verbose  = yes ] && rankmirrors_opt+=(-v)
+        [ $parallel = yes ] && rankmirrors_opt+=(-p)
+
+        echo2 "==> Ranking mirrors."
+        {
+            echo -e "### Mirror list generated at $(date "+%Y-%m-%d %X")"
+            echo -e "### Command: $progname ${orig_args[*]}\n"
+            ./rankmirrors-arch "${rankmirrors_opt[@]}" "$tmplist" | column -t -s'|' | sed 's|/lastupdate|/$repo/os/$arch|'
+        } > "$mirrorlist"
+        echo2 "==> Mirrors ranked."
+    else
+        {
+            echo -e "### Mirror list generated at $(date "+%Y-%m-%d %X")"
+            echo -e "### Command: $progname $*"
+            echo -e "### Note: this mirrorlist was NOT ranked during install. We strongly recommend to rank it soon.\n"
+        } > "$mirrorlist"
+        cat "$tmplist" >> "$mirrorlist"
     fi
+
+    if [ $save = yes ] ; then
+        echo2 "==> Updating $target:"
+        sudo rm -f $target.bak
+        sudo mv $target $target.bak
+        sudo cp -iv "$mirrorlist" $target
+        sudo chmod go+r $target
+    else
+        echo2 ""
+        cat "$mirrorlist" >&2
+        echo2 "\n==> $target NOT updated because of option --nosave."
+    fi
+    Cleanup
 }
 
 Main() {
@@ -298,8 +292,8 @@ Main() {
 
     local -r user_fav_countries=$HOME/user-countries.txt
     local -r target=/etc/pacman.d/mirrorlist
-    local mirrordata="$HOME/arch-mirrors-active.conf"                    # support file: active Arch mirrors in various countries
-    local dbfile="$HOME/arch-countries.conf"                             # support file: mappings between country-code and country-name
+    local mirrordata="/tmp/arch-mirrors-active.conf"                     # support file: active Arch mirrors in various countries
+    local dbfile="/tmp/arch-countries.conf"                              # support file: mappings between country-code and country-name
     local has_internet_connection=yes
     local country_code=""
     local local_country_wanted=yes                                       # include local country in the mirrorlist or not?
@@ -309,7 +303,7 @@ Main() {
     local protocols=(https)                                              # list of supported protocols
     local countries_given=()                                             # list of user given countries which have mirrors to include
     local countries_handled=()
-    local cleanups=()
+    local cleanup_files=()
     local orig_args=("$@")
 
     eos-connection-checker || has_internet_connection=no
@@ -344,7 +338,7 @@ Main() {
 
     Parameters "${args[@]}"
 
-    Main2 foo
+    Main2
 }
 
 Main "$@"
