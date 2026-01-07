@@ -177,12 +177,8 @@ UserCountriesFromFile() {
             item2="$item"
             item=${item,,}
             case "$item" in
-                [a-z][a-z])
-                    printf "%s\n" "${countries_given[@]}" | grep "^$item$" >/dev/null || countries_given+=("$item")
-                    ;;
-                *)
-                    WARN "$user_fav_countries: country code '$item2' ignored"
-                    ;;
+                [a-z][a-z]) printf "%s\n" "${countries_given[@]}" | grep "^$item$" >/dev/null || countries_given+=("$item") ;;
+                *)          WARN "$user_fav_countries: country code '$item2' ignored" ;;
             esac
         done
     else
@@ -191,9 +187,13 @@ UserCountriesFromFile() {
 }
 
 DumpOptions() {
-    TODO
-    local l="--${lopts//,/ }" 
-    echo "${options[*]}"
+    if [ "$OPTS" ] ; then
+        local o=${OPTS//:/}                   # remove every ':'
+        [ "${o::1}" = "$sep" ] || o="--$o"    # add leading '--' if first option is long
+        o=${o//,/ --}                         # manage long options
+        o=${o//$sep/ -}                       # manage short options
+        echo $o
+    fi
     exit 0
 }
 
@@ -231,7 +231,7 @@ Parameters() {
                     br|cl|co|mx)
                                  countries_given+=(ww us); protocols+=(http) ;;
                     al|at|be|cz|dk|ee|es|fr|gb|gr|hr|it|no|pl|pt|se)
-                                 countries_given+=(ww de fr) ;;
+                                 countries_given+=(ww de ) ;;
                     "fi")        countries_given+=(ww se) ;;
                     *)           countries_given+=(ww de us); protocols+=(http) ;;
                 esac
@@ -272,9 +272,11 @@ EOF
 Main() {
     local -r progname=${0##*/}
 
-    local lopts="help,http,nolocal,nosave,offline,recommended-countries,rsync,sequential"
-    lopts+=",update,user-countries,fake-country:,verbose,dump-options"
-    local sopts="hrv"
+    local -r sep="|"
+    local OPTS="help${sep}h,http,nolocal,nosave,offline,recommended-countries${sep}r,rsync,sequential"
+    OPTS+=",update,user-countries,fake-country:,verbose${sep}v,dump-options"
+    local lopts="$(echo "$OPTS" | sed -E 's|(/.[:]*)||g')"
+    local sopts="$(echo "$OPTS" | sed -E 's|[^/]*/(.[:]*)[^/]*|\1|g')"
 
     local -r active_mirrors_url=https://archlinux.org/mirrorlist/all     # mirrors active at the time listed in the file, both https and http
     local -r user_fav_countries=$HOME/user-countries.txt
