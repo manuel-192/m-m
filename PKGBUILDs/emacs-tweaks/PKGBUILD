@@ -2,7 +2,7 @@
 
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
-pkgver=26.1
+pkgver=26.1.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -17,7 +17,7 @@ source=(
     $url/emacs-readonly
     $url/emacs-session-setup
 )
-sha512sums=('c78944125cab1f0bc5737810fbfac0b91d84a951b468b0e2653ddfcc579d1a7781237b2b1e2777f3a56abfb9b312a50c60a10ab3c05802860b63b6e9cbebf581'
+sha512sums=('c77f0f478ed82cecda4bf2414c91e70b69464877d3e0335498c190eb2e264cdf52e3bfeae7d45725d5def8a986ca1b0cdfbe1b58cd5df1df01bf8faf9374bdf8'
             'b79e0cded9ee1222c5dc7d8fc416a60f5bbd8ddba251015a91d51d7db264b6f215c938c8b33774a65992bd9c5f32142483d6380318b6243c5071fac9b2a9bf95'
             '2c4003a729802a92f3875d3135bb5a5185dfa8f8124986af7cd54346529dfee6497c98e1b46eeaeea326c2ebffca43865757cd5844296a9446b493fb04f87dee'
             'b37d25dcbab62c427632c0bda0d4ef23016826655b8c3ed863e8c9edf98ccf255940b5a74858c1fbb4c111554798124403d014d2eaebe4d8c0febd380cb9ea11'
