@@ -1,3 +1,7 @@
 #!/bin/bash
 
-/bin/create-ml --prefs='s://fi.*niranjan s://umea' "$@"
+if [[ "$*" =~ "--fake-country" ]] ; then
+    /bin/create-ml "$@"
+else
+    /bin/create-ml --prefs='s://fi.*niranjan s://umea' "$@"
+fi
