@@ -1,0 +1,3 @@
+#!/bin/bash
+
+/bin/create-ml --prefs='s://fi.*niranjan s://umea' "$@"
