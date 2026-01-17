@@ -183,17 +183,17 @@ OPEN_URLS() {
     local xx
     printf " -> %s\n" "$@" >&2
     if [ -x /bin/exo-open ] ; then
-        exo-open "$@"
+        exo-open "$@" &>/dev/null
     elif [ -x /bin/kde-open ] ; then
         for xx in "$@" ; do
-            kde-open "$xx"
+            kde-open "$xx" &>/dev/null
         done
     elif [ -x /bin/xdg-open ] ; then
         for xx in "$@" ; do
-            xdg-open "$xx"
+            xdg-open "$xx" &>/dev/null
         done
     elif [ -x /bin/firefox ] ; then
-        setsid firefox "$@"
+        setsid firefox "$@" &>/dev/null
     fi
 }
 
