@@ -15,22 +15,21 @@ Main() {
     local -r progname=${0##*/}
     local args=()
     local template="/etc/emacs.bash-template"
-    local sudo=no
+    local needs_sudo=no
     local has_color=no
     [ -x /bin/eos-color ] && has_color=yes
 
     HandleOptions "$@"
 
     local emacs_parameters=(--reverse-video
-                            --no-splash
+                            --no-splash --no-site-file 
                             --geometry=$(Geometry)
                             "${args[@]}"
                            )
-    case "$sudo" in
-        yes) sudo="sudo -E" ;;
-        no)  sudo="" ;;
+    case "$needs_sudo" in
+        yes) sudo -E setsid /bin/emacs "${emacs_parameters[@]}" &>/dev/null ;;
+        no)                 /bin/emacs "${emacs_parameters[@]}" &>/dev/null & ;;
     esac
-    $sudo setsid /bin/emacs "${emacs_parameters[@]}" &>/dev/null
 }
 
 HandleOptions() {
@@ -47,14 +46,14 @@ HandleOptions() {
                 cat <<EOF >&2
 Usage:          $progname [options] [parameters]
 Options:        --bash=X      Create an executable bash script file X using file $template.
-                -s, --sudo    Open emacs with sudo.
                 Otherwise normal emacs parameters are OK.
 EOF
                 EosColor reset
                 /bin/emacs --help
                 exit 0
                 ;;
-            -s | --sudo) sudo=yes ;;
+#                -s, --sudo    Open emacs with sudo.
+#            -s | --sudo) sudo=yes ;;
             --bash)   cp "$template" "$2"
                       chmod +x "$2"
                       args+=("$2")
@@ -63,7 +62,18 @@ EOF
         esac
         shift
     done
-    [ "$1" ] && args+=("$@")
+    while [ "$1" ] ; do
+        args+=("$1")
+        case "$1" in
+            -*) ;;
+            *)  if [ ! -w "$1" ] && [ "$(stat -c %U "$1")" != "$LOGNAME" ] ; then
+                    needs_sudo=yes
+                    echo "==> sudo needed for '$1'" >&2
+                fi
+                ;;
+        esac
+        shift
+    done
 }
 
 Geometry() {
