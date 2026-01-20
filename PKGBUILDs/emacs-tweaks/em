@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Run emacs by
+#  - adjusting window size
+#  - using dark colors
+#  - option --bash='file' creates a template bash script
+
+DIE() {
+    echo "$progname: error: $1" >&2
+    exit 1
+}
+EosColor() { [ $has_color = yes ] && eos-color "$1" 2; }
+
+Main() {
+    local -r progname=${0##*/}
+    local args=()
+    local template="/etc/emacs.bash-template"
+    local sudo=no
+    local has_color=no
+    [ -x /bin/eos-color ] && has_color=yes
+
+    HandleOptions "$@"
+
+    local emacs_parameters=(--reverse-video
+                            --no-splash
+                            --geometry=$(Geometry)
+                            "${args[@]}"
+                           )
+    case "$sudo" in
+        yes) sudo="sudo -E" ;;
+        no)  sudo="" ;;
+    esac
+    $sudo setsid /bin/emacs "${emacs_parameters[@]}" &>/dev/null
+}
+
+HandleOptions() {
+    local -r LOPTS="help,bash:,sudo"
+    local -r SOPTS="hs"
+    local opts
+    opts="$(/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$PROGNAME" -- "$@")" || DIE "${FUNCNAME[0]} failed."
+    eval set -- "$opts"
+    while true ; do
+        case "$1" in
+            --)       shift; break ;;
+            -h | --help)
+                EosColor warning
+                cat <<EOF >&2
+Usage:          $progname [options] [parameters]
+Options:        --bash=X      Create an executable bash script file X using file $template.
+                -s, --sudo    Open emacs with sudo.
+                Otherwise normal emacs parameters are OK.
+EOF
+                EosColor reset
+                /bin/emacs --help
+                exit 0
+                ;;
+            -s | --sudo) sudo=yes ;;
+            --bash)   cp "$template" "$2"
+                      chmod +x "$2"
+                      args+=("$2")
+                      shift
+                      ;;
+        esac
+        shift
+    done
+    [ "$1" ] && args+=("$@")
+}
+
+Geometry() {
+    local xrandr=$(xrandr | head -n1 | sed -e 's|.* current ||' -e 's|, maximum.*||' -e 's| x | |')  # 3840 2160
+    local width=$( echo $xrandr | awk '{print $1}')
+    local height=$(echo $xrandr | awk '{print $2}')
+    local divider=26                                  # depends on the size of the font
+    local wanted_columns=$((width / divider))
+    local wanted_rows=$((height / divider))
+
+    echo "${wanted_columns}x${wanted_rows}"
+
+    # case "$width" in
+    #     3840) wanted_columns=150 ;;
+    #     1920) wanted_columns=75 ;;
+    # esac
+    # case "$height" in
+    #     2160) wanted_rows=80 ;;
+    #     1080) wanted_rows=40 ;;
+    # esac
+
+    # echo "${wanted_columns}x${wanted_rows}" >&2
+}
+
+Main "$@"
+

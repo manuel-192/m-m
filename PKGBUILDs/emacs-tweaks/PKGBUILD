@@ -2,7 +2,7 @@
 
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
-pkgver=26.1.1
+pkgver=26.2
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -11,23 +11,30 @@ depends=(emacs)
 url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
 
 source=(
-    $url/emacs
+    $url/em
     $url/emacsr
     $url/emacs-fix-position-for-kate
     $url/emacs-readonly
     $url/emacs-session-setup
+    $url/emacs.bash-template
 )
-sha512sums=('c77f0f478ed82cecda4bf2414c91e70b69464877d3e0335498c190eb2e264cdf52e3bfeae7d45725d5def8a986ca1b0cdfbe1b58cd5df1df01bf8faf9374bdf8'
+sha512sums=('01d817ca4494ec1d20b20b9ab6f20a30959400407c79d1f4593b21bd89b36bae584fe2921219caa2f39c6ef0f6ed0e395476d3bca9b55a8c5d4c35b49a7aa2e6'
             'b79e0cded9ee1222c5dc7d8fc416a60f5bbd8ddba251015a91d51d7db264b6f215c938c8b33774a65992bd9c5f32142483d6380318b6243c5071fac9b2a9bf95'
             '2c4003a729802a92f3875d3135bb5a5185dfa8f8124986af7cd54346529dfee6497c98e1b46eeaeea326c2ebffca43865757cd5844296a9446b493fb04f87dee'
             'b37d25dcbab62c427632c0bda0d4ef23016826655b8c3ed863e8c9edf98ccf255940b5a74858c1fbb4c111554798124403d014d2eaebe4d8c0febd380cb9ea11'
-            '44f3be9d1ff0b8eabd751b63a23057249694ada0d14df82f4dd43836fb750e0db1b50a72101f08d8c3782802645244295133ba2dc9d7e12c75e5298f43209dac')
+            '44f3be9d1ff0b8eabd751b63a23057249694ada0d14df82f4dd43836fb750e0db1b50a72101f08d8c3782802645244295133ba2dc9d7e12c75e5298f43209dac'
+            '5e11bef93195cc231ef5cbc5c098a92dad18d65d6c101426233271e7c15d82cd0d39977ccf0b092b6d75b177ebee51e991054970c97f4003ae1040d82f452798')
 
 package() {
     local src file
 
     for src in "${source[@]}" ; do
         file=${src##*/}
-        install -Dm755 $file   $pkgdir/usr/local/bin/$file
+        case "$file" in
+            *.bash-template)
+                install -Dm644 $file   $pkgdir/etc/$file ;;
+            *)
+                install -Dm755 $file   $pkgdir/usr/local/bin/$file ;;
+        esac
     done
 }

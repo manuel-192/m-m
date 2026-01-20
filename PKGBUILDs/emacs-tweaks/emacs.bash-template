@@ -1,0 +1,76 @@
+#!/bin/bash
+
+Main() {    # Everything starts here.
+    # Program-wide variables.
+    local -r PROGNAME="${0##*/}"
+    local LOPTS SOPTS
+    local -r OPTS=("help h"              # syntax is one of: "long short", "long", "short"
+                   dump-options
+                   # HERE: add options to be managed in ParameterHandling.
+                  )
+    # HERE: add variables to be managed in ParameterHandling.
+
+    ParameterHandling "$@"
+
+    # HERE: add all needed functionality.
+}
+
+Usage() {    # Usage help.
+    # HERE: fill in missing parts (??).
+    cat <<EOF >&2
+Purpose:    ??
+Syntax:     $PROGNAME ??
+Parameters: # HERE: explain your options.
+EOF
+    [ "$1" ] && exit $1
+}
+
+ParameterHandling() {    # Handle all formal parameters.
+    DumpOptionList() {
+        local sopts="${SOPTS//:/}"
+        local lopts="${LOPTS//:/}"
+        echo "${sopts//?/-& }--${lopts//,/ --}"   # patsub_replacement with shopt required
+        exit 0
+    }
+    ExtractOpts() {   # Extract OPTS value into LOPTS and SOPTS.
+        local opt
+        for opt in "${OPTS[@]}" ; do
+            case "$opt" in
+                *" "*) LOPTS+=",${opt% *}"; SOPTS+="${opt#* }" ;;  # long and short
+                ?)     SOPTS+="$opt" ;;                            # short
+                *)     LOPTS+=",$opt" ;;                           # long
+            esac
+        done
+        LOPTS=${LOPTS/,/}
+    }
+
+    # Avoid doing any complex activity in this function.
+    # Usually simple variable assignments will do.
+
+    ExtractOpts
+    local opts
+    opts="$(/bin/getopt -o="$OPTS" --longoptions "$LOPTS" --name "$PROGNAME" -- "$@")" || DIEHELP "${FUNCNAME[0]} failed."
+    eval set -- "$opts"
+    while true ; do
+        case "$1" in
+            --)             shift; break ;;
+            --dump-options) DumpOptionList ;;              # useful for e.g. bash completion
+            -h | --help)    Usage 0 ;;
+            # HERE: add your option parameter handling.
+        esac
+        shift
+    done
+    # HERE: add handling of other parameters.
+}
+
+# Helper functions.
+echo2()   { echo -e "$@" >&2; }
+printf2() { printf  "$@" >&2; }
+MSG()     { echo2 "==> $PROGNAME: $1: $2"; }
+INFO()    { MSG info    "$1"; }
+WARN()    { MSG warning "$1"; }
+DIE()     {        MSG error "$1"; exit 1; }
+DIEHELP() { Usage; MSG error "$1"; exit 1; }   # Usage & DIE
+ASSERT()  { "$@" || DIE "'$*' failed."; }
+
+Main "$@"
