@@ -1,0 +1,256 @@
+#!/bin/bash
+
+echo2()   { echo -e "$@" >&2; }
+# printf2() { printf  "$@" >&2; }
+MSG()     { echo2 "==> $progname: $1: $2"; }
+INFO()    { MSG info    "$1"; }
+WARN()    { MSG warning "$1"; }
+DIE()     { MSG error   "$1"; exit 1; }
+ASSERT()  { "$@" || DIE "'$*' failed."; }
+
+HasRepo()      { /bin/pacman-conf --repo-list | grep "^$1$" >/dev/null; }
+HasPkgInRepo() { /bin/pacman -Ssq "$1" &>/dev/null; }
+
+DetectDrivers() { # echo one or more driver names; return 0=Nvidia GPU found, 1=Nvidia GPU not found
+    local families family
+    families="$(lspci -d "$NVIDIA"::03xx | sed -E 's|.* NVIDIA Corporation ([^ ]+) .*|\1|')"
+    for family in $families ; do
+        case "$family" in
+            "")                   ;;                                    # Nvidia GPU not found.
+            TU*|GA*|AD*|GB*|GN*)  echo "nvidia-open-dkms" ;;            # Nvidia's open source driver, Turing and newer.
+            GM*|GP*|GV*)          echo "$pkgname_aur" ;;                # For Maxwell,Pascal,Volta.
+            *)                    echo "nouveau" ;;                     # For older Nvidia GPUs.
+        esac
+    done | sort -u
+    [ "$families" ] && INFO "Detected Nvidia GPU families: $(echo $families)"
+}
+
+GetScenario() {
+    local detected=("${detected_drivers[@]}")
+    case "${#detected[@]}" in
+        0)  WARN "Nvidia GPU not detected."; exit 0 ;;
+        1)  scenario="${detected[0]}"
+            local alternatives=""
+            case "$scenario" in
+                $pkgname_aur) alternatives=", alternatives: nouveau, vulkan-nouveau" ;;
+            esac
+            INFO "Driver: $scenario$alternatives"
+            ;;
+        *)  # Multiple different Nvidia GPUs detected!
+            local fzf=(fzf --multi --header="::: Find one driver with arrows; ENTER accepts. (Multiple Nvidia GPUs: TAB selects)")
+            scenario=$(printf "%s\n" "${detected[@]}" | sort -u | "${fzf[@]}")
+            [ "$scenario" ] || exit 0
+            ;;
+    esac
+}
+FillInstallsAndCommands() {
+    local scen extra
+    for scen in $scenario ; do
+        if [ "${BASE_PACKAGES_FOR_SCENARIOS[$scen]}" ] ; then
+            install_pkgs+=(${BASE_PACKAGES_FOR_SCENARIOS[$scen]}
+                           ${BASE_PACKAGES_FOR_SCENARIOS[common]})
+        fi
+    done
+    for extra in $scenario_extras ; do
+        case "$extra" in
+            no32)       use32=no ;;
+            prime)      useprime=yes ;;
+            switcheroo) useswitcheroo=yes ;;
+            test)       dryrun=yes ;;
+        esac
+    done
+
+    if [ $use32 = yes ] ; then
+        for scen in $scenario ; do
+            if [ "${BASE_PACKAGES_FOR_SCENARIOS_32[$scen]}" ] ; then
+                install_pkgs+=(${BASE_PACKAGES_FOR_SCENARIOS_32[$scen]})
+            fi
+        done
+    fi
+    [ $useprime      = yes ] && install_pkgs+=(${BASE_PACKAGES_FOR_SCENARIO_EXTRAS[prime]})
+    [ $useswitcheroo = yes ] && install_pkgs+=(${BASE_PACKAGES_FOR_SCENARIO_EXTRAS[switcheroo-control]})
+
+    install_pkgs=($(printf "%s\n" "${install_pkgs[@]}" | sort -u))
+
+    [ $useswitcheroo = yes ] && commands+=("sudo systemctl enable --now switcheroo-control.service")
+}
+FillRemoves() {
+    local all_nvidia_pkgs=(
+        ${BASE_PACKAGES_FOR_SCENARIOS[@]}
+        ${BASE_PACKAGES_FOR_SCENARIO_EXTRAS[@]}
+        ${BASE_PACKAGES_FOR_SCENARIOS_32[@]}
+    )
+    all_nvidia_pkgs=($(printf "%s\n" "${all_nvidia_pkgs[@]}" | sort -u))
+
+    local wanted maybe_remove=() will_remove=()
+    for wanted in "${all_nvidia_pkgs[@]}" ; do
+        printf "%s\n" "${all_installed_pkgs[@]}" | grep "^$wanted$" >/dev/null && maybe_remove+=("$wanted")
+    done
+    for wanted in "${maybe_remove[@]}" ; do
+        printf "%s\n" "${install_pkgs[@]}" | grep "^$wanted$" >/dev/null || will_remove+=("$wanted")
+    done
+    remove_pkgs="$(printf "%s\n" "${will_remove[@]}")"
+}
+CleanupInstalls() {
+    local wanted will_install=()
+    for wanted in "${install_pkgs[@]}" ; do
+        printf "%s\n" "${all_installed_pkgs[@]}" | grep "^$wanted$" >/dev/null || will_install+=("$wanted")
+    done
+    install_pkgs=("${will_install[@]}")
+}
+
+Main() {
+    local progname=${0##*/}
+    local LOPTS="help,test,no32,prime,switcheroo,nvidia,580xx,nouveau,vulkan-nouveau"
+    local SOPTS="ht"
+    local -r pkgname_aur=nvidia-580xx-dkms
+
+    local HW_DETECTED=(       # empty means no Nvidia GPU detected
+        nvidia-open-dkms
+        $pkgname_aur
+        nouveau               # both nouveau and vulkan-nouveau
+    )
+    local SCENARIOS=(         # use values as indexes below
+        # bumblebee
+        # conf
+        nvidia-open-dkms      # only dkms supported
+        $pkgname_aur
+        nouveau               # there's no such package to install ...
+        vulkan-nouveau
+    )
+    local SCENARIO_EXTRAS=(
+        no32                  # --no32
+        prime                 # --prime
+        switcheroo            # --switcheroo
+        "test"                # --test
+    )
+    declare -A BASE_PACKAGES_FOR_SCENARIOS=(
+        [nouveau]=""
+        [vulkan-nouveau]="vulkan-nouveau"
+        [nvidia-open-dkms]=" nvidia-open-dkms  nvidia-settings       opencl-nvidia"
+        [$pkgname_aur]="$pkgname_aur nvidia-580xx-settings opencl-nvidia-580xx"
+        [common]="linux-firmware-nvidia"
+    )
+    declare -A BASE_PACKAGES_FOR_SCENARIO_EXTRAS=(
+        [prime]="nvidia-prime"
+        [switcheroo]="switcheroo-control"
+    )
+    declare -A BASE_PACKAGES_FOR_SCENARIOS_32=(
+        [nouveau]=""
+        [vulkan-nouveau]="lib32-vulkan-nouveau"
+        [nvidia-open-dkms]="lib32-libvdpau lib32-nvidia-utils lib32-opencl-nvidia"
+        [$pkgname_aur]="lib32-nvidia-580xx-utils lib32-opencl-nvidia-580xx"
+    )
+    local scenario="" scenario_extras=""
+    local use32=yes useprime=no useswitcheroo=no       # for --no32 --prime --switcheroo
+    local dryrun=no                                    # for --test
+    local install_pkgs=() install_aur_pkgs=()
+    local remove_pkgs
+    local commands=()
+    local has_580x_in_repo=no
+    local detected_drivers=($(DetectDrivers))
+
+    Options "$@"
+
+    HasRepo multilib || use32=no
+
+    [ "$scenario" ] || GetScenario
+
+    if [ "$scenario" = $pkgname_aur ] ; then
+        HasPkgInRepo $pkgname_aur && has_580x_in_repo=yes
+        if [ $has_580x_in_repo = no ] ; then
+            dryrun=yes
+            WARN "The recommended driver is $pkgname_aur but it is in AUR.\nUse 'yay -S $pkgname_aur' to install it, or use option --nouveau or --vulkan-nouveau."
+        fi
+    fi
+
+    local all_installed_pkgs=()
+    readarray -t all_installed_pkgs <<< "$(/bin/pacman -Qsq nvidia)"  # nvidia-related packages         # readarray -t all_installed_pkgs <<< "$(/bin/pacman -Qq)"
+
+    # Find which to remove and which to install. Order here is important!
+    FillInstallsAndCommands
+    FillRemoves
+    CleanupInstalls
+
+    # Fill the install and remove command lines.
+    local cmd_install cmd_remove has_work=no
+    [ "${install_pkgs[0]}" ] && cmd_install=(sudo pacman -Syu --needed ${install_pkgs[*]})
+    [ "$remove_pkgs" ]       && cmd_remove=(sudo pacman -Rs $remove_pkgs)
+
+    # Run the commands if not dryrun. Show what is happening.
+
+    [ "$cmd_remove$cmd_install$commands" ] && has_work=yes
+
+    if [ "$has_work" = yes ] ; then
+        echo2 "###################### COMMANDS TO RUN ######################"
+        Show "${cmd_remove[@]}"
+        Show "${cmd_install[@]}"
+        Show "${commands[@]}"
+        echo2 "#############################################################"
+        Run "${cmd_remove[@]}"
+        Run "${cmd_install[@]}"
+        Run "${commands[@]}"
+    else
+        INFO "==> Nothing to do!"
+    fi
+}
+
+Show() {
+    if [ "$1" ] ; then
+        echo2 "$@"
+    fi
+}
+Run() {
+    if [ "$1" ] && [ "$dryrun" = no ] ; then
+        "$@"
+    fi
+}
+
+Options() {
+    local opts
+    opts="$(/bin/getopt -o="$SOPTS" --longoptions "$LOPTS" --name "$progname" -- "$@")" || DIE "${FUNCNAME[0]} failed."
+    eval set -- "$opts"
+    while true ; do
+        case "$1" in
+            --            )   shift; break ;;
+            --help  | -h  )   Help 0 ;;
+
+            --test  | -t  )   dryrun=yes ;;
+            --no32        )   use32=no ;;
+            --prime       )   useprime=yes ;;
+            --switcheroo  )   useswitcheroo=yes ;;
+
+            --nvidia)         scenario=nvidia-open-dkms ;;
+            --580xx)          scenario=$pkgname_aur ;;
+            --nouveau)        scenario=nouveau ;;
+            --vulkan-nouveau) scenario=vulkan-nouveau ;;
+
+            --listopts)       SOPTS=${SOPTS//:/}
+                              LOPTS=${LOPTS//:/}
+                              echo "${SOPTS//?/-& }--${LOPTS//,/ --}"   # 'patsub_replacement' shopt needed
+                              exit 0
+                              ;;
+
+        esac
+        shift
+    done
+    [ "$1" ] && DIE "unsupported paramater '$1'"
+}
+Help() {
+    cat <<EOF >&2
+Purpose: install drivers for Nvidia GPUs.
+Syntax:  $progname [options]
+Options: --help, -h         This help.
+         --test, -t         Run in test mode, don't make any changes.
+         --nvidia           Install nvidia-open-dkms (Turing and newer).
+         --580xx            Install $pkgname_aur (Maxwell, Pascal, and Volta).
+         --nouveau          Install packages depending on other options (older than Maxwell).
+         --vulkan-nouveau   Install vulkan-nouveau and related packages depending on other options.
+         --no32             Don't install 32-bit packages. Note: gaming needs them.
+         --prime            Install also prime render offload support.
+         --switcheroo       Install switcheroo-control and enable its service.
+EOF
+    [ "$1" ] && exit "$1"
+}
+
+Main "$@"

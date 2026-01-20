@@ -1,0 +1,39 @@
+# Maintainer: manuel at endeavouros.com
+
+pkgname=nvinst
+pkgver=26
+pkgrel=1
+pkgdesc="Add/remove nvidia driver packages"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+arch=('any')
+license=('GPL2')
+replaces=()
+conflicts=()
+depends=()
+optdepends=(
+  "linux-headers: needed by nvidia-dkms or nvidia-open-dkms"
+  "linux-lts-headers: needed by nvidia-dkms or nvidia-open-dkms"
+  "linux-hardened-headers: needed by nvidia-dkms or nvidia-open-dkms"
+  "linux-zen-headers: needed by nvidia-dkms or nvidia-open-dkms"
+  "dkms: for the dkms versions of the proprietary Nvidia drivers"
+  "fzf: user may select the driver from some alternatives"
+)
+
+source=(
+  nvinst
+  nvinst.bash-completion
+)
+sha512sums=('949555bafcc45c6141bd7787f983b48ad5fdee086e4ce0bf4c856ac03e076a1830c5d9265c7bc4186456404b238f43980d56e2fcb8a26e4f006d824b0619bcf6'
+            '17328b5b1a43e1b1d575814fadaaec9a9f52a64916eb18983fbd61027e5600a91c03c9548d2cc5099703a5e619a46c9e4fbff2bf46065bb6c3e316ea2a7847dd')
+
+package() {
+    local src file
+
+    for src in "${source[@]}" ; do
+        file="${src##*/}"
+        case "$src" in
+            *.bash-completion) install -Dm644 "$file"  "$pkgdir/usr/share/bash-completion/completions/${file%.*}" ;;
+            *)                 install -Dm755 "$file"  "$pkgdir/usr/bin/$file"
+        esac
+    done
+}
