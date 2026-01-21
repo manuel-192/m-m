@@ -12,31 +12,16 @@ _nvinst_make_as_lines() {
     printf "%s\n" "$@"
 }
 
-_nvinst_list_opts()   { _nvinst_make_as_lines $(nvinst --listopts) ; }
-
-_nvinst_() 
-{
+_nvinst_() {
     local cur prev #words cword split
     _init_completion -s || return
 
-    # Handle options that need sub-options.
-
     case "$prev" in
+        # Handle options that need sub-options.
+        --580xx) _nvinst_complete "$(_nvinst_make_as_lines $(nvinst --list-fallbacks))" ;;
         *)
             # Handle all top-level parameters.
-            _nvinst_complete "$(_nvinst_list_opts)"
-
-            #case "$cur" in
-            #    -*)
-            #        # Any option.
-            #        _nvinst_complete "$(_nvidia_list_opts)"
-            #        ;;
-            #    *)
-            #        # Non-option parameters.
-            #        _nvinst_complete "$(_nvidia_list_opts)"
-            #        ;;
-            #esac
-            ;;
+            _nvinst_complete "$(_nvinst_make_as_lines $(nvinst --list-opts))" ;;
     esac
 } &&
 complete -F _nvinst_ nvinst

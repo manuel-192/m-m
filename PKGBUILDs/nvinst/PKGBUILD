@@ -2,7 +2,7 @@
 
 pkgname=nvinst
 pkgver=26
-pkgrel=1
+pkgrel=2
 pkgdesc="Add/remove nvidia driver packages"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 arch=('any')
@@ -23,8 +23,8 @@ source=(
   nvinst
   nvinst.bash-completion
 )
-sha512sums=('949555bafcc45c6141bd7787f983b48ad5fdee086e4ce0bf4c856ac03e076a1830c5d9265c7bc4186456404b238f43980d56e2fcb8a26e4f006d824b0619bcf6'
-            '17328b5b1a43e1b1d575814fadaaec9a9f52a64916eb18983fbd61027e5600a91c03c9548d2cc5099703a5e619a46c9e4fbff2bf46065bb6c3e316ea2a7847dd')
+sha512sums=('a2a5bdcd95fc1acadfd182310fc16106669ac4c1a8c2edaaef5938b451c31706e62599925da45e1ff364bdc5f9f431e4c8b007017d5ab315c9297bac03b2b07f'
+            'dfeeefc4fd6ae971408a66716bdc97f4951196751ea66dddca674cda28ea691f37f1caef3f1ba927d9402e945dabaa4425c1298f7be20606b74f70b5188f44ae')
 
 package() {
     local src file
