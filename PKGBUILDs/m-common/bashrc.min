@@ -1507,7 +1507,7 @@ EOF
     # Alias ls                 "/bin/ls $(l --get-ls-opts)"
     Alias md                 "codium"
     Alias nano               "nano -l"
-    Alias o                  "open"
+    Alias o                  "exo-open"
     Alias package-sizes      "expac -HM -Q '%m|%n' | column -t -s'|' | sort -nr | less"
                              # M is reasonable now, later G might be too
     # Alias pacdiff            "eos-pacdiff"
@@ -1538,7 +1538,7 @@ EOF
     AliasIfWhich pb             pb           "pb -nn --aur-delay=10m -T0"
     AliasIfWhich pb             pp           "pb"
     # AliasIfWhich man            maneos       "maneos"
-    which maneos &>/dev/null && Alias man            maneos
+    # which maneos &>/dev/null && Alias man            maneos
 
     Unalias l
     AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
