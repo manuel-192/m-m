@@ -34,9 +34,10 @@ Main() {
     local paccache=""             # "" = not used; allowed numbers: 1, 2, 3. Defaults to 1.
     local clamav=no
     local clamav_ref_file="$HOME/.local/$progname.clamav_ref_file"
-    local pkgdir=/var/cache/pacman/pkg
     local paru=/bin/paru
     local yay=/bin/yay
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || DIE "init failed"
+    local -r pkgdir=$(GetCacheDir)
 
     [ -x $paru ] || paru=$yay     # is paru installed?
 
@@ -165,7 +166,7 @@ Clamav() {
     [ $clamav = no ] && return
 
     [ "$updates_native_ver" ] || { INFO "no native updates to check."; return; }
-    local newfiles="$(echo "${updates_native_ver}" | sed -E 's|(.*)|/var/cache/pacman/pkg/\1\*|')"
+    local newfiles="$(echo "${updates_native_ver}" | sed -E "s|(.*)|$pkgdir\1\*|")"
     [ "$newfiles" ] || INFO "no new files found for clamscan!"
 
     echo2  "==> Running clamscan, please wait ... "
