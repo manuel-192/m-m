@@ -1497,7 +1497,6 @@ EOF
     Alias curly              "curl --remote-name-all"
     Alias df                 "LANG=C df -hT"
     # Alias eos-rankmirrors    "eos-rankmirrors --internal-testing"
-    Alias glances            "glances --disable-check-update --disable-bg"
     # Alias history-fuzzy      "history | fzf --tac --no-sort"
     # Alias history-select     "history | fzf --tac --no-separator --no-info"
     Alias hlp                "tldr"
@@ -1537,6 +1536,8 @@ EOF
     # AliasIfWhich expacol        expac        expacol
     AliasIfWhich pb             pb           "pb -nn --aur-delay=10m -T0"
     AliasIfWhich pb             pp           "pb"
+    AliasIfWhich glances        glances      "glances --disable-check-update --disable-bg"
+
     # AliasIfWhich man            maneos       "maneos"
     # which maneos &>/dev/null && Alias man            maneos
 
