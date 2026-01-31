@@ -16,6 +16,7 @@ Main() {
     local args=()
     local template="/etc/emacs.bash-template"
     local needs_sudo=no
+    local file_columns=80
     local has_color=no
     [ -x /bin/eos-color ] && has_color=yes
 
@@ -66,7 +67,14 @@ EOF
         args+=("$1")
         case "$1" in
             -*) ;;
-            *)  if [ ! -w "$1" ] && [ "$(stat -c %U "$1")" != "$LOGNAME" ] ; then
+            *)
+                local fc="$(wc -L "$1" 2>/dev/null | awk '{print $1}')"
+                if [ "$fc" ] ; then
+                    [ $file_columns -lt $fc ] && file_columns=$fc
+                    # [ $file_columns -gt 200 ] && file_columns=200
+                fi
+
+                if false && [ ! -w "$1" ] && [ "$(stat -c %U "$1")" != "$LOGNAME" ] ; then
                     needs_sudo=yes
                     echo "==> sudo needed for '$1'" >&2
                 fi
@@ -81,21 +89,31 @@ Geometry() {
     local width=$( echo $xrandr | awk '{print $1}')
     local height=$(echo $xrandr | awk '{print $2}')
     local divider=26                                  # depends on the size of the font
-    local wanted_columns=$((width / divider))
-    local wanted_rows=$((height / divider))
+    local default_columns=$((width / divider))
+    local default_rows=$((height / divider))
+    local max_columns=200
 
-    echo "${wanted_columns}x${wanted_rows}"
+    if [ $default_columns -lt $file_columns ] ; then
+        if [ $max_columns -lt $file_columns ] ; then
+            default_columns=$max_columns
+        else
+            default_columns=$file_columns
+        fi
+    fi
+    ((default_columns+=5))
+
+    echo "${default_columns}x${default_rows}"
 
     # case "$width" in
-    #     3840) wanted_columns=150 ;;
-    #     1920) wanted_columns=75 ;;
+    #     3840) default_columns=150 ;;
+    #     1920) default_columns=75 ;;
     # esac
     # case "$height" in
-    #     2160) wanted_rows=80 ;;
-    #     1080) wanted_rows=40 ;;
+    #     2160) default_rows=80 ;;
+    #     1080) default_rows=40 ;;
     # esac
 
-    # echo "${wanted_columns}x${wanted_rows}" >&2
+    # echo "${default_columns}x${default_rows}" >&2
 }
 
 Main "$@"
