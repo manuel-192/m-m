@@ -96,7 +96,7 @@ ShowCommand() {
 Main() {
     local -r progname=${0}
     local show_command=yes     # "yes" or "no", "no" should be the default for compatibility
-    local args=()
+    local args=(--verbose)
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1
     paccache_options_to_args "$@"
     /bin/paccache "${args[@]}"
