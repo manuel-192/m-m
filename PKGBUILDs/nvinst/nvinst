@@ -17,6 +17,7 @@ MULTILINE_MSG() {
 }
 INFO()    { MULTILINE_MSG info    "$@"; }
 WARN()    { MULTILINE_MSG warning "$@"; }
+TIP()     { MULTILINE_MSG tip     "$@"; }
 DIE()     { MULTILINE_MSG error   "$@"; exit 1; }
 DIEHELP() { MULTILINE_MSG error   "$@"; Help; exit 1; }
 ASSERT()  { "$@" || DIE "'$*' failed."; }
@@ -25,9 +26,9 @@ HasPkgInRepo()       { /bin/pacman -Ssq "$1" &>/dev/null; }
 HasRepo()            { /bin/pacman-conf --repo-list | grep "^$1$" >/dev/null; }
 CheckRepo_multilib() {
     if [ $use32 = yes ] && ! HasRepo multilib ; then
-        WARN "Repository [multilib] is not enabled in /etc/pacman.conf." \
+        TIP  "Repository [multilib] is not enabled in /etc/pacman.conf." \
              "It is needed e.g. for gaming." \
-             "Consider enabling [multilib] or use option --no32 to hide this warning."
+             "Consider enabling [multilib] or use option --no32 to hide this message."
         use32=no
     fi
 }
@@ -196,7 +197,7 @@ Main() {
         HasPkgInRepo $pkgname_aur && has_580x_in_repo=yes
         if [ $has_580x_in_repo = no ] ; then
             # User wanted AUR packages. We don't support that directly, but provide indirect help.
-            dryrun=yes
+            # dryrun=yes
             scenario=$fallback_for_aur
             WARN "The recommended driver $pkgname_aur is in the AUR." "Use 'yay -S $pkgname_aur' to install it." "Using $scenario as fallback."
         fi
