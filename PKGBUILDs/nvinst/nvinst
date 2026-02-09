@@ -35,7 +35,7 @@ CheckRepo_multilib() {
 
 DetectDrivers() { # echo one or more driver names; return 0=Nvidia GPU found, 1=Nvidia GPU not found
     local families family pkgnames=() fnames=() 
-    families="$(lspci -d "$NVIDIA"::03xx | sed -E 's|.* NVIDIA Corporation ([^ ]+) .*|\1|')"
+    families="$(lspci -d "$NVIDIA"::03xx | grep -w NVIDIA | sed -E 's|.* NVIDIA Corporation ([^ ]+) .*|\1|')"
     for family in $families ; do
         case "$family" in
             "")                   continue ;;                           # Nvidia GPU not detected.
@@ -67,7 +67,7 @@ DetectDrivers() { # echo one or more driver names; return 0=Nvidia GPU found, 1=
 GetScenario() {
     local detected=("${detected_drivers[@]}")
     case "${#detected[@]}" in
-        0)  WARN "Nvidia GPU not detected."; exit 0 ;;
+        0)  WARN "no Nvidia GPU detected."; exit 0 ;;
         1)  scenario="${detected[0]}" ;;
         *)  # Multiple different Nvidia GPUs detected!
             local fzf=(fzf --multi --header="::: Find one driver with arrows; ENTER accepts. (Multiple Nvidia GPUs: TAB selects)")
@@ -184,15 +184,13 @@ Main() {
     local remove_pkgs
     local commands=()
     local has_580x_in_repo=no
-    local detected_drivers=""
+    local detected_drivers=()
 
     Options "$@"
 
-    CheckRepo_multilib
-
     detected_drivers=($(DetectDrivers))
-
     [ "$scenario" ] || GetScenario
+
     if [ "$scenario" = $pkgname_aur ] ; then
         HasPkgInRepo $pkgname_aur && has_580x_in_repo=yes
         if [ $has_580x_in_repo = no ] ; then
@@ -202,6 +200,7 @@ Main() {
             WARN "The recommended driver $pkgname_aur is in the AUR." "Use 'yay -S $pkgname_aur' to install it." "Using $scenario as fallback."
         fi
     fi
+    CheckRepo_multilib
     INFO "Driver: $scenario"
 
     local all_installed_pkgs=()

@@ -5,11 +5,11 @@
 # - show the actual command and parameters unless option --show-command=no is used
 
 HandleOpt_k() {  # option -k/--keep has an optional value
-    kopt="$1"
+    kopt="$1"                                # -k or --keep
     local val sep=""
-    local -r kd=2   # 3
-    [ "$2" ] && val="$2" || val=$kd
-    [ "$kopt" = "--keep" ] && sep="="
+    local -r kd=3                            # default keep value
+    [ "$2" ] && val="$2" || val=$kd          # default or given value
+    [ "$kopt" = "--keep" ] && sep="="        # if long option, syntax to --keep=value
     args+=("$kopt$sep$val")
 }
 
@@ -57,10 +57,11 @@ paccache_options_to_args() {
     done
 
     local target="$1"   # the first target package name, if given
+    local -r cachedir=$(GetCacheDir)
 
     if [ "$target" ] ; then
         # check if the first target is actually a value for option --keep
-        local pkgs=(/var/cache/pacman/pkg/"$target"-*)
+        local pkgs=(${cachedir}"$target"-*)
         if [ "${pkgs: -2}" = "-*" ] ; then
             echo "==> $progname: error: target package name '$target' not found." >&2
             if [ "$kopt" ] && [ -z "${target//[0-9]/}" ] ; then   # is a number meant for --keep ?
@@ -95,7 +96,8 @@ ShowCommand() {
 Main() {
     local -r progname=${0}
     local show_command=yes     # "yes" or "no", "no" should be the default for compatibility
-    local args=()
+    local args=(--verbose)
+    source /usr/share/endeavouros/scripts/eos-script-lib-yad || exit 1
     paccache_options_to_args "$@"
     /bin/paccache "${args[@]}"
 }
