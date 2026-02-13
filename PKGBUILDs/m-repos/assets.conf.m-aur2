@@ -9,7 +9,7 @@ local RELEASE_TAGS=(x86_64)
 local SIGNER="manuel@endeavouros.com"
 local REPO_OWNER=manuel-192
 
-local REPO_COMPRESSOR=zst
+# local REPO_COMPRESSOR=zst                          # zst has problem with the tools
 
 local ASSETSDIR="$(realpath "$PWD")"
 local PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"        # temporary copy, will be overwritten
