@@ -442,7 +442,7 @@ EOF
         esac
     }
 
-    expac() {
+    expac_no_work() {
         local expac="/bin/expac"
         local verbose=no
         [ $verbose = yes ] && { eos-color info 2; echo "==> $expac" "$@" >&2; eos-color reset 2; }
