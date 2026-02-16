@@ -1,0 +1,94 @@
+# bash completion for emacs        -*- shell-script -*-
+
+_emacs_complete() {
+    local IFS=$'\n'         # handles spaces in names!
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o filenames    # handles spaces in names!
+    compopt -o nosort
+}
+
+_emacs_make_as_lines() {
+    printf "%s\n" "$@"
+}
+
+_emacs_() {
+    local cur prev #words cword split
+    _init_completion -s || return
+    local opts=(
+        # --batch
+        # --chdir
+        # --daemon --bg-daemon
+        # --fg-daemon
+        # --debug-init
+        # --display -d
+        # --module-assertions
+        # --dump-file
+        # --fingerprint
+        # --seccomp
+        # --no-build-details
+        # --no-desktop
+        # --no-init-file -q
+        # --no-loadup -nl
+        # --no-site-file
+        # --no-x-resources
+        # --no-site-lisp -nsl
+        # --no-splash
+        # --no-window-system -nw
+        # --init-directory
+        # --quick -Q
+        # --script
+        # -x
+        # --terminal -t
+        # --user -u
+
+        # --directory -L
+        # --eval
+        # --execute
+        # --file
+        # --find-file
+        # --funcall -f
+        # --insert
+        # --kill
+        # --load -l
+        # --visit
+
+        # --background-color -bg
+        # --basic-display -D
+        # --border-color -bd
+        # --border-width -bw
+        # --color --color
+        # --cursor-color -cr
+        # --font -fn
+        # --foreground-color -fg
+        # --fullheight -fh
+        # --fullscreen -fs
+        # --fullwidth -fw
+        # --maximized -mm
+        # --geometry -g
+        # --no-bitmap-icon -nbi
+        # --iconic
+        # --internal-border -ib
+        # --line-spacing -lsp
+        # --mouse-color -ms
+        # --name
+        # --no-blinking-cursor -nbc
+        --reverse-video -r -rv
+        # --title -T
+        # --vertical-scroll-bars -vb
+        # --xrm
+        # --parent-id
+        --help
+        --version
+    )
+
+    case "$prev" in
+        # Handle options that need sub-options.
+        #--chdir) _filedir ;;
+        #--display | -d) _emacs_complete "$(_emacs_make_as_lines $DISPLAY)" ;;
+        *)
+            # Handle all top-level parameters.
+            _emacs_complete "$(_emacs_make_as_lines "${opts[@]}")" ;;
+    esac
+} &&
+complete -F _emacs_ emacs

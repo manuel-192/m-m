@@ -1,0 +1,40 @@
+#!/bin/bash
+
+echo2() { echo -e "$@" >&2; }
+
+HandleHelp() {
+    local arg
+    for arg in "$@" ; do
+        case "$arg" in
+            -help  | -hel  | -he  | -h | --help | --hel | --he | --h)
+                /bin/emacs --help
+                exit
+                ;;
+        esac
+    done
+}
+
+HandleSessionType() {
+    local from to
+    case "$XDG_SESSION_TYPE" in
+        wayland) to=emacs-wayland ;;
+        x11)     to=emacs ;;
+        *)       echo2 "==> Session type '$XDG_SESSION_TYPE' not supported."; exit 1 ;;
+    esac
+    from="$(/bin/pacman -Qq emacs)"
+    [ "$from" ] || exit 1
+    if [ $to != $from ] ; then
+        echo2 "==> Replacing package '$from' with '$to'. "
+        sudo pacman -Rdd --noconfirm $from
+        sudo pacman -S   --noconfirm $to
+    fi
+}
+
+Main() {
+    HandleHelp "$@"
+    HandleSessionType    # emacs has separate wayland and x11 versions
+
+    /bin/emacs --reverse-video --geometry=150x80 "$@" 2>/dev/null &
+}
+
+Main "$@"
