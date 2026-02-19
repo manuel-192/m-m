@@ -1,5 +1,7 @@
 # bash completion for emacs        -*- shell-script -*-
 
+# Note: incomplete implementation!
+
 _emacs_complete() {
     local IFS=$'\n'         # handles spaces in names!
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
@@ -8,9 +10,7 @@ _emacs_complete() {
     compopt -o nosort
 }
 
-_emacs_make_as_lines() {
-    printf "%s\n" "$@"
-}
+_emacs_make_as_lines() { printf "%s\n" "$@"; }
 
 _emacs_() {
     local cur prev #words cword split
@@ -88,7 +88,11 @@ _emacs_() {
         #--display | -d) _emacs_complete "$(_emacs_make_as_lines $DISPLAY)" ;;
         *)
             # Handle all top-level parameters.
-            _emacs_complete "$(_emacs_make_as_lines "${opts[@]}")" ;;
+            case "$cur" in
+                -*) _emacs_complete "$(_emacs_make_as_lines "${opts[@]}")" ;;
+                *) _filedir ;;
+            esac
+            ;;
     esac
 } &&
 complete -F _emacs_ emacs
