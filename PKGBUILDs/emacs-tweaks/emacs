@@ -30,11 +30,19 @@ HandleSessionType() {
     fi
 }
 
+HandleGeometry() {
+    case "$(xrandr | grep '*' | awk '{print $1}')" in
+        1920x1080) echo 100x40 ;;
+        3840x2160) echo 150x80 ;;
+        *)         echo 80x25 ;;
+    esac
+}
+
 Main() {
     HandleHelp "$@"
     HandleSessionType    # emacs has separate wayland and x11 versions
 
-    /bin/emacs --reverse-video --geometry=150x80 "$@" 2>/dev/null &
+    /bin/emacs --reverse-video --geometry=$(HandleGeometry) "$@" 2>/dev/null &
 }
 
 Main "$@"
