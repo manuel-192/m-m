@@ -3,5 +3,5 @@
 if [[ "$*" =~ "--fake-country" ]] ; then
     /bin/create-ml "$@"
 else
-    /bin/create-ml --prefs='s://fi.*niranjan s://umea' "$@"
+    /bin/create-ml --prefs='s://fi.*niranjan s://umea' --timeout-mirror=2 "$@"
 fi
