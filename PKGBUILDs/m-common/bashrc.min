@@ -988,7 +988,7 @@ EOF
 
         local pwd="$PWD"
         local -r path_config_file=/etc/path-fixes.bash
-        [ -x $path_config_file ] && pwd=$($path_config_file "$pwd") || echo "==> $FUNCNAME: $path_config_file not found" >&2
+        [ -x $path_config_file ] && pwd=$($path_config_file "$pwd")  # || echo "==> $FUNCNAME: $path_config_file not found" >&2
         pwd="$larrow$pwd$rarrow"
         # pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"    # do color codes cause prompt issues??? YES!
 
