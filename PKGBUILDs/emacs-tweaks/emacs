@@ -39,10 +39,16 @@ HandleGeometry() {
 }
 
 Main() {
-    HandleHelp "$@"
-    HandleSessionType    # emacs has separate wayland and x11 versions
-
-    /bin/emacs --reverse-video --geometry=$(HandleGeometry) "$@" 2>/dev/null &
+    case "$(whoami)" in
+        root)
+            /bin/xfce4-terminal --geometry=150x50 -x /bin/emacs -nw "$@" 2> /dev/null
+            ;;
+        *)
+            HandleHelp "$@"
+            HandleSessionType    # emacs has separate wayland and x11 versions
+            /bin/emacs --reverse-video --geometry=$(HandleGeometry) "$@" 2>/dev/null &
+            ;;
+    esac
 }
 
 Main "$@"
