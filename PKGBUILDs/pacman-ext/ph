@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Like pacman, but uses sudo only if needed.
+
+# Bash completion: add the following line (uncommented!) to file ~/.bashrc:
+#      complete -F _pacman ph
+
+Main() {
+    local -r root_needed="error: you cannot perform this operation unless you are root."  # this pacman output tells sudo is needed
+    local out retval
+
+    out=$(LANG=C /bin/pacman "$@" 2>&1)
+    retval=$?
+
+    case "$out" in
+        "$root_needed") sudo /bin/pacman "$@" ;;                                          # need sudo only here!
+        "")             return $retval ;;
+        *)              printf "%s\n" "$out" ; return $retval ;;
+    esac
+}
+
+Main "$@"

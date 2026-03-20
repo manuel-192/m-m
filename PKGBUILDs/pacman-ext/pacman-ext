@@ -320,7 +320,7 @@ pacman_ext() {
 
     if [ "$EXTRAS_PW_WHEN_NEEDED" = "yes" ] ; then
         verbose2 "will check need for sudo with pacman ..."
-        /usr/bin/pacman-sudo-internal "$@"
+        /usr/bin/ph "$@"
     else
         /usr/bin/pacman "$@"     # normal pacman, so user must take care of needed privileges
     fi
