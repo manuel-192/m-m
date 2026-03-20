@@ -1685,7 +1685,7 @@ EOF
 
     #                                                    optional                optional
     #              cmdname              compfilename     completion func name    app_required
-    LoadCompletion pacman-sudo-internal pacman           _pacman
+#    LoadCompletion ph                   pacman           _pacman
     LoadCompletion p                    pacman-ext       _pacman-ext_
     LoadCompletion u                    upd              _pe_upd_                upd
     if [ -x /bin/pb ] ; then
