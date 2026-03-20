@@ -5,7 +5,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.2
+pkgver=26.3
 pkgrel=1
 
 arch=('any')
@@ -50,6 +50,7 @@ source=(
     $url/rate-mirrors-arch
     $url/shellcheck-nameref
     # $url/sudo-for-all
+    $url/thunderbird
     $url/who-needs
 #    $url/update-grub
 )
@@ -81,6 +82,7 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
             '29c3daacdf40b419946d168e28d6d798a08c8b9a5072fd3601211166f0ed638318b0be21529d7ed4015288ed8992107d5e578243d9f7b5a496cf2f3c4c9ceeea'
             '19aa66c5bba9cb1ebfba7f35842dc16ae6961ffaa2cd2d17b48f6ee0c00d3623de8c01d7adb57f2c2924d87bf1e49f6ec97c6ecace1a1e878b858909421bd015'
+            'a7de5afba96303bf8a5e07a3d1efc3c6b6e332428bec0448ba2e7033342e784a4cab05a5b924865dde74a96bf97140742e4c09ae35704cefc340bbb212bf9d5e'
             '53b899a56aa1d6950b8026ad0047412b9c1e32a3cf18a40c44214d5cba2bd66109e3776463a61f6759b79a6bad21806c5ca4cc1bf816ec14c410fb0e13ff57dd')
 
 package() {

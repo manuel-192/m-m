@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Remove empty folder ~/Thunderbird after running /bin/thunderbird.
+
+_thunder_bird() {
+    local existed=$( test -d ~/Thunderbird && echo yes || echo no )
+    /bin/thunderbird "$@" 2>/dev/null
+    [ $existed = no ] && rmdir ~/Thunderbird
+}
+
+Main( ) {
+    _thunder_bird "$@" &
+}
+
+Main "$@"
