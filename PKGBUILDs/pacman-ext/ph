@@ -2,8 +2,10 @@
 
 # Like pacman, but uses sudo only if needed.
 
-# Bash completion: add the following line (uncommented!) to file ~/.bashrc:
-#      complete -F _pacman ph
+# Bash completion: add the following lines (uncommented!) to file
+# /usr/share/bash-completion/completions/ph:
+#    source /usr/share/bash-completion/completions/pacman
+#    complete -F _pacman ph
 
 Main() {
     local -r root_needed="error: you cannot perform this operation unless you are root."  # this pacman output tells sudo is needed
