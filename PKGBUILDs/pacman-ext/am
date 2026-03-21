@@ -88,11 +88,18 @@ Main() {
             --aursrc=*) aur_src=${arg#*=}; options+=("$arg") ;;
             -*) options+=("$arg") ;;
             *)
-                if IsForRepo "$arg" ; then
-                    reponames_given+=("$arg")
-                else
-                    pkgs_given+="$arg,"               # give only one repo if pkgs are given!
-                fi
+                case "$arg" in
+                    MAN | EOS | local-repo)
+                        reponames_given+=("$arg")
+                        ;;
+                    *)
+                        if IsForRepo "$arg" ; then
+                            reponames_given+=("$arg")
+                        else
+                            pkgs_given+="$arg,"               # give only one repo if pkgs are given!
+                        fi
+                        ;;
+                esac
                 ;;
         esac
     done
