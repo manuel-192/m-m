@@ -7,7 +7,7 @@ error()   { echo2 "$progname: $FUNCNAME: $1" ; exit 1; }
 BuildRepo() {
     local reponame="$1"
     [ $aur_src = local ] && fetch-aur-stuff $reponame
-    assets.make ${options[*]}
+    assets.make ${options[*]} $pkgs_given
 }
 export -f BuildRepo
 
@@ -40,7 +40,29 @@ AurSource() {
     /bin/curl --fail-early -Lsm 5 https://aur.archlinux.org >/dev/null  &&  _refvar=aur  ||  _refvar=local
 }
 
-assets_make() {
+IsEosRepo() { printf "%s\n" "${known_reponames_eos[@]}" | grep "^$1$" >/dev/null ; }
+IsManRepo() { printf "%s\n" "${known_reponames_m[@]}"   | grep "^$1$" >/dev/null ; }
+IsForRepo() { IsEosRepo "$1" || IsManRepo "$1" ; }
+
+Help() {
+    cat <<EOF
+Usage:       $progname [options] reponames
+             $progname [options] reponame [packagenames]
+
+Options:     Options for assets.make.
+Reponame:    A local repository name.
+Packagename: A package name.
+
+Note: $progname allows giving package names after *one* reponame without
+      using option --pkgnames.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+EOF
+    assets.make --help
+}
+
+Main() {
     local progname=${0##*/}
     local known_reponames_eos=(endeavouros endeavouros-testing-dev)
     local known_reponames_m=(m-aur2 m-more2 m-m)
@@ -49,6 +71,7 @@ assets_make() {
     local curdir="$PWD"
     local options=(--fetch-timeout=120 -T=0)
     local reponames_given=()
+    local pkgs_given=""
     local arg
     local buildmode="--dryrun"
     local aur_src=aur
@@ -59,13 +82,27 @@ assets_make() {
 
     for arg in "$@" ; do
         case "$arg" in
+            -h | --help) Help; exit 0 ;;
             -b | --build)                                     buildmode="" ;;
             -n | -nl | -nn | -nr | --dryrun | --dryrun-local) buildmode="$arg" ;;
             --aursrc=*) aur_src=${arg#*=}; options+=("$arg") ;;
             -*) options+=("$arg") ;;
-            *)  reponames_given+=("$arg") ;;
+            *)
+                if IsForRepo "$arg" ; then
+                    reponames_given+=("$arg")
+                else
+                    pkgs_given+="$arg,"               # give only one repo if pkgs are given!
+                fi
+                ;;
         esac
     done
+    if [ "$pkgs_given" ] ; then
+        if [ ${#reponames_given[@]} -ne 1 ] ; then
+            error "give exactly one reponame if you give packages too!"
+        fi
+        pkgs_given=${pkgs_given:: -1}                # remove trailing comma
+        pkgs_given="--pkgnames=$pkgs_given"
+    fi
     if [ -z "$reponames_given" ] ; then
         # current folder may be the right place to run!
         arg="$( printf "%s\n" "${known_reponames_m[@]}" "${known_reponames_eos[@]}" | grep "^${PWD##*/}$" )"
@@ -78,9 +115,9 @@ assets_make() {
     [ "$buildmode" ] && options+=("${buildmode}")
 
     for reponame in "${reponames_given[@]}" ; do
-        if printf "%s\n" "${known_reponames_eos[@]}" | grep "^$reponame$" >/dev/null ; then
+        if IsEosRepo "$reponame" ; then
             Bannered "$CODEDIR/EOS/_BUILD_/$reponame" BuildRepo $reponame
-        elif printf "%s\n" "${known_reponames_m[@]}" | grep "^$reponame$" >/dev/null ; then
+        elif IsManRepo "$reponame" ; then
             Bannered "$CODEDIR/MAN/_BUILD_/$reponame" BuildRepo $reponame
         else
             case "$reponame" in
@@ -106,4 +143,4 @@ assets_make() {
     done
 }
 
-assets_make "$@"
+Main "$@"
