@@ -49,24 +49,79 @@ NotifySend() {
     fi
 }
 
+Open() {
+    local op="$1"
+    local app
+    local apps=(kde-open exo-open xdg-open)
+    shift
+    case "$op" in
+        edit) apps+=(kate gedit emacs xed codium geany) ;;
+        open) ;;
+    esac
+    for app in "${apps}" ; do
+        if which "${app%% *}" &>/dev/null ; then
+            $app "$@"
+            exit 0
+        fi
+    done
+    DIE "cannot find app to '$op'"
+}
+
+ReadConfig() {
+    if [ ! -e "$conf" ] ; then
+        echo "==> Creating config file ${conf/$HOME/\~}"
+        cat <<EOF
+#!/bin/bash
+
+ISO_folder="\$HOME"
+EOF
+        test -r "$conf" || DIE "cannot create the configuration file '$conf'."
+    fi
+    source "$conf" || DIE "cannot read configuration file '$conf'."
+}
+
 HandleParams() {
     local arg
     for arg in "$@" ; do
         case "$arg" in
-            --fg) is_foreground=yes ;;
-            -*)   Usage ; exit 0 ;;
-            *)    iso_file="$arg" ;;
+            --edit-config | -e)
+                Open edit "$conf"
+                ;;
+            --open-iso-folder)
+                [ "$ISO_folder" ] || DIE "variable ISO_folder is not set, see file\n${conf/$HOME/\~}"
+                Open open "$ISO_folder"
+                ;;
+            --show-disks)
+                if [ -x /bin/RunInTerminal ] ; then
+                    RunInTerminal lsblk -fm
+                else
+                    WARN "install package 'eos-bash-shared' for option $arg"
+                fi
+                exit 0
+                ;;
+            --fg)
+                is_foreground=yes
+                ;;
+            -*)
+                Usage 1
+                ;;
+            *)
+                iso_file="$arg"
+                ;;
         esac
     done
 }
 
 Usage() {
-cat <<EOF >&2
-Usage: $progname [--fg] [iso-file]
-where
-    --fg       notification at the end is in foreground (when started from a launcher)
-    iso-file   path of the ISO file to burn
+    cat <<EOF >&2
+Usage:        $progname [options] [iso-file]
+Options:      --edit-config, -e     Edit the config file ${conf/$HOME/\~}.
+              --open-iso-folder     Open the folder configured in ${conf/$HOME/\~} with variable 'ISO_folder'.
+              --show-disks          Show all disks to see which can be used for burning.
+              --fg                  Notification at the end is in foreground (when started from a launcher).
+Files:        iso-file              Path of the ISO file to burn.
 EOF
+    [ "$1" ] && exit $1
 }
 
 Main()
@@ -78,6 +133,9 @@ Main()
     local is_foreground=no
     local iso_file=""
     local -r usb_icon=drive-removable-media-usb
+    local conf="$HOME/.config/$progname.conf"
+
+    ReadConfig
 
     HandleParams "$@"
 
@@ -85,7 +143,6 @@ Main()
 
     local progname="stickburn"
     local usb_stick=""
-    local conf="$HOME/.config/$progname.conf"
     local iso_file_folder=""
     local iso_file_folder_conf=""
     local cmd=()
@@ -100,7 +157,7 @@ Main()
     local txt
     local mounted_sticks=0
 
-    if [ -n "$iso_file" ] ; then
+    if [ "$iso_file" ] ; then
         test -r "$iso_file" || DIE "ISO file '$iso_file' does not exist."
     fi
 
@@ -117,11 +174,6 @@ Main()
             usb_candidates+=("$xx")
         fi
     done
-    if [ ! -r "$conf" ] ; then
-        echo "#!/bin/bash"   > "$conf"
-        echo "ISO_folder=\"$HOME\""        >> "$conf"
-    fi
-    test -r "$conf" || DIE "cannot create the configuration file '$conf'."
 
     iso_file_folder_conf="$(cat "$conf" | ConfField 'ISO_folder')"
     iso_file_folder="$iso_file_folder_conf"

@@ -2,23 +2,37 @@
 # Maintainer: manuel (see forum.endeavouros.com)
 
 pkgname=stickburn
-pkgdesc="GUI for burning ISO to USB stick with dd."
+pkgdesc="GUI for burning ISO to USB stick with dd and safety checks."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=20
-pkgrel=1.2
+pkgver=26
+pkgrel=1
 arch=('any')
 license=('GPL')
-depends=(bash yad burn2dev)
+depends=(
+    bash
+    yad        # yad needed only by stickburn
+)
 
 source=(
-    $pkgname
+    $pkgname           # GUI burning app
     $pkgname.desktop
+    burn2dev
+    find-usb-sticks
+    iso-to-usb         # CLI burning app
 )
-sha512sums=('782ca3d7f85392ed2179feb236c26a4e28627e5773188940bc1296602ab0c1244d8f323cda2236af04cf9762abc5abc496868b8fa15b7c281c311b2fe4f4fb2c'
-            '02c2027ff3f187cd988220f01e2fbba5398dece1528529090a39014fe8a956f89ef2deb05475c4f7040dbf6adf248afc9b6915a38c664fd7da558e57886719f7')
+sha512sums=('1fb1d5b0b7e8e1102d2fec7aca5423b7e983fe5bb064d414e0de2656967466f0019f95ab69a4f456cdf1e12114d306d1ba6c288e3756852a2bd3f2dd12cc7bdd'
+            '02c2027ff3f187cd988220f01e2fbba5398dece1528529090a39014fe8a956f89ef2deb05475c4f7040dbf6adf248afc9b6915a38c664fd7da558e57886719f7'
+            '32b8d594cca895670d3d83ba9818d9f5ca60bb7b9f94fc3fa6575421c67c962ec83829816de24c492d0c0fdd1e25395f5fa0b228116fdb30fce6e3aff630a275'
+            'fd096ccbae70a92f09a098c34c0ab99af59796b5f4ff79f415c006960e11f81e3eebef791efb0ac073ae3ada62e6b3fb197efed3d3b003e2e884cbb96b65ee63'
+            '27a4dadab2da0d2418afabf0a14cac00bc15463cd3d2404ceaf03440fc935343298cc30d22782b9469b959af41da97c3ae2af561c9d23c00a50688c0dfcc5542')
 
 package() {
-  cd $srcdir
-  install -Dm755 $pkgname         $pkgdir/usr/bin/$pkgname
-  install -Dm644 $pkgname.desktop $pkgdir/usr/share/applications/$pkgname.desktop
+    local src file
+    for src in "${source[@]}" ; do
+        file=${src##*/}
+        case "$file" in
+            *.desktop) install -Dm644 $file        $pkgdir/usr/share/applications/$file ;;
+            *)         install -Dm755 $file        $pkgdir/usr/bin/$file ;;
+        esac
+    done
 }
