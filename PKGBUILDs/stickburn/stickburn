@@ -1,15 +1,18 @@
 #!/bin/bash
 
-echo2() { echo "$@" >&2 ; }
+echo2() { echo -e "$@" >&2 ; }
 debug() { test "$DEBUG" = "yes" && echo2 "Debug: " "$@" ; }
 m_yad() { eos_yad --window-icon=$usb_icon --image=$usb_icon "$@" ; }
 
-DIE() {
-    echo2 "$progname error: $1"
-    m_yad --form --text="Error: $1" --title="$progname" \
-          --button=yad-quit --width=400 --window-icon=dialog-error
-    exit 1
+DIE_WARN() {
+    local type="$1"
+    shift
+    echo2 "$progname $type: $1"
+    m_yad --form --text="${type^}: $1" --title="$progname" \
+          --button=yad-quit --width=400 --window-icon=dialog-$type
 }
+DIE()  { DIE_WARN error   "$1"; exit 1; }
+WARN() { DIE_WARN warning "$1"; }
 
 ConfField() {
     local fieldname="$1"
@@ -69,7 +72,7 @@ Open() {
 
 ReadConfig() {
     if [ ! -e "$conf" ] ; then
-        echo "==> Creating config file ${conf/$HOME/\~}"
+        echo2 "==> Creating config file ${conf/$HOME/\~}"
         cat <<EOF
 #!/bin/bash
 
@@ -95,7 +98,7 @@ HandleParams() {
                 if [ -x /bin/RunInTerminal ] ; then
                     RunInTerminal lsblk -fm
                 else
-                    WARN "install package 'eos-bash-shared' for option $arg"
+                    WARN "option '$arg' requires package 'eos-bash-shared'"
                 fi
                 exit 0
                 ;;
