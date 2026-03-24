@@ -27,12 +27,11 @@ sha512sums=('1fb1d5b0b7e8e1102d2fec7aca5423b7e983fe5bb064d414e0de2656967466f0019
             '27a4dadab2da0d2418afabf0a14cac00bc15463cd3d2404ceaf03440fc935343298cc30d22782b9469b959af41da97c3ae2af561c9d23c00a50688c0dfcc5542')
 
 package() {
-    local src file
+    local src
     for src in "${source[@]}" ; do
-        file=${src##*/}
-        case "$file" in
-            *.desktop) install -Dm644 $file        $pkgdir/usr/share/applications/$file ;;
-            *)         install -Dm755 $file        $pkgdir/usr/bin/$file ;;
+        case "$src" in
+            *.desktop) install -Dm644 $src        $pkgdir/usr/share/applications/$src ;;
+            *)         install -Dm755 $src        $pkgdir/usr/bin/$src ;;
         esac
     done
 }
