@@ -105,7 +105,10 @@ Main()
 
     test "$(whoami)" = "root" || DIE "must run this program as root"
 
-    dd status=progress oflag=direct bs=4M if="$iso" of="$dev"
+    # dd status=progress oflag=direct bs=4M if="$iso" of="$dev"
+
+    pv --buffer-size 4M "$iso" | dd of="$dev" iflag=fullblock bs=4M oflag=direct
+    # See: https://askubuntu.com/questions/215505/how-do-you-monitor-the-progress-of-dd
 }
 
 Main "$@"

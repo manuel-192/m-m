@@ -10,27 +10,28 @@ USB_all_infos()
     #     USB_all_infos VENDOR
 
     local options="$1"   # comma separated list of options for 'lsblk -o'
-    local info
+    local -n _infovar="$2"
+    local tmpinfo
 
     case "$options" in
         [A-Z]*)
-            info="$(lsblk -o $options,SUBSYSTEMS,TYPE,HOTPLUG | grep -E ':usb:|1$' | grep ' disk ')"
+            tmpinfo="$(lsblk -o $options,SUBSYSTEMS,TYPE,HOTPLUG | grep -E ':usb:|1$' | grep ' disk ')"
             options=$(echo "$options" | tr ',' '\n' | wc -l)
             ;;
         *)
-            info="$(lsblk -o PATH,SIZE,VENDOR,MODEL,SUBSYSTEMS,TYPE,HOTPLUG | grep -E ':usb:|1$' | grep ' disk ')"
+            tmpinfo="$(lsblk -o PATH,SIZE,VENDOR,MODEL,SUBSYSTEMS,TYPE,HOTPLUG | grep -E ':usb:|1$' | grep ' disk ')"
             options=4
             ;;
     esac
-    [ "$info" ] || return 1
+    [ "$tmpinfo" ] || return 1
 
     case "$options" in
-        "1")   info="$(echo "$info" | awk '{printf "%-10s\n", $1}')" ;;
-        "2")   info="$(echo "$info" | awk '{printf "%-10s %7s\n", $1, $2}')" ;;
-        "3")   info="$(echo "$info" | awk '{printf "%-10s %7s %s\n", $1, $2, $3}')" ;;
-        "4"|*) info="$(echo "$info" | awk '{printf "%-10s %7s %s %s\n", $1, $2, $3, $4}')" ;;
+        "1")   tmpinfo="$(echo "$tmpinfo" | awk '{printf "%-10s\n", $1}')" ;;
+        "2")   tmpinfo="$(echo "$tmpinfo" | awk '{printf "%-10s %7s\n", $1, $2}')" ;;
+        "3")   tmpinfo="$(echo "$tmpinfo" | awk '{printf "%-10s %7s %s\n", $1, $2, $3}')" ;;
+        "4"|*) tmpinfo="$(echo "$tmpinfo" | awk '{printf "%-10s %7s %s %s\n", $1, $2, $3, $4}')" ;;
     esac
-    echo "$info"
+    _infovar="$tmpinfo"     # echo "$tmpinfo"
     return 0
 }
 
@@ -38,14 +39,29 @@ USB_info()
 {
     local path="$1"
     local option="$2"  # one option, e.g. VENDOR
-    USB_all_infos PATH,"$option" | grep "$path" | awk '{print $2}'
+    local -n _var2="$3"
+    local info=""
+    USB_all_infos "PATH,$option" info
+    [ "$info" ] && info="$(echo "$info" | grep "$path" | awk '{print $2}')"
+    _var2="$info"
 }
 
 USB_generation()
 {
-    local vendor="$1"
+    local vendor2="$1"
     local lines=7        # usb-devices lines for one entry, minus one
-    local speed=$(usb-devices 2>/dev/null | grep -B$lines "Driver=usb-storage" | grep -B$lines "Manufacturer=$vendor" | grep 'Spd=' | sed 's|^.*Spd=\([0-9]*\).*$|\1|')
+    local usbdata=$(usb-devices 2>/dev/null | grep -B$lines "Driver=usb-storage")
+    local speed=$(echo "$usbdata" | grep -B$lines "Manufacturer=$vendor2" | grep 'Spd=' | sed 's|^.*Spd=\([0-9]*\).*$|\1|')
+    if [ -z "$speed" ] ; then
+        # usb-devices reports SanDisk fields [Manufacturer,Product] incorrectly, is this a vendor mistake?
+        usbdata=$(echo "$usbdata" | grep -B$lines -A1 "Manufacturer= $vendor2")
+        if [ "$usbdata" ] ; then
+            speed=$(echo "$usbdata" | grep 'Spd=' | sed 's|^.*Spd=\([0-9]*\).*$|\1|')
+            vendor2=$(echo "$usbdata" | grep "Product=")
+            [ "$vendor2" ] && vendor=$(echo "$vendor2" | sed -E 's|^[A-Z]:[ ]+Product= ||')
+        fi
+    fi
+    # | grep 'Spd=' | sed 's|^.*Spd=\([0-9]*\).*$|\1|')
     case "$speed" in
         480)  echo "2.0" ;;
         5000) echo "3.0" ;;
@@ -56,9 +72,11 @@ USB_generation()
 Main()
 {
     local -r progname="${0##*/}"
-    local -r usb_infos="$(USB_all_infos PATH)"
+    local usb_infos=""
     local path vendor model usbgen size type hotplug
     local sep="|"
+
+    USB_all_infos PATH usb_infos
 
     while [ "$1" ] ; do
         case "$1" in
@@ -73,11 +91,11 @@ Main()
     if [ "$usb_infos" ] ; then
         for path in $usb_infos
         do
-            size=$(   USB_info "$path" SIZE)
-            vendor=$( USB_info "$path" VENDOR)
-            model=$(  USB_info "$path" MODEL)
-            type=$(   USB_info "$path" TYPE)
-            hotplug=$(USB_info "$path" HOTPLUG)
+            USB_info "$path" SIZE    size
+            USB_info "$path" VENDOR  vendor
+            USB_info "$path" MODEL   model
+            USB_info "$path" TYPE    type
+            USB_info "$path" HOTPLUG hotplug
             case "$hotplug" in
                 1) hotplug="" ;;                  # hotplug="${sep}hotplug" ;;
                 *) hotplug="${sep}non-hotplug?" ;;

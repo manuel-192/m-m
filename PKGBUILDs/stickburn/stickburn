@@ -30,18 +30,43 @@ DD_command() {
     echo "dd status=progress bs=4M if=$iso_file of=$usb_stick && sync"
 }
 
+BurnFail() {
+    local timeout=600
+    local cmd=(NotifySend $timeout
+               "USB drive burn stopped."
+               "Burning the USB drive $usb_stick was canceled."
+               "$is_foreground")
+    "${cmd[@]}"
+    exit 1
+}
+BurnSuccess() {
+    debug "Syncing..."
+    sync
+
+    local timeout=30
+    local cmd=(NotifySend $timeout
+               "USB drive burn is ready."
+               "Burning the USB drive $usb_stick is ready."
+               "$is_foreground")
+    "${cmd[@]}"
+    exit 0
+}
+
 Burn() {
-    pkexec burn2dev "$usb_stick" "$iso_file" || {
-        echo2 "Canceled."
-        exit 1
-    }
+    if [ -x /bin/RunInTerminal ] ; then
+        /bin/RunInTerminal "echo -e 'Burning to $usb_stick:' ; sudo burn2dev '$usb_stick' '$iso_file'" || BurnFail
+    else
+        pkexec burn2dev "$usb_stick" "$iso_file" || BurnFail
+    fi
+    BurnSuccess
 }
 
 NotifySend() {
-    local ms="$1"
+    local sec="$1"
     local header="$2"
     local msg="$3"
     local is_foreground="$4"
+    local ms="${sec}000"
 
     if [ "$is_foreground" = "no" ] ; then
         notify-send --expire-time=$ms "$header" "$msg" &
@@ -151,14 +176,15 @@ Main()
     local cmd=()
     local result=""
     local dd_command
-    local iso_field=1
-    local usb_field=2
+    local iso_field=2
+    local usb_field=$((iso_field + 1))
     local xx device tmp
     local usb_sticks_info
     local usb_candidates=()
     local no_selection="(None)"
     local txt
     local mounted_sticks=0
+    local -r exclamation='&#33;'
 
     if [ "$iso_file" ] ; then
         test -r "$iso_file" || DIE "ISO file '$iso_file' does not exist."
@@ -186,16 +212,21 @@ Main()
         iso_file_folder="$HOME"
     }
 
-    cmd=(m_yad --form --title="Burn ISO to a USB drive" --width=600 --height=400)
+    cmd=(m_yad --form --title="$progname: Burn ISO to a USB drive" --scroll --height=350 --width=600)
 
     # button icon: media-record, usb-creator
     cmd+=(--button=yad-cancel:1)
 
-    txt="Burn an ISO file to a USB drive.\n\n"
-    txt+="Select the ISO file from any folder.\n"
-    txt+="Note: ISO folder will be auto-saved, now: <b>$iso_file_folder</b>\n\n"
-    txt+="Select the target USB drive (unless auto-selected).\n"
+    txt="Burn an ISO file to a USB drive."
     cmd+=(--text="$txt")
+
+    txt="Select the ISO file from any folder. The selected folder will be auto-saved [<i>$iso_file_folder</i>].\n"
+    txt+="Select the target USB drive (unless auto-selected).\n"
+    txt+="Make <b><i>absolutely sure</i></b> you select the right USB drive.\n"
+    txt+="There's no turning back after you start burning.\n"
+    txt+="Burning takes a few minutes.\n"
+    txt+="A notification window will appear when burning has finished.\n"
+    cmd+=(--field="$txt":LBL "")
 
     if [ -z "$iso_file" ] ; then
         cmd+=(--field="<tt>ISO file:   </tt>":FL "$iso_file_folder/*")
@@ -249,13 +280,13 @@ Main()
         "No USB drives" | "No umounted USB drives")
             ;;
         *)
-            cmd+=(--button="Start burning now!$usb_icon!Burns the selected ISO file to the selected USB drive":0)
+            cmd+=(--button="Burn${exclamation}!$usb_icon!Burns the selected ISO file to the selected USB drive":0)
 
-            txt="\n<b>Make absolutely sure you select the right USB drive.</b>\n"
-            txt+="<i>There's no turning back after you start burning.</i>\n\n"
-            txt+="Burning takes a few minutes.\n"
-            txt+="When burning has finished, a notification window will appear."
-            cmd+=(--field="$txt":LBL "")
+            # txt="\n<b>Make absolutely sure you select the right USB drive.</b>\n"
+            # txt+="<i>There's no turning back after you start burning.</i>\n\n"
+            # txt+="Burning takes a few minutes.\n"
+            # txt+="When burning has finished, a notification window will appear."
+            # cmd+=(--field="$txt":LBL "")
             ;;
     esac
  
@@ -287,14 +318,6 @@ Main()
     debug "usb stick = $usb_stick"
 
     Burn
-    
-    debug "Syncing..."
-    sync
-
-    NotifySend 30000 \
-               "USB drive burn is ready." \
-               "Burning the USB drive $usb_stick is ready." \
-               "$is_foreground"
 }
 
 Main "$@"
