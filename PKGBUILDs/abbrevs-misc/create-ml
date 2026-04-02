@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$*" =~ "--fake-country" ]] ; then
-    /bin/create-ml "$@"
+    /bin/create-ml --verbose --timeout 5 "$@"
 else
-    /bin/create-ml --prefs='s://fi.*niranjan s://umea' --timeout-mirror=2 "$@"
+    /bin/create-ml --prefs='s://fi.*niranjan s://umea' --timeout-mirror=2 --verbose "$@"
 fi
