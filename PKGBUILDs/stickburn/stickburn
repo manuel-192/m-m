@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# set -o euxo pipefail
+set -o euo pipefail
+
 echo2() { echo -e "$@" >&2 ; }
 debug() { test "$DEBUG" = "yes" && echo2 "Debug: " "$@" ; }
 m_yad() { eos_yad --window-icon=$usb_icon --image=$usb_icon "$@" ; }
@@ -9,7 +12,7 @@ DIE_WARN() {
     shift
     echo2 "$progname $type: $1"
     m_yad --form --text="${type^}: $1" --title="$progname" \
-          --button=yad-quit --width=400 --window-icon=dialog-$type
+          --button=yad-quit --width=400 --window-icon=dialog-"$type"
 }
 DIE()  { DIE_WARN error   "$1"; exit 1; }
 WARN() { DIE_WARN warning "$1"; }
@@ -24,15 +27,15 @@ DeviceOf() {
     echo "$usb_line" | awk '{print $1}' | sed 's|:$||'
 }
 
-DD_command() {
-    local iso_file="$1"
-    local usb_stick="$2"
-    echo "dd status=progress bs=4M if=$iso_file of=$usb_stick && sync"
-}
+# DD_command() {
+#     local iso_file="$1"
+#     local usb_stick="$2"
+#     echo "dd status=progress bs=4M if=$iso_file of=$usb_stick && sync"
+# }
 
 BurnFail() {
     local timeout=600
-    local cmd=(NotifySend $timeout
+    local cmd=(NotifySend "$timeout"
                "USB drive burn stopped."
                "Burning the USB drive $usb_stick was canceled."
                "$is_foreground")
@@ -44,7 +47,7 @@ BurnSuccess() {
     sync
 
     local timeout=30
-    local cmd=(NotifySend $timeout
+    local cmd=(NotifySend "$timeout"
                "USB drive burn is ready."
                "Burning the USB drive $usb_stick is ready."
                "$is_foreground")
@@ -69,9 +72,9 @@ NotifySend() {
     local ms="${sec}000"
 
     if [ "$is_foreground" = "no" ] ; then
-        notify-send --expire-time=$ms "$header" "$msg" &
+        notify-send --expire-time="$ms" "$header" "$msg" &
     else
-        notify-send --expire-time=$ms "$header" "$msg"
+        notify-send --expire-time="$ms" "$header" "$msg"
         echo2 "Finished!"
         sleep 5
     fi
@@ -86,7 +89,7 @@ Open() {
         edit) apps+=(kate gedit emacs xed codium geany) ;;
         open) ;;
     esac
-    for app in "${apps}" ; do
+    for app in "${apps[@]}" ; do
         if which "${app%% *}" &>/dev/null ; then
             $app "$@"
             exit 0
@@ -105,6 +108,9 @@ ISO_folder="\$HOME"
 EOF
         test -r "$conf" || DIE "cannot create the configuration file '$conf'."
     fi
+
+    ## shellcheck disable=SC1090                                          # variable 'conf' is readonly, why does shellcheck complain?
+    ## shellcheck source=/dev/null                                        # shellcheck totally ignores what $conf referers to
     source "$conf" || DIE "cannot read configuration file '$conf'."
 }
 
@@ -149,7 +155,7 @@ Options:      --edit-config, -e     Edit the config file ${conf/$HOME/\~}.
               --fg                  Notification at the end is in foreground (when started from a launcher).
 Files:        iso-file              Path of the ISO file to burn.
 EOF
-    [ "$1" ] && exit $1
+    [ "$1" ] && exit "$1"
 }
 
 Main()
@@ -161,7 +167,7 @@ Main()
     local is_foreground=no
     local iso_file=""
     local -r usb_icon=drive-removable-media-usb
-    local conf="$HOME/.config/$progname.conf"
+    local -r conf="$HOME/.config/$progname.conf"
 
     ReadConfig
 
@@ -175,7 +181,7 @@ Main()
     local iso_file_folder_conf=""
     local cmd=()
     local result=""
-    local dd_command
+    # local dd_command
     local iso_field=2
     local usb_field=$((iso_field + 1))
     local xx device tmp
@@ -191,7 +197,7 @@ Main()
     fi
 
     echo2 "Finding USB drives, please wait..."
-    readarray -t usb_sticks_info <<< $(find-usb-sticks --separator " ")
+    readarray -t usb_sticks_info <<< "$(find-usb-sticks --separator " ")"
 
     [ "${usb_sticks_info[*]}" ] || DIE "no target USB drive available."
 

@@ -7,6 +7,9 @@
 #
 # Requires command 'find-usb-sticks'.
 
+# set -o euxo pipefail
+set -o euo pipefail
+
 DIE() {
     printf "%s\n\n" "Error: $progname: $1" >&2
     [ -n "$2" ] && $2
@@ -46,10 +49,12 @@ ShowDevices() {
     printf "Information about candidate (=unmounted) USB devices:\n" >&2
 
     local lsblk='lsblk -p -o NAME,VENDOR,MODEL,FSTYPE,LABEL,UUID,FSAVAIL'
-    local devs="$(FindUnmountedUsbDevices)"
+    local devs
+    devs="$(FindUnmountedUsbDevices)"
 
-    if [ -n "$devs" ] ; then
-        $lsblk $devs | sed -e 's|^NAME   |DEVICE |' -e 's|^|    |' | sed '/^[ ]*DEVICE .*$/a\ ' >&2
+    if [ "$devs" ] ; then
+        local -r cmd="$lsblk $devs"
+        $cmd | sed -e 's|^NAME   |DEVICE |' -e 's|^|    |' | sed '/^[ ]*DEVICE .*$/a\ ' >&2
     else
         echo "    Candidate USB devices not found!" >&2
     fi
@@ -60,7 +65,7 @@ FindUnmountedUsbDevices() {
     local sticksinfo
     local stick dev devs=""
 
-    readarray -t sticksinfo <<<  $(find-usb-sticks --separator " " )
+    readarray -t sticksinfo <<<  "$(find-usb-sticks --separator " " )"
 
     for stick in "${sticksinfo[@]}" ; do
         dev="$(echo "$stick" | awk '{print $1}' | sed 's|:$||')"
@@ -83,7 +88,8 @@ IsUsbDevice() {
 
 Main()
 {
-    local progname="$(basename "$0")"
+    local progname
+    progname="$(basename "$0")"
     case "$1" in
         --list-usb-candidates | --list | -l) ShowDevices ; return ;;
         --help | -h)                         Usage ;       return ;;
@@ -93,8 +99,8 @@ Main()
     local iso="$2"
     local usb_devices=""
 
-    [ -n "$dev" ]                        || DIE "parameters missing."
-    [ -n "$(lsblk -p | grep -w ^$dev)" ] || DIE "device $dev is not available." ShowDevices
+    [ "$dev" ]                           || DIE "parameters missing."
+    lsblk -p | grep -qw "^$dev"          || DIE "device $dev is not available." ShowDevices
     IsDevMounted "$dev"                  && DIE "$dev contains mounted partitions!" ShowDevices
     usb_devices="$(FindUnmountedUsbDevices)"
     [ -n "$usb_devices" ]                || DIE "No unmounted USB devices found."
