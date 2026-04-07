@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set -o euxo pipefail
-set -o euo pipefail
+# set -o euo pipefail
 
 echo2() { echo -e "$@" >&2 ; }
 debug() { test "$DEBUG" = "yes" && echo2 "Debug: " "$@" ; }

@@ -8,7 +8,7 @@
 # Requires command 'find-usb-sticks'.
 
 # set -o euxo pipefail
-set -o euo pipefail
+# set -o euo pipefail
 
 DIE() {
     printf "%s\n\n" "Error: $progname: $1" >&2
