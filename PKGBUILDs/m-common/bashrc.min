@@ -734,6 +734,19 @@ EOF
         # find /usr/share/icons -name $1.\* 2> /dev/null | less
     }
 
+    pdf() {
+        local pdf_viewers=($PDF_VIEWER texworks xreader mupdf xpdf okular atril evince)
+        local app
+
+        if ! SetVarToFirstApp app "${pdf_viewers[@]}" ; then
+            echo "$FUNCNAME: error: no PDF viewer found"
+            return 1
+        fi
+        setsid $app "$@" &>/dev/null
+    }
+
+    gnome-boxes() { setsid /bin/gnome-boxes "$@" &>/dev/null; }
+
     git() {        # preparations for doing a git command
         _logstuff() { IsAvailable --app logstuff && logstuff "$@"; }
 
