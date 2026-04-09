@@ -46,7 +46,11 @@ Main() {
         *)
             HandleHelp "$@"
             HandleSessionType    # emacs has separate wayland and x11 versions
-            /bin/emacs --reverse-video --geometry=$(HandleGeometry) "$@" 2>/dev/null &
+            if [[ "$*" =~ "-nw" ]] ; then
+                /bin/emacs "$@"
+            else
+                /bin/emacs --reverse-video --geometry=$(HandleGeometry) "$@" 2>/dev/null &
+            fi
             ;;
     esac
 }
