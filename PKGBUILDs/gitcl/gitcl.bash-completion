@@ -1,28 +1,27 @@
 # bash completion for gitcl        -*- shell-script -*-
 
-_ec2() { echo -e "$@" >&2; }
+_printf2() { printf "$@" >&2; }
 
 _gitcl_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
-    # [[ $COMPREPLY == *= ]] && compopt -o nospace
-#    compopt -o nospace
-#    compopt -o nosort
+}
+
+_gitcl_DIE() {
+    _printf2 "gitcl.bash-completion: error: %s\n" "$1" >&2
+    exit 1
 }
 
 _gitcl_() 
 {
     local cur prev words #cword split
-    _init_completion -s || return
+    _init_completion -s    || _gitcl_DIE "_init_completion failed"
 
     local Urls=()
-    source /etc/gitcl.conf || return 1
-    readarray -t Urls <<< $(printf "%s\n" "${Urls[@]/https:\/\//}")
+    source /etc/gitcl.conf || _gitcl_DIE "'source /etc/gitcl.conf' failed"
+    [ "$Urls" ]            || _gitcl_DIE "Urls array is empty"
 
-    # Handle options that need sub-options.
-    # Each option "case" should return immediately.
-
-    case "$cur" in
-        *) _gitcl_complete "${Urls[*]}" ;;            # Handle all top-level parameters.
-    esac
+    _gitcl_complete "${Urls[*]}"
+    # _printf2 "COMPREPLY: %s\n" "${COMPREPLY[@]}"
 } &&
 complete -F _gitcl_ gitcl
+
