@@ -1523,7 +1523,7 @@ EOF
     Alias local-repo-manager "local-repo-manager --verbose"
     # Alias ls                 "/bin/ls $(l --get-ls-opts)"
     Alias md                 "codium"
-    Alias nano               "nano -l"
+    Alias nano               "nano -lmi"
     Alias o                  "exo-open"
     Alias package-sizes      "expac -HM -Q '%m|%n' | column -t -s'|' | sort -nr | less"
                              # M is reasonable now, later G might be too
