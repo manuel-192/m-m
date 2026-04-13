@@ -1,0 +1,32 @@
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=eos-hwnv
+pkgdesc="Simple hw tool for Nvidia GPU using nvidia-580xx-dkms only"
+pkgver=0.26
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=()
+
+url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/${pkgname}"
+
+source=(
+    $url/eos-hwnv
+)
+sha512sums=('cdd197ea7ec95a9ec7e6cd2712d04d21220ebafa81d0409dde8c0749f30bbdecce1548f344a6ea3ed207e9fc05c43cbfa63e947dc64a0e84c7e3b09cff93ee0a')
+
+package() {
+    local src file
+
+    for src in "${source[@]}" ; do
+        file=${src##*/}
+        case "$file" in
+            *.bash-template)
+                install -Dm644 $file   $pkgdir/etc/$file ;;
+            *.bash-completion)
+                install -Dm644 $file   $pkgdir/usr/share/bash-completion/completions/${file%.*} ;;
+            *)
+                install -Dm755 $file   $pkgdir/usr/bin/$file ;;
+        esac
+    done
+}

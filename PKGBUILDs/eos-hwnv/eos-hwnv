@@ -1,0 +1,107 @@
+#!/bin/bash
+
+DIE() {
+    echo -e "==> $progname: error: $1" >&2
+    exit 1
+}
+
+Profile_nvidia_580xx() {
+    packages=(   "nvidia-580xx-dkms" "nvidia-580xx-utils"       "nvidia-580xx-settings"       "opencl-nvidia-580xx" )
+    packages32=( "lib32-mesa"        "lib32-nvidia-580xx-utils" "lib32-opencl-nvidia-580xx" )
+    services=( "" )
+    dracut_config=( "" )
+    mkinitcpio_config=( "MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)")
+}
+
+InstallRemoveCommon() {
+    case "$mode" in
+        install)
+            sudo pacman --needed -Syu "$@"
+            ;;
+        remove)
+            local pkgs=$(/bin/expac %n "$@")
+            [ "$pkgs" ] && sudo pacman -Rsn "$@"
+            ;;
+    esac
+}
+InstallRemovePackages() {
+    InstallRemoveCommon "${packages[@]}"
+}
+
+InstallRemovePackages32() {
+    [ "$use32" = no ] && mode=remove
+    InstallRemoveCommon "${packages32[@]}"
+}
+
+AddMkinitcpioConfig() {
+    local -r file=/etc/mkinitcpio.conf
+    local addmodules
+    addmodules=$(printf "%s\n" "${mkinitcpio_config[@]}" | grep "^MODULES+=")
+    echo "$addmodules" | sudo tee -a "$file" >/dev/null
+}
+
+Options() {
+    local sopts="h"
+    local lopts="help,addconfig,no32,install,remove"
+    local opts
+
+    opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
+        $OptFunc -h
+        return 1
+    }
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --) shift; break ;;
+            --install)   mode=install ;;
+            --remove)    mode=remove ;;
+            --no32)      use32=no ;;
+            --addconfig) addconfig=yes ;;
+            -h | --help) Help 0 ;;
+        esac
+        shift
+    done
+
+    # Check config sanity.
+    if [ $use32 = yes ] ; then
+        local -r repo=multilib
+        if ! pacman-conf --repo-list | grep "^$repo$" >/dev/null ; then
+            DIE "repository [$repo] in /etc/pacman.conf is disabled. Consider using option --no32."
+        fi
+    fi
+}
+
+Help() {
+    cat <<EOF
+Usage:   $progname [options]
+Options:    -h, --help          This help.
+            --install           Install recommended packages. This is the default.
+            --remove            Uninstall recommended packages.
+            --no32              Remove recommended 32-bit support packages.
+            --addconfig         Adds MODULES configs into /etc/mkinitcpio.conf.
+                                Note: dracut is not yet supported.
+EOF
+    [ "$1" ] && exit "$1"
+}
+
+Main() {
+    local progname=${0##*/}
+    local packages=()
+    local packages32=()
+    local services=()
+    local mkinitcpio_config=()
+    local use32=yes
+    local addconfig=no
+    local mode=install
+
+    Options "$@"
+
+    Profile_nvidia_580xx
+
+    InstallRemovePackages
+    InstallRemovePackages32
+    [ $addconfig = yes ] && AddMkinitcpioConfig
+}
+
+Main "$@"
