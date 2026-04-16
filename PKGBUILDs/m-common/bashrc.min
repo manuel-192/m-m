@@ -1549,7 +1549,7 @@ EOF
     Alias who-needsq         "who-needs --query --multi --aur"
     Alias who-needss         "who-needs --sync --one --aur"
 
-    AliasIfType  grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
+    AliasIfWhich grub-mkconfig  update-grub  "sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
     # AliasIfWhich expacol        expac        expacol
     AliasIfWhich pb             pb           "pb -nn --aur-delay=10m -T0"
@@ -1559,8 +1559,8 @@ EOF
     # AliasIfWhich man            maneos       "maneos"
     # which maneos &>/dev/null && Alias man            maneos
 
-    Unalias l
-    AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
+    #Unalias l
+    #AliasIfWhich l              ls           "/bin/ls $($(which l) --get-ls-opts)"
 
     # [ -x /usr/local/bin/type ] && alias type=/usr/local/bin/type     # in package abbrevs-misc
 
