@@ -35,8 +35,19 @@ _PackageCheck() {
     return 1
 }
 
+_MirrorlistCheck() {
+    local filename=/etc/pacman.d/mirrorlist
+    if [ ! -e $filename ] ; then
+        eos-color error 2
+        echo "[ ${BASH_SOURCE[0]/$HOME/\~}: ERROR ] File '$filename' was not found!" >&2
+        eos-color reset 2
+    fi
+}
+
 SettingsCommon()
 {
+    _MirrorlistCheck
+
     _PackageCheck || return 1
     unset -f _PackageCheck
 
