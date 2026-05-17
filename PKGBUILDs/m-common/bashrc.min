@@ -594,6 +594,14 @@ EOF
         _VAR=${_VAR%:}       # remove suffix :
     }
 
+    VarValue() {
+        local item
+        for item in "$@" ; do
+            printf "%10s = %s\n" "$item" "${!item}"
+        done
+    }
+
+
     lsd()   { find . -type d -exec ls -ld {} \; ; }
 
     drw()   {
