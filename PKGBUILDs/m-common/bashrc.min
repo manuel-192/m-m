@@ -1494,7 +1494,10 @@ EOF
             [ -x /bin/eos-manual-intervention ] && eos-manual-intervention
         fi
         [ "$MY_CACHE_LIMIT" ] || MY_CACHE_LIMIT=2
-        eos-update --pacdiff --nvidia --descriptions --cache-limit=$MY_CACHE_LIMIT --other-updates --faillock-check "$@"
+        local opts=(--pacdiff --nvidia --descriptions --cache-limit=$MY_CACHE_LIMIT
+                    --other-updates --faillock-check --keep-system-running
+                   )
+        eos-update "${opts[@]}" "$@"
         # --nvidia doesn't hurt
     }
 
