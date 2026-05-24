@@ -1,0 +1,35 @@
+#!/bin/bash
+
+DIE() { echo -e "==> $progname: error: $1" >&2 ; exit 2; }
+
+OncePerNDays() {
+    local id="$1"                                        # unique id
+    local ndays="$2"                                     # should be >= 1
+    local progname=${0##*/}
+    local marker="$HOME/.config/$progname.$id"           # file contains the "next run sec"
+
+    [ "$id" ] || DIE "missing parameter 'id'"
+
+    local now_sec=$(date +%s)
+    local nextruntime_sec=""
+
+    if [ -r "$marker" ] ; then
+        nextruntime_sec="$(cat "$marker" 2>/dev/null)"
+        if [ -z "$nextruntime_sec" ] || [ "${nextruntime_sec//[0-9]/}" ] ; then
+            nextruntime_sec=0
+        fi
+        if [ "$now_sec" -ge "$nextruntime_sec" ] ; then
+            rm -rf "$marker"
+            return 0
+        fi
+    else
+        [ "$ndays" ]           || DIE "missing parameter 'ndays'"
+        [ "${ndays//[0-9]/}" ] && DIE "parameter 'ndays' must be numbers only"
+        [ $ndays -gt 0 ]       || DIE "the value of parameter 'ndays' must be at least 1"
+        nextruntime_sec=$((now_sec + ndays*24*3600))
+        echo "$nextruntime_sec" > "$marker"          # save the next runtime second
+    fi
+    return 1
+}
+
+OncePerNDays "$@"

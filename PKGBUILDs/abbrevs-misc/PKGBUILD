@@ -5,7 +5,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.3.1
+pkgver=26.5
 pkgrel=1
 
 arch=('any')
@@ -38,6 +38,8 @@ source=(
     $url/lines
     $url/man2pdf
     $url/ncdu
+    $url/once-per-boot-session
+    $url/once-per-n-days
     $url/open
     $url/paccache-maintainer
     $url/packages-in-iso
@@ -71,6 +73,8 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             'a11555f730b27ed040102ef2408e64ae5212f479f58c89ea54f91b6bd14b9cce9d56541904022d6dd3613334808f0bd1de87fb54edb402446a65e2e8078e1b20'
             'bd0f4bb10c8acae3ebb9be9a620940fc46cf9f6f12798f12f5c8b0682396617efed4b88aba2bd036dd4e6d72f3cde6a2754e2ca61bcac9f926e24137af88a789'
             'be96fbf6aa4136dbe6e87178d8adf95d02cd652bd3b0adec19147e39a79ed36dd78541fba85f3b2cc38ae091e750510b0f63336a3c5683398716537fe3c95644'
+            '5e1633f15313fa5d94a6028996f54fbeb8bbcc126ce932d0d8a49a9af756f7daaac8fb1af1dd5d7c59f3e4b9d75595bbf82614bcadf40876ac46c6d59f848219'
+            '7f1596b911e502aacfddfe31764d6f2aee681ae99ca425f0dbba02c89ec92ee39504caf835dc8a7262a74f5d8b5f0b6236e55e9b75a7cd457e4da17f25347dc4'
             '4c585cea750c2ce112cbf9280dd1431739c2a0f4441f1f8fff46d8d7ccac54ab2ee1cc6e15adc58ea980b2cdb48843814833c9c3cc58b4d282cc79b5af5c96f5'
             '263548655423b34dc3af7dde44bbe2fe167ce7e256f12138cd4438dd091e35e5ce3f4de969d02b876ef7ff09957cc9056b6f7e698acf82c59e2a67098a8ebac7'
             '0ef196d8a010dc27174d76112ab29effb2507b0a05fdcdf5701a2a8ac1dbb4b7ac0dd51c56711d4c1d126012b75190f052daddeb011a4aaed86d566828598959'
@@ -95,7 +99,7 @@ package() {
                 install -Dm644 $item      $pkgdir/etc/skel/$item ;;
             *.conf)
                 install -Dm644 $item      $pkgdir/etc/$item ;;
-            paccache-maintainer | shellcheck-nameref | packages-in-iso | expacol)
+            paccache-maintainer | shellcheck-nameref | packages-in-iso | expacol | once-per-*)
                 install -Dm755 $item      $pkgdir/usr/bin/$item ;;
             *.completion | *.bash-completion)
                 install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.*} ;;

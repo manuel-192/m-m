@@ -1,0 +1,20 @@
+#!/bin/bash
+
+DIE() { echo -e "==> $progname: error: $1" >&2 ; exit 2; }
+
+OncePerBootSession() {
+    local id="$1"
+    local progname=${0##*/} 
+
+    [ "$id" ] || DIE "missing parameter 'id'"
+
+    local marker="/tmp/tmp.$id"                          # folder under /tmp
+    if [ -r "$marker" ] ; then
+        return 1
+    else
+        mkdir -m go-rwx -p "$marker"
+        return 0
+    fi
+}
+
+OncePerBootSession "$@"
