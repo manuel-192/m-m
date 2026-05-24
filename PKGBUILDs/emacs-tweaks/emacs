@@ -30,8 +30,10 @@ HandleSessionType() {
     fi
 }
 
+Xrandr() { xrandr "$@" 2>/dev/null ; }  # prevents wayland warnings
+
 HandleGeometry() {
-    case "$(xrandr | grep '*' | awk '{print $1}')" in
+    case "$(Xrandr | grep '*' | awk '{print $1}')" in
         1920x1080) echo 100x40 ;;
         3840x2160) echo 150x80 ;;
         *)         echo 80x25 ;;
