@@ -1,6 +1,16 @@
 #!/bin/bash
 
-DIE() { echo -e "==> $progname: error: $1" >&2 ; exit 2; }
+Help() {
+    cat <<EOF >&2
+Usage:
+      $progname "id"
+Parameters:
+      id     A string of characters that is unique among ids used with this app.
+EOF
+    [ "$1" ] && exit $1
+}
+
+DIE() { echo -e "==> $progname: error: $1\n" >&2 ; Help 2; }
 
 OncePerBootSession() {
     local id="$1"

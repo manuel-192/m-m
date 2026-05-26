@@ -1,5 +1,16 @@
 #!/bin/bash
 
+Help() {
+    cat <<EOF
+Usage:
+    $progname "id" "ndays"
+Parameters:
+    id     A string of characters that is unique among ids used with this app.
+    ndays  A positive integer that tells the time interval in number of days.
+EOF
+    [ "$1" ] && exit $1
+}
+
 DIE() { echo -e "==> $progname: error: $1" >&2 ; exit 2; }
 
 OncePerNDays() {
@@ -24,7 +35,7 @@ OncePerNDays() {
         fi
     else
         [ "$ndays" ]           || DIE "missing parameter 'ndays'"
-        [ "${ndays//[0-9]/}" ] && DIE "parameter 'ndays' must be numbers only"
+        [ "${ndays//[0-9]/}" ] && DIE "parameter 'ndays' must be a positive integer"
         [ $ndays -gt 0 ]       || DIE "the value of parameter 'ndays' must be at least 1"
         nextruntime_sec=$((now_sec + ndays*24*3600))
         echo "$nextruntime_sec" > "$marker"          # save the next runtime second
