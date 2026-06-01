@@ -37,7 +37,7 @@ HandleCdpathMatches() {
                     # user selects dir with fzf
                     dir=$(printf "%s\n" "${matches[@]}" | fzf  --no-separator --no-info --height=$((count+1)))
                     ;;
-                roundabout)
+                circle)
                     # Automatically select next dir from many matches.
                     # When the next command line is the same,  go round with the matches.
                     local saveddirname="$(cat "$saveddirfile" 2>/dev/null)"
@@ -68,13 +68,13 @@ HandleCdpathMatches() {
 Main() {
     local progname=${0##*/}
     local -r saveddirfile="$HOME/.$progname.sav"
-    local MULTI_MATCH_ALG=fzf                   # fzf or roundabout
+    local MULTI_MATCH_ALG=fzf                   # fzf or circle
     local conf="$HOME/.config/$progname.conf"
 
     [ -e "$conf" ] && source "$conf"
     case "$MULTI_MATCH_ALG" in
-        fzf | roundabout) ;;
-        *) DIE "value of MULTI_MATCH_ALG in $conf is not supported. Use fzf or roundabout." ;;
+        fzf | circle) ;;
+        *) DIE "value of MULTI_MATCH_ALG in $conf is not supported. Use fzf or circle." ;;
     esac
 
     case "$1" in
