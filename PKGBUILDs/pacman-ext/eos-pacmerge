@@ -49,6 +49,7 @@ Backup() {
             bytes=$(stat -c %s "${file%.*}")
             if [ $bytes -le $max ] ; then
                 sudo cp ${file%.*} ${file%.*}.bak
+                echo "==> writing ${file%.*}.bak"
             else
                 Info "did not backup file ${file%.*} because size > $max bytes"
             fi
@@ -56,7 +57,25 @@ Backup() {
     fi
 }
 
-DIE()  { echo "==> $progname: error: $1" >&2; exit 1; }
-Info() { [ $quiet = no ] && echo "==> $progname: info: $1"  >&2; }
+EosColor() { eos-color "$1" 2; }
+echo2() { echo -e "$@" >&2; }
+MSG() {
+    local prompt="$1"
+    local exitcode="$2"
+    shift 2
+    local color_reset=yes
+    case "$prompt" in
+        error | info) EosColor "$prompt" ;;
+        *) color_reset=no ;;
+    esac
+    echo2 "==> $progname: $prompt:" "$@"
+    [ "$color_reset" = yes ] && EosColor reset
+    [ "$exitcode" ] && exit "$exitcode"
+}
+DIE()  { MSG "error" "1" "$@"; }
+Info() { [ "$quiet" = no ] && MSG "info" "" "$@"; }
+
+# DIE()  { echo "==> $progname: error: $1" >&2; exit 1; }
+# Info() { [ $quiet = no ] && echo "==> $progname: info: $1"  >&2; }
 
 Main "$@"
