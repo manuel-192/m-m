@@ -177,6 +177,7 @@ Flags: --charge-sleep             Sets sleep time (seconds) between checks when 
        --no-reread-conf           Read the config file only at start.
        --power-device-info        File path for the power device info.
        --keep-showing-max         Keep notifying after reaching the max charge.
+       --status                   Show overall info about the battery ${BAT##*/}.
        --cycles                   Show charging cycle count.
        --percent                  Show the current level of battery charge.
        --mouse-percent            Show the current level of battery charge of the mouse.
@@ -187,8 +188,8 @@ EOF
     if [ -e "$BAT/charge_control_end_threshold" ] ; then
         local threshold=$(BatteryVariable show charge_control_end_threshold)
         cat <<EOF
-        --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop, current: $threshold).
-        --ctrl-end-threshold-show  Show the defined percentage when charging stops.
+       --ctrl-end-threshold-set   Charging stops at this percentage (default: $max_stop, current: $threshold).
+       --ctrl-end-threshold-show  Show the defined percentage when charging stops.
 EOF
     fi
     [ "$1" ] && exit $1
