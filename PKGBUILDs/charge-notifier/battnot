@@ -57,6 +57,10 @@ DumpOptions() {
     # don't show short options
 }
 
+ShowStatus() {
+    upower -i "/org/freedesktop/UPower/devices/battery_${BAT##*/}"
+}
+
 ShowPercent() {
     [ "$power_device" ] || return 1
     local percent=$(grep ^POWER_SUPPLY_CAPACITY= $power_device | cut -d'=' -f2)
@@ -99,7 +103,7 @@ MouseModel() {
 
 Options() {
     local lopts="charge-sleep:,discharge-sleep:,dump-options,edit-config,help,is-running,keep-showing-max,max:,min:"
-    lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:,percent,mouse-percent,mouse-model"
+    lopts+=",no-reread-conf,power-device-info:,cycles,sound-file:,percent,mouse-percent,mouse-model,status"
     if [ -e "$BAT/charge_control_end_threshold" ] ; then
         lopts+=",ctrl-end-threshold-set:,ctrl-end-threshold-show"
     fi
@@ -144,7 +148,8 @@ Options() {
 
             # these exit immediately:
             --dump-options)            DumpOptions; exit 0 ;;
-            --edit-config)             EditConfig; exit 0 ;;
+            --edit-config)             EditConfig;  exit 0 ;;
+            --status)                  ShowStatus;  exit 0 ;;
             --help | -h)               Usage 0 ;;
 
             # misc param handling:
@@ -338,7 +343,6 @@ Main() {
     local ix
 
     CreateConfigIfNeeded
-    # [] || BAT
     source "$conf"
 
     if false ; then
@@ -346,6 +350,7 @@ Main() {
         arg="${args[$ix]}"
         case "$arg" in
             --help | -h |\
+            --status |\
             --edit-config |\
             --cycles |\
             --percent |\
