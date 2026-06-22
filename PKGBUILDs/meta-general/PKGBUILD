@@ -5,7 +5,7 @@ pkgname=meta-general
 pkgdesc="Nice stuff meta."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=22
-pkgrel=1.60
+pkgrel=1.61
 arch=(any)
 license=(GPL)
 depends=(
@@ -16,18 +16,18 @@ depends=(
     emacs
     exo
     gparted
-    gufw
+    # gufw
     hub
     jq
     # kaffeine
     libreoffice-fresh
     #linux linux-headers linux-lts linux-lts-headers
     meld
-    most
+    # most
     #orage
     pacutils
     rcs
-    sddm
+    # sddm
     simple-scan
     terminator
     unison
@@ -53,10 +53,10 @@ optdepends=(
     "android-tools: Tools for managing Android devices"
     "avidemux-qt: Video editor"
     "clamav: Virus scanner"
-    "code: great IDE"
+    "vscodium: useful IDE"
     "evolution: E-mail client"
-    "kaffeine: great TV watching"
-    "llpp: fast PDF reader"
+    # "kaffeine: great TV watching"
+    # "llpp: fast PDF reader"
     "mpv: good video player"
     "thunderbird: Email client"
     "solaar: Logitech USB device (mouse,keyboard) manager"
