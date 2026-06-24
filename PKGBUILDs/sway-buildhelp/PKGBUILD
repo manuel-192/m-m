@@ -20,6 +20,8 @@ depends=(
     wl-clipboard
     waybar
     xdg-user-dirs
+
+    greetd-tuigreet
 )
 
 package() {
