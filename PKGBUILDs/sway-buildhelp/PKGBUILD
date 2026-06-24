@@ -1,0 +1,34 @@
+#!/bin/bash
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=sway-buildhelp
+pkgdesc="Dependencies for sway"
+url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
+pkgver=0.1
+pkgrel=1
+arch=(any)
+license=(GPL3)
+depends=(
+    libnotify
+    sway
+    rofi
+    power-profiles-daemon
+    wf-recorder
+    slurp
+    grim
+    swappy
+    wl-clipboard
+    waybar
+    xdg-user-dirs
+)
+
+package() {
+    local xx
+    echo "Making sure the following packages are installed:"
+    for xx in "${depends[@]}" ; do
+        echo "    $xx"
+    done
+    echo Done.
+}
+
+
