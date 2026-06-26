@@ -1,0 +1,25 @@
+# bash completion for _native_pkgs_        -*- shell-script -*-
+
+# _native_pkgs_complete() {
+#     readarray -t COMPREPLY < <(compgen -W "$1" -- "$cur")
+#     [[ ${COMPREPLY[0]} == *= ]] && compopt -o nospace
+#     compopt -o nosort
+# }
+
+_native_pkgs_() {
+    local cur #prev words #cword split
+    _init_completion -s || return
+
+    #local pkgs
+    #pkgs="$(pacman -Qq)"
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    # Handle all top-level parameters.
+    #_native_pkgs_complete "${pkgs[*]}"
+
+    readarray -t COMPREPLY < <(compgen -W "$(/bin/pacman -Qq)" -- "$cur")
+    [[ ${COMPREPLY[0]} == *= ]] && compopt -o nospace
+    compopt -o nosort
+}

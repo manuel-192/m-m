@@ -5,7 +5,7 @@
 pkgname=pacman-ext
 pkgdesc="Pacman wrapper with certain useful extra features mainly for update."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.6
+pkgver=26.6.1
 pkgrel=1
 arch=(any)
 license=(GPL)
@@ -66,6 +66,7 @@ source=(
     $url/fetch-aur-stuff.completion
     $url/am
     $url/am.completion
+    $url/completion-native-pkgs
 )
 sha512sums=('d8a79336e37173ad59ea2e18ba8878e3062e06cab04c6a26f78be44ee42cde933a8b043f06e1a2741e3aa01184cc526fb57c90e5ed8ace36e7adece18e7d47bb'
             'e528be8e3dc29a8f83b48bf0ea7438e19dd993d0d49865f423ce79eb1d7fd2685d2d1e292910405363f344aa71f6f0f4a8c134546b027dd87e1e16e65979e118'
@@ -101,16 +102,21 @@ sha512sums=('d8a79336e37173ad59ea2e18ba8878e3062e06cab04c6a26f78be44ee42cde933a8
             'd2ffa2ff5ba459900bcb43fe8a2f0d9ac499f0db691f752a2dd41fff20c38226c5ade259b93c46bae06b6ab4384ba1bbf9eafdd5c99f98d4eb9a14bbf9dfb989'
             '45f8c3d0fc191c5a23699ee0306aaf08fb495a2db30d7d306cd4690d952729c249fd473b40b3ba3724fffc3e3dfd46f4f0b5114c7e12ca783ae89e49bca4c671'
             '9045b2ae505565500ba723cc589f2f937378889e9c6a0dc4cb41739698bd54ddcec2e5cc4551aa2e07f829ad23f8cd33777c3d8f826e145ea390631431f4d57e'
-            '0b7fdd653952931584baebea646d7567324d2d960f15748665012ea4adedc8f59662c1298020b51c051ab2d7aeaa781d6515de764a0c2fab04eb2838601fb38a')
+            '0b7fdd653952931584baebea646d7567324d2d960f15748665012ea4adedc8f59662c1298020b51c051ab2d7aeaa781d6515de764a0c2fab04eb2838601fb38a'
+            '1e96bd68ede30883a8ebef7e703cf7e0f61ac98188fb07496854e7b445b0a2daa9b814d47726f4c65bc121e55aa46067b263c126ca2c8ed5abfb3ba1eb627854')
 
 package() {
     local item src
+    local completiondir="$pkgdir/usr/share/bash-completion/completions"
 
     for src in "${source[@]}" ; do
         item="${src##*/}"
         case "$item" in
+            completion-native-pkgs)
+                install -Dm644 "$item"   "$completiondir/$item"
+                ;;
             *.completion)
-                install -Dm644 "$item"   "$pkgdir/usr/share/bash-completion/completions/$(basename "$item" .completion)"
+                install -Dm644 "$item"   "$completiondir/$(basename "$item" .completion)"
                 ;;
             *.conf)
                 install -Dm644 "$item"   "$pkgdir/etc/$item"
@@ -123,7 +129,7 @@ package() {
                 ;;
             am)
                 install -Dm755 "$item"   "$pkgdir/usr/local/bin/$item"
-                ln -s fetch-aur-stuff    "$pkgdir/usr/share/bash-completion/completions/$item"
+                ln -s fetch-aur-stuff    "$completiondir/$item"
                 ;;
             *)
                 install -Dm755 "$item"   "$pkgdir/usr/bin/$item"
