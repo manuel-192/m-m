@@ -23,3 +23,4 @@ _native_pkgs_() {
     [[ ${COMPREPLY[0]} == *= ]] && compopt -o nospace
     compopt -o nosort
 }
+complete -F _native_pkgs_ arch-changelog
