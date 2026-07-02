@@ -19,6 +19,12 @@ DIEF() {
     WaitToQuit 1
     exit 1
 }
+INFO() {
+    eos-color info 2
+    echo2 "$progname: info (line ${BASH_LINENO[0]}): $1"
+    eos-color reset 2
+    WaitToQuit 1
+}
 
 WaitToQuit() {
     if [ "$WaitToQuit" = "yes" ] ; then
@@ -444,12 +450,11 @@ AssetsConfCheck() {
         [ ${#folder} -gt $len ] && len=${#folder}
     done
     for folder in "${folders[@]}" ; do
-        printf2 "%-*s : " "$len" "$folder"
         pushd "$folder" >/dev/null || DIE "folder '$folder' does not exist."
         if [ -n "$(git diff .)" ] ; then
-            echo2 "Diffs detected"
+            INFO "Diffs detected at $folder"
             ret=1
-            meld
+            meld .
         else
             echo2 "OK"
         fi
