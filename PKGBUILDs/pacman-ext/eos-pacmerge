@@ -2,26 +2,41 @@
 
 # Somewhat similar to eos-pacdiff.
 
+View() {
+    local apps=(kde-open xdg-open exo-open less bat most "nano -vl")
+    for app in "${apps[@]}" ; do
+        if which "${app%% *}" &>/dev/null ; then
+            echo2 "==> $app $*"
+            $app "$@" 2>/dev/null
+            return
+        fi
+    done
+    DIE "viewer not found!"
+}
+
 Main() {
     local progname="${0##*/}"
     local create_backup=yes                                 # Do we create backups of originals or not? For safety reasons, default is yes.
     local quiet=no                                          # Do we show *all* messages? No by default (show errors always).
+    local pacdiff_files=()                                  # Collects changed files here.
+    local log="/var/log/$progname.log"
 
     while [ "$1" ] ; do                                     # Handle possible options.
         case "$1" in
-            -h | --help) Usage 0 ;;
+            -h | --help)  Usage 0 ;;
             -n | --nobak) create_backup=no ;;
             -q | --quiet) quiet=yes ;;                      # Hide messages except errors.
-            -*) DIE "option '$1' not supported" ;;
+            --log-view)   [ -e "$log" ] && View "$log"; exit ;;
+            --log-remove) sudo rm -f "$log"; exit ;;
+            -*)           DIE "option '$1' not supported" ;;
         esac
         shift
     done
 
-    local pacdiff_files="$(/bin/pacdiff --output)"          # find .pac* files
-    
-    if [ "$pacdiff_files" ] ; then
-        Backup
-        DIFFPROG=/bin/meld /bin/pacdiff -s
+    readarray -t pacdiff_files < <(/bin/pacdiff --output)   # find .pac* files
+    if [ "${pacdiff_files[0]}" ] ; then
+        [ "$create_backup" = yes ] && Backup
+        DIFFPROG=/bin/meld /bin/pacdiff --sudo 2>/dev/null
     else
         Info "Nothing to do."
         return 2
@@ -30,31 +45,34 @@ Main() {
 
 Usage() {
     cat <<EOF >&2
-Usage: $progname [options]
-Options:
-    -h, --help         This help.
-    -n, --nobak        Do not backup the originals.
-    -q, --quiet        Show only errors, not other messages.
+Usage:     $progname [options]
+Options:  -h, --help         This help.
+          -n, --nobak        Do not backup the originals.
+          -q, --quiet        Show only errors, not other messages.
+          --log-view         View the log file '$log' if it exists, and exit.
+          --log-remove       Remove the log file if it exists, and exit.
+Log file:  $log
 EOF
-    [ "$1" ] && exit $1
+    [ "$1" ] && exit "$1"
 }
 
 Backup() {
-    if [ $create_backup = yes ] ; then
-        local file
-        local bytes
-        local -r max=25000                                  # config files mostly < 10000 bytes, except e.g. locale.gen
+    local file
+    local bytes
+    local -r max=50000                                  # config files mostly < 10000 bytes, except e.g. locale.gen
+    local date_time
 
-        for file in $pacdiff_files ; do
-            bytes=$(stat -c %s "${file%.*}")
-            if [ $bytes -le $max ] ; then
-                sudo cp ${file%.*} ${file%.*}.bak
-                echo "==> writing ${file%.*}.bak"
-            else
-                Info "did not backup file ${file%.*} because size > $max bytes"
-            fi
-        done
-    fi
+    [ "${pacdiff_files[0]}" ] && date_time="$(date "+%Y%m%d-%H%M")"
+
+    for file in "${pacdiff_files[@]}" ; do
+        bytes=$(stat -c %s "${file%.*}")
+        if [ "$bytes" -le "$max" ] ; then
+            sudo cp "${file%.*}" "${file%.*}.bak"
+            Log "writing ${file%.*}.bak"
+        else
+            Log "warning: did not backup file ${file%.*} because its size > $max bytes!"
+        fi
+    done
 }
 
 EosColor() { eos-color "$1" 2; }
@@ -72,10 +90,9 @@ MSG() {
     [ "$color_reset" = yes ] && EosColor reset
     [ "$exitcode" ] && exit "$exitcode"
 }
-DIE()  { MSG "error" "1" "$@"; }
-Info() { [ "$quiet" = no ] && MSG "info" "" "$@"; }
-
-# DIE()  { echo "==> $progname: error: $1" >&2; exit 1; }
-# Info() { [ $quiet = no ] && echo "==> $progname: info: $1"  >&2; }
+DIE()     { MSG "error"   "1" "$@"; }
+Warning() { MSG "warning" ""  "$@"; }
+Info()    { [ "$quiet" = no ] && MSG "info" "" "$@"; }
+Log()     { echo "$date_time: $1" | sudo tee -a "$log"; }
 
 Main "$@"
