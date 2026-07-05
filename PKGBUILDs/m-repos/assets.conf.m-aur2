@@ -46,8 +46,9 @@ local PKGNAMES=(
     brother-dcp-l2537dw-printer    # Brother multifunction printer drivers (printer)
     brscan4                        # Brother multifunction printer drivers (scanner)
     notify-send.sh/aur
+    # openbox-arc-git/aur
     pacseek/aur
-    upd72020x-fw/aur
+    # upd72020x-fw/aur
     w_scan2/aur
     yad-git/aur
 

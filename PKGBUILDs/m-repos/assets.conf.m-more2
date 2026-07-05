@@ -39,6 +39,7 @@ local PKGNAMES=(
     # gnome-hearts
 
     # grimaur-git/aur
+    # librewolf-bin/aur
     minizip-ng-ex
 
     # pacseek-bin/aur
@@ -48,7 +49,7 @@ local PKGNAMES=(
     qogir-icon-theme-git    # is orphaned in AUR
 
     samsung-unified-driver/aur
-    sddm-git/aur
+    # sddm-git/aur
     shellcheck-bin/aur
     # shellcheck-min
 
@@ -58,11 +59,10 @@ local PKGNAMES=(
     # nvidia-470xx-settings/aur    # needs 'gtk2' and 'nvidia-470xx-utils' (in makedepends)
     # nvidia-470xx-utils/aur
 
-    # For GPUs older than Turing:
-    #lib32-nvidia-580xx-utils/aur
-    #nvidia-580xx-utils/aur
-    # and more:
-    #nvidia-580xx-settings/aur
+    # For Nvidia GPUs older than Turing:
+    lib32-nvidia-580xx-utils/aur
+    nvidia-580xx-utils/aur
+    nvidia-580xx-settings/aur
 
     vscodium-bin/aur
 

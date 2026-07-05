@@ -44,7 +44,7 @@ local PKGNAMES=(
     archive-trim
     # archlinux-appstream-data-pamac-fix
     bide
-    burn2dev
+    #burn2dev
     c-runner
     # cd-path
     cd-extended
