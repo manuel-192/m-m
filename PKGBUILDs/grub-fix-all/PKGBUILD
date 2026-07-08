@@ -1,0 +1,26 @@
+# Maintainer: manuel <info@endeavouros.com>
+
+# shellcheck disable=2000-3000
+
+pkgname=grub-fix-all
+pkgdesc="Runs grub-install and grub-mkconfig with parameters based on the EndeavourOS install log under /var/log."
+pkgver=26
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=(grub)
+# optdepends=(grub os-prober lsb-release checkbashisms)
+# conflicts=(grub-tools)
+
+url=https://github.com/endeavouros-team/PKGBUILDS/tree/master/$pkgname
+_url="https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/$pkgname"
+
+source=(
+    $_url/$pkgname
+)
+sha512sums=('4eac2838c4e72194936de32cad42bdd74779a22d604c71f851ad6e2015efa1e4972b833c99a6052e03461190b7ed4849088e9207d27fe57f95da851c3e84be7d')
+
+package() {
+  # cd $srcdir
+  install -Dm755 $pkgname      $pkgdir/usr/bin/$pkgname
+}

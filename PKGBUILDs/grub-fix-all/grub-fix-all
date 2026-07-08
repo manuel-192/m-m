@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Update grub stuff based on the install log.
+
+DIE() {
+    echo "==> $progname: error: $1" >&2
+    exit 1
+}
+
+Command() {
+    cat <<EOF >&2
+
+$progname runs both 'grub-install' and 'grub-mkconfig' with proper parameters
+based on the EndeavourOS install log under the /var/log folder.
+EOF
+    eos-color fail 2
+    cat <<EOF >&2
+
+NOTE: if you have changed your system partitions and/or their paths, this command *may* fail
+to create correct results, so be sure to check your system has no such modifications.
+
+EOF
+    eos-color reset 2
+
+    local command
+    eos-color info 2
+    echo "==> Commands to run (please check!):"
+    printf "     %s\n" "$@"
+    echo "" >&2
+    eos-color reset 2
+
+    while true ; do
+        read -rp "Continue (Y/n)? " >&2
+        case "$REPLY" in
+            "" | [yY]*)
+                for command in "$@" ; do
+                    sudo bash -c "$command" || DIE "FAIL: $command"
+                done
+                return 0
+                ;;
+            [nN]*)
+                return 0
+                ;;
+        esac
+    done
+}
+
+Main() {
+    local -r progname=${0##*/}
+    [ -d /boot/efi/EFI ] || DIE "sorry, /boot/efi/EFI not found"
+    [ -e /boot/grub/grub.cfg ] || DIE "file '/boot/grub/grub.cfg' does not exist"
+    local install_log command commands=()
+    for install_log in endeavour-install.log Calamares.log ; do
+        if [ -e /var/log/$install_log ] ; then
+            pacman -Qq grub &>/dev/null || DIE "package 'grub' is not installed, you are not using grub?"
+            install_log=/var/log/$install_log
+            command=$(sudo grep -w "grub-install" $install_log) || DIE "failed to extract the 'grub-install' command from file $install_log"
+            command=$(echo "$command" | sed -e 's|^.*(||' -e 's|)||' -e 's|[",]||g' -e 's|--force||' -e 's|[ ]*$||')
+            [ "$command" ] || DIE "the 'grub-install' command not found in $install_log"
+            commands+=("$command")
+            commands+=("grub-mkconfig -o /boot/grub/grub.cfg")
+            Command "${commands[@]}"
+            return 0
+        fi
+    done
+    DIE "cannot find install log under /var/log"
+}
+
+Main "$@"
