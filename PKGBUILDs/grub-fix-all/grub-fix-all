@@ -2,12 +2,11 @@
 
 # Update grub stuff based on the install log.
 
-DIE() {
-    echo "==> $progname: error: $1" >&2
-    exit 1
-}
+echo2() { echo -e "$@" >&2; }
+DIE()   { echo2 "==> $progname: error: $1"; exit 1; }
+WARN()  { echo2 "==> $progname: warning: $1"; }
 
-Command() {
+Execute() {
     cat <<EOF >&2
 
 $progname runs both 'grub-install' and 'grub-mkconfig' with proper parameters
@@ -24,9 +23,9 @@ EOF
 
     local command
     eos-color info 2
-    echo "==> Commands to run (please check!):"
-    printf "     %s\n" "$@"
-    echo "" >&2
+    echo2 "==> Commands to run (please check!):"
+    printf "     %s\n" "$@" >&2
+    echo2 ""
     eos-color reset 2
 
     while true ; do
@@ -34,12 +33,13 @@ EOF
         case "$REPLY" in
             "" | [yY]*)
                 for command in "$@" ; do
-                    sudo bash -c "$command" || DIE "FAIL: $command"
+                    eos-color info 2; echo2 "\n==> $command"; eos-color reset 2
+                    $command || DIE "FAIL: $command"
                 done
                 return 0
                 ;;
             [nN]*)
-                return 0
+                return 1
                 ;;
         esac
     done
@@ -47,23 +47,37 @@ EOF
 
 Main() {
     local -r progname=${0##*/}
-    [ -d /boot/efi/EFI ] || DIE "sorry, /boot/efi/EFI not found"
-    [ -e /boot/grub/grub.cfg ] || DIE "file '/boot/grub/grub.cfg' does not exist"
-    local install_log command commands=()
+    local install_log
+    local command commands=()
+
     for install_log in endeavour-install.log Calamares.log ; do
-        if [ -e /var/log/$install_log ] ; then
-            pacman -Qq grub &>/dev/null || DIE "package 'grub' is not installed, you are not using grub?"
-            install_log=/var/log/$install_log
+        install_log=/var/log/$install_log
+        if [ -e $install_log ] ; then
+            [ -d /boot/efi/EFI ]        || DIE "folder '/boot/efi/EFI' does not exist"
+            pacman -Qq grub &>/dev/null || DIE "package 'grub' is not installed so you are not using grub."
+            [ -e /boot/grub/grub.cfg ]  || DIE "file '/boot/grub/grub.cfg' does not exist"
+
+            # Find the grub-install command.
             command=$(sudo grep -w "grub-install" $install_log) || DIE "failed to extract the 'grub-install' command from file $install_log"
+            # Extract the grub-install command with parametrs.
             command=$(echo "$command" | sed -e 's|^.*(||' -e 's|)||' -e 's|[",]||g' -e 's|--force||' -e 's|[ ]*$||')
-            [ "$command" ] || DIE "the 'grub-install' command not found in $install_log"
-            commands+=("$command")
-            commands+=("grub-mkconfig -o /boot/grub/grub.cfg")
-            Command "${commands[@]}"
+            case "$command" in
+                *grub-install*) ;;
+                *) DIE "the 'grub-install' command not found in $install_log" ;;
+            esac
+            commands+=("sudo $command")
+            commands+=("sudo grub-mkconfig -o /boot/grub/grub.cfg")
+            if Execute "${commands[@]}" ; then
+                eos-color info 2
+                echo2 "\n==> Reboot to see the re-created GRUB menu.\n"
+                eos-color reset 2
+            else
+                DIE "commands not executed."
+            fi
             return 0
         fi
     done
-    DIE "cannot find install log under /var/log"
+    DIE "cannot find EndeavourOS install log under /var/log"
 }
 
 Main "$@"

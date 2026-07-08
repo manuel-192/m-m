@@ -1,10 +1,10 @@
 # Maintainer: manuel <info@endeavouros.com>
 
-# shellcheck disable=2000-3000
+# shellcheck disable=2034,2154   # unused variable, unassigned variable used
 
 pkgname=grub-fix-all
 pkgdesc="Runs grub-install and grub-mkconfig with parameters based on the EndeavourOS install log under /var/log."
-pkgver=26
+pkgver=26.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -16,11 +16,10 @@ url=https://github.com/endeavouros-team/PKGBUILDS/tree/master/$pkgname
 _url="https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/$pkgname"
 
 source=(
-    $_url/$pkgname
+    "$_url/$pkgname"
 )
-sha512sums=('4eac2838c4e72194936de32cad42bdd74779a22d604c71f851ad6e2015efa1e4972b833c99a6052e03461190b7ed4849088e9207d27fe57f95da851c3e84be7d')
+sha512sums=('cc81b8e732f4512e8bc50ae19a6c8e9c79d783b019ce92f8bec6177c1c0273db50c4394f221f5143a1ea8f9c736fa7291e5cfaa14ebfd7d5d53a38513c57de80')
 
 package() {
-  # cd $srcdir
-  install -Dm755 $pkgname      $pkgdir/usr/bin/$pkgname
+  install -Dm755 "$pkgname"      "$pkgdir/usr/bin/$pkgname"
 }
