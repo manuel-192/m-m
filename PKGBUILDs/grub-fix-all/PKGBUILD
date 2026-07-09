@@ -18,7 +18,7 @@ _url="https://raw.githubusercontent.com/endeavouros-team/PKGBUILDS/master/$pkgna
 source=(
     "$_url/$pkgname"
 )
-sha512sums=('cc81b8e732f4512e8bc50ae19a6c8e9c79d783b019ce92f8bec6177c1c0273db50c4394f221f5143a1ea8f9c736fa7291e5cfaa14ebfd7d5d53a38513c57de80')
+sha512sums=('8752d801dcd834d5d87eeeaa13218dc790fb0e6954e7b6b47a05db1827f4b4af55e7c19c7f6cf90ed3741e2a7860d0ee5d95f8bb9158ce9c509dff0b15dc3bea')
 
 package() {
   install -Dm755 "$pkgname"      "$pkgdir/usr/bin/$pkgname"

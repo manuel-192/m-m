@@ -65,8 +65,10 @@ Main() {
                 *grub-install*) ;;
                 *) DIE "the 'grub-install' command not found in $install_log" ;;
             esac
+
             commands+=("sudo $command")
             commands+=("sudo grub-mkconfig -o /boot/grub/grub.cfg")
+
             if Execute "${commands[@]}" ; then
                 eos-color info 2
                 echo2 "\n==> Reboot to see the re-created GRUB menu.\n"
