@@ -1970,21 +1970,23 @@ EOF
         local def
         if which "$app" &>/dev/null ; then
             def="$app() { Func_with_setsid \"\$@\" ; }"
+            ok+=(" +> $def")
             # shellcheck disable=2086
             eval $def
         else
-            ECHO2 "==> $_PROGNAME_: ${FUNCNAME[0]}: app '$app' not found"
+            fail+=(" -> $_PROGNAME_: ${FUNCNAME[0]}: app '$app' not found")
         fi
     }
     Funcize() {
-        # ECHO2 "===> $FUNCNAME: debug: BASH_SOURCE = ${BASH_SOURCE[*]}"
-        # ECHO2 "===> $FUNCNAME: debug: \$0 = $0"
+        local ok=() fail=()
         local _PROGNAME_=${BASH_SOURCE[0]}
         local Apps2Funcs=()
         source /etc/apps2func.conf              # fill Apps2Funcs array
         for app in "${Apps2Funcs[@]}" ; do
             Funcize1 "$app"
         done
+        printf "%s\n" "${ok[@]}"
+        printf "%s\n" "${fail[@]}"
     }
     Funcize
     
