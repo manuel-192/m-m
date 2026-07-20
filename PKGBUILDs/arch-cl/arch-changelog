@@ -23,7 +23,7 @@ Notes:
          - Currently only a small number of Arch packages is supported. We are working on it.
          - Bash completion does not display all supported packages.
 EOF
-    [ "$1" ] && exit $1
+    [ "$1" ] && exit "$1"
 }
 
 DumpPkgnames() {
@@ -33,6 +33,7 @@ DumpPkgnames() {
 DumpOptions() {
     local sopts2=${sopts//:/}
     local lopts2=${lopts//:/}
+    # shellcheck disable=2086
     printf "%s\n" ${sopts2//?/-& }--${lopts2//,/ --}
 }
 DetectClFile() {
@@ -40,6 +41,7 @@ DetectClFile() {
     clfile="$clfile_def"
     if [ -e "$clfile" ] ; then
         [ "$mode" = verbose ] && INFO "reading $clfile..."
+        # shellcheck disable=1090
         source "$clfile" || DIE "reading $clfile failed"
     else
         case "$REPONAME" in
@@ -62,6 +64,7 @@ Parameters() {
             --clfile | -c)
                 clfile="$2"
                 shift
+                # shellcheck disable=1090
                 source "$clfile" || DIE "reading $clfile failed"      # get new PKG_CHANGELOGS and REPONAME
                 ;;
             --detect-clfile | -d)
@@ -73,7 +76,7 @@ Parameters() {
                 DumpPkgnames
                 exit 0
                 ;;
-            --github | --gitlab) preferred_site=${1:2} ;;
+            --github | --gitlab) ;;  # preferred_site=${1:2} ;;
             --url | -u)          return_url=yes ;;
             --quiet)             quiet=yes ;;
             --help | -h)         Usage 0 ;;
@@ -87,22 +90,27 @@ Parameters() {
 
 GetUrl() {
     local pkgname="$1"
-    local url=$(expac -Q %u "$pkgname")
-    [ "$url" ] || url=$(expac -S %u "$pkgname")
-    echo "$url"
+    local url
+
+    pkgname="$(pacman -Qq "$pkgname")"      # e.g. emacs -> emacs-wayland
+    if [ "$pkgname" ] ; then
+        url=$(expac -Q %u "$pkgname")
+        [ "$url" ] || url=$(expac -S %u "$pkgname")
+        echo "$url"
+    fi
 }
 
 HandlePkgbuildUrl() {
     local -r pkgname="$1"
     local -n _clurl="$2"
-    local -r PKGBUILD_URL=$(GetUrl $pkgname)
+    local -r PKGBUILD_URL=$(GetUrl "$pkgname")
     local url=""
 
     case "$PKGBUILD_URL" in
         https://gitlab.archlinux.org/*)
             url="https://gitlab.archlinux.org/archlinux/packaging/packages/$pkgname/commits" ;;
         https://*.gnu.org/*)
-            url="https://git.savannah.gnu.org/cgit/$pkgname.git/log" ;;
+            url="https://cgit.git.savannah.gnu.org/cgit/$pkgname.git/log/?showmsg=1" ;;
         https://*.nongnu.org/*)
             url="https://git.savannah.nongnu.org/cgit/$pkgname.git/log" ;;
         https://gitlab.com/kernel-firmware/linux-firmware)
@@ -117,9 +125,9 @@ HandlePkgbuildUrl() {
 
 Changelog() {
     local -r progname=${0##*/}
-    local -r progpath=${0}
+    # local -r progpath=${0}
+    # local preferred_site=gitlab                 # github or gitlab
     local pkgnames=()
-    local preferred_site=gitlab                 # github or gitlab
     local clfile=""                             # for option -c; if given, the file contains PKG_CHANGELOGS and REPONAME
     local -r clfile_def="./changelogs.conf"     # for option -d
     local REPONAME=""
@@ -137,8 +145,9 @@ Changelog() {
         curl --fail -Lsm 30 -o"$changelogfile" "$clfile_url" || DIE "failed fetching $changelogfile"
     fi
 
+    # shellcheck disable=1090
     source "$changelogfile" || DIE "no changelog file in $changelogfile"
-    [ "$PKG_CHANGELOGS[*]" ] || DIE "no changelog definitions in $changelogfile"
+    [ "${PKG_CHANGELOGS[*]}" ] || DIE "no changelog definitions in $changelogfile"
 
     Parameters "$@"
 
@@ -146,7 +155,7 @@ Changelog() {
 }
 
 HandlePkgnames() {
-    [ "$pkgnames" ] || DIE "please give package-name(s), for example: $progname glances"
+    [ "${pkgnames[0]}" ] || DIE "please give package-name(s), for example: $progname glances"
     local pkgname
     local changelog_url=""
     local urls_line=""
@@ -167,13 +176,13 @@ HandlePkgnames() {
         if [ $return_url = yes ] ; then
             [ "$urls_line" ] && urls_line+="|$changelog_url" || urls_line="$changelog_url"
         else
-            readarray -t tmp <<< $(echo "${changelog_url//|/$'\n'}")
+            readarray -t tmp < <(echo "${changelog_url//|/$'\n'}")
             URLS+=("${tmp[@]}")
         fi
     done
     if [ "$urls_line" ] ; then
         echo "$urls_line"            # show the URL(s) separated by '|'
-    elif [ "$URLS" ] ; then
+    elif [ "${URLS[0]}" ] ; then
         OPEN_URLS "${URLS[@]}"       # open the URL(s)
     fi
 }
