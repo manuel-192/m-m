@@ -1,0 +1,49 @@
+#!/bin/bash
+
+DIE() {
+    echo -e "==> $progname: error: $1" >&2
+    exit 1
+}
+
+AppExists() { which "$1" &>/dev/null ; }
+
+Main() {
+    # Open given file(s) or url(s).
+    # Other parameters not recognized.
+    # Implementation uses one of: exo-open, xdg-open, kde-open.
+    local progname=${0##*/}
+    local item
+    local app
+
+    # check parameters:
+
+    for item in "$@" ; do
+        case "$item" in
+            -*) DIE "option '$item' not supported" ;;
+            *)  case "$item" in
+                    http*://*) ;;
+                    *) [ -f "$item" ] || DIE "cannot open '$item'" ;;
+                esac
+                ;;
+        esac
+    done
+
+    # show files with exo-open, xdg-open, or kde-open:
+
+    if AppExists exo-open ; then
+        echo "==> exo-open" "$@" >&2
+        exo-open "$@" &>/dev/null
+    else
+        # try xdg-open or kde-open
+        app=xdg-open
+        AppExists $app || app=kde-open
+        AppExists $app || DIE "no proper app found"
+        for item in "$@" ; do
+            echo "==> $item" "$@" >&2
+            $app "$item" &>/dev/null
+            sleep 0.5
+        done
+    fi
+}
+
+Main "$@"
