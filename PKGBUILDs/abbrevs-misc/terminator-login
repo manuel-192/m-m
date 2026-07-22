@@ -1,0 +1,6 @@
+#!/bin/bash
+
+case "$XDG_CURRENT_DESKTOP" in
+    KDE) ;;
+    *)   /bin/terminator --geometry=1500x600 "$@" ;;
+esac
