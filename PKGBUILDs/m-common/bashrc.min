@@ -1969,12 +1969,13 @@ EOF
         local app="$1"
         local def
         if which "$app" &>/dev/null ; then
-            def="$app() { Func_with_setsid \"\$@\" ; }"
+            def="$app()$sep{ Func_with_setsid \"\$@\" ; }"
             ok+=(" +> $def")
+            def="${def/$sep/ }"
             # shellcheck disable=2086
             eval $def
         else
-            fail+=(" -> $_PROGNAME_: ${FUNCNAME[0]}: app '$app' not found")
+            fail+=(" -> $_PROGNAME_: ${FUNCNAME[0]}: app '$app'${sep}not found")
         fi
     }
     Funcize() {
@@ -1982,11 +1983,12 @@ EOF
         local _PROGNAME_=${BASH_SOURCE[0]}
         local Apps2Funcs=()
         source /etc/apps2func.conf              # fill Apps2Funcs array
+        local -r sep="§"                        # separator for 'column' output
         for app in "${Apps2Funcs[@]}" ; do
-            Funcize1 "$app"
+            Funcize1 "${app/$sep/ }"
         done
-        printf "%s\n" "${ok[@]}"
-        printf "%s\n" "${fail[@]}"
+        printf "%s\n" "${ok[@]}"   | sort | column -t -s"$sep" >&2
+        printf "%s\n" "${fail[@]}" | sort | column -t -s"$sep" >&2
     }
     Funcize
     
