@@ -67,6 +67,7 @@ local PKGNAMES=(
     glone
     gpg-stuff
     great-mirrors
+    grub-fix-all
     grub-mkconfig-reminder-after-kernel
     grub_os-prober_fix
     grub-tweaks

@@ -34,47 +34,32 @@ local PKGNAMES=(
     # Supported markings:
     #    pkgname          local package
     #    ./pkgname        (same as above)
-    #    pkgname/aur      AUR package
+    #    aur/pkgname      AUR package
+    #    pkgname/aur      AUR package         # deprecated!
 
-    # gnome-hearts
-
-    # grimaur-git/aur
-    # librewolf-bin/aur
     minizip-ng-ex
-
-    # pacseek-bin/aur
-    pandoc-bin/aur
-
-    qogir-icon-theme/aur
     qogir-icon-theme-git    # is orphaned in AUR
 
-    samsung-unified-driver/aur
-    # sddm-git/aur
-    shellcheck-bin/aur
-    # shellcheck-min
-
-    # penguins-eggs/aur
-
-    # lib32-nvidia-470xx-utils/aur
-    # nvidia-470xx-settings/aur    # needs 'gtk2' and 'nvidia-470xx-utils' (in makedepends)
-    # nvidia-470xx-utils/aur
-
     # For Nvidia GPUs older than Turing:
-    lib32-nvidia-580xx-utils/aur
-    nvidia-580xx-utils/aur
-    nvidia-580xx-settings/aur
+    aur/lib32-nvidia-580xx-utils
+    aur/nvidia-580xx-settings
+    aur/nvidia-580xx-utils
 
-    vscodium-bin/aur
+    aur/pandoc-bin
+    aur/qogir-icon-theme
+    aur/samsung-unified-driver
+    aur/shellcheck-bin
+    aur/vscodium-bin
 
     # pamac stuff
     # archlinux-appstream-data-pamac/aur    # 1st to build and install      # moved to local-repo because of epoch/github issue
-    # libpamac-aur/aur                      # 2nd to build and install
-    # pamac-aur/aur                         # 3rd to build and install
+    # aur/libpamac-aur                      # 2nd to build and install
+    # aur/pamac-aur                         # 3rd to build and install
 )
 
 if false ; then                             # true when debugging
     PKGNAMES=(
-        sddm-git/aur
+        aur/sddm-git
     )
 fi
 

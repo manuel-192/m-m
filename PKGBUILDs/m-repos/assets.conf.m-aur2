@@ -45,19 +45,19 @@ local PKGNAMES=(
 
     brother-dcp-l2537dw-printer    # Brother multifunction printer drivers (printer)
     brscan4                        # Brother multifunction printer drivers (scanner)
-    notify-send.sh/aur
-    # openbox-arc-git/aur
-    pacseek/aur
-    # upd72020x-fw/aur
-    w_scan2/aur
-    yad-git/aur
+    aur/notify-send.sh
+    # aur/openbox-arc-git
+    aur/pacseek
+    # aur/upd72020x-fw
+    aur/w_scan2
+    aur/yad-git
 
     # aurutils/aur
     # menulibre-git/aur      # not working currently?
     # pacman-static/aur      # download from https://pkgbuild.com/~morganamilo/pacman-static/x86_64/bin/pacman-static
     # upp/aur
 )
-# PKGNAMES=(upd72020x-fw/aur)
+# PKGNAMES=(aur/upd72020x-fw)
 
 PKGNAMES_WAIT=(
     # 'yad-git/aur|v14.2.r*'  # skip this version series
