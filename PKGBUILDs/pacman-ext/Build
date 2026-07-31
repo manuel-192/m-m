@@ -115,6 +115,7 @@ Build() {
 
     # user file './.destructor' can do post-build stuff, e.g. cleanup
     [ -x ./.destructor ] && Cmd ./.destructor
+    true
 }
 
 Build "$@"
