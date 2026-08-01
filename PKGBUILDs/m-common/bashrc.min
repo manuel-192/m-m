@@ -1027,6 +1027,32 @@ EOF
     my_prompt_command() {
         # Show one or two line prompt (folder, time) after trying to slightly shorten the folder name.
 
+        my_prompt_command_prev_cmd_status=$?    # cannot have local variable here...
+        local prev_cmd_status=$my_prompt_command_prev_cmd_status
+        local status_mark=""
+
+        case "$PROMPT_SHOW_COMMAND_STATUS" in
+            yes)
+                case "$PROMPT_SHOW_COMMAND_STATUS_WITH_COLORS" in
+                    no)
+                        if [ $prev_cmd_status -eq 0 ] ; then
+                            status_mark="[✓] "
+                        else
+                            status_mark="[✗] "
+                        fi
+                        ;;
+                    yes)
+                        source /etc/eos-color.conf
+                        if [ $prev_cmd_status -eq 0 ] ; then
+                            status_mark="${COLORS[ok]}[✓]${COLORS[reset]} "
+                        else
+                            status_mark="${COLORS[error]}[✗]${COLORS[reset]} "
+                        fi
+                        ;;
+                esac
+                ;;
+        esac
+
         if [ "$HERE_ARROW" ] ; then
             local -r rarrow=']'
             local -r larrow='['
@@ -1053,9 +1079,9 @@ EOF
         # pwd="$larrow${GREEN}${PWD/$HOME/\~}${RESET}$rarrow"    # do color codes cause prompt issues??? YES!
 
         if [ ${#pwd} -gt $((COLUMNS / 2)) ] ; then
-            printf -v PS1 "%s\n%s %s "  "$pwd" "$time" "$here"   # two line prompt
+            printf -v PS1 "%s%s\n%s %s "  "$status_mark" "$pwd" "$time"  "$here"   # two line prompt
         else
-            printf -v PS1 "%11s %s %s " "$time" "$pwd" "$here"   # one line prompt
+            printf -v PS1 "%s%11s %s %s " "$status_mark" "$time" "$pwd"  "$here"   # one line prompt
         fi
     }
 
