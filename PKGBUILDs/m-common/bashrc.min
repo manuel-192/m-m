@@ -1559,9 +1559,9 @@ EOF
     }
 
     EOS_UPDATE() {
-        if ! grep "^IgnorePkg[ ]*=[ ]*.*glances.*" /etc/pacman.conf >/dev/null ; then
-            [ -x /bin/eos-manual-intervention ] && eos-manual-intervention
-        fi
+        # if ! grep "^IgnorePkg[ ]*=[ ]*.*glances.*" /etc/pacman.conf >/dev/null ; then
+        #     [ -x /bin/eos-manual-intervention ] && eos-manual-intervention
+        # fi
         # [ "$MY_CACHE_LIMIT" ] || MY_CACHE_LIMIT=2
         # local opts=(--pacdiff --nvidia --descriptions --cache-limit="$MY_CACHE_LIMIT"
         #             --other-updates --faillock-check --keep-system-running
