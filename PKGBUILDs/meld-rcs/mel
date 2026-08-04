@@ -22,7 +22,7 @@ Purpose: Extend 'meld' to make comparison(s) with either 'meld' or 'rcsdiff' par
 Usage:   $progname [verbosity-options] [tool-options] [vcs-options] [parameters]
 
 Verbosity options:
-        -l, --loud         Show all mesages. Default.
+        -l, --loud         Show all messages. Default.
         -q, --quiet        Show less messages.
         -d, --deaf         Show no messages.
 Tool options:
@@ -35,6 +35,7 @@ Parameters (meld extension):
         file folder        Show 'meld' comparison between given 'file' with
                            the same file in the given 'folder'.
         folder file        -"-
+        folder folder      Show 'meld' comparison between two folders.
 Parameters (other cases):
         Any 'meld' or 'rcsdiff' parameters.
 
@@ -44,30 +45,60 @@ EOF
 Meld() {
     local cmd=()
     local verbosity=loud
-    case "$1" in
-        -l | --loud)      shift; verbosity=loud ;;
-        -q | --quiet)     shift; verbosity=quiet ;;
-        -d | --deaf)      shift; verbosity=deaf ;;
-        -h | --help)      Help; meld $1; return ;;
-    esac
-    local count=${#@}
+    local compare=""
 
-    if [ $count -eq 2 ] && [ -d "$1" ] && [ -f "$2" ] ; then
-        # meld: handle 2 parameters: folder and file.
-        cmd=(MELD "${1%/}/${2##*/}" "$2")
-        Message "==> meld: folder & file comparison detected"
-    elif [ $count -eq 2 ] && [ -f "$1" ] && [ -d "$2" ] ; then
-        # meld: handle 2 parameters: file and folder,
-        cmd=(MELD "$1" "${2%/}/${1##*/}")
-        Message "==> meld: file & folder comparison detected"
-    else
-        # Other parameter set, use either 'meld with git' or 'meld with rcsdiff'
+    while [ "$1" ] ; do
         case "$1" in
-            -G) shift
+            -l | --loud)      verbosity=loud ;;
+            -q | --quiet)     verbosity=quiet ;;
+            -d | --deaf)      verbosity=deaf ;;
+
+            -G)               compare=git ;;
+            -R)               compare=rcs ;;
+
+            -h | --help)      {
+                                  Help
+                                  case "$compare" in
+                                      git) /bin/meld --help ;;
+                                      rcs) /bin/rcsdiff --help ;;
+                                      *) /bin/meld --help ; /bin/rcsdiff --help ;;
+                                  esac
+                              } | less
+                              exit
+                              ;;
+            *)                break ;;
+        esac
+        shift
+    done
+    local count=${#@}
+    local done=no
+
+    if [ "$count" -eq 2 ] ; then
+        if [ -d "$1" ] && [ -f "$2" ] ; then
+            # meld: handle 2 parameters: folder and file.
+            cmd=(MELD "${1%/}/${2##*/}" "$2")
+            Message "==> meld: folder & file comparison detected"
+            done=yes
+        elif [ -f "$1" ] && [ -d "$2" ] ; then
+            # meld: handle 2 parameters: file and folder.
+            cmd=(MELD "$1" "${2%/}/${1##*/}")
+            Message "==> meld: file & folder comparison detected"
+            done=yes
+        elif [ -e "$1" ] && [ -e "$2" ] ; then
+            # meld: handle 2 parameters: either files or folders.
+            cmd=(MELD "$1" "$2")
+            Message "==> meld: 2 file or folder comparison detected"
+            done=yes
+        fi
+    fi
+    if [ "$done" = no ] ; then
+        # Other parameter set, use either 'meld with git' or 'meld with rcsdiff'
+        case "$compare" in
+            git) shift
                 cmd=(meldgit "$@")
                 Message "==> 'meld with git' selected"
                 ;;
-            -R) shift
+            rcs) shift
                 cmd=(meldrcs "$@")
                 Message "==> 'meld with rcsdiff' selected"
                 ;;
@@ -77,6 +108,9 @@ Meld() {
                 elif InGitTree ; then
                     cmd=(meldgit "$@")
                     Message "==> 'meld with git' detected"
+                else
+                    Message "==> cannot detect the needed comparison!"
+                    exit 1
                 fi
                 ;;
         esac
