@@ -23,7 +23,7 @@ local ARCHIVE_TAG=archive
 
 if true ; then
     # new way with absolute paths:
-    source /etc/${PROGNAME}-extra.conf
+    source "/etc/${PROGNAME}-extra.conf"
     # ASSETSDIR="$EOS_ROOT/_BUILD_/$REPONAME"
     PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"
     GITDIR="$EOS_ROOT/$REPONAME"
@@ -70,16 +70,19 @@ if true ; then
 fi
 
 declare -A PKG_MAKEPKG_OPTIONS=(
-    nvidia-470xx-settings "--nodeps"
-    sddm-git "--cleanbuild"
+    # nvidia-470xx-settings    "--nodeps"
+    [nvidia-580xx-settings]="--nodeps"
+    [lib32-nvidia-580xx-utils]="--nodeps"
+    [nvidia-580xx-utils]="--nodeps"
+    [sddm-git]="--cleanbuild"
 )
 
 
 _Updpkgsums() {
     local Pkgbuild="$1"
-    pushd "$(dirname "$Pkgbuild")" >/dev/null
+    pushd "${Pkgbuild%/*}" >/dev/null || return 1    # pushd "$(dirname "$Pkgbuild")" >/dev/null
     updpkgsums 2>/dev/null
-    popd >/dev/null
+    popd >/dev/null || return 1
 }
 
 _is_this_pkgname_included() {
@@ -104,8 +107,8 @@ __generic_fix_https() {
         echo "${FUNCNAME[0]}: no pkgname!" >&2
         return 1
     fi
-    _is_this_pkgname_included $Pkgname && {
-        sed -i "$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD \
+    _is_this_pkgname_included "$Pkgname" && {
+        sed -i "$PKGBUILD_ROOTDIR/$Pkgname/PKGBUILD" \
             -e 's|http://|https://|'
     }
 }
@@ -121,11 +124,11 @@ _pkgver_to_github_latest_tag_release() {
     # A changed pkgver *should* fail the build.
 
     local page="$1"
-    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname ${FUNCNAME[1]})"/PKGBUILD
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname "${FUNCNAME[1]}")"/PKGBUILD
     local old_pkgver=$(_Get_item_value "$PKGBUILD" pkgver)
     local new_pkgver=$(curl -Lsm 20 -o- "$page" | grep pandoc/releases/tag/ | head -n1 | sed -e 's|.*/releases/tag/\([^\"]*\).*|\1|' -e 's|^[^0-9]*||')
 
-    if [ $(vercmp "$new_pkgver" "$old_pkgver") -gt 0 ] ; then
+    if [ "$(vercmp "$new_pkgver" "$old_pkgver")" -gt 0 ] ; then
         # printf "==> auto-updating PKGBUILD, " >&2
         # printf "# " >&2
         sed -i "$PKGBUILD" \
@@ -143,7 +146,7 @@ _pandoc-bin_hook() {
 }
 
 _qogir-icon-theme_hook() {
-    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname $FUNCNAME)"/PKGBUILD
+    local PKGBUILD="$PKGBUILD_ROOTDIR"/"$(__generic_get_pkgname "${FUNCNAME[0]}")"/PKGBUILD
     sed -i "$PKGBUILD" -E \
         -e 's|(\./install\.sh.*)|\1 --theme default|' \
         -e 's|^(pkgrel=.*)|\1.1|' \
@@ -154,9 +157,9 @@ _qogir-icon-theme_hook() {
 }
 
 _vivaldi-widevine_now_hook() {
-    pushd "$PKGBUILD_ROOTDIR"/vivaldi-widevine-now >/dev/null
+    pushd "$PKGBUILD_ROOTDIR"/vivaldi-widevine-now >/dev/null || return 1
     ./fix-pkgbuild
-    popd >/dev/null
+    popd >/dev/null || return 1
 }
 
 _vivaldi-widevine-now_epoch_hook() {
@@ -169,20 +172,20 @@ _vivaldi-widevine-now_epoch_hook() {
 }
 
 _plasma-meta-m_hook() {
-    local Pkgname="$(__generic_get_pkgname $FUNCNAME)"
+    local Pkgname="$(__generic_get_pkgname "${FUNCNAME[0]}")"
     local Pkgbuild="$PKGBUILD_ROOTDIR"/$Pkgname/PKGBUILD
-    local pkgver=$(grep ^pkgver= $Pkgbuild | cut -d '=' -f 2)
-    local pkgrel=$(grep ^pkgrel= $Pkgbuild | cut -d '=' -f 2)
+    local pkgver=$(grep ^pkgver= "$Pkgbuild" | cut -d '=' -f 2)
+    local pkgrel=$(grep ^pkgrel= "$Pkgbuild" | cut -d '=' -f 2)
 
     local reftool=plasma-meta
     local tmpdir=$(mktemp -d)
     local Pkgver Pkgrel
     local has_new=no
 
-    pushd $tmpdir >/dev/null
+    pushd "$tmpdir" >/dev/null || return 1
     yay -G $reftool >/dev/null || {
         echo "$Pkgname: error: yay failed" >&2
-        popd >/dev/null
+        popd >/dev/null || return 1
         return 1
     }
     Pkgver=$(grep ^pkgver= $reftool/PKGBUILD | cut -d '=' -f 2)
@@ -192,10 +195,10 @@ _plasma-meta-m_hook() {
     if [ "$Pkgver" != "$pkgver" ] || [ "$Pkgrel" != "$pkgrel" ] ; then
         has_new=yes
     fi
-    popd >/dev/null
-    rm -rf $tmpdir
+    popd >/dev/null || return 1
+    rm -rf "$tmpdir"
     if [ "$has_new" = "yes" ] ; then
-        printf "warning: $Refpkgname ${Pkgver}-$Pkgrel is available. " >&2
+        echo -n "warning: $Refpkgname ${Pkgver}-$Pkgrel is available. " >&2
         return 1
     fi
 }
@@ -231,23 +234,23 @@ _pkgbuilds_m_hook_old()
     }
     rm -rf "$PKGBUILD_ROOTDIR"
     mkdir -p "$PKGBUILD_ROOTDIR"
-    pushd "$PKGBUILD_ROOTDIR" >/dev/null
+    pushd "$PKGBUILD_ROOTDIR" >/dev/null || return 1
     git clone "$url" >& /dev/null || {
         echo "Error: $conf: git clone $url failed." >&2
-        popd >/dev/null
-        popd >/dev/null
+        popd >/dev/null || :
+        popd >/dev/null || :
         exit 1
     }
     mv "$PKGBUILD_ROOTDIR"/$REPONAME/PKGBUILDs/* "$PKGBUILD_ROOTDIR"/ || {
-        echo "Error: $conf: $FUNCNAME: mv $PKGBUILD_ROOTDIR/PKGBUILDs subdirs failed." >&2
-        popd >/dev/null
-        popd >/dev/null
+        echo "Error: $conf: ${FUNCNAME[0]}: mv $PKGBUILD_ROOTDIR/PKGBUILDs subdirs failed." >&2
+        popd >/dev/null || :
+        popd >/dev/null || :
         exit 1
     }
     rm -rf "$PKGBUILD_ROOTDIR/$REPONAME"
     touch "$PKGBUILD_ROOTDIR"/NOTE-THIS-IS-A-TEMPORARY-FOLDER
-    popd >/dev/null
-    popd >/dev/null
+    popd >/dev/null || :
+    popd >/dev/null || return 1
 }
 
 _ASSERT_() {
@@ -268,7 +271,7 @@ _pkgbuilds_m_hook() {
     else
         _ASSERT_ pushd "$ASSETSDIR"
         _ASSERT_ rmdir "$PKGBUILD_ROOTDIR"            # assets.make created it...
-        _ASSERT_ rm -f ${PKGBUILD_ROOTDIR##*/}        # removed possible symlink
+        _ASSERT_ rm -f "${PKGBUILD_ROOTDIR##*/}"      # removed possible symlink
         printf "git clone... " >&2
         _ASSERT_ git clone "$GITREPOURL" ".$REPONAME"
         _ASSERT_ ln -s ".$REPONAME/${PKGBUILD_ROOTDIR##*/}"
