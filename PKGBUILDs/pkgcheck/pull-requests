@@ -1,111 +1,32 @@
 #!/bin/bash
 
-echo2() { echo -e "$@" >&2; }
-DIE()   { echo2 "$progname: error: $1"; exit 1; }
-
 source /etc/eos-color.conf
 
-Result() {
-    local first="$1"
-    case "$first" in
-        yes) printf "%s\n" "$2" ;;
-        no)  printf "%${space}s+ %s\n" "" "$2" ;;
-    esac
-}
-
-Main3()
-{
-    local url="$1"
-    local file="$2"
-    local pagedata retval
-    local item=$(echo "$url" | sed 's|https://github\.com/||')
-    local -r space="-45"
-    local mode
-
-    case "$url" in
-        */issues) mode=issues ;;
-        */pulls)  mode=pull-requests ;;
-    esac
-
-    pagedata="$(< "$file")"
-    retval=$?
-    [ $retval -ne 0 ] && { echo2 "curl '$url' failed with code $retval"; return; }
-    local issue_numbers="$(echo "$pagedata" | sed 's| href=|\nhref=|g' | grep "$item/" | sed -E "s|.+$item/([0-9]+).+|\1|")"
-    local nr
-
-    printf "%${space}s: " "$item"
-
-    if [ -z "$issue_numbers" ] ; then
-        Result yes "-"
-        return
-    fi
-
-    local first=yes
-    local payload comments
-
-    for nr in $issue_numbers ; do
-        interesting_urls+=("$url/$nr")
-        payload="$(curl -Lsm 20 "$url/$nr" | grep '"payload"')"
-        comments="$(echo "$payload" | sed -E 's|[^{]+(\{.*\}).+|\1|' | jq)"
-        if echo "$comments" | grep userInteractionCount >/dev/null ; then
-            comments="$(echo "$comments" | grep userInteractionCount | awk '{print $NF}')"
-        else
-            comments="$(echo "$comments" | grep "$nr#issuecomment" | wc -l)"
-        fi
-        if true ; then
-            Result $first "${mode:: -1} #$nr: $comments comments"
-        else
-            # currently not working...
-            case "$comments" in
-                "") Result $first "#$nr: no comments yet"    ;;
-                *)  Result $first "#$nr: $comments comments" ;;
-            esac
-        fi
-        first=no
-    done
-}
-
-AtomicCurl() {
-    local pid=$(pgrep curl)
-    [ "$pid" ] && echo ${pid} | pidwait -F -
-    curl "$@"
-}
+echo2() { echo -e "$@" >&2; }
+DIE()   { echo2 "$progname: error: $1"; exit 1; }
 
 MakeDateRedInRecentEntry() {
     # Make the date of a recent entry RED.
     local updated_at_sec
     updated_at_sec=$(date --date="$updated_at" "+%s")
-    if [ $((updated_at_sec + seconds_in_month)) -gt $seconds_now ] ; then
+    if [ $((updated_at_sec + seconds_in_month)) -gt "$seconds_now" ] ; then
         updated_at="${RED}$updated_at${RESET}"
     fi
 }
 
-MsgHandle() {
-    local url="$1"
-    local type
-    local msg
-    declare -A msgs
-    local dir=${url##*/}
-    local out
-    local count ix nl=no kind
-    local updated_at title
+Parse() {
+    local type out count ix kind title
+    local updated_at
+    local before_title=33
+    local -r columns=$(tput cols)
+    local -r splitcolumn=$((columns - before_title))
     local -r seconds_in_month=$((31 * 24 * 3600))
     local -r seconds_now=$(date +%s)
 
-    # Maybe another implementation using:
-    #   gh repo view "user"/"repo"  --json issues,pullRequests --jq .issues,.pullRequests | less
-
-    cd "$dir" >/dev/null
-    msgs[issue]=""
-    msgs[pr]=""
-    # Green
-    # echo "======================================= ${PWD##*/} =========================================" >&2
-    # Reset
-    echo "- ${PWD##*/}"
     for type in issue pr ; do
         out=$(gh $type list --json updatedAt,title)
         count=$(echo "$out" | jq -c .[].updatedAt | wc -l)
-        if [ $count -gt 0 ] ; then
+        if [ "$count" -gt 0 ] ; then
             case "$type" in
                 issue) kind="[Issue]" ;; 
                 pr)    kind="[Pull]" ;;
@@ -114,33 +35,35 @@ MsgHandle() {
                 updated_at="$(echo -n "$out" | jq .[$ix].updatedAt | tr -d '"')"
                 MakeDateRedInRecentEntry
                 title="$(     echo -n "$out" | jq .[$ix].title     | tr -d '"')"
-                printf "    %-7s %s|%s\n" "$kind" "$updated_at" "$title"
+
+                # handle splitting of long lines
+                if [ "${#title}" -gt $splitcolumn ] ; then
+                    printf "    %-7s %s %s\n" "$kind" "$updated_at" "${title::$splitcolumn}"
+                    printf "%*s%s\n" "$before_title" " " "${title:$splitcolumn}"
+                else
+                    printf "    %-7s %s %s\n" "$kind" "$updated_at" "${title}"
+                fi
             done
         fi
-    done | column -t -s'|'
+    done
+}
+
+MsgHandle() {
+    local url="$1"
+    local dir=${url##*/}
+    local nl=no
+
+    # Maybe another implementation using:
+    #   gh repo view "user"/"repo"  --json issues,pullRequests --jq .issues,.pullRequests | less
+
+    cd "$dir" >/dev/null || DIE "'cd $dir' failed"
+    echo "- $dir"
+    Parse
     [ $nl = yes ] && echo ""
 }
 
-Main2_old() {
-    local ix=0
-    local urls=() url
-
-    for url in "$@" ; do
-        urls+=(-o "$targetdir/$((ix++))" "$url/issues")
-        urls+=(-o "$targetdir/$((ix++))" "$url/pulls")
-    done
-
-    AtomicCurl --parallel --fail -Lsm 60 "${urls[@]}"
-
-    ix=0
-    for url in "$@" ; do
-        Main3 "$url/issues" "$targetdir/$((ix++))"
-        Main3 "$url/pulls"  "$targetdir/$((ix++))"
-    done
-}
-
 Main2() {
-    local url msg
+    local url
     for url in "$@" ; do
         MsgHandle "$url"
     done
@@ -150,17 +73,11 @@ Main1() {
     local who="$1"
     shift
 
+    # shellcheck disable=2154
     case "$who" in
-        e)
-            Main2 "${urls_e[@]}" "$@"
-            ;;
-        m)
-            Main2 "${urls_m[@]}" "$@"
-            ;;
-        b)
-            Main1 e "$@"
-            Main1 m "$@"
-            ;;
+        e)  Main2 "${urls_e[@]}" "$@" ;;    # from $configfile
+        m)  Main2 "${urls_m[@]}" "$@" ;;    # from $configfile
+        b)  Main1 e "$@"; Main1 m "$@" ;;
     esac
 }
 
@@ -170,10 +87,12 @@ Main() {
     local interesting_urls=()
     local show_interesting_urls=yes
     local url
-    local br
+    local app=""
     local who=b
+    local -r configfile="$HOME/.config/$progname.conf"
 
-    source ~/.config/$progname.conf
+    # shellcheck disable=1090
+    source "$configfile"
 
     while [ "$1" ] ; do
         case "$1" in
@@ -186,12 +105,9 @@ Options:
     --no-show       Don't show interesting URLs.
 EOF
                 ;;
-            -s | --show)
-                show_interesting_urls=yes ;;
-            --no-show)
-                show_interesting_urls=no ;;
-            -e | -m | -b)
-                who=${1:1} ;;
+            -s | --show)  show_interesting_urls=yes ;;
+            --no-show)    show_interesting_urls=no ;;
+            -e | -m | -b) who=${1:1} ;;                   # -e=endeavouros -m=other -b=both
         esac
         shift
     done
@@ -199,20 +115,29 @@ EOF
     Main1 "$who" "$@"
 
     if [ $show_interesting_urls = yes ] && [ ${#interesting_urls[@]} -gt 0 ] ; then
-        # About browser fallbacks:
-        # - kde-open will open only the first url
-        # - xdg-open fails with 2 or more urls
-        # for br in firefox-developer-edition firefox exo-open kde-open xdg-open
-        for br in exo-open kde-open xdg-open
-        do
-            if [ -x /bin/$br ] ; then
-                # $br "${interesting_urls[@]}"      # not working...
-                break
-            fi
-        done
+        FirstAppOf app exo-open kde-open xdg-open
+        case "$app" in
+            "")       DIE "no mime app found!" ;;
+            exo-open) $app "${interesting_urls[@]}"
+                      ;;
+            *)        for url in "${interesting_urls[@]}" ; do
+                          $app "$url"
+                          sleep 0.5
+                      done
+                      ;;
+        esac
     fi
 
     rm -rf "$targetdir"
+}
+
+FirstAppOf() {
+    local -n _app="$1"
+    shift
+    for _app in "$@" ; do
+        [ -x "/bin/$_app" ] && return
+    done
+    _app=""
 }
 
 Main "$@"
