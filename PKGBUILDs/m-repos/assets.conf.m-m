@@ -28,7 +28,7 @@ local ARCHIVE_TAG=archive
 
 if true ; then
 # new way with absolute paths:
-source /etc/${PROGNAME}-extra.conf
+source "/etc/${PROGNAME}-extra.conf"
 #ASSETSDIR="$EOS_ROOT/_BUILD_/$REPONAME"
 PKGBUILD_ROOTDIR="$ASSETSDIR/PKGBUILDs"
 GITDIR="$EOS_ROOT/$REPONAME"
@@ -117,8 +117,8 @@ local PKGNAMES=(
 # PKGNAMES=( meta-games yaygg )
 
 declare -A PKG_MAKEPKG_OPTIONS=(
-    git-meta      "--nodeps"
-    meta-games    "--nodeps"
+    [git-meta]="--nodeps"
+    [meta-games]="--nodeps"
 )
 
 # local CHANGELOG_ROOT="https://github.com/manuel-192/m-m/commits/master/PKGBUILDs"
@@ -136,7 +136,7 @@ declare -A PKG_MAKEPKG_OPTIONS=(
 # )
 
 _update_m_m_repo() {
-    cd "$GITDIR"
+    cd "$GITDIR" || return 1
     ./GitUpdate
 }
 
@@ -158,23 +158,23 @@ _pkgbuilds_m_hook_old()
     }
     rm -rf "$PKGBUILD_ROOTDIR"
     mkdir -p "$PKGBUILD_ROOTDIR"
-    pushd "$PKGBUILD_ROOTDIR" >/dev/null
+    pushd "$PKGBUILD_ROOTDIR" >/dev/null || exit 1
     git clone "$url" >& /dev/null || {
         echo "Error: $conf: git clone $url failed." >&2
-        popd >/dev/null
-        popd >/dev/null
+        popd >/dev/null || :
+        popd >/dev/null || :
         exit 1
     }
     mv "$PKGBUILD_ROOTDIR"/$REPONAME/PKGBUILDs/* "$PKGBUILD_ROOTDIR"/ || {
-        echo "Error: $conf: $FUNCNAME: mv $PKGBUILD_ROOTDIR/PKGBUILDs subdirs failed." >&2
-        popd >/dev/null
-        popd >/dev/null
+        echo "Error: $conf: ${FUNCNAME[0]}: mv $PKGBUILD_ROOTDIR/PKGBUILDs subdirs failed." >&2
+        popd >/dev/null || :
+        popd >/dev/null || :
         exit 1
     }
     rm -rf "$PKGBUILD_ROOTDIR/$REPONAME"
     touch "$PKGBUILD_ROOTDIR"/NOTE-THIS-IS-A-TEMPORARY-FOLDER
-    popd >/dev/null
-    popd >/dev/null
+    popd >/dev/null || :
+    popd >/dev/null || exit 1
 }
 
 _ASSERT_() {
@@ -195,10 +195,10 @@ _pkgbuilds_m_hook() {
     else
         _ASSERT_ pushd "$ASSETSDIR"
         _ASSERT_ rmdir "$PKGBUILD_ROOTDIR"            # assets.make created it...
-        _ASSERT_ rm -f ${PKGBUILD_ROOTDIR##*/}        # removed possible symlink
+        _ASSERT_ rm -f "${PKGBUILD_ROOTDIR##*/}"      # removed possible symlink
         printf "git clone... " >&2
         _ASSERT_ git clone "$GITREPOURL" ".$REPONAME"
-        ln -s ".$REPONAME"/${PKGBUILD_ROOTDIR##*/}
+        ln -s ".$REPONAME/${PKGBUILD_ROOTDIR##*/}" .
         _ASSERT_ popd
     fi
 
