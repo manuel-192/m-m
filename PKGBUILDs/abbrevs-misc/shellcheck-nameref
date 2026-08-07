@@ -17,14 +17,15 @@ Main()
         return
     fi
 
-    local var=$(grep -P "[^#]* local -n |[^#]* declare -n " "$file" | awk '{print $NF}' | cut -d'=' -f1)
+    local var
+    var=$(grep -P "[^#]* local -n |[^#]* declare -n " "$file" | awk '{print $NF}' | cut -d'=' -f1)
 
     if [ "$var" ] ; then
         local vars=()
         local line="" lines=() nr
-        readarray -t vars <<< $(echo "$var")
+        readarray -t vars < <(echo "$var")
         for var in "${vars[@]}" ; do
-            readarray -t lines <<< $(grep -nw "$var" "$file" | grep -w for | grep '"')
+            readarray -t lines < <(grep -nw "$var" "$file" | grep -w for | grep '"')
             for line in "${lines[@]}" ; do
                 if [ "$line" ] ; then
                     nr=$(echo "$line" | awk '{print $1}')

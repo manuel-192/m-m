@@ -2,10 +2,12 @@
 
 # Maintainer: manuel (see forum.endeavouros.com)
 
+# shellcheck disable=2034,2154
+
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.7.1
+pkgver=26.8
 pkgrel=1
 
 arch=('any')
@@ -20,42 +22,42 @@ optdepends=(
 )
 
 source=(
-    $url/app
-    $url/app.completion
-    $url/arch-audit
-    $url/curl
-    $url/curl2
-    $url/echo2
-    $url/eos-open
-    $url/expacol
-    $url/firefox
-    $url/firefox-developer-edition
-#    $url/history-del
-    $url/home-cache-clear
-    $url/kaffeine
-    $url/kde-open
-    $url/lines
-    $url/man2pdf
-    $url/ncdu
-    $url/once-per-boot-session
-    $url/once-per-n-days
-    $url/open
-    $url/m-open
-    $url/paccache-maintainer
-    $url/packages-in-iso
-    $url/pacman-branch
-    $url/pkgfind
-    $url/pkg-name-version
-    $url/pkgbuild-url
-    $url/Power-routines
-    $url/printf2
-    $url/rate-mirrors-arch
-    $url/shellcheck-nameref
-    # $url/sudo-for-all
-    $url/terminator-login
-    $url/thunderbird
-    $url/who-needs
-#    $url/update-grub
+    "$url/app"
+    "$url/app.completion"
+    "$url/arch-audit"
+    "$url/curl"
+    "$url/curl2"
+    "$url/echo2"
+    "$url/eos-open"
+    "$url/expacol"
+    "$url/firefox"
+    "$url/firefox-developer-edition"
+#    "$url/history-del"
+    "$url/home-cache-clear"
+    "$url/kaffeine"
+    "$url/kde-open"
+    "$url/lines"
+    "$url/man2pdf"
+    "$url/ncdu"
+    "$url/once-per-boot-session"
+    "$url/once-per-n-days"
+    "$url/open"
+    "$url/m-open"
+    "$url/paccache-maintainer"
+    "$url/packages-in-iso"
+    "$url/pacman-branch"
+    "$url/pkgfind"
+    "$url/pkg-name-version"
+    "$url/pkgbuild-url"
+    "$url/Power-routines"
+    "$url/printf2"
+    "$url/rate-mirrors-arch"
+    "$url/shellcheck-nameref"
+    # "$url/sudo-for-all"
+    "$url/terminator-login"
+    "$url/thunderbird"
+    "$url/who-needs"
+#    "$url/update-grub"
 )
 sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc2905cbde967fd2e0a6be430a5ad98270a396b05937b3f5343f6639370d85f790'
             '5a87617cb8d7046a51dbbd0fe7dab0e0f032bac1299df6ebdf4fbaa342eac65dd0171469a20353cf44100759e1054022074ebec21e13e646c752d814a5c49af9'
@@ -86,7 +88,7 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '7ffa898e778d0eaae7ba883f197c763eae7ffa1fd8929c3c34e78e1fd2a3087006497b9c2753ea41465569bc50f149f718b8ad770c802e45a5098ec496c73b1a'
             'ae2cdc3bb03d611f94525c6f5b15cb4b1d268e050f422b01be66aadcfca67e54e5fd3f5e5f7d90de9d4e543fb666886648f2611911cdc82d0a7931e036e579f9'
             '29c3daacdf40b419946d168e28d6d798a08c8b9a5072fd3601211166f0ed638318b0be21529d7ed4015288ed8992107d5e578243d9f7b5a496cf2f3c4c9ceeea'
-            '19aa66c5bba9cb1ebfba7f35842dc16ae6961ffaa2cd2d17b48f6ee0c00d3623de8c01d7adb57f2c2924d87bf1e49f6ec97c6ecace1a1e878b858909421bd015'
+            '267c19d4e05f5b7cad084d7d097fc534d3c71f3b8d07e7ba2029ba8d91095f5aac25073b1b5b7922ca914bd133165672a3f4bc9d163d0d7b38c4633257b83f9c'
             'b8d93a1f0d1164c61184f23a6f02fe1098e3e85997ca8ca5de2f69e7d7c1f7ae4777f9326d6898cc41a7a1bf902c903a040c5713f440eb3801ef02abb2deaacd'
             'a7de5afba96303bf8a5e07a3d1efc3c6b6e332428bec0448ba2e7033342e784a4cab05a5b924865dde74a96bf97140742e4c09ae35704cefc340bbb212bf9d5e'
             '53b899a56aa1d6950b8026ad0047412b9c1e32a3cf18a40c44214d5cba2bd66109e3776463a61f6759b79a6bad21806c5ca4cc1bf816ec14c410fb0e13ff57dd')
@@ -98,15 +100,15 @@ package() {
         case "$item" in
             # sudo-for-all)  install -Dm755 $item      $pkgdir/usr/local/bin/sudo ;;
             *.bash)
-                install -Dm644 $item      $pkgdir/etc/skel/$item ;;
+                install -Dm644 "$item"      "$pkgdir/etc/skel/$item" ;;
             *.conf)
-                install -Dm644 $item      $pkgdir/etc/$item ;;
+                install -Dm644 "$item"      "$pkgdir/etc/$item" ;;
             paccache-maintainer | shellcheck-nameref | packages-in-iso | expacol | once-per-*)
-                install -Dm755 $item      $pkgdir/usr/bin/$item ;;
+                install -Dm755 "$item"      "$pkgdir/usr/bin/$item" ;;
             *.completion | *.bash-completion)
-                install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.*} ;;
+                install -Dm644 "$item"      "$pkgdir/usr/share/bash-completion/completions/${item%.*}" ;;
             *)
-                install -Dm755 $item      $pkgdir/usr/local/bin/$item ;;
+                install -Dm755 "$item"      "$pkgdir/usr/local/bin/$item" ;;
         esac
     done
 }
