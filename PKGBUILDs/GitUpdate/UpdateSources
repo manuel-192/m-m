@@ -52,7 +52,7 @@ EOF
 
 Main()
 {
-    local progname="$(basename "$0")"
+    local progname="${0##*/}"
     local folder
     local timeout=0
     local pause=no
