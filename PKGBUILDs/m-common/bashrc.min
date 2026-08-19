@@ -2086,13 +2086,23 @@ EOF
 # Use current settings now. Update settings with 'bashrc'.
 ECHO2 "==> update bash settings."
 bashrc --plain
-cat <<EOF
 
-TODO
-====
-21.10.2023 - lisää AUR-tuki user_commands.bash:iin
-
-EOF
+TODO_STUFF() {
+    local header=(
+        "TODO"
+        "===="
+    )
+    local todos=(
+        # "21.10.2023 - lisää AUR-tuki user_commands.bash:iin"
+    )
+    if [ "${todos[0]}" ] ; then
+        echo ""
+        printf "%s\n" "${header[@]}"
+        printf "%s\n" "${todos[@]}"
+        echo ""
+    fi
+}
+TODO_STUFF
 
 ECHO2 "==> Running on $XDG_CURRENT_DESKTOP $XDG_SESSION_TYPE, kernel $(uname -r)"
 
