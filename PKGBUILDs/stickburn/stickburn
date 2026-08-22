@@ -98,19 +98,40 @@ Open() {
     DIE "cannot find app to '$op'"
 }
 
+GetIsoFolder() {
+    if [ -x /bin/fetch-iso ] ; then
+        # for fetch-iso users
+        local fetch_conf
+        fetch_conf=$(fetch-iso --show-config)
+        if [ -e "$fetch_conf" ] ; then
+            # shellcheck disable=1090
+            iso_folder="$(source "$fetch_conf"; echo "$TARGETDIR")"
+            if [ "$iso_folder" ] ; then
+                iso_folder=${iso_folder/\~/$HOME}
+                iso_folder=${iso_folder%/}
+            fi
+        fi
+    fi
+    if [ -z "$iso_folder" ] ; then
+        iso_folder="$HOME"
+    fi
+}
+
 ReadConfig() {
     if [ ! -e "$conf" ] ; then
         echo2 "==> Creating config file ${conf/$HOME/\~}"
-        cat <<EOF
+        local iso_folder=""
+        GetIsoFolder
+        cat <<EOF > "$conf"
 #!/bin/bash
 
-ISO_folder="\$HOME"
+ISO_folder="$iso_folder"
 EOF
         test -r "$conf" || DIE "cannot create the configuration file '$conf'."
     fi
 
-    ## shellcheck disable=SC1090                                          # variable 'conf' is readonly, why does shellcheck complain?
     ## shellcheck source=/dev/null                                        # shellcheck totally ignores what $conf referers to
+    # shellcheck disable=SC1090                                           # variable 'conf' is readonly, why does shellcheck complain?
     source "$conf" || DIE "cannot read configuration file '$conf'."
 }
 
