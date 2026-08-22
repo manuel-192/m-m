@@ -840,6 +840,7 @@ EOF
         local out
         out=$(/bin/git "$@")
         [ "$out" ] && echo "$out" | /bin/less -RF
+        true
     }
 
     sha512sum-check() {
