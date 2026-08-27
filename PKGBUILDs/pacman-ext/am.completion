@@ -1,5 +1,24 @@
 # bash completion for am        -*- shell-script -*-
 
+_am_listselector()
+{
+    local cur="$1"
+    local list_elems_all="$2"
+
+    local realcur="${cur##*,}"
+    local prefix="${cur%$realcur}"
+    local elems word
+
+    for word in $list_elems_all
+    do
+        if ! [[ $prefix == *"$word"* ]]; then
+            elems="$word $elems"
+        fi
+    done
+    COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -S ',' -- $realcur) )
+    compopt -o nospace
+}
+
 _am_complete() {
     COMPREPLY=($(compgen -W "$1" -- "$cur"))
     [[ $COMPREPLY == *= ]] && compopt -o nospace
@@ -32,6 +51,11 @@ _am_()
     # Each option "case" should return immediately.
 
     case "$prev" in
+        --pkgnames)
+            local repolist=()
+            readarray -t repolist < <(pacman-conf --repo-list | grep -P '^m-|^endeavouros')
+            _am_listselector "$cur" "$(pacman -Slq "${repolist[@]}")"
+            ;;
         *)
             # Handle all top-level parameters.
             _am_complete "${items[*]} ${opts[*]}" ;;
