@@ -25,6 +25,27 @@ _am_complete() {
     compopt -o nosort
 }
 
+_am_repoarg() {  # fill 'repolist' array
+    local supported_repos=""               # e.g. "repo1|repo2|repo3
+    local given                            # will have user given reponame(s)
+    supported_repos="$(echo $(pacman-conf --repo-list | grep -vP '^core|^extra|^multilib|^kde|^KDE|^gnome|^Gnome') | tr ' ' '|')"
+    if [ "$supported_repos" ] ; then
+        given="$(grep -wP "$supported_repos" <(printf "%s\n" "${words[@]}"))"
+        if [ -z "$given" ] ; then
+            # (ad hoc) check if current working dir matches the supported repos
+            given="$(grep -wP "$supported_repos" <(echo "${PWD##*/}"))"
+            [ -r "$given.db" ] || given=""
+        fi
+        if [ "$given" ] ; then
+            # use only given repos, or "$PWD"
+            readarray -t repolist < <(echo "$given")
+        else
+            # no given repos ==> use all supported repos
+            readarray -t repolist < <(echo "$supported_repos" | tr '|' '\n')
+        fi
+    fi
+}
+
 _am_() 
 {
     local cur prev words #cword split
@@ -53,7 +74,7 @@ _am_()
     case "$prev" in
         --pkgnames)
             local repolist=()
-            readarray -t repolist < <(pacman-conf --repo-list | grep -P '^m-|^endeavouros')
+            _am_repoarg
             _am_listselector "$cur" "$(pacman -Slq "${repolist[@]}")"
             ;;
         *)
