@@ -64,7 +64,7 @@ _am_()
         --fetch-timeout=      -T=
         --no-aur
         --pkgdiff
-        --pkgnames=
+        --pkgnames
         --repoup
     )
 
