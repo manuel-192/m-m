@@ -21,7 +21,7 @@ _arch-changelog_()
         *)
             # Handle all top-level parameters.
             case "$cur" in
-                [0-9a-z]*) _arch-changelog_complete "$(/bin/pacman -Qq; /bin/pacman -Slq endeavouros)" ;;
+                [0-9a-z]*) _arch-changelog_complete "$(/bin/pacman -Ssq)" ;;
                 -*)        _arch-changelog_complete "$(/bin/arch-changelog --parameters)" ;;
             esac
     esac

@@ -189,20 +189,22 @@ HandlePkgnames() {
 
 OPEN_URLS() {
     # use mime binding to open the URL(s) with a browser; if needed, fallback to firefox
-    local xx
+    local file tool
+    local sleep=0.5
     printf " -> %s\n" "$@" >&2
-    if [ -x /bin/exo-open ] ; then
-        exo-open "$@" &>/dev/null
-    elif [ -x /bin/kde-open ] ; then
-        for xx in "$@" ; do
-            kde-open "$xx" &>/dev/null
-        done
-    elif [ -x /bin/xdg-open ] ; then
-        for xx in "$@" ; do
-            xdg-open "$xx" &>/dev/null
-        done
-    elif [ -x /bin/firefox ] ; then
-        setsid firefox "$@" &>/dev/null
+    for tool in /bin/exo-open /bin/kde-open /bin/xdg-open ; do
+        if [ -x $tool ] ; then
+            for file in "$@" ; do
+                $tool "$file" &>/dev/null
+                sleep $sleep
+            done
+            return
+        fi
+    done
+    if [ -x /bin/firefox ] ; then
+        setsid /bin/firefox "$@" &>/dev/null
+    else
+        DIE "no tool found for opening '$*'"
     fi
 }
 
