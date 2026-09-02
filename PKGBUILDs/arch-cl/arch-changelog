@@ -29,7 +29,10 @@ EOF
 
 DumpPkgnames() {
     # Show only pkgnames that have a non-empty URL.
-    declare -p PKG_CHANGELOGS | sed -e 's|\[|\n\[|g' -e 's|[ ]*)$||' | grep "^\[" | grep -v '""' | sed -E 's|^\[([^]]*).*|\1|' | sort
+    {
+        pacman -Slq endeavouros
+        declare -p PKG_CHANGELOGS | sed -e 's|\[|\n\[|g' -e 's|[ ]*)$||' | grep "^\[" | grep -v '""' | sed -E 's|^\[([^]]*).*|\1|'
+    } | sort
 }
 DumpOptions() {
     local sopts2=${sopts//:/}
