@@ -15,6 +15,7 @@ Options: --help, -h            This help.
          --github              Uses github for showing the changelog.
          --gitlab              Uses gitlab for showing the changelog.
          --parameters          Show supported package names and options. Implies option -d.
+         --pkgnames            Show supported package names only.
          --clfile=X, -c=X      Replace PKG_CHANGELOGS array with a new one in (bash) file 'X'.
          --detect-clfile, -d   Detects possible changelog file at '$clfile_def'.
          --url, -u             Simply print the changelog URL instead of opening it in a browser.
@@ -53,7 +54,7 @@ DetectClFile() {
 
 Parameters() {
     local sopts="c:dhu"
-    local lopts="help,github,gitlab,parameters,clfile:,detect-clfile,quiet,url"
+    local lopts="help,github,gitlab,parameters,pkgnames,clfile:,detect-clfile,quiet,url"
     local opts=""
 
     opts="$(/usr/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || Usage 1
@@ -73,6 +74,10 @@ Parameters() {
             --parameters)
                 DetectClFile
                 DumpOptions
+                DumpPkgnames
+                exit 0
+                ;;
+            --pkgnames)
                 DumpPkgnames
                 exit 0
                 ;;
