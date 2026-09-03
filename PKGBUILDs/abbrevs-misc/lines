@@ -2,15 +2,62 @@
 
 # Combined head and tail implemented using sed.
 
+SeparateOpts_works() {       # "help|h,begin:|b:,end:|e:,first:|f:,last:|l:,less,pager:"
+    local optstring="$1"
+    local -n _sopts="$2"
+    local -n _lopts="$3"
+    local op ops=() tmp
+
+    for op in ${optstring//[,|]/ } ; do
+        case "$op" in
+            ? | ?"::" | ?":") _sopts+="$op" ;;
+            *)                ops+=("$op") ;;
+        esac
+    done
+    tmp="$(printf "%s," "${ops[@]}")"
+    _lopts="${tmp%,}"
+}
+
+SeparateOpts() {             # "h|help,:b|begin,:e|end,:f|first,:l|last,less,:pager"
+    local optstring="$1"
+    local -n _sopts="$2"
+    local -n _lopts="$3"
+    local op ops=() tmp
+
+    for op in ${optstring//,/ } ; do
+        case "$op" in
+            :?\|*)     # :w|word
+                _sopts+="${op:1:1}:"
+                [ "${op:3}" ] && ops+=("${op:3}:")
+                ;;
+            :*)        # :word
+                [ "${op:1}" ] && ops+=("${op:1}:")
+                ;;
+            ?\|*)      # w|word
+                _sopts+="${op:0:1}"
+                [ "${op:2}" ] && ops+=("${op:2}")
+                ;;
+            *)         # word
+                ops+=("$op")
+                ;;
+        esac
+    done
+    tmp="$(printf "%s," "${ops[@]}")"
+    _lopts="${tmp%,}"
+}
+
 lines() {
     local progname="${0##*/}"
     local last_available=""
     local first="" last=""
     local begin="" end=""
     local pager="" file="" deltmp=()
-    local opts
-    opts="$(/usr/bin/getopt -o="hb:e:f:l:" --longoptions "help,begin:,end:,first:,last:,less,pager:" --name "$progname" -- "$@")" || Exit 1
+    local opts sopts lopts
+
+    SeparateOpts "h|help,:b|begin,:e|end,:f|first,:l|last,less,:pager" sopts lopts
+    opts="$(getopt -o "$sopts" -l "$lopts" -n "$progname" -- "$@")" || Exit 1
     eval set -- "$opts"
+
     while true ; do
         case "$1" in
             -h | --help)
