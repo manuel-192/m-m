@@ -1598,7 +1598,7 @@ EOF
 
     # Alias Build-asdeps       "Build --pacman='--asdeps'"
     Alias bat                "bat --style=number"
-    Alias chlog              "arch-changelog"
+    # Alias chlog              "arch-changelog"
     Alias ci                 "ci -u"
     Alias cls                "clear"
     Alias codium             "codium -n"
@@ -1794,9 +1794,9 @@ EOF
     LoadCompletion p                    pacman-ext       _pacman-ext_
     LoadCompletion u                    upd              _pe_upd_                upd
     if [ -x /bin/pb ] ; then
-        LoadCompletion pp                   pb               _pb_                    pb
+        LoadCompletion pp               pb               _pb_                    pb
     fi
-    LoadCompletion cl arch-changelog
+    # LoadCompletion chlog arch-changelog
 
 
     [ -r ~/.dircolors ] && eval "$(dircolors ~/.dircolors)"
