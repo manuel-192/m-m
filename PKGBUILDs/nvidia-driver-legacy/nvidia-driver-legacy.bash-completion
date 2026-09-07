@@ -1,0 +1,22 @@
+# bash completion for nvidia-driver-legacy        -*- shell-script -*-
+
+_nvidia-driver-legacy_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_nvidia-driver-legacy_() {
+    local cur prev #words #cword split
+    _init_completion -s || return
+
+    # Handle options that need sub-options.
+    # Each option "case" should return immediately.
+
+    case "$prev" in
+        *)
+            # Handle all top-level parameters.
+            _nvidia-driver-legacy_complete "$(nvidia-driver-legacy --dump-options)" ;;
+    esac
+} &&
+complete -F _nvidia-driver-legacy_ nvidia-driver-legacy

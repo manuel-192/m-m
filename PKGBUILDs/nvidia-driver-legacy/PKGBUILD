@@ -1,0 +1,32 @@
+# Maintainer: manuel (see forum.endeavouros.com)
+
+pkgname=nvidia-driver-legacy
+pkgdesc="Simple driver installer for Nvidia GPU using nvidia-580xx-dkms or vulkan-nouveau"
+pkgver=0.26.9
+pkgrel=1
+arch=('any')
+license=('GPL')
+depends=()
+
+url="https://github.com/endeavouros-team/PKGBUILDS/raw/master/$pkgname"
+
+source=(
+    $url/$pkgname
+    $url/$pkgname.bash-completion
+)
+sha512sums=('fb9ba981b29eaeff44b185eedededdff25ee8d0b14bd3d632c2d380711ecc4e80d4e8fbc2f070dcf260df9750c4bcde0b126d2711acc14b4c41a9da9db6488f1'
+            '78ac6e7a072fe07056f20305c05023c4523f90283431f2dbff7c69d993fcc78d96a512bc42a833c862175a71c06a196494c09f350f27bb99e3dc3649f1b20d99')
+
+package() {
+    local src file
+
+    for src in "${source[@]}" ; do
+        file=${src##*/}
+        case "$file" in
+            *.bash-completion)
+                install -Dm644 $file   $pkgdir/usr/share/bash-completion/completions/${file%.*} ;;
+            *)
+                install -Dm755 $file   $pkgdir/usr/bin/$file ;;
+        esac
+    done
+}

@@ -1,0 +1,220 @@
+#!/bin/bash
+
+DIE()  { echo -e "==> $progname: error: $1" >&2; exit 1; }
+
+Profile_nvidia_580xx() {
+    profilename=${FUNCNAME[0]/Profile_}
+    packages=(
+        "nvidia-580xx-dkms"
+        "nvidia-580xx-settings"
+        "opencl-nvidia-580xx"
+        # "nvidia-580xx-utils"
+    )
+    packages32=(
+        "lib32-nvidia-580xx-utils"
+        "lib32-opencl-nvidia-580xx"
+        # "lib32-mesa"
+    )
+    services=()
+    dracut_config=()
+    mkinitcpio_config=( "MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)")
+}
+
+Profile_nouveau() {
+    profilename=${FUNCNAME[0]/Profile_}
+    packages=(vulkan-nouveau)
+    packages32=(lib32-vulkan-nouveau)
+    services=()
+    dracut_config=()
+    mkinitcpio_config=()
+}
+
+OperateCommon() {
+    DebugBreak
+    case "$mode" in
+        install | install-nouveau)
+            sudo /bin/pacman --needed -Syu "$@"
+            ;;
+        remove | remove-nouveau)
+            local pkgs=$(/bin/expac %n "$@")
+            [ "$pkgs" ] && sudo pacman -Rsn "${pkgs[@]}"
+            ;;
+        list | list-nouveau)
+            echo "$@"
+            ;;
+    esac
+}
+OperatePackages() {
+    local pkgs=("${packages[@]}")
+    [ "$use32" = yes ] && pkgs+=("${packages32[@]}")
+    OperateCommon "${pkgs[@]}"
+}
+
+AddMkinitcpioConfig() {
+    local -r file=/etc/mkinitcpio.conf
+    local addmodules
+    addmodules=$(printf "%s\n" "${mkinitcpio_config[@]}" | grep "^MODULES+=")
+    echo "$addmodules" | sudo tee -a "$file" >/dev/null
+}
+
+Options() {
+    local sopts="h"
+    local lopts="help,addconfig,no32,32,install,install-nouveau,remove,remove-nouveau,list,list-nouveau"
+    lopts+=",dump-options,recommended,supported"
+    local opts
+
+    opts="$(/bin/getopt -o="$sopts" --longoptions "$lopts" --name "$progname" -- "$@")" || {
+        $OptFunc -h
+        return 1
+    }
+    eval set -- "$opts"
+
+    while true ; do
+        case "$1" in
+            --) shift; break ;;
+            --list | --list-nouveau | --install | --install-nouveau | --remove | --remove-nouveau | --recommended | --supported)
+                mode=${1:2} ;;
+            --no32)
+                use32=no ;;
+            --32)
+                use32=yes ;;
+            --addconfig)
+                addconfig=yes ;;
+            --dump-options)
+                DumpOptions ;;
+            -h | --help)
+                Help 0 ;;
+        esac
+        shift
+    done
+
+    # Check config sanity.
+    if [ $use32 = yes ] ; then
+        local -r repo=multilib
+        if ! pacman-conf --repo-list | grep "^$repo$" >/dev/null ; then
+            DIE "repository [$repo] in /etc/pacman.conf is disabled. Consider enabling the repo or using option --no32."
+        fi
+    fi
+}
+
+DumpOptions() {
+    local so="${sopts//:}"
+    local lo="${lopts//:}"
+    so=${so//?/-& }             # requires: shopt -s patsub_replacement
+    lo="--${lopts//,/ --}"
+    echo "$so$lo"
+    exit 0
+}
+
+AssertPascalOrOlder() {
+    local familycodes
+    readarray -t familycodes < <(lspci -vnn | grep -w NVIDIA | grep -P 'VGA|Display|3D' | sed -E 's|.* NVIDIA Corporation ([^ ]+).*|\1|')
+    case "${#familycodes[@]}" in
+        0) DIE "no Nvidia GPU detected" ;;
+        *)
+            local match=0
+            local nomatch=0
+            for code in "${familycodes[@]}" ; do
+                case "${code::2}" in
+                    GM | GP | GV) ((match++)) ;;
+                    *) ((nomatch++)) ;;
+                esac
+            done
+            if [ "$match" -eq 1 ] && [ "$nomatch" -eq 0 ] ; then
+                return 0
+            else
+                [ "$match" -ne 0 ]   && echo "==> $match detected GPUs match." >&2
+                [ "$nomatch" -ne 0 ] && echo "==> $nomatch detected GPUs do not match." >&2
+                DIE "more than one NVIDIA GPUs detected."
+            fi
+            ;;
+    esac
+}
+
+Help() {
+    local -r nvidia="nvidia-580xx (proprietary)"
+    local -r oss="nouveau (open source)"
+
+    cat <<EOF
+Usage:   $progname [options]
+Options:    -h, --help          This help.
+            --recommended       Show the recommended profile to install.
+            --supported         Show the supported profiles for install.
+            --list              Show $nvidia profile's package names.
+            --list-nouveau      Show $oss profile's package names.
+            --install           Install $nvidia packages. This is the default.
+            --install-nouveau   Install $oss packages.
+            --remove            Uninstall $nvidia packages.
+            --remove-nouveau    Uninstall $oss packages.
+            --32                Operate on 32-bit packages too.$([ $use32_def = yes ] && echo " Default.")
+                                Repository [multilib] needs to be enabled in /etc/pacman.conf.
+            --no32              Don't operate on 32-bit packages.$([ $use32_def = no ] && echo " Default.")
+            --addconfig         Adds MODULES configs into /etc/mkinitcpio.conf.
+                                Note: dracut is not yet supported.
+EOF
+    [ "$1" ] && exit "$1"
+}
+
+Main() {
+    local progname=${0##*/}
+    local profilename=""
+    local packages=()
+    local packages32=()
+    local services=()
+    local mkinitcpio_config=()
+    local -r use32_def=no
+    local use32=$use32_def
+    local addconfig=no
+    local mode=install         # default operation, install nvidia-580xx stuff
+
+    AssertPascalOrOlder
+
+    Options "$@"
+
+    case "$mode" in
+        recommended)
+            Profile_nvidia_580xx
+            echo "$profilename"
+            ;;
+        supported)
+            Profile_nvidia_580xx
+            echo "$profilename"
+            Profile_nouveau
+            echo "$profilename"
+            ;;
+        install)
+            # ${FUNCNAME[0]} --remove-nouveau
+            Profile_nvidia_580xx
+            OperatePackages
+            ;;
+        remove)
+            Profile_nvidia_580xx
+            OperatePackages
+            # ${FUNCNAME[0]} --install-nouveau
+            ;;
+        list)
+            Profile_nvidia_580xx
+            OperatePackages
+            ;;
+        install-nouveau)
+            # ${FUNCNAME[0]} --remove
+            Profile_nouveau
+            OperatePackages
+            ;;
+        remove-nouveau)
+            Profile_nouveau
+            OperatePackages
+            # ${FUNCNAME[0]} --install
+            ;;
+        list-nouveau)
+            Profile_nouveau
+            OperatePackages
+            ;;
+    esac
+
+    [ $addconfig = yes ] && AddMkinitcpioConfig
+}
+
+DebugBreak() { : ; }
+
+Main "$@"
