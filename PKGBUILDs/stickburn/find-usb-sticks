@@ -75,6 +75,7 @@ Main()
     local usb_infos=""
     local path vendor model usbgen size type hotplug
     local sep="|"
+    local quiet=no
 
     USB_all_infos PATH usb_infos
 
@@ -82,6 +83,7 @@ Main()
         case "$1" in
             --separator)   sep="$2"; shift ;;
             --separator=*) sep="${1#*=}" ;;
+            --quiet)       quiet=yes ;;
             -h | --help)   Usage; return 0 ;;
             *) DIE "unsupported parameter '$1'" ;;
         esac
@@ -107,7 +109,7 @@ Main()
         done
         return 0
     else
-        echo "Looks like no USB drive attached." >&2
+        [ $quiet = no ] && echo "Looks like no USB drive attached." >&2
         return 1
     fi
 }
@@ -117,6 +119,7 @@ Usage() {
 Usage: $progname [options]
 Options:
     -h, --help        This help.
+    --quiet           Be less verbose (but show errors).
     --separator X     Use X as a separator inside the displayed strings.
 EOF
 }

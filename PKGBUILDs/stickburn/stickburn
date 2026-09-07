@@ -10,12 +10,12 @@ m_yad() { eos_yad --window-icon=$usb_icon --image=$usb_icon "$@" ; }
 DIE_WARN() {
     local type="$1"
     shift
-    echo2 "$progname $type: $1"
+    echo2 "==> $progname: $type: $1"
     m_yad --form --text="${type^}: $1" --title="$progname" \
           --button=yad-quit --width=400 --window-icon=dialog-"$type"
 }
-DIE()  { DIE_WARN error   "$1"; exit 1; }
-WARN() { DIE_WARN warning "$1"; }
+DIE()  { DIE_WARN $(BTR word_error)   "$1"; exit 1; }
+WARN() { DIE_WARN $(BTR word_warning) "$1"; }
 
 ConfField() {
     local fieldname="$1"
@@ -181,10 +181,14 @@ EOF
 
 Main()
 {
+    DebugBreak
+    local progname=${0##*/}
+
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
     AssignIconVariables_in_eos_bash_shared
 
-    local progname=stickburn
+    source /usr/share/endeavouros/translations/bash-app-translate "$progname" || exit 1
+
     local is_foreground=no
     local iso_file=""
     local -r usb_icon=drive-removable-media-usb
@@ -213,14 +217,18 @@ Main()
     local mounted_sticks=0
     local -r exclamation='&#33;'
 
+    DebugBreak
+
     if [ "$iso_file" ] ; then
-        test -r "$iso_file" || DIE "ISO file '$iso_file' does not exist."
+        test -r "$iso_file" || DIE "$(BTR iso_not_exist "$iso_file")"
     fi
 
-    echo2 "Finding USB drives, please wait..."
-    readarray -t usb_sticks_info <<< "$(find-usb-sticks --separator " ")"
+    # echo2 "Finding USB drives, please wait..."
+    echo2 "==> $(BTR wait_find_usb_drives)"
+    readarray -t usb_sticks_info <<< "$(find-usb-sticks --quiet --separator " ")"
 
-    [ "${usb_sticks_info[*]}" ] || DIE "no target USB drive available."
+    # [ "${usb_sticks_info[*]}" ] || DIE "no target USB drive available."
+    [ "${usb_sticks_info[*]}" ] || DIE "$(BTR usb_drive_not_found)"
 
     for xx in "${usb_sticks_info[@]}" ; do
         test -n "$xx" || continue
@@ -346,5 +354,7 @@ Main()
 
     Burn
 }
+
+DebugBreak() { : ; }
 
 Main "$@"

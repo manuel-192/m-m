@@ -2,9 +2,9 @@
 # Maintainer: manuel (see forum.endeavouros.com)
 
 pkgname=stickburn
-pkgdesc="GUI for burning ISO to USB stick with dd and safety checks."
+pkgdesc="GUI for burning ISO to USB stick with dd; includes safety checks."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.8
+pkgver=26.9
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -14,24 +14,32 @@ depends=(
 )
 
 source=(
-    $pkgname           # GUI burning app
+    $pkgname           # USB burning app GUI
     $pkgname.desktop
     burn2dev
     find-usb-sticks
-    iso-to-usb         # CLI burning app
+    iso-to-usb         # USB burning app CLI
+
+    # translations
+    btr_${pkgname}_en
+    btr_${pkgname}_fi
 )
-sha512sums=('0433d897dab0ade3261a8f2ae6b531136b36379c33d79d07785d0bb71b137d54e83c3dc8ba14bf666d48db498784195c245fed39ea3d80fd2aa58fb635e05ac3'
+sha512sums=('6cb1a1bf140121b43cc10bad99233586b05d074efd08aa694de24e6650f91f3aa50751b67c7f9b8bf2a403cce92789b7d4d5e139f7734f327a93114ea7ff848d'
             'c2932968c88963bedc923f2889cf44b114f4929d1ebfc2678655bb7e3b75a16d740e0f5276633b4233159ac304669aebb1204c6a30ebfeab02de7cdaab1515fa'
             'e625c61067602578dbdb83f59f355d06ef8dc453a86a7d2038bc6665a1c88ce6b1950d5d7bd1c3940bf53a4049a00dd89fb8f3892242c619606a9d40c226bd3a'
-            '67a5b1a56eca9773d080a8969dd98bb2db310ef57f7cff2aeebce67ae1a8b034ed8b3b37a988a93cfcaa6316cfa35ae1929b4f00bbda327fecd4c6bae2320589'
-            '27a4dadab2da0d2418afabf0a14cac00bc15463cd3d2404ceaf03440fc935343298cc30d22782b9469b959af41da97c3ae2af561c9d23c00a50688c0dfcc5542')
+            '84288baeea536cfc30446425020310ff6f31fcfa436808ed09c7673171a9e37ecfc632f38faacd83b14beac5cd9ca3f0d7fd42ff54c534c4c6c3f7c452de8424'
+            '27a4dadab2da0d2418afabf0a14cac00bc15463cd3d2404ceaf03440fc935343298cc30d22782b9469b959af41da97c3ae2af561c9d23c00a50688c0dfcc5542'
+            '8aa98f4680aeb8cadbb1177b9ea803789f67c779a95ab482f654d0a11900601df902172070ad5c8bc32ed9ab64a81e75b99327b6fb644cbba4789de352b7eac6'
+            '853f264ce8a96d1a823af28afc9269fdf9b55e3b0efe4f09bc3ef706b0ae39af90eff1bd29e1ade5f6bb74ee991070a75e3c8e8625a3a57213ab1326cf7da504')
 
 package() {
-    local src
+    local src file
     for src in "${source[@]}" ; do
-        case "$src" in
-            *.desktop) install -Dm644 $src        $pkgdir/usr/share/applications/$src ;;
-            *)         install -Dm755 $src        $pkgdir/usr/bin/$src ;;
+        file="${src##*/}"
+        case "$file" in
+            *.desktop)          install -Dm644 "$file"        "$pkgdir/usr/share/applications/$file" ;;
+            btr_${pkgname}_*)   install -Dm644 "$file"        "$pkgdir/usr/share/endeavouros/translations/$file" ;;
+            *)                  install -Dm755 "$file"        "$pkgdir/usr/bin/$file" ;;
         esac
     done
 }

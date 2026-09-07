@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Define all translations in the associative array BTR_ARR.
+
+declare -A BTR_ARR=(
+    iso_not_exist          "ISO file '%s' does not exist."
+    wait_find_usb_drives   "Finding USB drives, please wait..."
+    usb_drive_not_found    "no target USB drive available."
+    word_warning           "warning"
+    word_error             "error"
+)

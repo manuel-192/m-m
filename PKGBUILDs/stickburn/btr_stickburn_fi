@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Define all translations in the associative array BTR_ARR.
+
+declare -A BTR_ARR=(
+    usb_drive_not_found         "USB-asemaa ei saatavilla."
+    wait_find_usb_drives        "Etsitään USB-asemia, odota..."
+    iso_not_exist               "ISO-tiedostoa '%s' ei löydy."
+    word_warning                "varoitus"
+    word_error                  "virhe"
+)
