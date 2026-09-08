@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# The English translation for stickburn.
+
 # Define all translations in the associative array BTR_ARR.
 
 declare -A BTR_ARR=(
@@ -8,4 +10,40 @@ declare -A BTR_ARR=(
     usb_drive_not_found    "no target USB drive available."
     word_warning           "warning"
     word_error             "error"
+    word_finished          "Finished${BTR_exclamation}"
+    word_burn              "Burn"
+    burn_fail_stopped      "USB drive burn stopped."
+    burn_fail_cancel       "Burning the USB drive %s was canceled."
+    burn_ok_ready          "USB drive burn is ready."
+    burn_ok_stick          "Burning the USB drive %s is ready."
+    burning_to             "Burning to %s:"
+    creating_config        "==> Creating config file %s"
+    die_app_missing        "cannot find app for '%s'"
+    die_create_fail        "cannot create the configuration file '%s'."
+    die_read_fail          "cannot read configuration file '%s'."
+    die_var_not_set        "variable ISO_folder is not set, see file\n%s"
+    die_iso_missing        "ISO file '%s' does not exist."
+    die_drive_not_selected "USB drive not selected."
+    warn_dep_missing       "option '%s' requires package '%s'"
+    warn_folder_changed    "==> Warning: %s: value of ISO_folder cannot be used. Changing ISO_folder to %s."
+    title_purpose          "Burn ISO to a USB drive"
+    cmd_text               "Burn an ISO file to a USB drive."
+    yad_field_iso          "<tt>ISO file:   </tt>"
+    yad_field_no_drives    "<i>Sorry, no USB drives found.</i>"
+    yad_field_msg_fail1    "\n<i>Sorry, all USB drives are already mounted, cannot continue.\n"
+    yad_field_msg_fail2    "USB drive must be umounted for burning.</i>"
+    yad_field_usb          "<tt>USB drive:   </tt><b>%s</b>"
+    yad_field_usb_d        "<tt>USB drive:</tt>"
+    yad_field_select_usb   "\nSelect USB drive button below (unless already shown above):"
+    msg_no_drives          "No USB drives"
+    msg_no_unmounted       "No umounted USB drives"
+    msg_tip_title          "Burns the selected ISO file to the selected USB drive"
+    no_selection           "(None)"
+    msg_already_mounted    "\n\tUSB drives already mounted:"
+    txt_field1             "Select the ISO file from any folder.\n"
+    txt_field2             "Select the target USB drive (unless auto-selected).\n"
+    txt_field3             "Make <b><i>absolutely sure</i></b> you select the right USB drive. "
+    txt_field4             "There's no turning back after you start burning${BTR_exclamation}\n"
+    txt_field5             "Burning takes a few minutes depending on the speed of the USB drive.\n"
+    txt_field6             "A notification window will appear after burning has finished.\n"
 )

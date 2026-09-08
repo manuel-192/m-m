@@ -36,8 +36,8 @@ DeviceOf() {
 BurnFail() {
     local timeout=600
     local cmd=(NotifySend "$timeout"
-               "USB drive burn stopped."
-               "Burning the USB drive $usb_stick was canceled."
+               "$(BTR burn_fail_stopped)"
+               "$(BTR burn_fail_cancel "$usb_stick")"
                "$is_foreground")
     "${cmd[@]}"
     exit 1
@@ -48,8 +48,8 @@ BurnSuccess() {
 
     local timeout=30
     local cmd=(NotifySend "$timeout"
-               "USB drive burn is ready."
-               "Burning the USB drive $usb_stick is ready."
+               "$(BTR burn_ok_ready)"
+               "$(BTR burn_ok_stick "$usb_stick")"
                "$is_foreground")
     "${cmd[@]}"
     exit 0
@@ -57,7 +57,7 @@ BurnSuccess() {
 
 Burn() {
     if [ -x /bin/RunInTerminal ] ; then
-        /bin/RunInTerminal "echo -e 'Burning to $usb_stick:' ; sudo burn2dev '$usb_stick' '$iso_file'" || BurnFail
+        /bin/RunInTerminal "echo -e '$(BTR burning_to "$usb_stick")' ; sudo burn2dev '$usb_stick' '$iso_file'" || BurnFail
     else
         pkexec burn2dev "$usb_stick" "$iso_file" || BurnFail
     fi
@@ -75,7 +75,7 @@ NotifySend() {
         notify-send --expire-time="$ms" "$header" "$msg" &
     else
         notify-send --expire-time="$ms" "$header" "$msg"
-        echo2 "Finished!"
+        echo2 "$(BTR word_finished)"
         sleep 5
     fi
 }
@@ -95,7 +95,7 @@ Open() {
             exit 0
         fi
     done
-    DIE "cannot find app to '$op'"
+    DIE "$(BTR die_app_missing "$op")"
 }
 
 GetIsoFolder() {
@@ -119,7 +119,7 @@ GetIsoFolder() {
 
 ReadConfig() {
     if [ ! -e "$conf" ] ; then
-        echo2 "==> Creating config file ${conf/$HOME/\~}"
+        echo2 "$(BTR creating_config "${conf/$HOME/\~}")"
         local iso_folder=""
         GetIsoFolder
         cat <<EOF > "$conf"
@@ -127,12 +127,12 @@ ReadConfig() {
 
 ISO_folder="$iso_folder"
 EOF
-        test -r "$conf" || DIE "cannot create the configuration file '$conf'."
+        test -r "$conf" || DIE "$(BTR die_create_fail "${conf/$HOME/\~}")"
     fi
 
     ## shellcheck source=/dev/null                                        # shellcheck totally ignores what $conf referers to
     # shellcheck disable=SC1090                                           # variable 'conf' is readonly, why does shellcheck complain?
-    source "$conf" || DIE "cannot read configuration file '$conf'."
+    source "$conf" || DIE "$(BTR die_read_fail "${conf/$HOME/\~}")"
 }
 
 HandleParams() {
@@ -143,14 +143,14 @@ HandleParams() {
                 Open edit "$conf"
                 ;;
             --open-iso-folder)
-                [ "$ISO_folder" ] || DIE "variable ISO_folder is not set, see file\n${conf/$HOME/\~}"
+                [ "$ISO_folder" ] || DIE "$(BTR die_var_not_set "${conf/$HOME/\~}")"
                 Open open "$ISO_folder"
                 ;;
             --show-disks)
                 if [ -x /bin/RunInTerminal ] ; then
                     RunInTerminal lsblk -fm
                 else
-                    WARN "option '$arg' requires package 'eos-bash-shared'"
+                    WARN "$(BTR warn_dep_missing "$arg" "eos-bash-shared")"
                 fi
                 exit 0
                 ;;
@@ -162,6 +162,16 @@ HandleParams() {
                 ;;
             *)
                 iso_file="$arg"
+                case "$iso_file" in
+                    /* | ./*) ;;
+                    *)
+                        if [ ! -e "$iso_file" ] ; then
+                            if [ -e "$ISO_folder/$iso_file" ] ; then
+                                iso_file="$ISO_folder/$iso_file"
+                            fi
+                        fi
+                        ;;
+                esac
                 ;;
         esac
     done
@@ -181,7 +191,6 @@ EOF
 
 Main()
 {
-    DebugBreak
     local progname=${0##*/}
 
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
@@ -200,7 +209,7 @@ Main()
 
     local DEBUG=no
 
-    local progname="stickburn"
+    local progname=${0##*/}    #"stickburn"
     local usb_stick=""
     local iso_file_folder=""
     local iso_file_folder_conf=""
@@ -212,7 +221,7 @@ Main()
     local xx device tmp
     local usb_sticks_info
     local usb_candidates=()
-    local no_selection="(None)"
+    local no_selection="$(BTR no_selection)"
     local txt
     local mounted_sticks=0
     local -r exclamation='&#33;'
@@ -242,51 +251,57 @@ Main()
     iso_file_folder_conf="$(cat "$conf" | ConfField 'ISO_folder')"
     iso_file_folder="$iso_file_folder_conf"
     test -d "$iso_file_folder" || {
-        # DIE "$conf: value of ISO_folder is not a folder."
-        echo2 "Warning: $conf: value of ISO_folder cannot be used. Changing ISO_folder to \$HOME."
+        WARN "$(BTR warn_folder_changed "${conf/$HOME/\~}" '$HOME')"
         iso_file_folder="$HOME"
     }
 
-    cmd=(m_yad --form --title="$progname: Burn ISO to a USB drive" --scroll --height=350 --width=600)
+    cmd=(m_yad --form --title="$progname: $(BTR title_purpose)"
+         # --scroll
+         #--height=350
+         # --width=600
+        )
 
     # button icon: media-record, usb-creator
     cmd+=(--button=yad-cancel:1)
 
-    txt="Burn an ISO file to a USB drive."
+    txt="$(BTR cmd_text)"
     cmd+=(--text="$txt")
 
-    txt="Select the ISO file from any folder. The selected folder will be auto-saved [<i>$iso_file_folder</i>].\n"
-    txt+="Select the target USB drive (unless auto-selected).\n"
-    txt+="Make <b><i>absolutely sure</i></b> you select the right USB drive.\n"
-    txt+="There's no turning back after you start burning.\n"
-    txt+="Burning takes a few minutes.\n"
-    txt+="A notification window will appear when burning has finished.\n"
+    txt=""
+    txt+="$(BTR txt_field1 "$iso_file_folder")"
+    txt+="$(BTR txt_field2)"
+    txt+="$(BTR txt_field3)"
+    txt+="$(BTR txt_field4)"
+    txt+="$(BTR txt_field5)"
+    txt+="$(BTR txt_field6)"
+
     cmd+=(--field="$txt":LBL "")
 
     if [ -z "$iso_file" ] ; then
-        cmd+=(--field="<tt>ISO file:   </tt>":FL "$iso_file_folder/*")
+        cmd+=(--field="$(BTR yad_field_iso)":FL "$iso_file_folder/*")
     else
-        cmd+=(--field="<tt>ISO file:   </tt>":RO "$iso_file")
+        cmd+=(--field="$(BTR yad_field_iso)":RO "$iso_file")
     fi
     case "${#usb_candidates[@]}" in
         0)  case "${usb_sticks_info[0]}" in
                 "")
-                   cmd+=(--field="<i>Sorry, no USB drives found.</i>":LBL "")
-                   result="No USB drives"
+                   cmd+=(--field="$(BTR yad_field_no_drives)":LBL "")
+                   result="$(BTR msg_no_drives)"
                    ;;
-                *) txt="\n<i>Sorry, all USB drives are already mounted, cannot continue.\n"
-                   txt+="USB drive must be umounted for burning.</i>"
+                *) txt=""
+                   txt+="$(BTR yad_field_msg_fail1)"
+                   txt+="$(BTR yad_field_msg_fail2)"
                    cmd+=(--field="$txt":LBL "")
-                   result="No umounted USB drives"
+                   result="$(BTR msg_no_unmounted)"
                    ;;
             esac
             ;;
         1)
             usb_stick="${usb_candidates[0]}"
-            cmd+=(--field="<tt>USB drive:   </tt><b>$usb_stick</b>":LBL "")
+            cmd+=(--field="$(BTR yad_field_usb "${usb_stick%% *} -- (${usb_stick#* })")":LBL "")
             ;;
-        *)  cmd+=(--field="<tt>USB drive:</tt>":RO "$no_selection")
-            cmd+=(--field="\nSelect USB drive button below (unless already shown above):":LBL "")
+        *)  cmd+=(--field="$(BTR yad_field_usb_d)":RO "$no_selection")
+            cmd+=(--field="$(BTR yad_field_select_usb)":LBL "")
             for xx in "${usb_sticks_info[@]}" ; do
                 device="$(DeviceOf "$xx")"
                 tmp="$(/usr/bin/df --output=source,target | grep "^$device" | awk '{print $2}')"
@@ -305,23 +320,17 @@ Main()
                 if [ -n "$tmp" ] ; then
                     ((mounted_sticks++))
                     if [ $mounted_sticks -eq 1 ] ; then
-                        cmd+=(--field="\n\tUSB drives already mounted:":LBL "")
+                        cmd+=(--field="$(BTR msg_already_mounted)":LBL "")
                     fi
                     cmd+=(--field="\t\t<i>$xx</i>":LBL "")
                 fi
             done
     esac
     case "$result" in
-        "No USB drives" | "No umounted USB drives")
+        "$(BTR msg_no_drives)" | "$(BTR msg_no_unmounted)")
             ;;
         *)
-            cmd+=(--button="Burn${exclamation}!$usb_icon!Burns the selected ISO file to the selected USB drive":0)
-
-            # txt="\n<b>Make absolutely sure you select the right USB drive.</b>\n"
-            # txt+="<i>There's no turning back after you start burning.</i>\n\n"
-            # txt+="Burning takes a few minutes.\n"
-            # txt+="When burning has finished, a notification window will appear."
-            # cmd+=(--field="$txt":LBL "")
+            cmd+=(--button="$(BTR word_burn)${exclamation}!$usb_icon!$(BTR msg_tip_title)":0)
             ;;
     esac
  
@@ -339,14 +348,14 @@ Main()
     fi
 
     if [ ! -r "$iso_file" ] ; then
-        DIE "ISO file '$iso_file' does not exist."
+        DIE "$(BTR die_iso_missing "$iso_file")"
     fi
 
     # Save ISO file folder to conf file
     sed -i "$conf" -e 's|^ISO_folder=.*$|ISO_folder="'"$(dirname "$iso_file")"'"|'
 
     case "$usb_stick" in
-        "" | "$no_selection") DIE "USB drive not selected." ;;
+        "" | "$no_selection") DIE "$(BTR die_drive_not_selected)" ;;
     esac
 
     debug "iso file  = $iso_file"
