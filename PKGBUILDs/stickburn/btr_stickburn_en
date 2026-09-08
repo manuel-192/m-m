@@ -40,10 +40,14 @@ declare -A BTR_ARR=(
     msg_tip_title          "Burns the selected ISO file to the selected USB drive"
     no_selection           "(None)"
     msg_already_mounted    "\n\tUSB drives already mounted:"
-    txt_field1             "Select the ISO file from any folder.\n"
-    txt_field2             "Select the target USB drive (unless auto-selected).\n"
-    txt_field3             "Make <b><i>absolutely sure</i></b> you select the right USB drive. "
-    txt_field4             "There's no turning back after you start burning${BTR_exclamation}\n"
-    txt_field5             "Burning takes a few minutes depending on the speed of the USB drive.\n"
-    txt_field6             "A notification window will appear after burning has finished.\n"
+    txt_multifield1        "_MULTILINE_1"
+)
+
+_MULTILINE_1=(
+    "Select the ISO file from any folder.\n"
+    "Select the target USB drive (unless auto-selected).\n"
+    "Make <b><i>absolutely sure</i></b> you select the right USB drive. "
+    "There's no turning back after you start burning${BTR_exclamation}\n"
+    "Burning takes a few minutes depending on the speed of the USB drive.\n"
+    "A notification window will appear after burning has finished.\n"
 )

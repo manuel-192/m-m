@@ -267,13 +267,7 @@ Main()
     txt="$(BTR cmd_text)"
     cmd+=(--text="$txt")
 
-    txt=""
-    txt+="$(BTR txt_field1 "$iso_file_folder")"
-    txt+="$(BTR txt_field2)"
-    txt+="$(BTR txt_field3)"
-    txt+="$(BTR txt_field4)"
-    txt+="$(BTR txt_field5)"
-    txt+="$(BTR txt_field6)"
+    txt="$(BTR txt_multifield1)"
 
     cmd+=(--field="$txt":LBL "")
 

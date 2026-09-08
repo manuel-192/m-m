@@ -40,10 +40,14 @@ declare -A BTR_ARR=(
     msg_tip_title          "Polttaa valitun ISO-tiedoston valittuun USB-asemaan"
     no_selection           "(Ei mitään)"
     msg_already_mounted    "Jo sidotut USB-asemat:"
-    txt_field1             "Valitse hakemisto josta ISO-tiedosto haetaan.\n"
-    txt_field2             "Valitse USB-asema kohteeksi (jollei automaattisesti valittu).\n"
-    txt_field3             "<b><i>Varmista</i></b> että kohteeksi valittu USB-asema on juuri oikea. "
-    txt_field4             "Polttoa ei pysty perumaan aloittamisen jälkeen${BTR_exclamation}\n"
-    txt_field5             "Poltto kestää muutamia minuutteja USB-aseman nopeudesta riippuen.\n"
-    txt_field6             "Polton valmistuttua saat ilmoitusikkunan.\n"
+    txt_multifield1        "_MULTILINE_1"
+)
+
+_MULTILINE_1=(
+    "Valitse hakemisto josta ISO-tiedosto haetaan.\n"
+    "Valitse USB-asema kohteeksi (jollei automaattisesti valittu).\n"
+    "<b><i>Varmista</i></b> että kohteeksi valittu USB-asema on juuri oikea. "
+    "Polttoa ei pysty perumaan aloittamisen jälkeen${BTR_exclamation}\n"
+    "Poltto kestää muutamia minuutteja USB-aseman nopeudesta riippuen.\n"
+    "Polton valmistuttua saat ilmoitusikkunan.\n"
 )
