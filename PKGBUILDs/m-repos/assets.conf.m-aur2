@@ -27,6 +27,7 @@ local GITREPODIR="$REPONAME/repo"
 
 local ARCHIVE_GIT="$ASSETSDIR/.git"
 local ARCHIVE_TAG=archive
+local AUR_PKG_CHECKING=yes
 
 if true ; then
 # new way with absolute paths:

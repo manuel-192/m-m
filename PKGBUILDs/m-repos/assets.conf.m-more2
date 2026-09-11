@@ -21,6 +21,7 @@ local GITREPOURL=https://github.com/manuel-192/$REPONAME.git
 
 local ARCHIVE_GIT="$ASSETSDIR/.git"
 local ARCHIVE_TAG=archive
+local AUR_PKG_CHECKING=yes
 
 
 if true ; then
@@ -40,7 +41,7 @@ local PKGNAMES=(
     #    pkgname/aur      AUR package         # deprecated!
 
     minizip-ng-ex
-    qogir-icon-theme-git    # is orphaned in AUR
+    #qogir-icon-theme-git    # is orphaned in AUR
 
     # For Nvidia GPUs older than Turing:
     aur/lib32-nvidia-580xx-utils
@@ -54,7 +55,7 @@ local PKGNAMES=(
     aur/vscodium-bin
 
     # pamac stuff
-    # archlinux-appstream-data-pamac/aur    # 1st to build and install      # moved to local-repo because of epoch/github issue
+    # aur/archlinux-appstream-data-pamac    # 1st to build and install      # moved to local-repo because of epoch/github issue
     # aur/libpamac-aur                      # 2nd to build and install
     # aur/pamac-aur                         # 3rd to build and install
 )
@@ -212,7 +213,7 @@ ASSET_PACKAGE_HOOKS["vivaldi-widevine-now"]=_vivaldi-widevine_now_hook
 ASSET_PACKAGE_HOOKS["plasma-meta-m"]=_plasma-meta-m_hook
 ASSET_PACKAGE_HOOKS["pandoc-bin"]=_pandoc-bin_hook
 
-ASSET_PACKAGE_HOOKS[qogir-icon-theme]=_qogir-icon-theme_hook
+# ASSET_PACKAGE_HOOKS[qogir-icon-theme]=_qogir-icon-theme_hook
 
 # Epoch hooks: PKGBUILD may contain an epoch value, then rename pkg
 declare -A ASSET_PACKAGE_EPOCH_HOOKS
