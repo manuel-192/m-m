@@ -19,7 +19,7 @@ AddOwnSettings() {
     fi
 }
 
-CreateSettingsJson() {
+MakeSureSettingsJsonExists() {
     [ -e "$settings_file" ] && return   # don't overwrite existing settings.json
 
     cat <<EOF > "$settings_file"
@@ -73,7 +73,7 @@ ModifyParameters() {
 }
 
 IdeDebugBash() {
-    CreateSettingsJson
+    MakeSureSettingsJsonExists
     AddNewParameters "$@"
 
     # Run vscodium.
@@ -149,6 +149,8 @@ Main() {
     local dom=""
     local params=""
 
+    MakeSureSettingsJsonExists
+
     CleanUp
 
     while true ; do
@@ -160,7 +162,7 @@ Main() {
                     rm -f "$settings_file".$dom.bak
                     mv "$settings_file" "$settings_file".$dom.bak
                 fi
-                CreateSettingsJson
+                MakeSureSettingsJsonExists
                 ;;
             --cleanup)
                 Exit 0
