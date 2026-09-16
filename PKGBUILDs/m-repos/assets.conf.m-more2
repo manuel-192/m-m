@@ -41,28 +41,18 @@ local PKGNAMES=(
     #    pkgname/aur      AUR package         # deprecated!
 
     minizip-ng-ex
-    #qogir-icon-theme-git    # is orphaned in AUR
-
+)
+PKGNAMES+=(
     # For Nvidia GPUs older than Turing:
     aur/lib32-nvidia-580xx-utils
     aur/nvidia-580xx-settings
     aur/nvidia-580xx-utils
 
-    aur/pandoc-bin
-    aur/qogir-icon-theme
     aur/samsung-unified-driver
-    aur/shellcheck-bin
-    aur/vscodium-bin
-
-    # pamac stuff
-    # aur/archlinux-appstream-data-pamac    # 1st to build and install      # moved to local-repo because of epoch/github issue
-    # aur/libpamac-aur                      # 2nd to build and install
-    # aur/pamac-aur                         # 3rd to build and install
 )
 
 if false ; then                             # true when debugging
     PKGNAMES=(
-        aur/sddm-git
     )
 fi
 
