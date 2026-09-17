@@ -111,6 +111,7 @@ EOF
 }
 
 BideParameters() {
+    local args=("$@")
     while true ; do
         case "$1" in
             -c | --config)
@@ -134,6 +135,14 @@ BideParameters() {
                 ;;
             -h | --help)
                 Usage 0
+                ;;
+            --)
+                shift
+                [ "$1" ] || DIE "command line '$0 ${args[*]}' includes no bash script to debug!"
+                bash_file_to_debug="$1"
+                shift
+                prog_args=("$@")
+                break
                 ;;
             -*)
                 DIE "unsupported option '$1'"
