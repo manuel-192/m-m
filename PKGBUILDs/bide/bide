@@ -90,11 +90,11 @@ Usage() {
     echo2 -n "$GREEN"
     cat <<EOF >&2
 $progname - bash IDE integrating:
-    * vscodium or code
+    * code or vscodium
     * bashdb
     * bash-ide extension
     * shellcheck
-Usage: $progname [$progname-options] script-file [script-parameters]
+Usage: $progname [$progname-options] [--] script-file [script-parameters]
 where
   ${progname}-options:
     -c, --config        Create a new settings.json file.
@@ -102,9 +102,51 @@ where
     -h, --help          This help.
   script-file:          The bash script to be debugged.
   script-parameters:    Parameters for the script-file.
+
+Tip: Use '--' before script-file to stop detecting $progname-options.
+
 EOF
     echo2 -n "$RESET"
     [ "$1" ] && Exit "$1"
+}
+
+BideParameters() {
+    while true ; do
+        case "$1" in
+            -c | --config)
+                dom=$(date +%d)
+                if [ -e "$settings_file" ] ; then
+                    echo2 "==> Backup: $settings_file  ->  $settings_file.$dom.bak"
+                    rm -f "$settings_file".$dom.bak
+                    mv "$settings_file" "$settings_file".$dom.bak
+                fi
+                MakeSureSettingsJsonExists
+                ;;
+            --cleanup)
+                Exit 0
+                ;;
+            --no-instance-check)     # internal
+                instance_check=no
+                ;;
+            --dump-options)          # internal
+                echo "-c --config --cleanup --no-instance-check --dump-options -h --help"
+                Exit 0
+                ;;
+            -h | --help)
+                Usage 0
+                ;;
+            -*)
+                DIE "unsupported option '$1'"
+                ;;
+            *)
+                bash_file_to_debug="$1"
+                shift
+                prog_args=("$@")
+                break
+                ;;
+        esac
+        shift
+    done
 }
 
 Main() {
@@ -142,45 +184,17 @@ Main() {
     local -r settings_file="$HOME/.config/$appconfdir/User/settings.json"
     local -r own_settings_file="$HOME/.config/$appconfdir/User/own-settings.json"
     local -r special_string="# 'bide' will overwrite only the parameter list on this line"
-    local bash_file_to_debug=""
     local dom=""
     local params=""
+    local instance_check=yes
+    local bash_file_to_debug=""           # the bash script to debug
+    local prog_args=()                    # parameters for $bash_file_to_debug
 
     MakeSureSettingsJsonExists
-
     CleanUp
-
-    while true ; do
-        case "$1" in
-            -c | --config)
-                dom=$(date +%d)
-                if [ -e "$settings_file" ] ; then
-                    echo2 "==> Backup: $settings_file  ->  $settings_file.$dom.bak"
-                    rm -f "$settings_file".$dom.bak
-                    mv "$settings_file" "$settings_file".$dom.bak
-                fi
-                MakeSureSettingsJsonExists
-                ;;
-            --cleanup)
-                Exit 0
-                ;;
-            -h | --help)
-                Usage 0
-                ;;
-            -*)
-                DIE "unsupported option '$1'"
-                ;;
-            *)
-                bash_file_to_debug="$1"
-                shift
-                break
-                ;;
-        esac
-        shift
-    done
-
-    InstanceCheck
-    IdeDebugBash "$@"
+    BideParameters "$@"
+    [ $instance_check = yes ] && InstanceCheck
+    IdeDebugBash "${prog_args[@]}"
 
     Exit $?
 }

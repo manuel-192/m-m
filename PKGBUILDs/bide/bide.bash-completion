@@ -1,0 +1,54 @@
+# bash completion for bide        -*- shell-script -*-
+
+# _bide_listselector()
+# {
+#     local cur="$1"
+#     local list_elems_all="$2"
+#
+#     local realcur="${cur##*,}"
+#     local prefix="${cur%$realcur}"
+#     local elems word
+#
+#     for word in $list_elems_all
+#     do
+#         if ! [[ $prefix == *"$word"* ]]; then
+#             elems="$word $elems"
+#         fi
+#     done
+#     COMPREPLY=( $(compgen -P "$prefix" -W "$elems" -S ',' -- $realcur) )
+#     compopt -o nospace
+# }
+
+_bide_complete() {
+    COMPREPLY=($(compgen -W "$1" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+    compopt -o nosort
+}
+
+_bide_() 
+{
+    local cur prev words #cword split
+    _init_completion -s || return
+
+    local -r args="${words[*]}"
+
+    if [ "${args/ -- }" = "$args" ] ; then
+        # no ' -- ' on the command line, so keep detecting bide options
+        case "$prev" in
+            bide | /bin/bide | /usr/bin/bide)
+                _bide_complete "$(/bin/bide --dump-options) -- <script-file> <script-parameters>"
+                ;;
+            *)
+                case "$cur" in
+                    -* | "") _bide_complete "$(/bin/bide --dump-options) --" ;;
+                esac
+                ;;
+        esac
+    # elif false ; then
+    #     case "$prev" in
+    #         --) _bide_complete "script-file" ;;
+    #         *)  _bide_complete "script-parameters" ;;
+    #     esac
+    fi
+} &&
+complete -F _bide_ bide

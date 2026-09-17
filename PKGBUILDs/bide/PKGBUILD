@@ -5,7 +5,7 @@
 pkgname=bide
 pkgdesc="Bash language IDE"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.1
+pkgver=26.2
 pkgrel=1
 
 arch=('any')
@@ -24,15 +24,17 @@ optdepends=(
 )
 source=(
     $url/$pkgname
+    $url/$pkgname.bash-completion
 )
-sha512sums=('2ffd14eb905cd48605517713908fdd1560c16f7042e03f0d10dc063735dbc5c2a2bce1d06841d230949f335b7a50638d4033a8e190b24d530ca9214e2219a088')
+sha512sums=('6b3f38ae9a996e53658f4424ecda27e71e34dc3abf229421fbdf0cfc4f39e8b30b38cd88c42f987f33f7af1fe66306ed7824ac766a6ee91ba609a30d1c8e61cb'
+            'e9a6eac814146e6e57ec41683e64cf2a6674e72219a1c5781b64c6f1a82a0ea61019e293289663c59c714c0a7298a6ce1ba61ce54ab7bae3eaf320187a6a5eaf')
 
 package() {
     local item
     for item in "${source[@]}" ; do
         item=${item##*/}
         case "$item" in
-            *.bash-completion) install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.completion} ;;
+            *.bash-completion) install -Dm644 $item      $pkgdir/usr/share/bash-completion/completions/${item%.*} ;;
             *)                 install -Dm755 $item      $pkgdir/usr/bin/$item ;;
         esac
     done
