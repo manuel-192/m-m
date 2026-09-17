@@ -5,18 +5,13 @@
 # The parameters for the debuggee will be delivered via 'args' of the launch configuration in settings.json.
 
 GetParams() {
-    # convert parameters suitable for 'args'
-    local arg
-    for arg in "$@" ; do
-        params+=",\"$arg\""
-    done
+    # convert parameters $@ suitable for 'args'
+    printf -v params ',"%s"' "$@"
     params=${params#,}
 }
 
 AddOwnSettings() {
-    if [ -e "$own_settings_file" ] ; then
-        cat "$own_settings_file" >> "$settings_file"
-    fi
+    [ -e "$own_settings_file" ] && cat "$own_settings_file" >> "$settings_file"
 }
 
 MakeSureSettingsJsonExists() {
@@ -32,7 +27,7 @@ MakeSureSettingsJsonExists() {
             "name": "Bash-Debug a script",
             "cwd": "\${env:PWD}",
             "program": "\${file}",
-            "args": [$params]            $special_string
+            "args": []                   $special_string
         }
         ]
     },
@@ -73,7 +68,6 @@ ModifyParameters() {
 }
 
 IdeDebugBash() {
-    MakeSureSettingsJsonExists
     AddNewParameters "$@"
 
     # Run vscodium.
@@ -127,10 +121,13 @@ Main() {
     local appconfdir=""
 
     # Currently only these apps are supported:
-    local APPS_SUPPORTED=(codium code)
+    local APPS_SUPPORTED=(
+        code
+        codium
+    )
     declare -A APP_CONFIGDIRS=(
-        [codium]="VSCodium"
         [code]="Code - OSS"
+        [codium]="VSCodium"
     )
     [ -e "/etc/$progname.conf" ] && source "/etc/$progname.conf"
 

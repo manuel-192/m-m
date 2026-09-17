@@ -5,7 +5,7 @@
 pkgname=bide
 pkgdesc="Bash language IDE"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26
+pkgver=26.1
 pkgrel=1
 
 arch=('any')
@@ -25,7 +25,7 @@ optdepends=(
 source=(
     $url/$pkgname
 )
-sha512sums=('85a40815fe6e5469e9a5f657e35c23d5b276030003a58c06049417a338e96d6e4d75009ce16d3751aa107726fa459d147233c8444732fb0e7c21049d5fd80c11')
+sha512sums=('2ffd14eb905cd48605517713908fdd1560c16f7042e03f0d10dc063735dbc5c2a2bce1d06841d230949f335b7a50638d4033a8e190b24d530ca9214e2219a088')
 
 package() {
     local item
