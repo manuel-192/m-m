@@ -2,8 +2,7 @@
 
 _curl() {
     local exit_code=0
-    /usr/bin/curl --fail "$@"
-    exit_code=$?
+    /bin/curl --fail "$@" || exit_code=$?
     [ $exit_code -eq 0 ] || curl-exit-code-to-string $exit_code
     return $exit_code
 }
