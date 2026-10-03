@@ -1043,6 +1043,7 @@ EOF
                         fi
                         ;;
                     yes)
+                        # color codes cause prompt issues !!!
                         source /etc/eos-color.conf
                         if [ $prev_cmd_status -eq 0 ] ; then
                             status_mark="${COLORS[ok]}[✓]${COLORS[reset]} "
@@ -1255,20 +1256,17 @@ EOF
     }
 
     # COLOR codes:
-    RED=$'\e[1;91m'
-    # shellcheck disable=2034
-    GREEN=$'\e[1;92m'
-    # shellcheck disable=2034
-    YELLOW=$'\e[1;93m'
-    BLUE=$'\e[1;94m'
-    # shellcheck disable=2034
-    MAGENTA=$'\e[1;95m'
-    CYAN=$'\e[1;96m'
-    RESET=$'\e[0m'    # resets to normal
+    #RED=$'\e[1;91m'
+    ## GREEN=$'\e[1;92m'
+    ## YELLOW=$'\e[1;93m'
+    #BLUE=$'\e[1;94m'
+    ## MAGENTA=$'\e[1;95m'
+    #CYAN=$'\e[1;96m'
+    #RESET=$'\e[0m'    # resets to normal
 
-    Red2()  { ECHO2 "${RED}${1}${RESET}"  ; }
-    Blue2() { ECHO2 "${BLUE}${1}${RESET}" ; }
-    Cyan2() { ECHO2 "${CYAN}${1}${RESET}" ; }
+    #Red2()  { ECHO2 "${RED}${1}${RESET}"  ; }
+    #Blue2() { ECHO2 "${BLUE}${1}${RESET}" ; }
+    #Cyan2() { ECHO2 "${CYAN}${1}${RESET}" ; }
 
     upd() {
         local opt="-dopv"
