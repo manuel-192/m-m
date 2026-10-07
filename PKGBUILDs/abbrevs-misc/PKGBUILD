@@ -7,7 +7,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.10
+pkgver=26.10.1
 pkgrel=1
 
 arch=('any')
@@ -30,8 +30,8 @@ source=(
     "$url/echo2"
     "$url/eos-open"
     "$url/expacol"
-    "$url/firefox"
-    "$url/firefox-developer-edition"
+#    "$url/firefox"
+#    "$url/firefox-developer-edition"
 #    "$url/history-del"
     "$url/home-cache-clear"
     "$url/kaffeine"
@@ -57,6 +57,7 @@ source=(
     "$url/terminator-login"
     "$url/thunderbird"
     "$url/who-needs"
+    "$url/START_BG"
 #    "$url/update-grub"
 )
 sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc2905cbde967fd2e0a6be430a5ad98270a396b05937b3f5343f6639370d85f790'
@@ -67,8 +68,6 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '9efae914b6a100cf41f30a554ff83592e0805e040f8167d3cc8bf3d049a247bd2166013f8a3a52d9fdde070bd485ba8bccf2fcbcc76ffdfeaf2a1d405ee64e05'
             '9b7d04b1a571cca1a460505019128824832adfbb7228b7b26da5c64d9a89f554321aa06a8c9d5b6e73f52cc9fd911d7cc8f9b1b51959a33c115bbdada23d2804'
             '07fd5bd24237371ce471be7b9471145d176692fa163498da501d90002abfbb5a91a53a62c974b55e894e3f82dfb6060e0c3ad6dcacf27cc0857435052f9414c1'
-            '2ecf9ea9850e65c2b8c2975b87f711b38f7f24c0e50677ae52e55675037b69a2ebec950fdc71968b4643db8b98ce5abe9422155a6095836144696dbcd8aa1a05'
-            '2ecf9ea9850e65c2b8c2975b87f711b38f7f24c0e50677ae52e55675037b69a2ebec950fdc71968b4643db8b98ce5abe9422155a6095836144696dbcd8aa1a05'
             'd4f9533bd2d4bf5ff1209610ce3457a1015d1674e1e7ba7951901a2d9a49a4cc41e8a7b97c112cfb3786cbcc7df0346a26898a17d9d3c23c461201a16415a770'
             'f323ad0a6cba932a60332c7607f42ad67cd39581c039b246795e9cc5ff6b51e99173d6781a9ffc210971fabf484df2c0993bc0658ef6abb8638223643baf43fe'
             '684c0e594c8638f29727e7c92fd4d60027fca678868ee608da5c19d262fc30ba3575d46db8da606269310a9d58d50bcfea7ed53650eb33c959f2df5fdaeed2cc'
@@ -91,7 +90,8 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '267c19d4e05f5b7cad084d7d097fc534d3c71f3b8d07e7ba2029ba8d91095f5aac25073b1b5b7922ca914bd133165672a3f4bc9d163d0d7b38c4633257b83f9c'
             'b8d93a1f0d1164c61184f23a6f02fe1098e3e85997ca8ca5de2f69e7d7c1f7ae4777f9326d6898cc41a7a1bf902c903a040c5713f440eb3801ef02abb2deaacd'
             'a7de5afba96303bf8a5e07a3d1efc3c6b6e332428bec0448ba2e7033342e784a4cab05a5b924865dde74a96bf97140742e4c09ae35704cefc340bbb212bf9d5e'
-            '53b899a56aa1d6950b8026ad0047412b9c1e32a3cf18a40c44214d5cba2bd66109e3776463a61f6759b79a6bad21806c5ca4cc1bf816ec14c410fb0e13ff57dd')
+            '53b899a56aa1d6950b8026ad0047412b9c1e32a3cf18a40c44214d5cba2bd66109e3776463a61f6759b79a6bad21806c5ca4cc1bf816ec14c410fb0e13ff57dd'
+            '1d0faadeb12b8dfb7755cce50f602dca2f7e3366ebb7e4670bd96d47f3bdfb412204eb09c715076f14ce5be0b770f8bd7cdfdd6801ecfe7d3f8497b2123b0544')
 
 package() {
     local item
@@ -110,5 +110,15 @@ package() {
             *)
                 install -Dm755 "$item"      "$pkgdir/usr/local/bin/$item" ;;
         esac
+    done
+
+    local app apps=(
+        eog libreoffice
+        soffice virtualbox vivaldi
+        adie xplayer
+        # xed  firefox-developer-edition dolphin gitk kate konsole parole ristretto xfce4-screenshooter xreader
+    )
+    for app in "${apps[@]}" ; do
+        ln -s "START_BG"  "$pkgdir/usr/local/bin/$app" 
     done
 }
