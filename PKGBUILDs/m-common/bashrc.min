@@ -1971,51 +1971,51 @@ EOF
 #     }
 #     # MakeGuiAppsAsFuncs
 
-    Func_with_and() {
-        ${FUNCNAME[1]} "$@" 2>/dev/null &    # TODO: checks like Func_with_setsid
-    }
-    Func_with_setsid() {
-        local app="${FUNCNAME[1]}"
-        local cmd=""
-        if [ "$app" ] ; then
-            cmd=$(which "$app" 2> /dev/null)
-            if [ "$cmd" ] ; then
-                echo "setsid $cmd" "$@" >&2
-                setsid "$cmd" "$@" 2>/dev/null
-            else
-                echo "==> $app is not installed" >&2
-            fi
-        else
-            echo "==> no app to run!" >&2
-        fi
-    }
+    # Func_with_and() {
+    #     ${FUNCNAME[1]} "$@" 2>/dev/null &    # TODO: checks like Func_with_setsid
+    # }
+    # Func_with_setsid() {
+    #     local app="${FUNCNAME[1]}"
+    #     local cmd=""
+    #     if [ "$app" ] ; then
+    #         cmd=$(which "$app" 2> /dev/null)
+    #         if [ "$cmd" ] ; then
+    #             echo "setsid $cmd" "$@" >&2
+    #             setsid "$cmd" "$@" 2>/dev/null
+    #         else
+    #             echo "==> $app is not installed" >&2
+    #         fi
+    #     else
+    #         echo "==> no app to run!" >&2
+    #     fi
+    # }
 
-    Funcize1() {
-        local app="$1"
-        local def
-        if which "$app" &>/dev/null ; then
-            def="$app()$sep{ Func_with_setsid \"\$@\" ; }"
-            ok+=(" +> $def")
-            def="${def/$sep/ }"
-            # shellcheck disable=2086
-            eval $def
-        else
-            fail+=(" -> $_PROGNAME_: ${FUNCNAME[0]}: app '$app'${sep}not found")
-        fi
-    }
-    Funcize() {
-        local ok=() fail=()
-        local _PROGNAME_=${BASH_SOURCE[0]}
-        local Apps2Funcs=()
-        source /etc/apps2func.conf              # fill Apps2Funcs array
-        local -r sep="§"                        # separator for 'column' output
-        for app in "${Apps2Funcs[@]}" ; do
-            Funcize1 "${app/$sep/ }"
-        done
-        printf "%s\n" "${ok[@]}"   | sort | column -t -s"$sep" >&2
-        printf "%s\n" "${fail[@]}" | sort | column -t -s"$sep" >&2
-    }
-    Funcize
+    # Funcize1() {
+    #     local app="$1"
+    #     local def
+    #     if which "$app" &>/dev/null ; then
+    #         def="$app()$sep{ Func_with_setsid \"\$@\" ; }"
+    #         ok+=(" +> $def")
+    #         def="${def/$sep/ }"
+    #         # shellcheck disable=2086
+    #         eval $def
+    #     else
+    #         fail+=(" -> $_PROGNAME_: ${FUNCNAME[0]}: app '$app'${sep}not found")
+    #     fi
+    # }
+    # Funcize() {
+    #     local ok=() fail=()
+    #     local _PROGNAME_=${BASH_SOURCE[0]}
+    #     local Apps2Funcs=()
+    #     source /etc/apps2func.conf              # fill Apps2Funcs array
+    #     local -r sep="§"                        # separator for 'column' output
+    #     for app in "${Apps2Funcs[@]}" ; do
+    #         Funcize1 "${app/$sep/ }"
+    #     done
+    #     printf "%s\n" "${ok[@]}"   | sort | column -t -s"$sep" >&2
+    #     printf "%s\n" "${fail[@]}" | sort | column -t -s"$sep" >&2
+    # }
+    # Funcize
     
     # AppsToFuncsMaker() {
     #     local apps=(
