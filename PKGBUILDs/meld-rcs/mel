@@ -102,15 +102,32 @@ Meld() {
                 cmd=(meldrcs "$@")
                 Message "==> 'meld with rcsdiff' selected"
                 ;;
-            *)  if [ -d RCS ] ; then
+            *)
+                Message "==> Detecting which comparison to use: git or rcs..."
+                if [ -d RCS ] ; then
                     cmd=(meldrcs "$@")
                     Message "==> 'meld with rcsdiff' detected"
                 elif InGitTree ; then
                     cmd=(meldgit "$@")
                     Message "==> 'meld with git' detected"
                 else
-                    Message "==> cannot detect the needed comparison!"
-                    exit 1
+                    local header header_lines=(
+                        "Navigation keys: Up/Down/PgUp/PgDn; TAB=Select, ENTER=Accept, ESC=Quit"
+                        # "Current folder:  ${PWD/$HOME/\$HOME}"
+                        # "Please select the comparison tool for the current folder."
+                    )
+                    printf -v header "%s\n" "${header_lines[@]}"
+                    local fzf=(
+                        fzf
+                        --exact +i --tac
+                        --footer="$header" --footer-label=" SELECT THE COMPARISON TOOL TO BE USED AT [${PWD/$HOME/\$HOME}] "
+                    )
+                    compare=$(printf "%s\n" git rcs | "${fzf[@]}")
+                    case "$compare" in
+                        git) cmd=(meldgit "$@") ;;
+                        rcs) cmd=(meldrcs "$@") ;;
+                        *) exit 1 ;;
+                    esac
                 fi
                 ;;
         esac
