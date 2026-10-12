@@ -1547,7 +1547,7 @@ EOF
     Unalias history-del
     history-del() { history -cwc && rm -f ~/.bash_history ~/.bash_history*.tmp; clear; }
     export -f history-del
-    Alias hc history-del
+    Alias hc 'cd; history-del'
 
     hr() {   # "history select-and-run"
         local cmd
