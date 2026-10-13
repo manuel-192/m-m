@@ -5,22 +5,21 @@
 pkgname=bide
 pkgdesc="Bash language IDE"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.2.1
+pkgver=26.10
 pkgrel=1
 
 arch=('any')
 license=('GPL')
 depends=(
     bashdb
-    shellcheck
     checkbashisms
 )
 optdepends=(
     'bash-language-server: required by the "bash-ide" extension'
-    # 'shellcheck: for linting'
     # 'checkbashisms: to check bashisms on scripts'
-    'vscodium: implements the IDE (alternative)'
-    'code:     implements the IDE (alternative)'
+    'vscodium:   implements the IDE (alternative)'
+    'code:       implements the IDE (alternative)'
+    'shellcheck: for linting'
 )
 source=(
     $url/$pkgname
