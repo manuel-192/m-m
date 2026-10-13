@@ -1,13 +1,28 @@
 #!/bin/bash
 
+# Install or uninstall some haskell related apps.
+# Do this because of the annoyingly large amount of haskell deps.
+
 Main() {
     local apps=(
-        pandoc-cli
+        pandoc-cli      # this one takes lots of deps ...
         # shellcheck    # useful for emacs and bide ...
     )
     local apps_installed=()
 
     readarray -t apps_installed < <(/bin/pacman -Qq "${apps[@]}" 2>/dev/null)
+
+    case "$1" in
+        -i | --info)
+            if [ "${#apps_installed[@]}" -ne 0 ] ; then
+                echo2   "==> Installed out of [${apps[*]}]:"
+                printf2 "      %s\n" "${apps_installed[@]}"
+            else
+                echo2   "==> Installed out of [${apps[*]}]: none."
+            fi
+            exit 0
+            ;;
+    esac
 
     if [ "${apps[*]}" = "${apps_installed[*]}" ] ; then
         sudo /bin/pacman -Rsn "${apps[@]}"
@@ -15,5 +30,8 @@ Main() {
         sudo /bin/pacman -Syu --needed "${apps[@]}"
     fi
 }
+
+printf2() { printf  "$@" >&2 ; }
+echo2()   { echo -e "$@" >&2 ; }
 
 Main "$@"
