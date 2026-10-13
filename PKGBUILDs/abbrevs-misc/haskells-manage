@@ -1,0 +1,19 @@
+#!/bin/bash
+
+Main() {
+    local apps=(
+        pandoc-cli
+        # shellcheck    # useful for emacs and bide ...
+    )
+    local apps_installed=()
+
+    readarray -t apps_installed < <(/bin/pacman -Qq "${apps[@]}" 2>/dev/null)
+
+    if [ "${apps[*]}" = "${apps_installed[*]}" ] ; then
+        sudo /bin/pacman -Rsn "${apps[@]}"
+    else
+        sudo /bin/pacman -Syu --needed "${apps[@]}"
+    fi
+}
+
+Main "$@"
