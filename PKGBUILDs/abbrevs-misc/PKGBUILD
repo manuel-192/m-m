@@ -7,7 +7,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.10.1
+pkgver=26.10.2
 pkgrel=1
 
 arch=('any')
