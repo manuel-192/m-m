@@ -11,7 +11,7 @@ Main() {
         ristretto | soffice | thunderbird | virtualbox | vivaldi | xed | xfce4-screenshooter | \
         xreader | adie | xplayer)
             if [ -x "/bin/$appname" ] ; then
-                echo2 "==> setsid /bin/$appname" "$@"
+                echo2 "==> /bin/$appname" "$@" "&"
                 "/bin/$appname" "$@" 2>/dev/null &                # setsid "/bin/$appname" "$@" 2>/dev/null
             else
                 echo2 "==> /bin/$appname is not found"

@@ -7,7 +7,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.10.4
+pkgver=26.10.5
 pkgrel=1
 
 arch=('any')
@@ -92,7 +92,7 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '267c19d4e05f5b7cad084d7d097fc534d3c71f3b8d07e7ba2029ba8d91095f5aac25073b1b5b7922ca914bd133165672a3f4bc9d163d0d7b38c4633257b83f9c'
             'b8d93a1f0d1164c61184f23a6f02fe1098e3e85997ca8ca5de2f69e7d7c1f7ae4777f9326d6898cc41a7a1bf902c903a040c5713f440eb3801ef02abb2deaacd'
             '53b899a56aa1d6950b8026ad0047412b9c1e32a3cf18a40c44214d5cba2bd66109e3776463a61f6759b79a6bad21806c5ca4cc1bf816ec14c410fb0e13ff57dd'
-            'c796622c3492e723a56b22772d79f21c8a6c30b27e8ac664a926fd23ad924fb39e8fa6ee9c25a000b509a4f41b8c9ef123605b9751c15f12b29fd4b9c16bcf1b')
+            'c53e2c32f77ff77f35b058efd20096d7bf8c3c073670b6170ba3652214d38e3efba465bf67ecd2ecfe529d747f88b999909944eb7af902e68ae258d20c9b5021')
 
 package() {
     local item
@@ -117,8 +117,8 @@ package() {
         eog libreoffice
         soffice virtualbox vivaldi
         adie xplayer
-        thunderbird
-        # xed  firefox-developer-edition dolphin gitk kate konsole parole ristretto xfce4-screenshooter xreader
+        thunderbird xreader
+        # xed  firefox-developer-edition dolphin gitk kate konsole parole ristretto xfce4-screenshooter
     )
     for app in "${apps[@]}" ; do
         ln -s "START_BG"  "$pkgdir/usr/local/bin/$app" 
