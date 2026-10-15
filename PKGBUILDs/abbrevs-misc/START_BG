@@ -11,10 +11,14 @@ Main() {
         ristretto | soffice | thunderbird | virtualbox | vivaldi | xed | xfce4-screenshooter | \
         xreader | adie | xplayer)
             if [ -x "/bin/$appname" ] ; then
+                eos-color info 2
                 echo2 "==> /bin/$appname" "$@" "&"
+                eos-color reset 2
                 "/bin/$appname" "$@" 2>/dev/null &                # setsid "/bin/$appname" "$@" 2>/dev/null
             else
+                eos-color warning 2
                 echo2 "==> /bin/$appname is not found"
+                eos-color reset 2
             fi
             ;;
     esac
