@@ -7,7 +7,7 @@
 pkgname=abbrevs-misc
 pkgdesc="Various short commands"
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.10.7
+pkgver=26.10.8
 pkgrel=1
 
 arch=('any')
@@ -92,7 +92,7 @@ sha512sums=('381e6c9f0e6cec480ad6098d547e850890f2cbf8ea03080bb5f93366b11684dc290
             '267c19d4e05f5b7cad084d7d097fc534d3c71f3b8d07e7ba2029ba8d91095f5aac25073b1b5b7922ca914bd133165672a3f4bc9d163d0d7b38c4633257b83f9c'
             'b8d93a1f0d1164c61184f23a6f02fe1098e3e85997ca8ca5de2f69e7d7c1f7ae4777f9326d6898cc41a7a1bf902c903a040c5713f440eb3801ef02abb2deaacd'
             '53b899a56aa1d6950b8026ad0047412b9c1e32a3cf18a40c44214d5cba2bd66109e3776463a61f6759b79a6bad21806c5ca4cc1bf816ec14c410fb0e13ff57dd'
-            '849247fcb5830f5baaab560590c4323064ea728effe5171a9a9fe50a5a4fb4206d81a432130ef02142e556eb2a3629cfbb3aa2b890638c8b661e67058ebe644c')
+            '25f96ae5fc3d55b439e34e602402dc4d9f2c0e01cfef1f824c383b859b2a5f17e5c68e5bcbdb5107f959d44dcecc926159285af88236c544a3b7c0a50ac9a726')
 
 package() {
     local item
@@ -114,11 +114,16 @@ package() {
     done
 
     local app apps=(
-        eog eos-welcome libreoffice
+        eog eos-welcome
+        firefox firefox-developer-edition
+        libreoffice
         soffice virtualbox vivaldi
         thunderbird xreader
         # xed  firefox-developer-edition dolphin gitk kate konsole parole ristretto xfce4-screenshooter
     )
+    if [ -e ./START_BG ] ; then
+        readarray -t apps < <(./START_BG --apps)
+    fi
     for app in "${apps[@]}" ; do
         ln -s "START_BG"  "$pkgdir/usr/local/bin/$app" 
     done

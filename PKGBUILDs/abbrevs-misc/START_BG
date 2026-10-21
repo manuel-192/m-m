@@ -3,25 +3,61 @@
 Main() {
     local -r appname=${0##*/}
     local cmd=""
+    local app
+    local apps=(        # The list of supported apps.
+        eog           eos-welcome
+        firefox       firefox-developer-edition
+        libreoffice
+        soffice
+        virtualbox    vivaldi
+        thunderbird
+        xreader
 
-    case "$appname" in
-        hibernate | disksleep | logoff | poweroff | "bye" | reboot | restart | ramsleep)
-            /usr/local/bin/STOP "$@" ;;
-        dolphin | eog | eos-welcome | firefox-developer-edition | gitk | kate | konsole | libreoffice | parole | \
-        ristretto | soffice | thunderbird | virtualbox | vivaldi | xed | xfce4-screenshooter | \
-        xreader | adie | xplayer)
-            if [ -x "/bin/$appname" ] ; then
-                eos-color info 2
-                echo2 "==> /bin/$appname" "$@" "&"
-                eos-color reset 2
-                "/bin/$appname" "$@" 2>/dev/null &                # setsid "/bin/$appname" "$@" 2>/dev/null
-            else
-                eos-color warning 2
-                echo2 "==> /bin/$appname is not found"
-                eos-color reset 2
-            fi
+        # dolphin eog eos-welcome firefox-developer-edition gitk kate konsole libreoffice parole
+        # ristretto soffice thunderbird virtualbox vivaldi xed xfce4-screenshooter
+        # xreader adie xplayer firefox firefox-developer-edition
+    )
+    local apps2=(
+        hibernate disksleep logoff poweroff bye reboot restart ramsleep
+    )
+
+    case "$1" in
+        -h | --help)
+            echo2 "Options: -h, --help       This help"
+            echo2 "         --apps           List of category 1 apps."
+            echo2 "         --apps2          List of category 2 apps."
+            exit 0
             ;;
+        --apps)  printf "%s\n" "${apps[@]}"  ; exit 0 ;;
+        --apps2) printf "%s\n" "${apps2[@]}" ; exit 0 ;;
     esac
+
+    # Try apps2 first.
+    app=$(printf "${apps2[@]}" | grep "^$appname$")
+    if [ "$app" ] ; then
+        eos-color info 2
+        echo2 "==> /usr/local/bin/STOP" "$@"
+        eos-color reset 2
+        /usr/local/bin/STOP "$@"
+        exit 0
+    fi
+
+    # Then apps.
+    for app in "${apps[@]}" ; do
+        if [ -x "/bin/$appname" ] ; then
+            eos-color info 2
+            echo2 "==> /bin/$appname" "$@" "&"
+            eos-color reset 2
+            "/bin/$appname" "$@" 2>/dev/null &
+            exit 0
+        fi
+    done
+
+    # Nothing matched so warn.
+    eos-color warning 2
+    echo2 "==> /bin/$appname is not found"
+    eos-color reset 2
+    exit 1
 }
 
 echo2() { echo -e "$@" >&2; }
