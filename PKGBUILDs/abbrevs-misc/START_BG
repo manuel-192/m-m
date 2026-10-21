@@ -7,7 +7,7 @@ Main() {
     case "$appname" in
         hibernate | disksleep | logoff | poweroff | "bye" | reboot | restart | ramsleep)
             /usr/local/bin/STOP "$@" ;;
-        dolphin | eog | firefox-developer-edition | gitk | kate | konsole | libreoffice | parole | \
+        dolphin | eog | eos-welcome | firefox-developer-edition | gitk | kate | konsole | libreoffice | parole | \
         ristretto | soffice | thunderbird | virtualbox | vivaldi | xed | xfce4-screenshooter | \
         xreader | adie | xplayer)
             if [ -x "/bin/$appname" ] ; then
