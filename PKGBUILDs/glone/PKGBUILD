@@ -5,7 +5,7 @@ pkgname=glone
 pkgdesc="Very simple github repo cloner."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
 pkgver=1
-pkgrel=1.2
+pkgrel=1.3
 
 arch=('any')
 license=('GPL')
@@ -17,9 +17,9 @@ source=(
     $url/$pkgname-completion
     $url/$pkgname.conf
 )
-sha512sums=('4614ccc6ba371a67ffd931df4988a820fa42eb258a6416de685f46e9a9747c243ee697c1983c9108cb1f69a14b67d8280fb7e0ff7b0603e275e3ffe7ebce6ff3'
-            '28b797e5a5ac1db55cd3f07307d8019f7e5836ea38827bd24876a3f690b33abe9777d514853b2c8ab3db79d7451ecc4f949fb7bfa72c54a0d8290fff959c51e1'
-            'a4130f132718ead0dc2a347a9036e2839bd05525bb272058a4825acab1e3707100abb8e3ca94adbd87cdcd244d6b58a583043196d65ef37e1565e8e069e26d1a')
+sha512sums=('7b120166df68b723543f85183dbab1f1cb46d9620fa1f17e40d9e776ff5482c738901a9126d60f6aa49f1d3bb76578c36ef1a929d79b53714e5d39bba42ae5f6'
+            '69261475b138b35e33bff9bb7fb0c4b33d16c493dff0aff38b2ac52ab3738befb6696501bab802cd8e165fe944b7b1895a03b946d73a60653142ac4ad9e33c0a'
+            '0bc03ac2f0422403889430837fbfffdaeabbd386a1fca9e5d079e579c103f36fc6fbfc63e6fa100938ef95b7f385c745e1acbeb33d85ee87dd9cbab89cd5264a')
 
 package() {
   install -Dm755 $pkgname                    $pkgdir/usr/bin/$pkgname

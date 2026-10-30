@@ -5,30 +5,16 @@ _glone_complete() {
     [[ $COMPREPLY == *= ]] && compopt -o nospace
 }
 
-_fetch_glone_repo_names() {
-    local saved_repo_names_file="$HOME/.glone_saved-repos.txt"
-    if [ -r "$saved_repo_names_file" ] ; then
-        repo_names="$(cat "$saved_repo_names_file")"
-        return
-    fi
-    local GLONE_SITE=https://github.com
-    local GLONE_ACCOUNT=endeavouros-team
-
-    source /etc/glone.conf || return 1
-
-    local ix=1 xx
-    while true ; do
-        xx="$(curl -Lsm 10 "$GLONE_SITE/orgs/$GLONE_ACCOUNT/repositories?page=$ix" | grep 'data-hovercard-type' | awk '{print $6}' | sed 's|.*/\([^"]*\)"|\1|')"
-        [ -n "$xx" ] || break
-        repo_names+=" $xx"
-        ((ix++))
-    done
-    echo "$repo_names" > "$saved_repo_names_file"
-}
-
 _glone_complete_repos() {
+    local GLONE_SITE=""
+    local GLONE_ACCOUNT=""
+    local GLONE_FILE_REPOS=""
+    local GLONE_FILE_CONF="/etc/glone.conf"
     local repo_names=""
-    _fetch_glone_repo_names
+
+    source $GLONE_FILE_CONF || return 1
+    repo_names="$(cat "$GLONE_FILE_REPOS")"
+
     COMPREPLY=( $(compgen -W "$repo_names" -- "$cur") )
 }
 

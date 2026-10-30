@@ -3,21 +3,71 @@
 # Simple but configurable repo cloner from github.
 
 DIE() {
-    local progname="$(basename "$0")"
-    echo "$progname: error: $1" >&2
+    echo "==> $progname: error: $1" >&2
     exit 1
+}
+
+fetch_glone_repo_names() {
+    if true ; then
+        if [ -d "$GLONE_LOCAL_DIR" ] ; then
+            /bin/ls -1 "$GLONE_LOCAL_DIR" | grep -vP 'BUILD_|PKGBUILDS-|TODO|WAN' | sudo tee "$GLONE_FILE_REPOS"
+        fi
+    else
+        # doesn't work
+        rm -f "$GLONE_FILE_REPOS"
+        local ix=1 page_data
+        while true ; do
+            page_data="$(curl -Lsm 20 "$GLONE_SITE/orgs/$GLONE_ACCOUNT/repositories?q=sort%3Aname-asc&page=$ix")"
+            # https://github.com/orgs/endeavouros-team/repositories?q=sort%3Aname-asc&page=2
+            [ ${#page_data} -le 1 ] || break
+            page_data="$(echo "$page_data" | grep 'data-hovercard-type' | awk '{print $6}' | sed 's|.*/\([^"]*\)"|\1|')"
+            [ "$page_data" ] || break
+            echo "$page_data" >> "$GLONE_FILE_REPOS"
+            ((ix++))
+        done
+    fi
 }
 
 Main()
 {
-    local repo="$1"
-    [ -n "$repo" ] || DIE "give repo name"
+    local progname=${0##*/}
+    local GLONE_FILE_CONF="/etc/glone.conf"
+    local GLONE_SITE=""
+    local GLONE_ACCOUNT=""
+    local GLONE_FILE_REPOS=""
+    local GLONE_LOCAL_DIR=""
+    local repo=""
 
-    local GLONE_SITE=https://github.com
-    local GLONE_ACCOUNT=endeavouros-team
-    [ -r /etc/glone.conf ] && source /etc/glone.conf
+    source $GLONE_FILE_CONF || DIE "file '$GLONE_FILE_CONF' not found!"
 
-    git clone "$GLONE_SITE/$GLONE_ACCOUNT/$repo".git
+    while [ "$1" ] ; do
+        case "$1" in
+            -r | --refresh) fetch_glone_repo_names; exit 0 ;;
+            -*)             DIE "Usage: $progname [-r | --refresh] <reponame>" ;;
+            *)              repo="$1" ;;
+        esac
+        shift
+    done
+    [ "$repo" ] || DIE "give repo name"
+
+    local reply
+    while true ; do
+        eos-color info 2
+        echo -n "==> Cloning " >&2
+        eos-color error 2
+        echo "[$GLONE_SITE/$GLONE_ACCOUNT/$repo.git]" >&2
+        eos-color reset 2
+        read -p "Continue (Y/n)? " reply >&2
+        case "$reply" in
+            [Yy]* | "")
+                git clone "$GLONE_SITE/$GLONE_ACCOUNT/$repo".git
+                exit $?
+                ;;
+            [Nn]*)
+                exit 0
+                ;;
+        esac
+    done
 }
 
 Main "$@"
