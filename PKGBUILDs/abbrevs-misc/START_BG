@@ -2,24 +2,14 @@
 
 Main() {
     local -r appname=${0##*/}
-    local cmd=""
+    local apps=()        # The list of supported apps.
+    local apps2=()
     local app
-    local apps=(        # The list of supported apps.
-        eog           eos-welcome
-        firefox       firefox-developer-edition
-        libreoffice
-        soffice
-        virtualbox    vivaldi
-        thunderbird
-        xreader
+    local -r wrapperdir=/usr/local/bin
+    local -r bindir=/usr/bin
 
-        # dolphin eog eos-welcome firefox-developer-edition gitk kate konsole libreoffice parole
-        # ristretto soffice thunderbird virtualbox vivaldi xed xfce4-screenshooter
-        # xreader adie xplayer firefox firefox-developer-edition
-    )
-    local apps2=(
-        hibernate disksleep logoff poweroff bye reboot restart ramsleep
-    )
+    readarray -t apps  < <(/bin/ls -l "$wrapperdir" | /bin/grep -- " -> START_BG$" | /bin/awk '{print $(NF-2) }')
+    readarray -t apps2 < <(/bin/ls -l "$wrapperdir" | /bin/grep -- " -> STOP$"     | /bin/awk '{print $(NF-2) }')
 
     case "$1" in
         -h | --help)
@@ -28,36 +18,39 @@ Main() {
             echo2 "         --apps2          List of category 2 apps."
             exit 0
             ;;
-        --apps)  printf "%s\n" "${apps[@]}"  ; exit 0 ;;
-        --apps2) printf "%s\n" "${apps2[@]}" ; exit 0 ;;
+        --apps)
+            printf "%s\n" "${apps[@]}"
+            exit 0
+            ;;
+        --apps2)
+            printf "%s\n" "${apps2[@]}"
+            exit 0
+            ;;
     esac
 
-    # Try apps2 first.
-    app=$(printf "${apps2[@]}" | grep "^$appname$")
-    if [ "$app" ] ; then
+    app=$(printf "%s\n" "${apps2[@]}" | /bin/grep -- "^$appname$")
+    if [ "$app" ] && [ -x "$wrapperdir/$app" ] ; then
         eos-color info 2
-        echo2 "==> /usr/local/bin/STOP" "$@"
+        echo2 "==> $wrapperdir/STOP" "$@"
         eos-color reset 2
-        /usr/local/bin/STOP "$@"
+        $wrapperdir/STOP "$@"      # STOP is from package m-common!
         exit 0
     fi
 
-    # Then apps.
-    for app in "${apps[@]}" ; do
-        if [ -x "/bin/$appname" ] ; then
-            eos-color info 2
-            echo2 "==> /bin/$appname" "$@" "&"
-            eos-color reset 2
-            "/bin/$appname" "$@" 2>/dev/null &
-            exit 0
-        fi
-    done
-
-    # Nothing matched so warn.
-    eos-color warning 2
-    echo2 "==> /bin/$appname is not found"
-    eos-color reset 2
-    exit 1
+    app=$(printf "%s\n" "${apps[@]}" | /bin/grep -- "^$appname$")
+    if [ "$app" ] && [ -x "$wrapperdir/$app" ] ; then
+        eos-color info 2
+        echo2 "==> $bindir/$appname" "$@" "&"
+        eos-color reset 2
+        "$bindir/$appname" "$@" 2>/dev/null &
+        exit 0
+    else
+        # Nothing matched so warn.
+        eos-color error 2
+        echo2 "==> $wrapperdir/$appname is not found"
+        eos-color reset 2
+        exit 1
+    fi
 }
 
 echo2() { echo -e "$@" >&2; }
