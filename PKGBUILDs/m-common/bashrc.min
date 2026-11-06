@@ -1252,7 +1252,7 @@ EOF
                 return 1
                 ;;
         esac
-        setsid firefox "$forum"
+        firefox "$forum"
     }
 
     # COLOR codes:
