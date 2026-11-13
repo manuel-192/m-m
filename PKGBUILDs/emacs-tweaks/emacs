@@ -40,16 +40,25 @@ HandleGeometry() {
     esac
 }
 
+HasOption() {
+    local -r opt="$1"    # e.g. "-nw"
+    shift
+    printf "%s\n" "$@" | grep -wq -- "$opt"
+}
+
+NwInTerminal() { EOS_YAD_TERMINAL="terminator --geometry=1000x1000" RunInTerminalOpt --no-enter-wait "emacs-nw $*"; }
+
 Main() {
     case "$(whoami)" in
         root)
-            EOS_YAD_TERMINAL="terminator --geometry=1000x1000"  RunInTerminal "/bin/emacs -nw $*"
+            NwInTerminal "$@"
             ;;
         *)
             HandleHelp "$@"
             HandleSessionType    # emacs has separate wayland and x11 versions
-            if [[ "$*" =~ "-nw" ]] ; then
-                /bin/emacs "$@"
+            # if [[ "$*" =~ "-nw" ]] ; then
+            if HasOption "-nw" "$@" ; then
+                NwInTerminal "$@"
             else
                 /bin/emacs --reverse-video --geometry=$(HandleGeometry) "$@" 2>/dev/null &
             fi
