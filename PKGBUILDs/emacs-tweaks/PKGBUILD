@@ -2,7 +2,7 @@
 
 pkgname=emacs-tweaks
 pkgdesc="Simple help for starting emacs"
-pkgver=26.11
+pkgver=26.11.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -15,6 +15,7 @@ source=(
     $url/em
     $url/emacsr
     $url/emacs-fix-position-for-kate
+    $url/emacs-nw
     $url/emacs-readonly
     $url/emacs-session-setup
     $url/emacs.bash-template
@@ -24,6 +25,7 @@ sha512sums=('c411884fca949a8d11c28eb51722378cb2146e9b25d566508351f9282435fd9b457
             '6485b15174e8c720997cba80af60a7d39a5b12a22378b76191aa4ef151525dacd6522807826c048d3bbb72bd68b3e35b94b74f42242c4fdfdfc0e5422cb0d874'
             'b79e0cded9ee1222c5dc7d8fc416a60f5bbd8ddba251015a91d51d7db264b6f215c938c8b33774a65992bd9c5f32142483d6380318b6243c5071fac9b2a9bf95'
             '2c4003a729802a92f3875d3135bb5a5185dfa8f8124986af7cd54346529dfee6497c98e1b46eeaeea326c2ebffca43865757cd5844296a9446b493fb04f87dee'
+            '814d8015028efe8121639d1ab87713226e9346f1920cf360bfd4e88ba9769f8043c6cae94eb10b442b561afcb199ade94164b1bc51cb91ea7153595dcb5937fa'
             'b37d25dcbab62c427632c0bda0d4ef23016826655b8c3ed863e8c9edf98ccf255940b5a74858c1fbb4c111554798124403d014d2eaebe4d8c0febd380cb9ea11'
             '44f3be9d1ff0b8eabd751b63a23057249694ada0d14df82f4dd43836fb750e0db1b50a72101f08d8c3782802645244295133ba2dc9d7e12c75e5298f43209dac'
             '5e11bef93195cc231ef5cbc5c098a92dad18d65d6c101426233271e7c15d82cd0d39977ccf0b092b6d75b177ebee51e991054970c97f4003ae1040d82f452798'
@@ -39,7 +41,7 @@ package() {
                 install -Dm644 $file   $pkgdir/etc/$file ;;
             *.bash-completion)
                 install -Dm644 $file   $pkgdir/usr/share/bash-completion/completions/${file%.*} ;;
-            *)
+            emacs* | em)
                 install -Dm755 $file   $pkgdir/usr/local/bin/$file ;;
         esac
     done
