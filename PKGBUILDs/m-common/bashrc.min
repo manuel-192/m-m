@@ -1399,7 +1399,7 @@ EOF
         }
     fi
 
-    sudofuncs umount powertop  # mount
+    sudofuncs powertop
 
     fstrim() {
         local -r cmdfile=$(mktemp "$HOME/.tmp-XXXXXX")
@@ -1414,14 +1414,8 @@ EOF
         rm -f "$cmdfile"
     }
 
-    mount() {
-        local sudo=""
-        case "$1" in                 # just a simple check if sudo is needed, needs full option handling...
-            ""|-h|--help) ;;
-            *) sudo=sudo ;;
-        esac
-        $sudo /bin/mount "$@"
-    }
+    umount1() { sudo /bin/umount "$@" ; }
+    mount1()  { sudo /bin/mount  "$@" ; }
 
     makepkg-error() {
         _makepkg_error_msg() { ECHO2 "  ${FUNCNAME[1]}: " "$@" ; }
