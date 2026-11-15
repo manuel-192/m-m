@@ -4,7 +4,7 @@
 pkgname=stickburn
 pkgdesc="GUI for burning ISO to USB stick with dd; includes safety checks."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.9.2
+pkgver=26.11
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -22,8 +22,8 @@ source=(
     iso-to-usb         # USB burning app CLI
 
     # translations
-    btr_${pkgname}_en
-    btr_${pkgname}_fi
+    btr_${pkgname}_en_US
+    btr_${pkgname}_fi_FI
 )
 sha512sums=('cb2793837a8213f19f06d2ecc69f80c9a754e93331940682e3ad0eb29128052d9912330ce0940d5b0713bd484b04a216c7e9c866c741b49c3820212c3b348b6f'
             'c2932968c88963bedc923f2889cf44b114f4929d1ebfc2678655bb7e3b75a16d740e0f5276633b4233159ac304669aebb1204c6a30ebfeab02de7cdaab1515fa'
