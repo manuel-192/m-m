@@ -4,7 +4,7 @@
 pkgname=stickburn
 pkgdesc="GUI for burning ISO to USB stick with dd; includes safety checks."
 url="https://github.com/manuel-192/m-m/raw/master/PKGBUILDs/$pkgname"
-pkgver=26.11
+pkgver=26.11.1
 pkgrel=1
 arch=('any')
 license=('GPL')
@@ -25,7 +25,7 @@ source=(
     btr_${pkgname}_en_US
     btr_${pkgname}_fi_FI
 )
-sha512sums=('cb2793837a8213f19f06d2ecc69f80c9a754e93331940682e3ad0eb29128052d9912330ce0940d5b0713bd484b04a216c7e9c866c741b49c3820212c3b348b6f'
+sha512sums=('bcaa849d6e545fab2ae1e7ef0ffe85d0654b164db4098fb960fc0cbf15748db5ca0522dfbcb8808939c2d0f6aaf19041532ed32dd29271d5fd9f8ca0625f9e30'
             'c2932968c88963bedc923f2889cf44b114f4929d1ebfc2678655bb7e3b75a16d740e0f5276633b4233159ac304669aebb1204c6a30ebfeab02de7cdaab1515fa'
             'e625c61067602578dbdb83f59f355d06ef8dc453a86a7d2038bc6665a1c88ce6b1950d5d7bd1c3940bf53a4049a00dd89fb8f3892242c619606a9d40c226bd3a'
             '84288baeea536cfc30446425020310ff6f31fcfa436808ed09c7673171a9e37ecfc632f38faacd83b14beac5cd9ca3f0d7fd42ff54c534c4c6c3f7c452de8424'

@@ -196,7 +196,7 @@ Main()
     source /usr/share/endeavouros/scripts/eos-script-lib-yad || return 1
     AssignIconVariables_in_eos_bash_shared
 
-    source /usr/share/endeavouros/translations/bash-app-translate "$progname" || exit 1
+    source /usr/share/endeavouros/translations/bash-app-translate --appid="$progname" || exit 1
 
     local is_foreground=no
     local iso_file=""
