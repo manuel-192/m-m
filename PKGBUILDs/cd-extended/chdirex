@@ -71,6 +71,24 @@ Main() {
     local MULTI_MATCH_ALG=fzf                   # fzf or circle
     local conf="$HOME/.config/$progname.conf"
 
+    if [ ! -e "$conf" ] ; then
+        cat <<EOF > "$conf"
+MULTI_MATCH_ALG="fzf"                   # "fzf" or "circle"
+
+CDPATH_ARR=(
+    # Add a list of unique directories here. Some examples:
+    .       # prefer current dir
+    ~       # prefer $HOME
+)
+
+# Add the following commands to your .bashrc:
+#   CDPATH="$(printf -v CDPATH "%s:" "${CDPATH_ARR[@]}")"
+#   CDPATH="${CDPATH%:}"
+#   export CDPATH
+
+EOF
+    fi
+
     [ -e "$conf" ] && source "$conf"
     case "$MULTI_MATCH_ALG" in
         fzf | circle) ;;
