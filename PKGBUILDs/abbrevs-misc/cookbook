@@ -1,0 +1,48 @@
+#!/bin/bash
+
+F1() {
+    local item="$NAME_START${ITEMS[0]}"
+    local iurl="${URLS[${item#$NAME_START}]}"
+    COMMON
+}
+
+F2() {
+    local item="$NAME_START${ITEMS[1]}"
+    local iurl="${URLS[${item#$NAME_START}]}"
+    COMMON
+}
+
+COMMON() {
+    local contents vv ss dd
+
+    contents=$(wget -qU "" -O- "$iurl" | sed -E "s|($FIND_HEAD$item)|\n\n\1|g" | grep -m1 "$FIND_HEAD$item$FIND_TAIL")
+
+    vv=$(echo "$contents" | sed -e 's|<.*||' | awk '{print $NF}')
+    ss=$(echo "$contents" | sed -e "s|.*$FIX|$FIX|" -e 's|<.*||' -e 's|：[ ]*||'| awk '{print $NF}')
+    dd=$(echo "$contents" | sed -E 's|.*>(20[2-9][0-9]/[0-1][0-9]/[0-3][0-9])<.*|\1|')
+
+    lines+=("$dd $item $vv $ss")
+}
+
+Main() {
+    local progname=${0##*/}
+    declare -A URLS=()
+    local NAME_START=""
+    local ITEMS=()
+    local FIND_HEAD=""
+    local FIND_TAIL=""
+    local FIX=""
+    local FIRST_LINE=""
+    local lines=() hdr
+    source "/etc/$progname.conf" || exit 1
+
+    F1
+    F2
+
+    {
+        echo "$FIRST_LINE"
+        printf "%s\n" "${lines[@]}"
+    } | column -t | sort -r
+}
+
+Main "$@"
