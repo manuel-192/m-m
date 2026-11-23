@@ -1,0 +1,25 @@
+#!/bin/bash
+
+DIE() {
+    local -r progname=${0##*/}
+    echo2 "==> $progname: error: $1"
+    exit 1
+}
+echo2() { echo -e "$@" >&2 ; }
+
+Main() {
+    local items=()
+    local -r file="/etc/ziigaa-pukettei.conf"
+    [ -e "$file" ] || DIE "$file not found"
+    readarray -t items < <(cat "$file")
+    if [ ${#items[@]} -lt 1 ] ; then
+        echo2 "==> Pukettei kondiksessa."
+    else
+        for item in "${items[@]}" ; do
+            echo2 "==> Ziigaa vähä pukettei:"
+            expac "%n %p" | grep "$item" | sed 's|^|      |' >&2
+        done
+    fi
+}
+
+Main "$@"
