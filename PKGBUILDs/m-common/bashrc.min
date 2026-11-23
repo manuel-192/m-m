@@ -2103,6 +2103,8 @@ _Nvidia_driver() {
 }
 _Nvidia_driver
 
+which ziigaa-pukettei &>/dev/null && ziigaa-pukettei
+
 if true ; then
 
     -() {   # make plain - the same as "cd -"
