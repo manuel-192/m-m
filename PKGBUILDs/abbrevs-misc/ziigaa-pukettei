@@ -13,11 +13,13 @@ Main() {
     [ -e "$file" ] || DIE "$file not found"
     readarray -t items < <(cat "$file")
     if [ ${#items[@]} -lt 1 ] ; then
-        echo2 "==> Pukettei kondiksessa."
+        echo "==> Pukettei kondiksessa."
     else
         for item in "${items[@]}" ; do
-            echo2 "==> Ziigaa vähä pukettei:"
-            expac "%n %p" | grep "$item" | sed 's|^|      |' >&2
+            if [ "$item" ] ; then
+                echo "==> Ziigaa vähä pukettei:"
+                expac "%n %p" | grep "$item" | sed 's|^|      |'
+            fi
         done
     fi
 }
